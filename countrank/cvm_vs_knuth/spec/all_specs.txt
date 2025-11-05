@@ -1,0 +1,101 @@
+SPEC/
+├─ CVM_SPEC.md
+├─ D_SPEC.md
+└─ DPRIME_SPEC.md
+
+---
+
+# CVM_SPEC.md
+
+```text
+CVM:L1  INPUT: stream a₁…a_m; capacity s≥1; RNG U(0,1); buffer χ=∅; cutoff p←1. [CLM3][CLM4][CLM2] :contentReference[oaicite:0]{index=0}
+CVM:L2  FOR t=1…m DO                                            [CLM3] :contentReference[oaicite:1]{index=1}
+CVM:L3    // Remove any stale copy so only last-appearance can be present.    [CLM3] :contentReference[oaicite:2]{index=2}
+CVM:L4    if ∃(a_t,·)∈χ then delete (a_t,·)                                   [CLM3] :contentReference[oaicite:3]{index=3}
+CVM:L5    // Draw fresh score for this appearance (independent uniform).      [CLM3] :contentReference[oaicite:4]{index=4}
+CVM:L6    u ← Unif(0,1)                                                        [CLM3] :contentReference[oaicite:5]{index=5}
+CVM:L7    if u ≥ p then continue  // do not insert at this p                  [CLM3] :contentReference[oaicite:6]{index=6}
+CVM:L8    if |χ| < s then insert (a_t,u) and continue                         [CLM3] :contentReference[oaicite:7]{index=7}
+CVM:L9    // Buffer full: perform independent-halving subsample; halve p.     [CLM4][CLM17] :contentReference[oaicite:8]{index=8}
+CVM:L10   REPEAT                                                               [CLM4] :contentReference[oaicite:9]{index=9}
+CVM:L11     χ ← { (x,v)∈χ : flip(1/2)=heads }  // each kept w.p. 1/2          [CLM4] :contentReference[oaicite:10]{index=10}
+CVM:L12     p ← p/2                                                            [CLM4] :contentReference[oaicite:11]{index=11}
+CVM:L13   UNTIL |χ| < s                                                        [CLM4] :contentReference[oaicite:12]{index=12}
+CVM:L14   if u < p then insert (a_t,u)                                         [CLM3][CLM4] :contentReference[oaicite:13]{index=13}
+CVM:L15 END FOR                                                                [CLM3] :contentReference[oaicite:14]{index=14}
+CVM:L16 OUTPUT: R = |χ|/p  // unbiased in total-variant; see notes.           [CLM5][CLM6][CLM7] :contentReference[oaicite:15]{index=15}
+```
+
+**Invariants (assert as you run):**
+
+1. After processing any `t`, membership depends only on last score: `(a, u_last)∈χ ⇔ u_last<p`. [CLM3] 
+2. `p` equals the current sampling cutoff; after L9–L13, `p` halved exactly once per subsampling round. [CLM4][CLM17] 
+3. Buffer capacity respected: `|χ| ≤ s` always; when full, L9–L13 reduces it below `s`. [CLM4] 
+4. Estimator `|χ|/p` aligns with cutoff fairness; total-variant yields unbiasedness; original inherits bounds (+δ/2). [CLM5][CLM6][CLM7] 
+
+---
+
+# D_SPEC.md
+
+```text
+D:L1   INPUT: stream a₁…a_m; capacity s≥1; buffer B=∅ of pairs (a,u); cutoff p←1. [CLM8][CLM10] :contentReference[oaicite:20]{index=20}
+D:L2   FOR t=1…m DO                                                             [CLM9] :contentReference[oaicite:21]{index=21}
+D:L3     // Drop stale copy so last-appearance rule holds.                      [CLM9] :contentReference[oaicite:22]{index=22}
+D:L4     if ∃(a_t,·)∈B then delete it                                           [CLM9] :contentReference[oaicite:23]{index=23}
+D:L5     // Independent uniform “volatility” for this occurrence.               [CLM9] :contentReference[oaicite:24]{index=24}
+D:L6     u ← Unif(0,1)                                                          [CLM9] :contentReference[oaicite:25]{index=25}
+D:L7     if u ≥ p then continue  // skip insertion at this cutoff               [CLM9] :contentReference[oaicite:26]{index=26}
+D:L8     if |B| < s then insert (a_t,u); continue                               [CLM8][CLM9] :contentReference[oaicite:27]{index=27}
+D:L9     // Buffer full: compare vs current max-scored resident.                [CLM9] :contentReference[oaicite:28]{index=28}
+D:L10    let (a*,u*) be argmax_u′ over (·,u′)∈B                                 [CLM9] :contentReference[oaicite:29]{index=29}
+D:L11    if u > u* then p←u           // raise cutoff to current u              [CLM9] :contentReference[oaicite:30]{index=30}
+D:L12    else replace (a*,u*) with (a_t,u); p←u*   // swap in; cutoff=old max   [CLM9] :contentReference[oaicite:31]{index=31}
+D:L13  END FOR                                                                  [CLM9] :contentReference[oaicite:32]{index=32}
+D:L14  OUTPUT: R = |B|/p                                                        [CLM8] :contentReference[oaicite:33]{index=33}
+```
+
+**Invariants (assert as you run):**
+
+1. Fairness / last-score law: in step start, `(a, u_last)∈B ⇔ u_last < p`. [CLM9] 
+2. `p` equals the maximum score currently *excluded* from B: after L11–L12, `p = max{u′ in B∪{u}}` pre-change. [CLM9] 
+3. Capacity exactness: `|B| ≤ s` always; when full, exactly one element is replaced or `p` is raised. [CLM10] 
+4. Time/space: dictionary+max-heap/treap yields expected `O(log s)` updates; final `p` behaves like the (s+1)-st order statistic. [CLM11][CLM10] 
+
+---
+
+# DPRIME_SPEC.md
+
+```text
+D′:L1  INPUT: stream a₁…a_m; capacity s≥1; buffer B=∅; cutoff p←1 (always power-of-two). [CLM14][CLM16] :contentReference[oaicite:38]{index=38}
+D′:L2  FOR t=1…m DO                                                               [CLM9] :contentReference[oaicite:39]{index=39}
+D′:L3    if ∃(a_t,·)∈B then delete it                                             [CLM9] :contentReference[oaicite:40]{index=40}
+D′:L4    u ← Unif(0,1)                                                            [CLM9] :contentReference[oaicite:41]{index=41}
+D′:L5    if u ≥ p then continue                                                   [CLM9] :contentReference[oaicite:42]{index=42}
+D′:L6    if |B| < s then insert (a_t,u); continue                                 [CLM9] :contentReference[oaicite:43]{index=43}
+D′:L7    // Buffer full with u<p: apply binary halving guard (may repeat rarely). [CLM12][CLM16] :contentReference[oaicite:44]{index=44}
+D′:L8    REPEAT                                                                   [CLM12] :contentReference[oaicite:45]{index=45}
+D′:L9       // Remove every (a′,u′) with u′ ≥ p/2; then p ← p/2.                  [CLM12] :contentReference[oaicite:46]{index=46}
+D′:L10      B ← { (x,v)∈B : v < p/2 };  p ← p/2                                   [CLM12] :contentReference[oaicite:47]{index=47}
+D′:L11    UNTIL (|B|<s) OR (u ≥ p)  // exact guard from D6′ footnote.             [CLM12] :contentReference[oaicite:48]{index=48}
+D′:L12    if u < p and |B| < s then insert (a_t,u)                                [CLM12] :contentReference[oaicite:49]{index=49}
+D′:L13  END FOR                                                                   [CLM9] :contentReference[oaicite:50]{index=50}
+D′:L14  OUTPUT: R = |B|/p; tail bounds via ε,δ with s choice from theorem.       [CLM16] :contentReference[oaicite:51]{index=51}
+```
+
+**Invariants (assert as you run):**
+
+1. Power-of-two cutoff: `p = 2^{-k}` for some integer `k` at all times. [CLM14] 
+2. Guard correctness: each halving removes all `u′ ≥ p/2`; loop repeats only if `u < new p` *and* `|B| = s`. [CLM12] 
+3. Concentration: with high prob., `p ≥ (s+1)/(4n)` and D6′ almost never repeats (≤ m/2^{s+1}). [CLM16] 
+4. Fairness / last-score law still holds as in D. [CLM9] 
+
+**Footnote (D6′ exact guard, verbatim; cite):**
+“**D6′. [Halve the buffer.] (At this point u < p and |B| = s.) Remove every element (a′, u′) of B for which u′ ≥ p/2; then set p ← p/2. If B hasn’t changed, and if u is still less than the new value of p, repeat this step. Otherwise insert (a, u) into B if u < p. Then go back to step D2.**” 
+
+---
+
+## Notes on claim tags
+
+* The bracket tags `[CLM#…]` refer to entries in your `CLAIMS_LEDGER.md` (row-wise, covering: CVM invariants & halving, unbiasedness/total-variant & δ/2 transfer; D’s Lemma M, unbiasedness `|B|/p`, memory/order-statistic & treap runtime; D′ guard and tail bounds; CVM↔Cutoff view). Source evidence is in the ledger and Knuth’s note.  
+
+If you want me to renumber or bind `[CLM#]` to specific row numbers from your ledger (e.g., `CLM1…CLM17`) I can emit an accompanying `CLAIM_TAGS.json` map.
