@@ -1,0 +1,173 @@
+[
+  {
+    "claim_id": "CLM_CAP_S",
+    "pass": true,
+    "seed": 7,
+    "metrics": {
+      "peak_buffer": 64,
+      "s": 64,
+      "estimate": 960.0
+    }
+  },
+  {
+    "claim_id": "CLM_INIT_P",
+    "pass": true,
+    "seed": 1,
+    "metrics": {
+      "first_p": 1.0
+    }
+  },
+  {
+    "claim_id": "CLM_COST",
+    "pass": true,
+    "seed": 2,
+    "metrics": {
+      "time_per_million_updates_sec": 0.5731105804443359
+    }
+  },
+  {
+    "claim_id": "CLM_FAIR_LAST",
+    "pass": true,
+    "seed": 3,
+    "metrics": {
+      "mismatches": 0,
+      "p_final": 0.05146898079002382
+    }
+  },
+  {
+    "claim_id": "CLM_U_KS",
+    "pass": true,
+    "seed": 4,
+    "metrics": {
+      "chi2": 18.76,
+      "bins": 20,
+      "n": 5000
+    }
+  },
+  {
+    "claim_id": "CLM_ACCEPT_EQ_P",
+    "pass": true,
+    "seed": 5,
+    "metrics": {
+      "emp_rate_prefix": 0.9928571428571429,
+      "prefix_len": 140
+    }
+  },
+  {
+    "claim_id": "CLM_UNIQ",
+    "pass": true,
+    "seed": 6,
+    "metrics": {
+      "peak_buffer": 64
+    }
+  },
+  {
+    "claim_id": "CLM_P_EQ_MAX",
+    "pass": true,
+    "seed": 7,
+    "metrics": {
+      "p_final": 0.054700890025785376,
+      "max_u_in_B": 0.04747115517405209,
+      "diff": 0.007229734851733283
+    }
+  },
+  {
+    "claim_id": "CLM_P_MONO",
+    "pass": true,
+    "seed": 8,
+    "metrics": {
+      "events_tail": [
+        [
+          0,
+          1.0,
+          "init"
+        ],
+        [
+          66,
+          0.5,
+          "cvm_halve"
+        ],
+        [
+          135,
+          0.25,
+          "cvm_halve"
+        ],
+        [
+          296,
+          0.125,
+          "cvm_halve"
+        ],
+        [
+          902,
+          0.0625,
+          "cvm_halve"
+        ],
+        [
+          3875,
+          0.03125,
+          "cvm_halve"
+        ]
+      ]
+    }
+  },
+  {
+    "claim_id": "CLM_UNBIASED",
+    "pass": true,
+    "seed": 9,
+    "metrics": {
+      "mean_error": 2.24,
+      "trials": 100
+    }
+  },
+  {
+    "claim_id": "CLM_SUBS_UNB",
+    "pass": true,
+    "seed": 11,
+    "metrics": {
+      "mean_errors": [
+        -1.76,
+        -16.8
+      ],
+      "abs_diff": 15.040000000000001
+    }
+  },
+  {
+    "claim_id": "CLM_PAC",
+    "pass": true,
+    "seed": 13,
+    "metrics": {
+      "empirical_tail": 0.06,
+      "epsilon": 0.2,
+      "delta": 0.1,
+      "trials": 200
+    }
+  },
+  {
+    "claim_id": "CLM_TAIL_KNUTH",
+    "pass": true,
+    "seed": 17,
+    "metrics": {
+      "empirical_tail": 0.005,
+      "bound": 0.3630326054442876,
+      "epsilon": 0.2,
+      "trials": 200
+    }
+  },
+  {
+    "claim_id": "test_edge_bias_reduction_Dprime_over_D",
+    "pass": false,
+    "metrics": {
+      "exception": "test_edge_bias_reduction_Dprime_over_D() got an unexpected keyword argument 'variant'"
+    },
+    "seed": null
+  },
+  {
+    "claim_id": "CLM_EDGE_M_EQ_D1",
+    "pass": true,
+    "seed": 23,
+    "metrics": {
+      "estimate": 672.0,
+      "true_F0": 512
+    }
+  }
+]

@@ -1,0 +1,67 @@
+{
+  "claims": {
+    "CLM_CAP_S": [
+      "test_memory_cap_s"
+    ],
+    "CLM_INIT_P": [
+      "test_init_p_equals_one"
+    ],
+    "CLM_COST": [
+      "test_one_pass_update_cost"
+    ],
+    "CLM_FAIR_LAST": [
+      "test_last_occurrence_fairness"
+    ],
+    "CLM_U_KS": [
+      "test_uniform_scores_ks"
+    ],
+    "CLM_ACCEPT_EQ_P": [
+      "test_acceptance_rate_equals_p"
+    ],
+    "CLM_UNIQ": [
+      "test_unique_key_buffer"
+    ],
+    "CLM_P_EQ_MAX": [
+      "test_cutoff_equals_max_in_buffer"
+    ],
+    "CLM_P_MONO": [
+      "test_p_monotone_nonincreasing_after_fill"
+    ],
+    "CLM_UNBIASED": [
+      "test_unbiasedness_mean_zero_error"
+    ],
+    "CLM_SUBS_UNB": [
+      "test_subsampling_preserves_unbiasedness"
+    ],
+    "CLM_PAC": [
+      "test_pac_coverage_eps_delta"
+    ],
+    "CLM_TAIL_KNUTH": [
+      "test_tail_bounds_knuth_T_upperbounds"
+    ],
+    "CLM_EDGE_DPRIME": [
+      "test_edge_bias_reduction_Dprime_over_D"
+    ],
+    "CLM_EDGE_M_EQ_D1": [
+      "test_edge_m_eq_D_plus_1"
+    ]
+  },
+  "alg_line_refs": {
+    "CVM": [
+      "CVM:L1",
+      "CVM:L2",
+      "CVM:L9-L13",
+      "CVM:L16"
+    ],
+    "D": [
+      "D:L1",
+      "D:L10-L12",
+      "D:L14"
+    ],
+    "DPRIME": [
+      "D\u2032:L1",
+      "D\u2032:L7-L12",
+      "D\u2032:L14"
+    ]
+  }
+}
