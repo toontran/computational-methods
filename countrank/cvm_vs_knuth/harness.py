@@ -1,10 +1,9 @@
 
 import argparse, json
 from pathlib import Path
-from estimators import Estimator
-from datasets import perm_with_repeats, zipf_stream, adversarial_repeats, edge_m_eq_D_plus_1, true_F0
-from claims import run_all
-import numpy as np
+from .estimators import Estimator
+from .datasets import perm_with_repeats, zipf_stream, adversarial_repeats, edge_m_eq_D_plus_1, true_F0
+from .claims import run_all
 import matplotlib.pyplot as plt
 
 def make_stream(kind, D, m, seed, alpha=1.0):

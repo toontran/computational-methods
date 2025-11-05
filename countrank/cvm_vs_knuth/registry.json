@@ -18,8 +18,8 @@
     "CLM_ACCEPT_EQ_P": [
       "test_acceptance_rate_equals_p"
     ],
-    "CLM_UNIQ": [
-      "test_unique_key_buffer"
+    "CLM_HALVE_BINOM": [
+      "test_cvm_halving_binomial"
     ],
     "CLM_P_EQ_MAX": [
       "test_cutoff_equals_max_in_buffer"
@@ -27,11 +27,20 @@
     "CLM_P_MONO": [
       "test_p_monotone_nonincreasing_after_fill"
     ],
-    "CLM_UNBIASED": [
-      "test_unbiasedness_mean_zero_error"
+    "CLM_TOTAL_UNB": [
+      "test_cvm_total_unbiased"
     ],
-    "CLM_SUBS_UNB": [
-      "test_subsampling_preserves_unbiasedness"
+    "CLM_ORIG_BIAS": [
+      "test_cvm_original_bias_detected"
+    ],
+    "CLM_FUNC_INV": [
+      "test_cvm_functional_invariant"
+    ],
+    "CLM_D_UNBIASED": [
+      "test_knuth_unbiased_monte_carlo"
+    ],
+    "CLM_DPRIME_POW2": [
+      "test_dprime_power_of_two_cutoff"
     ],
     "CLM_PAC": [
       "test_pac_coverage_eps_delta"
@@ -39,8 +48,8 @@
     "CLM_TAIL_KNUTH": [
       "test_tail_bounds_knuth_T_upperbounds"
     ],
-    "CLM_EDGE_DPRIME": [
-      "test_edge_bias_reduction_Dprime_over_D"
+    "CLM_DPRIME_REPEAT": [
+      "test_dprime_repeat_guard_bound"
     ],
     "CLM_EDGE_M_EQ_D1": [
       "test_edge_m_eq_D_plus_1"
