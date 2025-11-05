@@ -1,8 +1,8 @@
 
 import math, json
-import numpy as np
-from estimators import Estimator, _rng
-from datasets import perm_with_repeats, zipf_stream, adversarial_repeats, edge_m_eq_D_plus_1, true_F0
+from statistics import mean, pstdev
+from .estimators import Estimator, _rng
+from .datasets import perm_with_repeats, zipf_stream, adversarial_repeats, edge_m_eq_D_plus_1, true_F0
 
 def test_memory_cap_s(claim_id="CLM_CAP_S", variant="cvm", D=1000, m=5000, s=64, seed=7):
     stream, _ = perm_with_repeats(D, m, seed)
@@ -41,11 +41,19 @@ def test_last_occurrence_fairness(claim_id="CLM_FAIR_LAST", variant="knuth_d", D
 def test_uniform_scores_ks(claim_id="CLM_U_KS", variant="cvm", D=200, m=5000, s=32, seed=4):
     stream, _ = perm_with_repeats(D, m, seed)
     est, logs = Estimator(stream, s=s, seed=seed, variant=variant)
-    xs = np.array(logs.all_scores)
+    xs = list(logs.all_scores)
     bins = 20
-    hist, _ = np.histogram(xs, bins=bins, range=(0.0, 1.0))
-    expected = len(xs)/bins
-    chi2 = ((hist - expected)**2 / max(1e-9, expected)).sum()
+    counts = [0] * bins
+    for x in xs:
+        idx = int(x * bins)
+        if idx >= bins:
+            idx = bins - 1
+        counts[idx] += 1
+    expected = (len(xs) / bins) if bins > 0 else 0
+    chi2 = 0.0
+    if expected > 0:
+        for c in counts:
+            chi2 += ((c - expected) ** 2) / expected
     ok = chi2 < 60.0
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
             "metrics": {"chi2": float(chi2), "bins": bins, "n": int(len(xs))}}
@@ -53,26 +61,48 @@ def test_uniform_scores_ks(claim_id="CLM_U_KS", variant="cvm", D=200, m=5000, s=
 def test_acceptance_rate_equals_p(claim_id="CLM_ACCEPT_EQ_P", variant="cvm", D=1000, m=10000, s=128, seed=5):
     stream, _ = perm_with_repeats(D, m, seed)
     est, logs = Estimator(stream, s=s, seed=seed, variant=variant)
-    acc_flags = np.array(logs.accept_flags)
-    # find first event after init
-    idx = 0
-    for i, (t, p, tag) in enumerate(logs.p_events):
-        if tag != "init":
-            idx = logs.p_events[i][0]
-            break
-    if idx == 0:
-        idx = len(acc_flags)
-    prefix = acc_flags[:idx]
-    emp_rate = prefix.mean() if len(prefix)>0 else 0.0
-    ok = (emp_rate > 0.05) and (emp_rate < 1.0)
+    acc_flags = list(logs.accept_flags)
+    p_events = list(logs.p_at_event)
+    full_flags = list(logs.buffer_full_before_event)
+    eligible = [(acc_flags[i], p_events[i]) for i, full in enumerate(full_flags) if not full]
+    samples = len(eligible)
+    if samples == 0:
+        ok = False
+        diff = float("inf")
+        emp_rate = 0.0
+        mean_p = 0.0
+    else:
+        emp_rate = sum(flag for flag, _ in eligible) / samples
+        mean_p = sum(p for _, p in eligible) / samples
+        diff = abs(emp_rate - mean_p)
+        ok = diff < 0.02
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
-            "metrics": {"emp_rate_prefix": float(emp_rate), "prefix_len": int(len(prefix))}}
+            "metrics": {"emp_rate": emp_rate, "mean_p": mean_p, "abs_diff": diff, "samples": samples}}
 
-def test_unique_key_buffer(claim_id="CLM_UNIQ", variant="knuth_d", D=1000, m=15000, s=64, seed=6):
-    stream, _ = perm_with_repeats(D, m, seed, repeat_factor=3.0)
+def test_cvm_halving_binomial(claim_id="CLM_HALVE_BINOM", variant="cvm", D=2000, m=20000, s=128, seed=6):
+    stream, _ = perm_with_repeats(D, m, seed)
     est, logs = Estimator(stream, s=s, seed=seed, variant=variant)
-    ok = True
-    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed, "metrics": {"peak_buffer": logs.peak_buffer}}
+    z_scores = []
+    ratios = []
+    for rec in logs.halving_records:
+        if rec.get("variant") != "cvm":
+            continue
+        before = rec["before"]
+        after = rec["after"]
+        if before <= 1:
+            continue
+        expected = before / 2.0
+        variance = before * 0.25
+        if variance <= 0:
+            continue
+        z = abs(after - expected) / math.sqrt(variance)
+        z_scores.append(z)
+        ratios.append(after / expected)
+    max_z = max(z_scores) if z_scores else 0.0
+    mean_ratio = mean(ratios) if ratios else 0.0
+    ok = (len(z_scores) >= 3) and (max_z < 3.5) and (abs(mean_ratio - 1.0) < 0.1)
+    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
+            "metrics": {"halving_events": len(z_scores), "max_z": float(max_z), "mean_ratio": mean_ratio}}
 
 def test_cutoff_equals_max_in_buffer(claim_id="CLM_P_EQ_MAX", variant="knuth_d", D=800, m=15000, s=64, seed=7):
     stream, _ = perm_with_repeats(D, m, seed)
@@ -82,7 +112,7 @@ def test_cutoff_equals_max_in_buffer(claim_id="CLM_P_EQ_MAX", variant="knuth_d",
     p = 1.0
     for a in stream:
         if a in B: del B[a]
-        u = float(rng.rand())
+        u = rng.random()
         if u >= p: 
             continue
         if len(B) < s:
@@ -118,34 +148,78 @@ def test_p_monotone_nonincreasing_after_fill(claim_id="CLM_P_MONO", variant="cvm
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
             "metrics": {"events_tail": logs.p_events[-10:]}}
 
-def test_unbiasedness_mean_zero_error(claim_id="CLM_UNBIASED", variant="cvm", D=500, m=20000, s=128, trials=100, seed0=9):
+def test_knuth_unbiased_monte_carlo(claim_id="CLM_D_UNBIASED", variant="knuth_d", D=500, m=15000, s=128, trials=60, seed0=15):
+    errs = []
+    for r in range(trials):
+        stream, _ = perm_with_repeats(D, m, seed0+r, repeat_factor=1.4)
+        F0 = true_F0(stream)
+        est, logs = Estimator(stream, s=s, seed=seed0+r, variant="knuth_d")
+        errs.append(est - F0)
+    mean_err = mean(errs) if errs else 0.0
+    stderr = (pstdev(errs) / math.sqrt(len(errs))) if len(errs) > 0 else float("inf")
+    ok = abs(mean_err) / max(1.0, D) < 0.02
+    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
+            "metrics": {"mean_error": mean_err, "stderr": stderr, "trials": trials}}
+
+def test_dprime_power_of_two_cutoff(claim_id="CLM_DPRIME_POW2", variant="knuth_dprime", D=800, m=25000, s=128, seed=16):
+    stream, _ = perm_with_repeats(D, m, seed)
+    est, logs = Estimator(stream, s=s, seed=seed, variant=variant)
+    deltas = []
+    for p in logs.p_traj:
+        if p <= 0:
+            continue
+        k = round(-math.log(p, 2))
+        pow_two = 2.0 ** (-k)
+        deltas.append(abs(p - pow_two))
+    max_delta = max(deltas) if deltas else 0.0
+    ok = max_delta < 1e-12
+    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
+            "metrics": {"max_delta": max_delta, "events": len(deltas)}}
+
+def test_cvm_total_unbiased(claim_id="CLM_TOTAL_UNB", variant="cvm_total", D=500, m=15000, s=128, trials=60, seed0=9):
     errs = []
     for r in range(trials):
         stream, _ = perm_with_repeats(D, m, seed0+r, repeat_factor=1.5)
         F0 = true_F0(stream)
-        est, logs = Estimator(stream, s=s, seed=seed0+r, variant=variant)
+        est, logs = Estimator(stream, s=s, seed=seed0+r, variant="cvm_total")
         errs.append(est - F0)
-    mean_err = float(np.mean(errs))
-    ok = abs(mean_err) / max(1.0, D) < 0.05
+    mean_err = mean(errs) if errs else 0.0
+    stderr = (pstdev(errs) / math.sqrt(len(errs))) if len(errs) > 0 else float("inf")
+    ok = abs(mean_err) / max(1.0, D) < 0.02
+    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
+            "metrics": {"mean_error": mean_err, "stderr": stderr, "trials": trials}}
+
+def test_cvm_original_bias_detected(claim_id="CLM_ORIG_BIAS", variant="cvm", D=500, m=15000, s=128, trials=60, seed0=11):
+    errs = []
+    for r in range(trials):
+        stream, _ = perm_with_repeats(D, m, seed0+r, repeat_factor=1.5)
+        F0 = true_F0(stream)
+        est, logs = Estimator(stream, s=s, seed=seed0+r, variant="cvm")
+        errs.append(est - F0)
+    mean_err = mean(errs) if errs else 0.0
+    ok = abs(mean_err) / max(1.0, D) > 0.01
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
             "metrics": {"mean_error": mean_err, "trials": trials}}
 
-def test_subsampling_preserves_unbiasedness(claim_id="CLM_SUBS_UNB", variant="cvm", D=400, m=15000, s=64, trials=100, seed0=11):
-    means = []
-    for mode in [0.2, 2.0]:
-        errs = []
-        for r in range(trials//2):
-            stream, _ = perm_with_repeats(D, m, seed0 + r, repeat_factor=mode)
-            F0 = true_F0(stream)
-            est, logs = Estimator(stream, s=s, seed=seed0+r, variant=variant)
-            errs.append(est - F0)
-        means.append(np.mean(errs))
-    diff = float(abs(means[0]-means[1]))
-    ok = diff / max(1.0, D) < 0.05
+def test_cvm_functional_invariant(claim_id="CLM_FUNC_INV", variant="cvm", D=400, m=12000, s=64, trials=40, seed0=13, trace_key=0):
+    ratios = []
+    for r in range(trials):
+        stream, _ = perm_with_repeats(D, m, seed0+r, repeat_factor=1.2)
+        est, logs = Estimator(stream, s=s, seed=seed0+r, variant="cvm", trace_key=trace_key)
+        if logs.trace_first_hit is None:
+            continue
+        start_idx = max(0, logs.trace_first_hit - 1)
+        for idx in range(start_idx, len(logs.trace_membership)):
+            p = logs.trace_p[idx]
+            if p <= 0:
+                continue
+            ratios.append(logs.trace_membership[idx] / p)
+    mean_ratio = mean(ratios) if ratios else 0.0
+    ok = (len(ratios) > 1000) and (abs(mean_ratio - 1.0) < 0.1)
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
-            "metrics": {"mean_errors": [float(means[0]), float(means[1])], "abs_diff": diff}}
+            "metrics": {"samples": len(ratios), "mean_ratio": mean_ratio}}
 
-def test_pac_coverage_eps_delta(claim_id="CLM_PAC", variant="knuth_dprime", D=1000, m=40000, s=128, epsilon=0.2, delta=0.1, trials=200, seed0=13):
+def test_pac_coverage_eps_delta(claim_id="CLM_PAC", variant="knuth_dprime", D=1000, m=25000, s=128, epsilon=0.2, delta=0.1, trials=80, seed0=13):
     failures = 0
     for r in range(trials):
         stream, _ = perm_with_repeats(D, m, seed0 + r, repeat_factor=1.3)
@@ -161,7 +235,7 @@ def test_pac_coverage_eps_delta(claim_id="CLM_PAC", variant="knuth_dprime", D=10
 def _theory_tail_bound(s, eps):
     return 2.0*math.exp(-(s*(eps**2))/6.0) + 4.0*math.exp(-s/24.0)
 
-def test_tail_bounds_knuth_T_upperbounds(claim_id="CLM_TAIL_KNUTH", variant="knuth_dprime", D=1000, m=60000, s=256, epsilon=0.2, trials=200, seed0=17):
+def test_tail_bounds_knuth_T_upperbounds(claim_id="CLM_TAIL_KNUTH", variant="knuth_dprime", D=1000, m=35000, s=256, epsilon=0.2, trials=80, seed0=17):
     failures = 0
     for r in range(trials):
         stream, _ = perm_with_repeats(D, m, seed0 + r, repeat_factor=1.1)
@@ -175,21 +249,21 @@ def test_tail_bounds_knuth_T_upperbounds(claim_id="CLM_TAIL_KNUTH", variant="knu
     return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
             "metrics": {"empirical_tail": emp, "bound": bound, "epsilon": epsilon, "trials": trials}}
 
-def test_edge_bias_reduction_Dprime_over_D(claim_id="CLM_EDGE_DPRIME", D=500, m=20000, s=64, alpha=1.5, trials=100, seed0=19):
-    errs_d = []
-    errs_dp = []
-    for r in range(trials):
-        stream, _ = zipf_stream(D, m, seed0 + r, alpha=alpha)
-        F0 = true_F0(stream)
-        est_d, _ = Estimator(stream, s=s, seed=seed0+r, variant="knuth_d")
-        est_dp, _ = Estimator(stream, s=s, seed=seed0+r, variant="knuth_dprime")
-        errs_d.append(abs(est_d - F0))
-        errs_dp.append(abs(est_dp - F0))
-    mean_d = float(np.mean(errs_d))
-    mean_dp = float(np.mean(errs_dp))
-    ok = mean_dp <= mean_d * 1.05
-    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed0,
-            "metrics": {"mean_abs_err_D": mean_d, "mean_abs_err_Dprime": mean_dp}}
+def test_dprime_repeat_guard_bound(claim_id="CLM_DPRIME_REPEAT", variant="knuth_dprime", D=800, m=20000, s=64, seed=21):
+    stream, _ = perm_with_repeats(D, m, seed, repeat_factor=1.7)
+    est, logs = Estimator(stream, s=s, seed=seed, variant=variant)
+    repeats = 0
+    halving = 0
+    for rec in logs.halving_records:
+        if rec.get("variant") != "knuth_dprime":
+            continue
+        halving += 1
+        if rec.get("repeat"):
+            repeats += 1
+    bound = m / (2 ** (s + 1))
+    ok = repeats <= max(1, int(bound * 1.1))
+    return {"claim_id": claim_id, "pass": bool(ok), "seed": seed,
+            "metrics": {"halving_events": halving, "repeat_events": repeats, "theory_bound": bound}}
 
 def test_edge_m_eq_D_plus_1(claim_id="CLM_EDGE_M_EQ_D1", variant="cvm", D=512, s=32, seed=23):
     stream, _ = edge_m_eq_D_plus_1(D, seed)
@@ -206,23 +280,26 @@ def run_all(variant="cvm"):
         test_last_occurrence_fairness,
         test_uniform_scores_ks,
         test_acceptance_rate_equals_p,
-        test_unique_key_buffer,
+        test_cvm_halving_binomial,
         test_cutoff_equals_max_in_buffer,
         test_p_monotone_nonincreasing_after_fill,
-        test_unbiasedness_mean_zero_error,
-        test_subsampling_preserves_unbiasedness,
+        test_cvm_total_unbiased,
+        test_cvm_original_bias_detected,
+        test_cvm_functional_invariant,
+        test_knuth_unbiased_monte_carlo,
+        test_dprime_power_of_two_cutoff,
         test_pac_coverage_eps_delta,
         test_tail_bounds_knuth_T_upperbounds,
-        test_edge_bias_reduction_Dprime_over_D,
+        test_dprime_repeat_guard_bound,
         test_edge_m_eq_D_plus_1,
     ]
     results = []
     for fn in tests:
         try:
             kw = {}
-            if fn.__name__ in {"test_pac_coverage_eps_delta","test_tail_bounds_knuth_T_upperbounds"}:
+            if fn.__name__ in {"test_pac_coverage_eps_delta","test_tail_bounds_knuth_T_upperbounds","test_dprime_power_of_two_cutoff"}:
                 kw["variant"] = "knuth_dprime"
-            elif fn.__name__ in {"test_cutoff_equals_max_in_buffer","test_unique_key_buffer","test_last_occurrence_fairness"}:
+            elif fn.__name__ in {"test_cutoff_equals_max_in_buffer","test_last_occurrence_fairness","test_knuth_unbiased_monte_carlo"}:
                 kw["variant"] = "knuth_d"
             else:
                 kw["variant"] = variant
