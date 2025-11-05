@@ -1,0 +1,193 @@
+[
+  {
+    "claim_id": "CLM_CAP_S",
+    "pass": true,
+    "seed": 7,
+    "metrics": {
+      "peak_buffer": 64,
+      "s": 64,
+      "estimate": 1051.801277456992
+    }
+  },
+  {
+    "claim_id": "CLM_INIT_P",
+    "pass": true,
+    "seed": 1,
+    "metrics": {
+      "first_p": 1.0
+    }
+  },
+  {
+    "claim_id": "CLM_COST",
+    "pass": true,
+    "seed": 2,
+    "metrics": {
+      "time_per_million_updates_sec": 0.5558967590332031
+    }
+  },
+  {
+    "claim_id": "CLM_FAIR_LAST",
+    "pass": true,
+    "seed": 3,
+    "metrics": {
+      "mismatches": 0,
+      "p_final": 0.05146898079002382
+    }
+  },
+  {
+    "claim_id": "CLM_U_KS",
+    "pass": true,
+    "seed": 4,
+    "metrics": {
+      "chi2": 19.735999999999994,
+      "bins": 20,
+      "n": 5000
+    }
+  },
+  {
+    "claim_id": "CLM_ACCEPT_EQ_P",
+    "pass": true,
+    "seed": 5,
+    "metrics": {
+      "emp_rate_prefix": 0.9928571428571429,
+      "prefix_len": 140
+    }
+  },
+  {
+    "claim_id": "CLM_UNIQ",
+    "pass": true,
+    "seed": 6,
+    "metrics": {
+      "peak_buffer": 64
+    }
+  },
+  {
+    "claim_id": "CLM_P_EQ_MAX",
+    "pass": true,
+    "seed": 7,
+    "metrics": {
+      "p_final": 0.054700890025785376,
+      "max_u_in_B": 0.04747115517405209,
+      "diff": 0.007229734851733283
+    }
+  },
+  {
+    "claim_id": "CLM_P_MONO",
+    "pass": true,
+    "seed": 8,
+    "metrics": {
+      "events_tail": [
+        [
+          4180,
+          0.05920180480396464,
+          "knuth_swap_set_p"
+        ],
+        [
+          4184,
+          0.05795625402583504,
+          "knuth_swap_set_p"
+        ],
+        [
+          4187,
+          0.05565440877701444,
+          "knuth_swap_set_p"
+        ],
+        [
+          4203,
+          0.0543118582948483,
+          "knuth_swap_set_p"
+        ],
+        [
+          5675,
+          0.05422540030546796,
+          "knuth_swap_set_p"
+        ],
+        [
+          5762,
+          0.05364883470048276,
+          "knuth_swap_set_p"
+        ],
+        [
+          5824,
+          0.05224304735925589,
+          "knuth_swap_set_p"
+        ],
+        [
+          17809,
+          0.05097788233205869,
+          "knuth_swap_set_p"
+        ],
+        [
+          17811,
+          0.050165799045060466,
+          "knuth_swap_set_p"
+        ],
+        [
+          17913,
+          0.04989275833479179,
+          "knuth_swap_set_p"
+        ]
+      ]
+    }
+  },
+  {
+    "claim_id": "CLM_UNBIASED",
+    "pass": true,
+    "seed": 9,
+    "metrics": {
+      "mean_error": 2.5081678862442733,
+      "trials": 100
+    }
+  },
+  {
+    "claim_id": "CLM_SUBS_UNB",
+    "pass": true,
+    "seed": 11,
+    "metrics": {
+      "mean_errors": [
+        -3.85615773881496,
+        -14.334932836426463
+      ],
+      "abs_diff": 10.478775097611503
+    }
+  },
+  {
+    "claim_id": "CLM_PAC",
+    "pass": true,
+    "seed": 13,
+    "metrics": {
+      "empirical_tail": 0.06,
+      "epsilon": 0.2,
+      "delta": 0.1,
+      "trials": 200
+    }
+  },
+  {
+    "claim_id": "CLM_TAIL_KNUTH",
+    "pass": true,
+    "seed": 17,
+    "metrics": {
+      "empirical_tail": 0.005,
+      "bound": 0.3630326054442876,
+      "epsilon": 0.2,
+      "trials": 200
+    }
+  },
+  {
+    "claim_id": "test_edge_bias_reduction_Dprime_over_D",
+    "pass": false,
+    "metrics": {
+      "exception": "test_edge_bias_reduction_Dprime_over_D() got an unexpected keyword argument 'variant'"
+    },
+    "seed": null
+  },
+  {
+    "claim_id": "CLM_EDGE_M_EQ_D1",
+    "pass": true,
+    "seed": 23,
+    "metrics": {
+      "estimate": 483.189493780675,
+      "true_F0": 512
+    }
+  }
+]

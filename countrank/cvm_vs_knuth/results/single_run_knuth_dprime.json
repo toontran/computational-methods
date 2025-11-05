@@ -1,0 +1,11 @@
+{
+  "variant": "knuth_dprime",
+  "D": 10000,
+  "m": 100000,
+  "s": 512,
+  "epsilon": 0.1,
+  "delta": 0.05,
+  "estimate": 9696.0,
+  "true_F0": 9984,
+  "time_per_million_updates": 0.614478588104248
+}
