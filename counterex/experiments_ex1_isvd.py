@@ -1,56 +1,255 @@
+#!/usr/bin/env python3
 import sys
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
-# ------------- 1. Define sigma_all -------------
-sigma_coarse = np.concatenate([
-    np.array([0.991, 0.992, 0.995]),
-    np.arange(1.0, 2.0 + 0.2/2, 0.2),   # 1.0, 1.2, ..., 2.0
-    2.0 * (2.0 ** np.arange(1, 11)),    # 4, 8, ..., 2048
-])
+# ============================
+# CONFIG
+# ============================
 
-sigma_refine = np.array([
-    1.04, 1.05, 1.06,
-    1.10, 1.13, 1.15,
-    1.056, 1.057, 1.058, 1.059,
-])
+# Cluster / scheduler config
+NUM_MACHINES = 22    # total number of machine indices (0..21)
 
-sigma_all_list = list(dict.fromkeys(
-    list(sigma_coarse) + list(sigma_refine)
-))
-sigma_all = np.array(sigma_all_list)
-S = sigma_all.size
+# Experiment parameters
+n   = 10000          # matrix size (n x n)
+r   = 1              # target rank
+l   = 1              # number of true singular vectors to track in alignment
+win = 100            # window / block size
+num_exper = 100      # experiments per sigma
 
-# experiments per sigma
-num_exper = 100
+# Spectrum curvature parameters (same idea as MATLAB code)
+n_old     = 1024
+alpha_old = 0.0145
 
-# ------------- 2. Get machine index -------------
-if len(sys.argv) != 2:
-    raise SystemExit("Usage: python <script_name>.py <index>")
 
-M = 22  # number of machines
-m = int(sys.argv[1])
-if not (0 <= m < M):
-    raise SystemExit(f"index must be in [0, {M-1}], got {m}")
+def build_sigma_list():
+    """Build the full sigma array (coarse + refine, deduped, order preserved)."""
+    sigma_coarse = np.concatenate([
+        np.array([0.991, 0.992, 0.995]),
+        np.arange(1.0, 2.0 + 0.2 / 2, 0.2),   # 1.0, 1.2, ..., 2.0
+        2.0 * (2.0 ** np.arange(1, 5)),      # 4, 8, ..., 2048
+    ])
 
-# ------------- 3. Sigma indices assigned to this machine -------------
-assigned_sigma_indices = list(range(m, S, M))
+    # You can edit this refinement list whenever you want
+    # 1) Range 1.0 → 1.1 with step 0.01
+    a = np.arange(1.0, 1.1 + 1e-12, 0.01)
 
-print("\n================ SIGMA CONFIGURATION ================\n")
+    # 2) Explicit list
+    b = np.array([
+        1.04, 1.042, 44, 46, 48, 50, 52, 54, 56, 58, 1.06
+    ])
 
-# Print the full sigma list
-print("[INFO] Full sigma list (sorted):")
-for idx, s in enumerate(sigma_all):
-    print(f"   {idx:3d}: {s:.6f}")
-print(f"\n[INFO] Total sigma count = {S}\n")
+    # Combine, remove duplicates, sort
+    sigma_refine = np.unique(np.concatenate([a, b]))
 
-# Print this machine’s assignment
-print(f"[INFO] Machine index {m} handling {len(assigned_sigma_indices)} sigmas out of {S} total.")
-print("[INFO] Assigned sigma indices:")
-print("   ", assigned_sigma_indices)
+    # Combine, preserve order, drop duplicates
+    sigma_all_list = list(dict.fromkeys(
+        list(sigma_coarse) + list(sigma_refine)
+    ))
+    sigma_all = np.array(sigma_all_list, dtype=float)
+    return sigma_all
 
-print("\n[INFO] Assigned sigma values:")
-for k in assigned_sigma_indices:
-    print(f"   idx {k:3d} → sigma = {sigma_all[k]:.6f}")
 
-print("\n=====================================================\n")
+def build_base_spectrum():
+    """Curvature-preserved base spectrum of length n."""
+    t_new = np.linspace(0.0, 1.0, n)  # n points between 0 and 1
+    base_svec = (1.0 + t_new * (n_old - 1)) ** (-alpha_old)
+    base_svec /= base_svec[0]        # normalize so first entry = 1
+    return base_svec
+
+
+def build_U(n, r_struct):
+    """
+    Build U once (random unit vectors for first r_struct columns,
+    flat columns for the rest), then orthogonalize (QR).
+    """
+    U0 = np.zeros((n, n), dtype=float)
+
+    # First r_struct columns: random unit vectors
+    G = np.random.randn(n, r_struct)
+    G /= np.linalg.norm(G, axis=0, keepdims=True)
+    U0[:, :r_struct] = G
+
+    # Remaining columns: flat = ones/sqrt(n)
+    flat_col = np.ones((n, 1)) / np.sqrt(n)
+    U0[:, r_struct:] = flat_col
+
+    # QR to orthonormalize
+    U, _ = np.linalg.qr(U0, mode="reduced")  # U is n x n
+
+    # Align signs of the first r_struct columns
+    for j in range(r_struct):
+        if np.dot(U[:, j], U0[:, j]) < 0:
+            U[:, j] *= -1.0
+
+    return U
+
+
+def main():
+    # -------------------------
+    # Parse arguments
+    # -------------------------
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: python isvd_worker.py <machine_index>")
+
+    m = int(sys.argv[1])
+    if not (0 <= m < NUM_MACHINES):
+        raise SystemExit(
+            f"machine_index must be in [0, {NUM_MACHINES - 1}], got {m}"
+        )
+
+    # -------------------------
+    # Build global objects
+    # -------------------------
+    sigma_all = build_sigma_list()
+    S = sigma_all.size
+
+    base_svec = build_base_spectrum()
+    U = build_U(n, r_struct=r)
+
+    # denominator in alignment metric (V = I, so this is sqrt(l))
+    denom_align = np.sqrt(l)
+
+    # -------------------------
+    # Assign sigmas to this machine (strided)
+    # -------------------------
+    assigned_sigma_indices = list(range(m, S, NUM_MACHINES))
+
+    # -------------------------
+    # Print sigma config for debugging
+    # -------------------------
+    print("\n================ SIGMA CONFIGURATION ================\n")
+
+    print("[INFO] Full sigma list (index → value):")
+    for idx, s in enumerate(sigma_all):
+        print(f"   {idx:3d}: {s:.6f}")
+    print(f"\n[INFO] Total sigma count = {S}\n")
+
+    print(f"[INFO] Machine index {m} handling {len(assigned_sigma_indices)} "
+          f"sigmas out of {S} total.")
+    print("[INFO] Assigned sigma indices:")
+    print("   ", assigned_sigma_indices)
+
+    print("\n[INFO] Assigned sigma values:")
+    for k in assigned_sigma_indices:
+        print(f"   idx {k:3d} → sigma = {sigma_all[k]:.6f}")
+
+    print("\n=====================================================\n")
+
+    if not assigned_sigma_indices:
+        print("[WARN] No sigmas assigned to this machine, exiting.")
+        return
+
+    # -------------------------
+    # Main loop over assigned sigmas
+    # -------------------------
+    rows_summary = []
+
+    for i in tqdm(assigned_sigma_indices,
+                  desc=f"Machine {m} outer loop (sigma1)", unit="σ"):
+        sigma1 = sigma_all[i]
+
+        # Build spectrum svec with this sigma1
+        svec = base_svec.copy()
+        svec[0] = sigma1
+        S_diag = svec  # diagonal entries of S
+
+        # Optimal tail error and comparator
+        # E_opt = sum s_{r+1:end}^2
+        E_opt = np.sum(S_diag[r:] ** 2)
+        Delta_comp = np.sum(S_diag[:r] ** 2) - np.sum(S_diag[r:2 * r] ** 2)
+
+        # Storage for experiments of this sigma
+        alignment_results = np.zeros(num_exper)
+        top_sval_results  = np.zeros(num_exper)
+        Delta_results     = np.zeros(num_exper)
+        low_sval_indicator = np.zeros(num_exper, dtype=int)
+
+        # A = U * diag(S_diag) (column-wise scaling)
+        A_template = U * S_diag  # broadcasting: each column scaled
+
+        for e in range(num_exper):
+            # Random row permutation per experiment
+            p = np.random.permutation(n)
+            A = A_template[p, :]     # permute rows
+            mA, nA = A.shape
+
+            # Streaming SVD state
+            S_r = None
+            V_r = None
+
+            # Stream over row blocks
+            for start_row in range(0, mA, win):
+                end_row = min(start_row + win, mA)
+                A_block = A[start_row:end_row, :]
+
+                if V_r is None:
+                    # First block: normal SVD, truncate rank r
+                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                        A_block, full_matrices=False
+                    )
+                    S_r = np.diag(s_hat[:r])
+                    V_r = Vt_hat[:r, :].T   # nA x r
+                else:
+                    # B = [ S_r V_r^T ; A_block ]
+                    B_top = S_r @ V_r.T
+                    B = np.vstack([B_top, A_block])
+
+                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                        B, full_matrices=False
+                    )
+                    S_r = np.diag(s_hat[:r])
+                    V_r = Vt_hat[:r, :].T
+
+            # ----- Metrics after full pass -----
+
+            # Alignment:
+            # MATLAB: align = ||V_r(:,1:l)' * V(:,1:l)||_F / denom_align with V = I.
+            # That product just picks the first l rows of V_r (transpose doesn't matter).
+            Vr_first_rows = V_r[:l, :]  # shape (l x r)
+            align = np.linalg.norm(Vr_first_rows, 'fro') / denom_align
+
+            # Top singular value estimate
+            top_sval = float(S_r[0, 0])
+
+            # Error metric
+            E_alg = np.linalg.norm(A - A @ V_r @ V_r.T, 'fro') ** 2
+            Delta = E_alg - E_opt
+
+            alignment_results[e] = align
+            top_sval_results[e]  = top_sval
+            Delta_results[e]     = Delta
+            low_sval_indicator[e] = int(top_sval <= 0.99)
+
+        # Summaries for this sigma
+        mean_align = alignment_results.mean()
+        std_align  = alignment_results.std(ddof=0)
+        mean_sval  = top_sval_results.mean()
+        std_sval   = top_sval_results.std(ddof=0)
+        low_sval_count = int(low_sval_indicator.sum())
+
+        rows_summary.append({
+            "sigma1": sigma1,
+            "mean_align": mean_align,
+            "std_align": std_align,
+            "mean_sval": mean_sval,
+            "std_sval": std_sval,
+            f"count_sval_le_099 (over {num_exper} total)": low_sval_count,
+            "sigma_index": i,
+            "machine_index": m,
+        })
+
+    # -------------------------
+    # Save per-machine summary
+    # -------------------------
+    summary_df = pd.DataFrame(rows_summary)
+    summary_df = summary_df.sort_values("sigma1")
+
+    outfile = f"summary_machine_{m:02d}.csv"
+    summary_df.to_csv(outfile, index=False)
+    print(f"[INFO] Saved summary for machine {m} to {outfile}")
+
+
+if __name__ == "__main__":
+    main()
