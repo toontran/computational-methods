@@ -36,5 +36,21 @@ if not (0 <= m < M):
 # ------------- 3. Sigma indices assigned to this machine -------------
 assigned_sigma_indices = list(range(m, S, M))
 
-print(f"[INFO] Machine index {m} handling {len(assigned_sigma_indices)} sigmas "
-      f"out of {S} total.")
+print("\n================ SIGMA CONFIGURATION ================\n")
+
+# Print the full sigma list
+print("[INFO] Full sigma list (sorted):")
+for idx, s in enumerate(sigma_all):
+    print(f"   {idx:3d}: {s:.6f}")
+print(f"\n[INFO] Total sigma count = {S}\n")
+
+# Print this machine’s assignment
+print(f"[INFO] Machine index {m} handling {len(assigned_sigma_indices)} sigmas out of {S} total.")
+print("[INFO] Assigned sigma indices:")
+print("   ", assigned_sigma_indices)
+
+print("\n[INFO] Assigned sigma values:")
+for k in assigned_sigma_indices:
+    print(f"   idx {k:3d} → sigma = {sigma_all[k]:.6f}")
+
+print("\n=====================================================\n")
