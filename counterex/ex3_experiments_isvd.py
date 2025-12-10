@@ -43,8 +43,17 @@ def build_sigma_list():
     sigma_coarse = np.unique(sigma_coarse)     # sorted
 
     # --- Refinement sigma: 1.01–1.04 step 0.005, plus your extra points ---
-    sigma_refine = np.concatenate([
-        np.arange(1.05, 1.1 + 0.005 / 2, 0.005),
+    sigma_refine = np.array([
+        1.050000,
+        1.052000,
+        1.053500,
+        1.056500,
+        1.058000,
+        1.065500,
+        1.068500,
+        1.0685195,
+        1.0685200,
+        1.0690000,
     ])
 
     # Combine & dedupe & sort
