@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-python experiments_ex1_isvd.py "$1"
+python ex2_experiments_isvd.py "$1"
