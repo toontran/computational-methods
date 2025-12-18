@@ -24,40 +24,27 @@ alpha_old = 0.0145
 
 
 # ============================
-# Sigma construction
+# Sigma construction (USE MATLAB LIST)
 # ============================
 
 def build_sigma_list():
     """
-    Build the full sigma array (coarse + refinement),
-    deduped and sorted ascending, following the MATLAB logic.
+    Build sigma list exactly from the MATLAB explicit list, then unique+sorted.
     """
+    first_svals = np.array([
+        0.991, 0.992, 0.995,
+        1.0, 1.2, 1.4, 1.6, 1.8, 2.0,
+        4, 8, 16, 32, 64,
+        1.010, 1.015, 1.020, 1.025, 1.030, 1.035, 1.040,
+        1.010, 1.015, 1.020, 1.025, 1.030, 1.035, 1.040,
+        1.050, 1.056, 1.057, 1.058, 1.059, 1.060, 1.068500,
+        1.06851955645752,
+        1.06851955646610,
+        1.069, 1.100, 1.130, 1.150
+    ], dtype=float)
 
-    # --- Coarse grid over sigma1 (extended range) ---
-    # first_svals = [0.991, 0.992, 0.995, 1.0:0.2:2.0, 2 * 2.^(1:5)];
-    sigma_coarse = np.concatenate([
-        np.array([0.991, 0.992, 0.995]),
-        np.arange(1.0, 2.0 + 0.2 / 2, 0.2),   # 1.0, 1.2, ..., 2.0
-        2.0 * (2.0 ** np.arange(1, 6)),       # 4, 8, 16, 32, 64
-    ])
-    sigma_coarse = np.unique(sigma_coarse)     # sorted
-
-    # --- Refinement sigma: 1.01–1.04 step 0.005, plus your extra points ---
-    sigma_refine = np.array([
-        1.050000,
-        1.052000,
-        1.053500,
-        1.056500,
-        1.058000,
-        1.065500,
-        1.068500,
-        1.0685195,
-        1.0685200,
-        1.0690000,
-    ])
-
-    # Combine & dedupe & sort
-    sigma_all = np.unique(np.concatenate([sigma_coarse, sigma_refine]))
+    # MATLAB: first_svals = unique(first_svals, 'sorted');
+    sigma_all = np.unique(first_svals)
     return sigma_all.astype(float)
 
 
@@ -79,13 +66,16 @@ def build_base_spectrum():
 def build_U_hadamard_eye():
     """
     Build U with a 2x2 Hadamard block at the top-left and an identity
-    block on R^{n-2}, following the MATLAB structure:
+    block on R^{n-2}, then move the second column to the end.
 
+    Matches MATLAB:
         p = 2
         Q1 = hadamard(2)/sqrt(2)
         Q2 = eye(n-p)
         U0 = blkdiag(Q1, Q2)
-        move second column of U0 to the end
+        k = p-r (=1)
+        cols_to_move = 2:k+1 (=2)
+        new_order = [remain_cols, cols_to_move]
     """
     p = 2
     if p != 2:
@@ -93,23 +83,18 @@ def build_U_hadamard_eye():
 
     # Q1: 2x2 Hadamard (normalized)
     H2 = np.array([[1.0,  1.0],
-                   [1.0, -1.0]])
-    Q1 = H2 / np.sqrt(2.0)   # same as hadamard(2)/sqrt(2)
+                   [1.0, -1.0]], dtype=float)
+    Q1 = H2 / np.sqrt(2.0)
 
     # Q2: identity on R^{n-p}
-    Q2 = np.eye(n - p)
+    Q2 = np.eye(n - p, dtype=float)
 
-    # Block-diagonal U0
-    U0 = np.zeros((n, n))
+    # Block-diagonal U0 = blkdiag(Q1, Q2)
+    U0 = np.zeros((n, n), dtype=float)
     U0[:p, :p] = Q1
     U0[p:, p:] = Q2
 
-    # Move second column of U0 to the end
-    # MATLAB (1-based):
-    #   cols_to_move = 2;
-    #   remain_cols  = setdiff(1:n, cols_to_move);
-    #   new_order    = [remain_cols, cols_to_move];
-    # Python (0-based): move column index 1
+    # Move second column of U0 to the end (Python 0-based: move col 1)
     cols_to_move = [1]
     remain_cols = [j for j in range(n) if j not in cols_to_move]
     new_order = remain_cols + cols_to_move
@@ -159,7 +144,7 @@ def main():
 
     print("[INFO] Full sigma list (index → value):")
     for idx, s in enumerate(sigma_all):
-        print(f"   {idx:3d}: {s:.6f}")
+        print(f"   {idx:3d}: {s:.15g}")
     print(f"\n[INFO] Total sigma count = {S}\n")
 
     print(f"[INFO] Machine index {m} handling {len(assigned_sigma_indices)} "
@@ -169,7 +154,7 @@ def main():
 
     print("\n[INFO] Assigned sigma values:")
     for k in assigned_sigma_indices:
-        print(f"   idx {k:3d} → sigma = {sigma_all[k]:.6f}")
+        print(f"   idx {k:3d} → sigma = {sigma_all[k]:.15g}")
 
     print("\n=====================================================\n")
 
@@ -185,22 +170,23 @@ def main():
     for i in tqdm(assigned_sigma_indices,
                   desc=f"Machine {m} outer loop (sigma1)", unit="σ"):
 
-        sigma1 = sigma_all[i]
+        sigma1 = float(sigma_all[i])
 
         # Build spectrum svec with this sigma1
         svec = base_svec.copy()
         svec[0] = sigma1
         S_diag = svec  # diagonal entries of S
 
-        # Optimal tail error and comparator
-        E_opt = np.sum(S_diag[r:] ** 2)
-        Delta_comp = np.sum(S_diag[:r] ** 2) - np.sum(S_diag[r:2 * r] ** 2)
+        # Optimal tail error and comparator (as in MATLAB)
+        E_opt = float(np.sum(S_diag[r:] ** 2))
+        Delta_comp = float(np.sum(S_diag[:r] ** 2) - np.sum(S_diag[r:2 * r] ** 2))
 
         # Storage for experiments of this sigma
-        alignment_results = np.zeros(num_exper)
-        top_sval_results  = np.zeros(num_exper)
-        Delta_results     = np.zeros(num_exper)
-        low_sval_indicator = np.zeros(num_exper, dtype=int)
+        alignment_results     = np.zeros(num_exper)
+        top_sval_results      = np.zeros(num_exper)
+        relerr_sval_results   = np.zeros(num_exper)   # NEW: plot 2 (relative error)
+        Delta_results         = np.zeros(num_exper)
+        low_sval_indicator    = np.zeros(num_exper, dtype=int)
 
         # A = U * diag(S_diag) (column-wise scaling)
         A_template = U * S_diag  # broadcasting: each column scaled
@@ -222,7 +208,7 @@ def main():
 
                 if V_r is None:
                     # First block: normal SVD, truncate rank r
-                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                    _, s_hat, Vt_hat = np.linalg.svd(
                         A_block, full_matrices=False
                     )
                     S_r = np.diag(s_hat[:r])
@@ -232,7 +218,7 @@ def main():
                     B_top = S_r @ V_r.T
                     B = np.vstack([B_top, A_block])
 
-                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                    _, s_hat, Vt_hat = np.linalg.svd(
                         B, full_matrices=False
                     )
                     S_r = np.diag(s_hat[:r])
@@ -242,48 +228,79 @@ def main():
 
             # Alignment: V = I so this is || first l rows of V_r ||_F / sqrt(l)
             Vr_first_rows = V_r[:l, :]  # shape (l x r)
-            align = np.linalg.norm(Vr_first_rows, 'fro') / denom_align
+            align = float(np.linalg.norm(Vr_first_rows, 'fro') / denom_align)
 
-            # Top singular value estimate
-            top_sval = float(S_r[0, 0])
+            # Final top singular value estimate (raw)
+            top_sval_est = float(S_r[0, 0])
+
+            # Relative error (matches MATLAB: abs(top_sval_est - sigma1)/sigma1)
+            rel_err_sval = float(abs(top_sval_est - sigma1) / sigma1)
 
             # Error metric
-            E_alg = np.linalg.norm(A - A @ V_r @ V_r.T, 'fro') ** 2
-            Delta = E_alg - E_opt
+            E_alg = float(np.linalg.norm(A - A @ V_r @ V_r.T, 'fro') ** 2)
+            Delta = float(E_alg - E_opt)
 
-            alignment_results[e] = align
-            top_sval_results[e]  = top_sval
-            Delta_results[e]     = Delta
-            low_sval_indicator[e] = int(top_sval <= 0.99)
+            # Store
+            alignment_results[e]   = align
+            top_sval_results[e]    = top_sval_est
+            relerr_sval_results[e] = rel_err_sval
+            Delta_results[e]       = Delta
+            low_sval_indicator[e]  = int(top_sval_est <= 0.99)
 
-        # Summaries for this sigma
-        mean_align = alignment_results.mean()
-        std_align  = alignment_results.std(ddof=0)
-        mean_sval  = top_sval_results.mean()
-        std_sval   = top_sval_results.std(ddof=0)
+        # Summaries for this sigma (plot-ready stats)
+        mean_align = float(alignment_results.mean())
+        std_align  = float(alignment_results.std(ddof=0))
+
+        mean_sval = float(top_sval_results.mean())
+        std_sval  = float(top_sval_results.std(ddof=0))
+
+        mean_relerr_sval = float(relerr_sval_results.mean())
+        std_relerr_sval  = float(relerr_sval_results.std(ddof=0))
+
+        mean_Delta = float(Delta_results.mean())
+        std_Delta  = float(Delta_results.std(ddof=0))
+
         low_sval_count = int(low_sval_indicator.sum())
 
         rows_summary.append({
             "sigma1": sigma1,
+
+            # Plot 1
             "mean_align": mean_align,
             "std_align": std_align,
+
+            # Plot 2
+            "mean_relerr_sval": mean_relerr_sval,
+            "std_relerr_sval": std_relerr_sval,
+
+            # Plot 3
+            "low_sval_count": low_sval_count,
+            "num_exper": int(num_exper),
+
+            # Extra (often useful later)
             "mean_sval": mean_sval,
             "std_sval": std_sval,
-            f"count_sval_le_099 (over {num_exper} total)": low_sval_count,
-            "sigma_index": i,
-            "machine_index": m,
+            "E_opt": E_opt,
             "Delta_comp": Delta_comp,
+            "mean_Delta": mean_Delta,
+            "std_Delta": std_Delta,
+
+            "sigma_index": int(i),
+            "machine_index": int(m),
         })
 
     # -------------------------
-    # Save per-machine summary
+    # Save per-machine summaries
     # -------------------------
-    summary_df = pd.DataFrame(rows_summary)
-    summary_df = summary_df.sort_values("sigma1")
+    summary_df = pd.DataFrame(rows_summary).sort_values("sigma1")
 
     outfile = f"summary_machine_ex3_{m:02d}.csv"
     summary_df.to_csv(outfile, index=False)
     print(f"[INFO] Saved summary for machine {m} to {outfile}")
+
+    plotfile = f"plotdata_machine_ex3_{m:02d}.csv"
+    summary_df.to_csv(plotfile, index=False)
+    print(f"[INFO] Saved plot data for machine {m} to {plotfile}")
 
 
 if __name__ == "__main__":

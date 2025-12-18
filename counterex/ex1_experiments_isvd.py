@@ -28,19 +28,18 @@ def build_sigma_list():
     sigma_coarse = np.concatenate([
         np.array([0.991, 0.992, 0.995]),
         np.arange(1.0, 2.0 + 0.2 / 2, 0.2),   # 1.0, 1.2, ..., 2.0
-        2.0 * (2.0 ** np.arange(1, 5)),      # 4, 8, ..., 2048
+        2.0 * (2.0 ** np.arange(1, 5)),      # 4, 8, 16, 32
     ])
 
-    # You can edit this refinement list whenever you want
-    # 1) Range 1.0 → 1.1 with step 0.01
+    # Refinement list(s)
     a = np.arange(1.0, 1.1 + 1e-12, 0.01)
 
-    # 2) Explicit list
+    # NOTE: using YOUR list (unchanged). MATLAB will handle its own list anyway.
     b = np.array([
         1.04, 1.042, 44, 46, 48, 50, 52, 54, 56, 58, 1.06
-    ])
+    ], dtype=float)
 
-    # Combine, remove duplicates, sort
+    # Combine, remove duplicates, sort (fine; MATLAB will transform/plot)
     sigma_refine = np.unique(np.concatenate([a, b]))
 
     # Combine, preserve order, drop duplicates
@@ -148,7 +147,7 @@ def main():
 
     for i in tqdm(assigned_sigma_indices,
                   desc=f"Machine {m} outer loop (sigma1)", unit="σ"):
-        sigma1 = sigma_all[i]
+        sigma1 = float(sigma_all[i])
 
         # Build spectrum svec with this sigma1
         svec = base_svec.copy()
@@ -156,15 +155,15 @@ def main():
         S_diag = svec  # diagonal entries of S
 
         # Optimal tail error and comparator
-        # E_opt = sum s_{r+1:end}^2
-        E_opt = np.sum(S_diag[r:] ** 2)
-        Delta_comp = np.sum(S_diag[:r] ** 2) - np.sum(S_diag[r:2 * r] ** 2)
+        E_opt = float(np.sum(S_diag[r:] ** 2))
+        Delta_comp = float(np.sum(S_diag[:r] ** 2) - np.sum(S_diag[r:2 * r] ** 2))
 
         # Storage for experiments of this sigma
-        alignment_results = np.zeros(num_exper)
-        top_sval_results  = np.zeros(num_exper)
-        Delta_results     = np.zeros(num_exper)
-        low_sval_indicator = np.zeros(num_exper, dtype=int)
+        alignment_results     = np.zeros(num_exper)
+        top_sval_results      = np.zeros(num_exper)
+        relerr_sval_results   = np.zeros(num_exper)     # NEW (matches MATLAB plot 2)
+        Delta_results         = np.zeros(num_exper)
+        low_sval_indicator    = np.zeros(num_exper, dtype=int)
 
         # A = U * diag(S_diag) (column-wise scaling)
         A_template = U * S_diag  # broadcasting: each column scaled
@@ -186,7 +185,7 @@ def main():
 
                 if V_r is None:
                     # First block: normal SVD, truncate rank r
-                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                    _, s_hat, Vt_hat = np.linalg.svd(
                         A_block, full_matrices=False
                     )
                     S_r = np.diag(s_hat[:r])
@@ -196,7 +195,7 @@ def main():
                     B_top = S_r @ V_r.T
                     B = np.vstack([B_top, A_block])
 
-                    U_hat, s_hat, Vt_hat = np.linalg.svd(
+                    _, s_hat, Vt_hat = np.linalg.svd(
                         B, full_matrices=False
                     )
                     S_r = np.diag(s_hat[:r])
@@ -206,50 +205,85 @@ def main():
 
             # Alignment:
             # MATLAB: align = ||V_r(:,1:l)' * V(:,1:l)||_F / denom_align with V = I.
-            # That product just picks the first l rows of V_r (transpose doesn't matter).
+            # That product just picks the first l rows of V_r.
             Vr_first_rows = V_r[:l, :]  # shape (l x r)
-            align = np.linalg.norm(Vr_first_rows, 'fro') / denom_align
+            align = float(np.linalg.norm(Vr_first_rows, 'fro') / denom_align)
 
             # Top singular value estimate
             top_sval = float(S_r[0, 0])
 
-            # Error metric
-            E_alg = np.linalg.norm(A - A @ V_r @ V_r.T, 'fro') ** 2
-            Delta = E_alg - E_opt
+            # Relative error of retrieved top singular value (matches MATLAB)
+            rel_err_sval = float(abs(top_sval - sigma1) / sigma1)
 
-            alignment_results[e] = align
-            top_sval_results[e]  = top_sval
-            Delta_results[e]     = Delta
-            low_sval_indicator[e] = int(top_sval <= 0.99)
+            # Error metric (optional)
+            E_alg = float(np.linalg.norm(A - A @ V_r @ V_r.T, 'fro') ** 2)
+            Delta = float(E_alg - E_opt)
 
-        # Summaries for this sigma
-        mean_align = alignment_results.mean()
-        std_align  = alignment_results.std(ddof=0)
-        mean_sval  = top_sval_results.mean()
-        std_sval   = top_sval_results.std(ddof=0)
+            alignment_results[e]   = align
+            top_sval_results[e]    = top_sval
+            relerr_sval_results[e] = rel_err_sval
+            Delta_results[e]       = Delta
+            low_sval_indicator[e]  = int(top_sval <= 0.99)
+
+        # Summaries for this sigma (plot-ready stats)
+        mean_align = float(alignment_results.mean())
+        std_align  = float(alignment_results.std(ddof=0))
+
+        mean_sval = float(top_sval_results.mean())
+        std_sval  = float(top_sval_results.std(ddof=0))
+
+        mean_relerr_sval = float(relerr_sval_results.mean())
+        std_relerr_sval  = float(relerr_sval_results.std(ddof=0))
+
+        mean_Delta = float(Delta_results.mean())
+        std_Delta  = float(Delta_results.std(ddof=0))
+
         low_sval_count = int(low_sval_indicator.sum())
 
         rows_summary.append({
             "sigma1": sigma1,
+
+            # Plot 1
             "mean_align": mean_align,
             "std_align": std_align,
+
+            # Plot 2
+            "mean_relerr_sval": mean_relerr_sval,
+            "std_relerr_sval": std_relerr_sval,
+
+            # Plot 3
+            "low_sval_count": low_sval_count,
+            "num_exper": int(num_exper),
+
+            # Extra (often useful in analysis)
             "mean_sval": mean_sval,
             "std_sval": std_sval,
-            f"count_sval_le_099 (over {num_exper} total)": low_sval_count,
-            "sigma_index": i,
-            "machine_index": m,
+            "E_opt": E_opt,
+            "Delta_comp": Delta_comp,
+            "mean_Delta": mean_Delta,
+            "std_Delta": std_Delta,
+
+            "sigma_index": int(i),
+            "machine_index": int(m),
         })
 
     # -------------------------
-    # Save per-machine summary
+    # Save per-machine summaries
     # -------------------------
     summary_df = pd.DataFrame(rows_summary)
     summary_df = summary_df.sort_values("sigma1")
 
+    # Keep your original naming (if you want)
     outfile = f"summary_machine_{m:02d}.csv"
     summary_df.to_csv(outfile, index=False)
     print(f"[INFO] Saved summary for machine {m} to {outfile}")
 
+    # Explicit plot-ready file (same content, just clearer intent)
+    plotfile = f"plotdata_machine_{m:02d}.csv"
+    summary_df.to_csv(plotfile, index=False)
+    print(f"[INFO] Saved plot data for machine {m} to {plotfile}")
+
 
 if __name__ == "__main__":
     main()
+    
