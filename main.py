@@ -900,10 +900,11 @@ if __name__ == "__main__":
                 k_default = 50
         window_size = A_csr.shape[0] // 20
     # For comparison with FD
-    window_size = 1
+    
     for k in [k_default]:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:
+            stream_size = size
             # for threshold_factor in [1e1, 1e2, 1e3, 1e4]:
             for threshold_factor in [1e2]:
                 for row_permutation in permutations:
@@ -942,7 +943,7 @@ if __name__ == "__main__":
                                                 name=name,
                                                 figure_dir=figure_dir,
                                                 is_sym_psd=A_is_sym_psd,
-                                                stream_size=size,
+                                                stream_size=stream_size,
                                                 window_size=size,
                                                 col_permutation=None,
                                                 track_reconstruction_error=True,
