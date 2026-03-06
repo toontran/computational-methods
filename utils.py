@@ -1625,12 +1625,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
                 sorted_indices_by_row = []
                 for row in range(k):
                     # Sort window indices by descending absolute value for this row
-                    try:
-                        sorted_indices = np.argsort(-np.abs(Vt[row, window_indices]))
-                    except Exception as e:
-                        import traceback
-                        print(traceback.format_exc())
-                        import pdb;pdb.set_trace()
+                    sorted_indices = np.argsort(-np.abs(Vt[row, window_indices]))
                     sorted_indices_by_row.append(sorted_indices)
                 
                 # Track which elements are already selected

@@ -856,17 +856,17 @@ if __name__ == "__main__":
     random_uniform_streams = [np.random.randint(0, A_csr.shape[0], size=A_csr.shape[0]) for _ in range(5)]
     permutations = {
         # "original": np.arange(A_csr.shape[0]),
-        # "random_uniform": random_uniform_perms[0],
+        "random_uniform": random_uniform_perms[0],
         # "decreasing_norm": np.argsort(weights)[::-1],
         # "increasing_norm": np.argsort(weights)[::1],
         # "decreasing_V2": np.argsort(np.abs(Vt_exact[1,:]))[::-1],
         # "manual_perm": perm,
         # "manual_perm_reverse": perm[::-1],
-        # "random_uniform_2": random_uniform_perms[1],
-        # "random_uniform_3": random_uniform_perms[2],
-        # "random_uniform_4": random_uniform_perms[3],
-        # "random_uniform_5": random_uniform_perms[4],
-        "random_wr": random_uniform_streams[0],
+        "random_uniform_2": random_uniform_perms[1],
+        "random_uniform_3": random_uniform_perms[2],
+        "random_uniform_4": random_uniform_perms[3],
+        "random_uniform_5": random_uniform_perms[4],
+        # "random_wr": random_uniform_streams[0],
     }
 
     # print(Vt_exact[0, permutations["decreasing_V2"][:10]])
@@ -891,13 +891,13 @@ if __name__ == "__main__":
     else:
         print("Large matrix, using larger k")
         k_default = 100 
-        if "stocks" in matrix_name:
-            if np.abs(lengthscale - 2.2361) < 1e-3:
-                k_default = 10
-            elif np.abs(lengthscale - 0.7071) < 1e-3:
-                k_default = 20
-            elif np.abs(lengthscale - 0.2236) < 1e-3:
-                k_default = 50
+        # if "stocks" in matrix_name:
+        #     if np.abs(lengthscale - 2.2361) < 1e-3:
+        #         k_default = 10
+        #     elif np.abs(lengthscale - 0.7071) < 1e-3:
+        #         k_default = 20
+        #     elif np.abs(lengthscale - 0.2236) < 1e-3:
+        #         k_default = 50
         window_size = A_csr.shape[0] // 20
     # For comparison with FD
     
