@@ -853,7 +853,7 @@ if __name__ == "__main__":
     # scipy.io.savemat('perms/matrix_data.mat', {'matrix': permuted_matrix})
     # raise
     random_uniform_perms = [np.random.permutation(A_csr.shape[0]) for i in range(5)]
-    random_uniform_streams = [np.random.randint(0, len(A_csr.shape[0]), size=len(A_csr.shape[0])) for _ in range(5)]
+    random_uniform_streams = [np.random.randint(0, A_csr.shape[0], size=A_csr.shape[0]) for _ in range(5)]
     permutations = {
         # "original": np.arange(A_csr.shape[0]),
         # "random_uniform": random_uniform_perms[0],
@@ -899,7 +899,8 @@ if __name__ == "__main__":
             elif np.abs(lengthscale - 0.2236) < 1e-3:
                 k_default = 50
         window_size = A_csr.shape[0] // 20
-
+    # For comparison with FD
+    window_size = 1
     for k in [k_default]:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:

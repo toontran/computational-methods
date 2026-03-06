@@ -41,9 +41,14 @@ matrices=(
 
     # "kernel_stocks_100000_1.0"
     # "kernel_stocks_100000_10.0"
-    "kernel_stocks_100000_2.2361"
+    # "kernel_stocks_100000_2.2361"
     # "kernel_stocks_100000_0.7071"
-    "kernel_stocks_100000_0.2236"
+    # "kernel_stocks_100000_0.2236"
+
+    "kernel_stocks_5000_10.0"
+    "kernel_stocks_5000_2.2361"
+    "kernel_stocks_5000_0.7071"
+    "kernel_stocks_5000_0.2236"
 
     #"kernel_random_20000_1.0"
     # "kernel_random_20000_5.0"
@@ -64,7 +69,7 @@ matrices=(
 
     #"kernel_swissroll_20000_1.0"
     # "kernel_swissroll_20000_5.0"
-    "kernel_swissroll_20000_10.0"
+    # "kernel_swissroll_20000_10.0"
     # "kernel_swissroll_20000_50.0"
 
     #"kernel_torus_20000_1.0"
@@ -128,7 +133,7 @@ methods=(
     # "isvddemix2"
     # "isvddemix3"
     # "isvdst"
-    # "isvdstG"
+    "isvdstG"
     # "isvddemixst"
     # "isvddemixstG"
 )
