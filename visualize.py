@@ -1219,7 +1219,7 @@ for matrix_size in [matrix_size_default]:
         # for scaling_factor in [10.0]:
         for scaling_factor in default_scaling_factors:
         # for scaling_factor in [2.2361, 0.7071, 0.2236]:
-            if matrix_name_prefix == "kernel_stocks" and :
+            if matrix_name_prefix == "kernel_stocks":
                 if default_scaling_factors not in [1.0, 10.0]:
                     # matrix_size = 10000
                     # matrix_size = 100000
