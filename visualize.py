@@ -1363,7 +1363,7 @@ for matrix_size in [matrix_size_default]:
                                                         elif "thermomech" in matrix_name_prefix:
                                                             size = 10215
                                                         elif matrix_name_prefix in ["kernel_stocks"]:
-                                                            size = 5000
+                                                            size = 100 #5000
                                                         # is_reversed = False
                                                         # matrix_name = "bodyy4"
                                                         # matrix_name = "kronecker_graph_13_0.3"
