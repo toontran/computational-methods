@@ -1166,21 +1166,21 @@ warnings.filterwarnings("ignore")
 
 # for scaling_factor in [-3.0,-2.0, -1.0, 0.0, 1.0, 2.0, 3.0]:
 
-plot_spectrum = False 
+plot_spectrum = True 
 plot_jer_residual = False #
-plot_trace_error = False # 
+plot_trace_error = True # 
 plot_eig_err_heatmap = False
 plot_trace_error_only_log = True
 plot_tr_angles = False
 plot_str_angles_only_log = True
 plot_detailed_iterations = False
-plot_ev_change = False #
+plot_ev_change = True #
 plot_time_elapsed = False 
 plot_regular_residual = True
-plot_reservoir_residual = False
+plot_reservoir_residual = True
 plot_angles = False
 plot_angles_indi = False #
-plot_entropy = False 
+plot_entropy = True 
 plot_wholespace_residual = False
 plot_ws_reg = True
 
@@ -1192,11 +1192,11 @@ entropy_d = {}
 matrix_size_default = 20000
 for matrix_size in [matrix_size_default]:
     # for matrix_name_prefix in ["olafu"]:
-    # for matrix_name_prefix in ["kernel_stocks"]:
+    for matrix_name_prefix in ["kernel_stocks"]:
     # for matrix_name_prefix in ["parabolic_fem", "thermomech_dM", "G2_circuit"]:
     # for matrix_name_prefix in ["hyperboloid",]:
     # for matrix_name_prefix in ["kernel_swissroll", "kernel_random"]:
-    for matrix_name_prefix in ["hyperboloid", "kernel_stocks", "kernel_swissroll",  "kernel_torus"]:
+    # for matrix_name_prefix in ["hyperboloid", "kernel_stocks", "kernel_swissroll",  "kernel_torus"]:
     # for matrix_name_prefix in ["pdb1HYS"]:
     # for matrix_name_prefix in ["msc10848", "bcsstk36", "bcsstk17", "crystm02", "olafu", "bodyy4"]:
     # for matrix_name_prefix in ["crystm02", "olafu", "bodyy4", "pdb1HYS", "Queen_4147", "Flan_1565", "parabolic_fem", "thermomech_dM", "G2_circuit"]:
@@ -1219,29 +1219,30 @@ for matrix_size in [matrix_size_default]:
         # for scaling_factor in [10.0]:
         for scaling_factor in default_scaling_factors:
         # for scaling_factor in [2.2361, 0.7071, 0.2236]:
-            if matrix_name_prefix == "kernel_stocks":
+            if matrix_name_prefix == "kernel_stocks" and :
                 if default_scaling_factors not in [1.0, 10.0]:
                     # matrix_size = 10000
-                        matrix_size = 100000
-                        k_default = 100
+                    # matrix_size = 100000
+                    matrix_size = 5000
+                    k_default = 10
                 elif default_scaling_factors in [1.0, 10.0]:
                     # matrix_size = 10000
-                        matrix_size = 100000
-                        k_default = 100
-                reservoir_size_default = k_default
-            if matrix_name_prefix == "kernel_stocks":
-                if np.abs(scaling_factor - 2.2361) < 1e-3:
+                    # matrix_size = 100000
+                    matrix_size = 5000
                     k_default = 10
-                elif np.abs(scaling_factor - 0.7071) < 1e-3:
-                    k_default = 20
-                elif np.abs(scaling_factor - 0.2236) < 1e-3:
-                    k_default = 50
                 reservoir_size_default = k_default
+            # if matrix_name_prefix == "kernel_stocks":
+            #     if np.abs(scaling_factor - 2.2361) < 1e-3:
+            #         k_default = 10
+            #     elif np.abs(scaling_factor - 0.7071) < 1e-3:
+            #         k_default = 20
+            #     elif np.abs(scaling_factor - 0.2236) < 1e-3:
+            #         k_default = 50
+            #     reservoir_size_default = k_default
             for k in [k_default]:
             # for k in [10, 20, 50, 100, 200, 400, 600, 800, 1000]:
                 # for random_seed in ["", "_2", "_3"]:
                 for random_seed in [""]:
-                    
                     if matrix_name_prefix == "pdb1HYS" and scaling_factor != 1.0:
                         continue
                     if not ("kernel" in matrix_name_prefix or "hyperboloid" in matrix_name_prefix) and scaling_factor != 1.0:
@@ -1331,7 +1332,7 @@ for matrix_size in [matrix_size_default]:
                                                         # plot_wholespace_residual = True
                                                         # plot_jer_residual = True #
                                                         # plot_time_elapsed = True
-                                                        plot_entropy = True 
+                                                        # plot_entropy = True 
                                                         # plot_spectrum = True 
                                                         
                                                         # plot_tr_angles = True
