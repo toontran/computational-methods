@@ -904,7 +904,8 @@ if __name__ == "__main__":
     for k in [k_default]:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:
-            stream_size = size
+            # stream_size = size
+            stream_size = 1
             # for threshold_factor in [1e1, 1e2, 1e3, 1e4]:
             for threshold_factor in [1e2]:
                 for row_permutation in permutations:
