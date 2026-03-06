@@ -1263,7 +1263,7 @@ for matrix_size in [matrix_size_default]:
                     # for name_postfix in ["isvd1by1"]:
                     # for name_postfix in ["isvd1by1new", "isvd1by1", "isvd"]:
                     # for name_postfix in ["isvddemix"]:
-                    for name_postfix in ["isvd", "isvddemix"]:
+                    for name_postfix in ["isvd", "isvdstG"]:
                     # for name_postfix in ["isvd", "isvddemix", "isvdst", "isvdstG", "isvddemixst", "isvddemixstG"]:
                     # for name_postfix in ["isvd", "isvdls", "isvdls2", "isvddemix", "isvddemix2", "isvddemix3"]:
                     # for name_postfix in ["isvddemix2"]:
