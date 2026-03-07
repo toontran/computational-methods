@@ -794,9 +794,8 @@ def save_canonical_angles(Vt, Vt_exact, iteration, dir_path, additional_label=""
     print(f"Canonical angles data saved successfully for iteration {iteration}")
 
 def save_leftout(Vt, S, Vt_exact, A_csr, window_indices, iteration, dir_path):
-    current_total = np.linalg.norm(A_csr[window_indices] @ Vt_exact[:len(Vt),:].T, axis=1) # shape: (window_size,)
-    keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=1) # shape: (window_size,)
-    import pdb;pdb.set_trace()
+    current_total = np.linalg.norm(A_csr[window_indices] @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
+    keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0) # shape: (sketch_size,)
     throw = current_total - keep
 
     # Create directory if it doesn't exist
