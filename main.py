@@ -226,7 +226,7 @@ def get_matrix_properties(matrix_name):
 
 if __name__ == "__main__":
     # Require at least 2 arguments, allow an optional 3rd along with 4th
-    if len(sys.argv) < 3 or len(sys.argv) == 4 or len(sys.argv) > 5:
+    if len(sys.argv) < 3 or len(sys.argv) > 5:
         print("Usage: python main.py <matrix_name> <method> [stream_size] [k]")
         print("Example: python main.py HB/west0067 isvd 500 100")
         sys.exit(1)
