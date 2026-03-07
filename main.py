@@ -225,14 +225,19 @@ def get_matrix_properties(matrix_name):
 
 
 if __name__ == "__main__":
-    # Get the name
-    if len(sys.argv) != 3:
-        print("Usage: python script_name.py <matrix_name> <method>")
-        print("Example: python script_name.py HB/west0067 isvd")
+    # Require at least 2 arguments, allow an optional 3rd along with 4th
+    if len(sys.argv) < 3 or len(sys.argv) == 4 or len(sys.argv) > 5:
+        print("Usage: python main.py <matrix_name> <method> [stream_size] [k]")
+        print("Example: python main.py HB/west0067 isvd 500 100")
         sys.exit(1)
-    
+
     matrix_name = sys.argv[1]
     method = sys.argv[2]
+
+    # Optional parameter
+    stream_size = int(sys.argv[3]) if len(sys.argv) >= 4 else None
+    k = int(sys.argv[4]) if len(sys.argv) == 5 else None
+
     matrix_postfix = matrix_name.split('/')[-1]
     figure_dir = "output"
     url = f'https://suitesparse-collection-website.herokuapp.com/MM/{matrix_name}.tar.gz'
@@ -901,13 +906,13 @@ if __name__ == "__main__":
         window_size = A_csr.shape[0] // 20
     # For comparison with FD
     
-    mem_size = A_csr.shape[1]//10 # Can change later
-    for k in [k_default]:
+    k_list = [k] if k else [k_default]
+    for k in k_list:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:
             # stream_size = size
-            stream_size = 1
-            # stream_size = mem_size - k
+            stream_size = size if not stream_size else stream_size
+            # stream_size = mem_size - k if mem_size else size
             # window_size = mem_size
 
             # for threshold_factor in [1e1, 1e2, 1e3, 1e4]:
