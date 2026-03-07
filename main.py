@@ -235,8 +235,8 @@ if __name__ == "__main__":
     method = sys.argv[2]
 
     # Optional parameter
-    stream_size = int(sys.argv[3]) if len(sys.argv) >= 4 else None
-    k = int(sys.argv[4]) if len(sys.argv) == 5 else None
+    stream_size = int(sys.argv[3]) if len(sys.argv) >= 4 and sys.argv[3].isdigit() else None
+    k = int(sys.argv[4]) if len(sys.argv) == 5 and sys.argv[4].isdigit() else None
 
     matrix_postfix = matrix_name.split('/')[-1]
     figure_dir = "output"
