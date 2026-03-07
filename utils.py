@@ -797,6 +797,8 @@ def save_leftout(Vt, S, Vt_exact, A_csr, window_indices, iteration, dir_path, ad
     current_total = np.linalg.norm(A_csr[window_indices] @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
     keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0) # shape: (sketch_size,)
     throw = current_total - keep
+    if iteration >= 48:
+        import pdb;pdb.set_trace()
 
     # Create directory if it doesn't exist
     os.makedirs(dir_path, exist_ok=True)
