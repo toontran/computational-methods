@@ -793,6 +793,21 @@ def save_canonical_angles(Vt, Vt_exact, iteration, dir_path, additional_label=""
 
     print(f"Canonical angles data saved successfully for iteration {iteration}")
 
+def save_leftout(Vt, S, Vt_exact, A_csr, window_indices, iteration, dir_path):
+    current_total = np.linalg.norm(A_csr[window_indices] * Vt_exact[:len(Vt),:].T, 1) # shape: (,)
+    keep = np.linalg.norm(S * Vt * Vt_exact[:len(Vt), :].T, 1) # shape: (window_size,)
+    throw = current_total - keep
+
+    # Create directory if it doesn't exist
+    os.makedirs(dir_path, exist_ok=True)
+
+    # Save data
+    np.savez(os.path.join(dir_path, f'leftout{additional_label}_data_{iteration}.npz'),
+             iteration=iteration, current_total=current_total, throw=throw,
+             allow_pickle=True)
+
+    print(f"Leftout data saved successfully for iteration {iteration}")
+
 def save_residuals(A_csr, S, Vt,  
                    A_norm, name, iteration, dir_path, is_sym_psd, 
                    row_permutation, start_idx, end_idx,):
@@ -2223,6 +2238,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
         print("Reconstruction quality:", np.linalg.norm(Vt - Vt_exact[:Vt.shape[0], :], 'fro'))
         save_canonical_angles(Vt, Vt_exact, 
                                 j, dir_path)
+        save_leftout(Vt, S, Vt_exact, A_csr, window_indices, j, dir_path)
     if j == W - 1 and track_U and not U_exact is None and not is_sym_psd:
         save_canonical_angles(U.T, U_exact.T, 
                                 j, dir_path, additional_label="_U")

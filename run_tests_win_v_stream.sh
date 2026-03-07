@@ -3,17 +3,7 @@
 # Fixed experiment settings
 matrix_name="kernel_stocks_5000_0.7071"
 method_name="isvd"
-win_size=1000
-
-# Manually specified k values
-k_values=(1 2 4 50 100 200 500 999)
-
-usage() {#!/bin/bash
-
-# Fixed experiment settings
-matrix_name="kernel_stocks_5000_0.7071"
-method_name="isvd"
-mem_size=1000
+mem_size=110
 
 # Manually specified k values
 k_values=(
@@ -21,11 +11,13 @@ k_values=(
     2
     4
     8
-    50
-    100
-    200
-    500
-    999
+    16
+    32
+    64
+    102
+    106
+    108
+    109
 )
 
 usage() {
