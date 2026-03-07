@@ -901,11 +901,15 @@ if __name__ == "__main__":
         window_size = A_csr.shape[0] // 20
     # For comparison with FD
     
+    mem_size = A_csr.shape[1]//10 # Can change later
     for k in [k_default]:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:
             # stream_size = size
             stream_size = 1
+            # stream_size = mem_size - k
+            # window_size = mem_size
+
             # for threshold_factor in [1e1, 1e2, 1e3, 1e4]:
             for threshold_factor in [1e2]:
                 for row_permutation in permutations:
@@ -932,7 +936,9 @@ if __name__ == "__main__":
                                     print(f"{row_permutation}: OG")
                                     name = matrix_postfix + f"_{method}_" + row_permutation + "_"  
                                     name += "true_" if use_true_matrix else "" 
-                                    name += f"size_{size}_k_{k}"
+                                    name += f"size_{size}"
+                                    name += f"_ssize_{stream_size}" if stream_size != size else ""
+                                    name += f"_k_{k}"
                                     name += f"_factor_{threshold_factor}" if threshold_factor != 1e2 else ""
                                     name += f"_reservoir_{reservoir_method}" if reservoir_method != "uniform" else ""
                                     if method == "isvddemix" and reservoir_size != 10 and reservoir_method == "greedy":
