@@ -1424,7 +1424,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
               track_discarded, discarded_list,
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None, reserved=None,
-              use_soft_threshold=False, use_Ghashami=False, dir_path = dir_path):
+              use_soft_threshold=False, use_Ghashami=False, dir_path=""):
     
     if not col_permutation is None:
         next_window = next_window[:, col_permutation]
