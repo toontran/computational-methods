@@ -94,7 +94,7 @@ python3 -u main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a 
     for i in "${!k_values[@]}"; do
         echo "  $i: ${k_values[i]}"
     done
-}
+
 
 # Check argument
 if [ $# -eq 0 ]; then
