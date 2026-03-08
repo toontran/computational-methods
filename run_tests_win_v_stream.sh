@@ -116,7 +116,7 @@ fi
 # Select k
 k="${k_values[$experiment_number]}"
 
-# Create logs directory
+# Create logs directory 
 mkdir -p logs
 
 # Safe log filename

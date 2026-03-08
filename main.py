@@ -882,7 +882,7 @@ if __name__ == "__main__":
     # print(random_uniform_perms[:10])
     # raise
     save_mat = False
-    no_og = False
+    no_og = True
     no_adaptive = False 
     if save_mat:
         import scipy
@@ -1004,7 +1004,7 @@ if __name__ == "__main__":
                                                         is_sym_psd=A_is_sym_psd,
                                                         num_Vs=num_Vs,
                                                         with_S=with_S,
-                                                        stream_size=size,
+                                                        stream_size=stream_size,
                                                         window_size=size,
                                                         k=k,
                                                         track_reconstruction_error=True,
