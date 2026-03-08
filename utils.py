@@ -1449,6 +1449,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
     
     # print(next_window.shape)
     
+    combined = None
     if j == 0:
             # Initial SVD for the first window
         
