@@ -1,6 +1,6 @@
 #!/bin/bash
 
-window_size="1" # 1 if FD v iSVD
+window_size="" # 1 if FD v iSVD
 
 # List of matrices
 matrices=(
@@ -135,7 +135,7 @@ methods=(
     # "isvddemix2"
     # "isvddemix3"
     # "isvdst"
-    "isvdstG"
+    # "isvdstG" # <------ set here
     # "isvddemixst"
     # "isvddemixstG"
 )
