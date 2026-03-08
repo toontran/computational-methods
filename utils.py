@@ -797,8 +797,6 @@ def save_leftout(Vt, S, Vt_exact, combined, iteration, dir_path, additional_labe
     current_total = np.linalg.norm(combined @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
     keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0) # shape: (sketch_size,)
     throw = current_total - keep
-    if iteration >= 48:
-        import pdb;pdb.set_trace()
 
     # Create directory if it doesn't exist
     os.makedirs(dir_path, exist_ok=True)
@@ -4128,8 +4126,8 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         gc.collect()
         print_memory_usage(f"End of iSVD loop, window {j+1}")
     end_time = time.time()
-     
-    ret = [S, Vt]
+    
+    ret = [S, Vt] 
     np.savez(os.path.join(dir_path, f'row_order_final.npz'),
              row_permutation=row_permutation,)
     

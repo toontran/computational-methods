@@ -1,6 +1,6 @@
 #!/bin/bash
 
-window_size="" # 1 if FD v iSVD
+window_size="1" # 1 if FD v iSVD
 
 # List of matrices
 matrices=(
