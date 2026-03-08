@@ -907,6 +907,7 @@ if __name__ == "__main__":
     # For comparison with FD
     
     k_list = [k] if k else [k_default]
+    window_size = stream_size + k if stream_size else window_size
     for k in k_list:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [window_size]:
