@@ -1762,7 +1762,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         
 
     # np.linalg.norm(A_csr[row_permutation[reservoir_idx[0]]] - reservoir[0,:])
-    if Vt_exact:
+    if not Vt_exact is None:
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
         save_leftout(Vt, S, Vt_exact, combined, j, dir_path)
