@@ -793,8 +793,8 @@ def save_canonical_angles(Vt, Vt_exact, iteration, dir_path, additional_label=""
 
     print(f"Canonical angles data saved successfully for iteration {iteration}")
 
-def save_leftout(Vt, S, Vt_exact, A_csr, window_indices, iteration, dir_path, additional_label=""):
-    current_total = np.linalg.norm(A_csr[window_indices] @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
+def save_leftout(Vt, S, Vt_exact, combined, iteration, dir_path, additional_label=""):
+    current_total = np.linalg.norm(combined @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
     keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0) # shape: (sketch_size,)
     throw = current_total - keep
     if iteration >= 48:
@@ -1464,12 +1464,15 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         gc.collect()
         print_memory_usage(f"Before, window {j+1}")
         start_time = time.time()
-        U_sketch, S, Vt = compute_svd(next_window, k, is_sparse=is_sparse)
+        combined = next_window
+        U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
         if not track_U:
             del U_sketch
             gc.collect()
+        del combined
+        gc.collect()
 
         print_memory_usage(f"After SVD, window {j+1}")
         
@@ -1757,9 +1760,12 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         else:
             raise NotImplementedError 
         
+
     # np.linalg.norm(A_csr[row_permutation[reservoir_idx[0]]] - reservoir[0,:])
-    print("\nSubspace angles each eigenvector")
-    print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
+    if Vt_exact:
+        print("\nSubspace angles each eigenvector")
+        print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
+        save_leftout(Vt, S, Vt_exact, combined, j, dir_path)
     return Vt, S, reservoir, reservoir_idx 
 
 
@@ -2240,7 +2246,6 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
         print("Reconstruction quality:", np.linalg.norm(Vt - Vt_exact[:Vt.shape[0], :], 'fro'))
         save_canonical_angles(Vt, Vt_exact, 
                                 j, dir_path)
-        save_leftout(Vt, S, Vt_exact, A_csr, window_indices, j, dir_path)
     if j == W - 1 and track_U and not U_exact is None and not is_sym_psd:
         save_canonical_angles(U.T, U_exact.T, 
                                 j, dir_path, additional_label="_U")
