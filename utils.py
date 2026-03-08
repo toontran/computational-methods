@@ -1449,7 +1449,6 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
     
     # print(next_window.shape)
     
-    combined = None
     if j == 0:
             # Initial SVD for the first window
         
@@ -1472,8 +1471,6 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         if not track_U:
             del U_sketch
             gc.collect()
-        del combined
-        gc.collect()
 
         print_memory_usage(f"After SVD, window {j+1}")
         
@@ -1522,8 +1519,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         if not track_U:
             del U_sketch
             gc.collect()
-        del combined
-        gc.collect()
+        
         print_memory_usage(f"After SVD, window {j+1}")
 
 
@@ -1767,6 +1763,8 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
         save_leftout(Vt, S, Vt_exact, combined, j, dir_path)
+    del combined
+    gc.collect()
     return Vt, S, reservoir, reservoir_idx 
 
 
