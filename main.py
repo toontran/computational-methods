@@ -882,7 +882,7 @@ if __name__ == "__main__":
     # print(random_uniform_perms[:10])
     # raise
     save_mat = False
-    no_og = True
+    no_og = False
     no_adaptive = False 
     if save_mat:
         import scipy
