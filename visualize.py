@@ -1399,7 +1399,7 @@ for (
             elif "thermomech" in matrix_name_prefix:
                 size = 10215
             elif matrix_name_prefix in ["kernel_stocks"]:
-                size = 100 #5000
+                size = 100 #5000, 100
             # is_reversed = False
             # matrix_name = "bodyy4"
             # matrix_name = "kronecker_graph_13_0.3"
@@ -1458,6 +1458,7 @@ for (
                 stream_sizes = mem_size - k_vals
                 # ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
                 ks_and_stream_sizes = [(k, stream_size) for k, stream_size in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
+                size = 110 # TODO: stream vs window sizes
                 old_postfix = postfix
                 for k, stream_size in ks_and_stream_sizes:
                     postfix = old_postfix
