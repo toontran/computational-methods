@@ -2221,7 +2221,7 @@ for matrix_size in [matrix_size_default]:
                                                                         except FileNotFoundError:
                                                                             print(f"File not found: {file_path}")
                                                                     data_list.append([current_totals, current_throws, label]) 
-                                                                        
+                                                                import pdb;pdb.set_trace() 
                                                                 plt.figure(figsize=(12, 6))
                                                                 i = 0
                                                                 for (current_totals, current_throws, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
