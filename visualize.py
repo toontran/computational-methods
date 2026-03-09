@@ -2319,7 +2319,7 @@ for (
                                     current_totals[:, i],
                                     color=colors[i],
                                     linestyle='-',
-                                    marker='o',
+                                    # marker='o',
                                     label=f'Total #{i}'
                                 )
                                 ax.plot(
@@ -2327,7 +2327,7 @@ for (
                                     current_throws[:, i],
                                     color=colors[i],
                                     linestyle='--',
-                                    marker='x',
+                                    # marker='x',
                                     label=f'Throw #{i}'
                                 )
 
@@ -2368,14 +2368,13 @@ for (
                                     windows,
                                     current_totals[:, i],
                                     color=colors[i],
-                                    marker='o',
+                                    # marker='o',
                                     label=f'Eigenvalue #{i}'
                                 )
 
                             ax.legend()
                             ax.set_ylabel("Current total")
                             ax.set_xlabel("Window")
-                            ax.set_xticks(windows)
                             ax.tick_params(axis='x', labelsize=15, labelrotation=45)
                             ax.tick_params(axis='y', labelsize=15)
                             ax.set_title(f"{label}_current_total")
@@ -2394,14 +2393,13 @@ for (
                                     windows,
                                     current_throws[:, i],
                                     color=colors[i],
-                                    marker='o',
+                                    # marker='o',
                                     label=f'Eigenvalue #{i}'
                                 )
 
                             ax.legend()
                             ax.set_ylabel("Cumulative throw")
                             ax.set_xlabel("Window")
-                            ax.set_xticks(windows)
                             ax.tick_params(axis='x', labelsize=15, labelrotation=45)
                             ax.tick_params(axis='y', labelsize=15)
                             ax.set_title(f"{label}_cumulative_throw")
