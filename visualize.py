@@ -1292,6 +1292,8 @@ for (
     reservoir_methods,
     plot_S_quotient_opts,
 ):
+    if name_postfix:
+        name_postfix = "_" + name_postfix
 
     # --- defaults depending on matrix ---
     if matrix_name_prefix in ["Queen_4147", "Flan_1565", "parabolic_fem", "thermomech_dM", "G2_circuit"]:
@@ -1337,9 +1339,6 @@ for (
             ws_residual_figures = []
             method_d_trace_error = {}
             method_d_residuals = {}
-
-            if name_postfix:
-                name_postfix = "_" + name_postfix
 
             reservoir_size = reservoir_size_default
             if not "demix" in name_postfix and reservoir_method == "current_window":
@@ -1566,6 +1565,7 @@ for (
                             except FileNotFoundError:
                                 is_incomplete = True
                                 print(f"File not found: {file_path}")
+                                break
                         
                         if len(Ss) == 0:
                             is_missing = True
@@ -1855,6 +1855,7 @@ for (
                                 ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
                             except FileNotFoundError:
                                 print(f"File not found: {file_path}")
+                                break
 
                         if is_sym_psd:
                             ax.set_ylabel('Residual Norm (sym pd)')
@@ -1907,6 +1908,7 @@ for (
                                     ax.semilogy(S, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
                             except FileNotFoundError:
                                 print(f"File not found: {file_path}")
+                                break
 
                         if not S_exact is None and not rel_A_norm:
                             ax.semilogy(S_exact[:len(S)], label='Exact', color='black', linestyle='--')
@@ -1951,6 +1953,7 @@ for (
                     #                 plt.semilogy(rel_diff, label=label, color=color, alpha=0.7)
                             except FileNotFoundError:
                                 print(f"File not found: {file_path}")
+                                break
 
                         axs[1].set_xlabel('Index')
                         axs[1].set_ylabel('Relative Difference')
@@ -2003,6 +2006,7 @@ for (
                                 
                             except FileNotFoundError:
                                 print(f"File not found: {file_path}")
+                                break
                         
                         ax.set_title(f'Canonical Angles Comparison - Iteration {iteration}')
                         ax.set_ylabel('Values')
@@ -2093,6 +2097,7 @@ for (
                                     # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             
                             reservoir_residuals = pad_and_concatenate(reservoir_residuals, axis=0)
                             regular_residuals = pad_and_concatenate(regular_residuals, axis=0)
@@ -2240,6 +2245,7 @@ for (
                                     # print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             data_list.append([current_totals, current_throws, label]) 
                         
                         combined_log_figures = []
@@ -2426,6 +2432,7 @@ for (
 
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             
                             limit_S = min(10, s_list[0].shape[-1])
                             # limit_S = len(data['S'])
@@ -2518,6 +2525,7 @@ for (
 
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             
                             limit_S = min(10, s_list[0].shape[-1])
                             # limit_S = len(data['S'])
@@ -2594,6 +2602,7 @@ for (
 
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             
                             limit_S = min(10, s_list[0].shape[-1])
                             # limit_S = len(data['S'])
@@ -2682,6 +2691,7 @@ for (
                                 time_elapsed.append(other_info["time_elapsed"])
                             except FileNotFoundError:
                                 print(f"File not found: {file_path}")
+                                break
                         time_elapsed = np.array(time_elapsed)
 
                         # Generate a color map based on number of categories
@@ -2736,6 +2746,7 @@ for (
                             
                         except FileNotFoundError:
                             print(f"File not found: {file_path}")
+                            break
                             # raise
                         entropy = np.array(entropy).squeeze()
                         entropy_d["_".join(matrix_name.split("_")[:-1])] = [entropy, erank, matrix_size, len(S_exact)]
@@ -2785,6 +2796,7 @@ for (
                                     # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
                                 except FileNotFoundError:
                                     print(f"File not found: {file_path}")
+                                    break
                             if plot_ws_reg: 
                                 if plot_ws_quotient:
                                     data_list.append([ws_reg_res_quotient_fros, label])
@@ -2835,7 +2847,7 @@ for (
                         ws_residual_figures.append([current_figure, filename])
                         plt.close()
 
-                        
+
                     # Plot and change y_axis
                     # ev_change_figures = []
                     # trace_error_figures = []
@@ -3098,6 +3110,7 @@ print(incomplete_data)
     #                                 reconstruction_errors = data['reconstruction_errors']
     #                             except FileNotFoundError:
     #                                 print(f"File not found: {file_path}")
+                                    # break
                                 
     #                             i += 1
     #                             # import pdb;pdb.set_trace()
@@ -3295,6 +3308,7 @@ print(incomplete_data)
 #                                         #             raise
 #                                                 except FileNotFoundError:
 #                                                     print(f"File not found: {file_path}")
+                                                    # break
                                             
 #                                             limit_S = min(10, len(data['S']))
 #                                             # limit_S = len(data['S'])
