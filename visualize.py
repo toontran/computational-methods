@@ -2404,10 +2404,7 @@ for matrix_size in [matrix_size_default]:
                                                                                 S = data['C']
                                                                                 # S = 
                                                                                 # S = np.sqrt(1-np.clip(S**2, 0,1)) 
-                                                                                try:
-                                                                                    s = np.linalg.svd(S, compute_uv=False)
-                                                                                except:
-                                                                                    import pdb;pdb.set_trace()
+                                                                                s = np.linalg.svd(S, compute_uv=False)
                                                                                 s = np.sqrt(1-np.clip(s**2, 0,1))
                                                                                 s_list.append(s.reshape(1,-1))
 
