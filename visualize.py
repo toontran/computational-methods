@@ -1307,8 +1307,8 @@ for (
 
     default_scaling_factors = [1.0, 10.0]
     if matrix_name_prefix == "kernel_stocks":
-        default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236] # TODO: FD vs iSVD
-        # default_scaling_factors = [0.7071] # TODO: window vs sketch size
+        # default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236] # TODO: FD vs iSVD
+        default_scaling_factors = [0.7071] # TODO: window vs sketch size
 
     for scaling_factor in default_scaling_factors:
 
@@ -1385,7 +1385,7 @@ for (
                 postfix += f"{reservoir_size}"
             
             size = 100 if k <= 100 else k #k #100
-            stream_size = 1 #size TODO: change to 1 for FD vs iSVD, size for window vs sketch sizes
+            stream_size = 1 #size TODO: change to 1 for FD vs iSVD
             if matrix_name_prefix in ["Queen_4147"]:
                 size = 414711
                 # k = 100
@@ -1456,8 +1456,8 @@ for (
                 k_vals = np.array([1, 2, 4, 8, 16, 32, 64, 102, 106, 108, 109])
                 mem_size = 110
                 stream_sizes = mem_size - k_vals
-                ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
-                # ks_and_stream_sizes = [(k, stream_size) for k, stream_size in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
+                # ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
+                ks_and_stream_sizes = [(k, stream_size) for k, stream_size in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
                 for k, stream_size in ks_and_stream_sizes:
                     postfix = f"_ssize_{stream_size}" + postfix if stream_size != size else postfix
                     matrices = {
