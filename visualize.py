@@ -2217,46 +2217,103 @@ for matrix_size in [matrix_size_default]:
                                                                             iter_num = data['iteration']
                                                                             current_totals.append(current_total)
                                                                             current_throws.append(current_throw)
-                                                                            print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
+                                                                            # print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
                                                                         except FileNotFoundError:
                                                                             print(f"File not found: {file_path}")
                                                                     data_list.append([current_totals, current_throws, label]) 
-                                                                import pdb;pdb.set_trace() 
-                                                                plt.figure(figsize=(12, 6))
-                                                                i = 0
-                                                                for (current_totals, current_throws, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                                                                    i += 1
-                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_totals)), label=f'{label}', linestyle=linestyle, marker=marker,
-                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
-                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_throws)), label=f'{label}', linestyle=linestyle, marker=marker,
-                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
-                                                                plt.ylabel("log leftout")
-                                                                plt.xlabel("Iteration")
-                                                                plt.title(f"(Log) Leftout over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                                                                plt.legend()
-                                                                plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                                                                plt.tight_layout()
-                                                                #plt.show()
-                                                                plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}leftout_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
-                                                                plt.close()
+                                                                
+                                                                combined_log_figures = []
 
-                                                                plt.figure(figsize=(12, 6))
-                                                                i = 0
-                                                                for (current_totals, current_throws, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                                                                    i += 1
-                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_totals)), label=f'{label}', linestyle=linestyle, marker=marker,
-                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
-                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_throws)), label=f'{label}', linestyle=linestyle, marker=marker,
-                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
-                                                                plt.ylabel("leftout")
-                                                                plt.xlabel("Iteration")
-                                                                plt.title(f"Leftout over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                                                                plt.legend()
-                                                                plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                                                                plt.tight_layout()
-                                                                #plt.show()
-                                                                plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}leftout_over_time_{'_'.join(labels[-1].split(' '))}.png")
-                                                                plt.close()
+                                                                for current_totals, current_throws, label in data_list:
+                                                                    current_totals = np.asarray(current_totals)
+                                                                    current_throws = np.asarray(current_throws)
+
+                                                                    fig, ax = plt.subplots(figsize=(12, 8))
+
+                                                                    num_sv = current_totals.shape[1]
+                                                                    windows = np.arange(current_totals.shape[0])
+
+                                                                    color_range = np.linspace(0, 1.0, num_sv)
+                                                                    if num_sv > 2:
+                                                                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                                                                    color_range = np.sort(color_range)
+                                                                    colors = plt.cm.jet(color_range)
+
+                                                                    for i in range(num_sv):
+                                                                        ax.semilogy(
+                                                                            windows,
+                                                                            np.abs(current_totals[:, i]),
+                                                                            color=colors[i],
+                                                                            linestyle='-',
+                                                                            marker='o',
+                                                                            label=f'Total #{i}'
+                                                                        )
+                                                                        ax.semilogy(
+                                                                            windows,
+                                                                            np.abs(current_throws[:, i]),
+                                                                            color=colors[i],
+                                                                            linestyle='--',
+                                                                            marker='x',
+                                                                            label=f'Throw #{i}'
+                                                                        )
+
+                                                                    ax.legend()
+                                                                    ax.set_ylabel("Energy (log scale)")
+                                                                    ax.set_xlabel("Window")
+                                                                    ax.set_title(f"{label}_total_and_throw_log")
+                                                                    ax.grid(True)
+
+                                                                    filename = f"figures/{matrix_name}_total_throw_log_{'_'.join(label.split(' '))}.png"
+                                                                    current_fig = plt.gcf()
+                                                                    combined_log_figures.append([current_fig, filename])
+                                                                    plt.close()
+
+                                                                combined_linear_figures = []
+
+                                                                for current_totals, current_throws, label in data_list:
+                                                                    current_totals = np.asarray(current_totals)
+                                                                    current_throws = np.asarray(current_throws)
+
+                                                                    fig, ax = plt.subplots(figsize=(12, 8))
+
+                                                                    num_sv = current_totals.shape[1]
+                                                                    windows = np.arange(current_totals.shape[0])
+
+                                                                    color_range = np.linspace(0, 1.0, num_sv)
+                                                                    if num_sv > 2:
+                                                                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                                                                    color_range = np.sort(color_range)
+                                                                    colors = plt.cm.jet(color_range)
+
+                                                                    for i in range(num_sv):
+                                                                        ax.plot(
+                                                                            windows,
+                                                                            current_totals[:, i],
+                                                                            color=colors[i],
+                                                                            linestyle='-',
+                                                                            marker='o',
+                                                                            label=f'Total #{i}'
+                                                                        )
+                                                                        ax.plot(
+                                                                            windows,
+                                                                            current_throws[:, i],
+                                                                            color=colors[i],
+                                                                            linestyle='--',
+                                                                            marker='x',
+                                                                            label=f'Throw #{i}'
+                                                                        )
+
+                                                                    ax.legend()
+                                                                    ax.set_ylabel("Energy")
+                                                                    ax.set_xlabel("Window")
+                                                                    ax.set_title(f"{label}_total_and_throw_linear")
+                                                                    ax.grid(True)
+
+                                                                    filename = f"figures/{matrix_name}_total_throw_linear_{'_'.join(label.split(' '))}.png"
+                                                                    current_fig = plt.gcf()
+                                                                    combined_linear_figures.append([current_fig, filename])
+                                                                    plt.close()
+                                                                
 
                                                             if plot_tr_angles:
                                                                 data_list = []
@@ -2732,6 +2789,9 @@ for matrix_size in [matrix_size_default]:
                         # import pdb;pdb.set_trace()
                     if plot_wholespace_residual:
                         set_figures_same_ylim(ws_residual_figures)
+                    if plot_leftout:
+                        set_figures_same_ylim(combined_log_figures)
+                        set_figures_same_ylim(combined_linear_figures)
 
 
                     if method_d_trace_error and method_d_residuals:
