@@ -2260,6 +2260,7 @@ for matrix_size in [matrix_size_default]:
                                                                     ax.legend()
                                                                     ax.set_ylabel("Energy (log scale)")
                                                                     ax.set_xlabel("Window")
+                                                                    ax.tick_params(axis='x', labelrotation=45)
                                                                     ax.set_title(f"{label}_total_and_throw_log")
                                                                     ax.grid(True)
 
@@ -2306,6 +2307,7 @@ for matrix_size in [matrix_size_default]:
                                                                     ax.legend()
                                                                     ax.set_ylabel("Energy")
                                                                     ax.set_xlabel("Window")
+                                                                    ax.tick_params(axis='x', labelrotation=45)
                                                                     ax.set_title(f"{label}_total_and_throw_linear")
                                                                     ax.grid(True)
 
@@ -2347,7 +2349,7 @@ for matrix_size in [matrix_size_default]:
                                                                     ax.set_ylabel("Current total")
                                                                     ax.set_xlabel("Window")
                                                                     ax.set_xticks(windows)
-                                                                    ax.tick_params(axis='x', labelsize=15)
+                                                                    ax.tick_params(axis='x', labelsize=15, labelrotation=45)
                                                                     ax.tick_params(axis='y', labelsize=15)
                                                                     ax.set_title(f"{label}_current_total")
                                                                     ax.grid(True)
@@ -2373,7 +2375,7 @@ for matrix_size in [matrix_size_default]:
                                                                     ax.set_ylabel("Cumulative throw")
                                                                     ax.set_xlabel("Window")
                                                                     ax.set_xticks(windows)
-                                                                    ax.tick_params(axis='x', labelsize=15)
+                                                                    ax.tick_params(axis='x', labelsize=15, labelrotation=45)
                                                                     ax.tick_params(axis='y', labelsize=15)
                                                                     ax.set_title(f"{label}_cumulative_throw")
                                                                     ax.grid(True)
