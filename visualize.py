@@ -1236,7 +1236,8 @@ random_seeds = ["", "_2", "_3"]
 # for name_postfix in ["isvd1by1"]:
 # for name_postfix in ["isvd1by1new", "isvd1by1", "isvd"]:
 # for name_postfix in ["isvddemix"]:
-name_postfixes = ["isvd", "isvdstG"]
+name_postfixes = ["isvd", "isvdstG"] # TODO: FD vs iSVD
+name_postfixes = ["isvd"] # TODO: window vs sketch size
 # name_postfixes = ["isvd", "isvddemix", "isvdst", "isvdstG", "isvddemixst", "isvddemixstG"]
 # name_postfixes = ["isvd", "isvdls", "isvdls2", "isvddemix", "isvddemix2", "isvddemix3"]
 # name_postfixes = ["isvddemix2"]
