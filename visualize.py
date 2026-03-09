@@ -1458,7 +1458,9 @@ for (
                 stream_sizes = mem_size - k_vals
                 # ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
                 ks_and_stream_sizes = [(k, stream_size) for k, stream_size in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
+                old_postfix = postfix
                 for k, stream_size in ks_and_stream_sizes:
+                    postfix = old_postfix
                     postfix = f"_ssize_{stream_size}" + postfix if stream_size != size else postfix
                     matrices = {
                         f'{matrix_name}{matrix_type}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[0], '-', '.'],
