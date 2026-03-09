@@ -1479,12 +1479,12 @@ for (
                     # import pdb;pdb.set_trace()
                     Vs_list = np.unique([min(x, k) for x in num_Vs_list])
                     # import pdb;pdb.set_trace()
-                    matrices.update({
-                    f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[3+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
-                    })
-                    matrices.update({
-                    f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[len(matrices)+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
-                    })
+                    # matrices.update({
+                    # f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[3+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
+                    # })
+                    # matrices.update({
+                    # f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[len(matrices)+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
+                    # })
                     # matrices.update({
                     #     f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type2}_size_{size}{postfix}': [colors[2+i], ':', '*'] for i, num_Vs in enumerate([1,10,100])
                     # })
