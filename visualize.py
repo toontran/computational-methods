@@ -2313,6 +2313,75 @@ for matrix_size in [matrix_size_default]:
                                                                     current_fig = plt.gcf()
                                                                     combined_linear_figures.append([current_fig, filename])
                                                                     plt.close()
+
+                                                                total_figures = []
+                                                                throw_figures = []
+
+                                                                for current_totals, current_throws, label in data_list:
+
+                                                                    current_totals = np.asarray(current_totals)
+                                                                    current_throws = np.asarray(current_throws)
+
+                                                                    num_sv = current_totals.shape[1]
+                                                                    windows = np.arange(current_totals.shape[0])
+
+                                                                    color_range = np.linspace(0, 1.0, num_sv)
+                                                                    if num_sv > 2:
+                                                                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                                                                    color_range = np.sort(color_range)
+                                                                    colors = plt.cm.jet(color_range)
+
+                                                                    # -------- totals plot --------
+                                                                    fig, ax = plt.subplots(figsize=(12, 8))
+
+                                                                    for i in range(num_sv):
+                                                                        ax.plot(
+                                                                            windows,
+                                                                            current_totals[:, i],
+                                                                            color=colors[i],
+                                                                            marker='o',
+                                                                            label=f'Eigenvalue #{i}'
+                                                                        )
+
+                                                                    ax.legend()
+                                                                    ax.set_ylabel("Current total")
+                                                                    ax.set_xlabel("Window")
+                                                                    ax.set_xticks(windows)
+                                                                    ax.tick_params(axis='x', labelsize=15)
+                                                                    ax.tick_params(axis='y', labelsize=15)
+                                                                    ax.set_title(f"{label}_current_total")
+                                                                    ax.grid(True)
+
+                                                                    filename = f"figures/{matrix_name}_current_total_{'_'.join(label.split(' '))}.png"
+                                                                    current_fig = plt.gcf()
+                                                                    total_figures.append([current_fig, filename])
+                                                                    plt.close()
+
+                                                                    # -------- throws plot --------
+                                                                    fig, ax = plt.subplots(figsize=(12, 8))
+
+                                                                    for i in range(num_sv):
+                                                                        ax.plot(
+                                                                            windows,
+                                                                            current_throws[:, i],
+                                                                            color=colors[i],
+                                                                            marker='o',
+                                                                            label=f'Eigenvalue #{i}'
+                                                                        )
+
+                                                                    ax.legend()
+                                                                    ax.set_ylabel("Cumulative throw")
+                                                                    ax.set_xlabel("Window")
+                                                                    ax.set_xticks(windows)
+                                                                    ax.tick_params(axis='x', labelsize=15)
+                                                                    ax.tick_params(axis='y', labelsize=15)
+                                                                    ax.set_title(f"{label}_cumulative_throw")
+                                                                    ax.grid(True)
+
+                                                                    filename = f"figures/{matrix_name}_cumulative_throw_{'_'.join(label.split(' '))}.png"
+                                                                    current_fig = plt.gcf()
+                                                                    throw_figures.append([current_fig, filename])
+                                                                    plt.close()
                                                                 
 
                                                             if plot_tr_angles:
@@ -2792,6 +2861,8 @@ for matrix_size in [matrix_size_default]:
                     if plot_leftout:
                         set_figures_same_ylim(combined_log_figures)
                         set_figures_same_ylim(combined_linear_figures)
+                        set_figures_same_ylim(total_figures)
+                        set_figures_same_ylim(throw_figures)
 
 
                     if method_d_trace_error and method_d_residuals:
