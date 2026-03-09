@@ -1307,7 +1307,8 @@ for (
 
     default_scaling_factors = [1.0, 10.0]
     if matrix_name_prefix == "kernel_stocks":
-        default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236]
+        default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236] # TODO: window vs sketch size
+        default_scaling_factors = [0.7071] # TODO: FD vs iSVD
 
     for scaling_factor in default_scaling_factors:
 
