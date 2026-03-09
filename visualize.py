@@ -1165,42 +1165,42 @@ warnings.filterwarnings("ignore")
 
 # for scaling_factor in [-3.0,-2.0, -1.0, 0.0, 1.0, 2.0, 3.0]:
 
-# plot_spectrum = True 
-# plot_jer_residual = False #
-# plot_trace_error = True # 
-# plot_eig_err_heatmap = False
-# plot_trace_error_only_log = True
-# plot_tr_angles = False
-# plot_str_angles_only_log = True
-# plot_detailed_iterations = False
-# plot_ev_change = True #
-# plot_time_elapsed = False 
-# plot_regular_residual = True
-# plot_reservoir_residual = True
-# plot_angles = False
-# plot_angles_indi = False #
-# plot_entropy = True 
-# plot_wholespace_residual = False
-# plot_ws_reg = True
-# plot_leftout = True
-plot_spectrum = False 
+plot_spectrum = True 
 plot_jer_residual = False #
-plot_trace_error = False # 
+plot_trace_error = True # 
 plot_eig_err_heatmap = False
-plot_trace_error_only_log = False
+plot_trace_error_only_log = True
 plot_tr_angles = False
-plot_str_angles_only_log = False
+plot_str_angles_only_log = True
 plot_detailed_iterations = False
-plot_ev_change = False #
+plot_ev_change = True #
 plot_time_elapsed = False 
-plot_regular_residual = False
-plot_reservoir_residual = False
+plot_regular_residual = True
+plot_reservoir_residual = True
 plot_angles = False
 plot_angles_indi = False #
-plot_entropy = False 
+plot_entropy = True 
 plot_wholespace_residual = False
-plot_ws_reg = False
+plot_ws_reg = True
 plot_leftout = True
+# plot_spectrum = False 
+# plot_jer_residual = False #
+# plot_trace_error = False # 
+# plot_eig_err_heatmap = False
+# plot_trace_error_only_log = False
+# plot_tr_angles = False
+# plot_str_angles_only_log = False
+# plot_detailed_iterations = False
+# plot_ev_change = False #
+# plot_time_elapsed = False 
+# plot_regular_residual = False
+# plot_reservoir_residual = False
+# plot_angles = False
+# plot_angles_indi = False #
+# plot_entropy = False 
+# plot_wholespace_residual = False
+# plot_ws_reg = False
+# plot_leftout = True
 
 missing_data = []
 incomplete_data = []
@@ -1307,8 +1307,8 @@ for (
 
     default_scaling_factors = [1.0, 10.0]
     if matrix_name_prefix == "kernel_stocks":
-        default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236] # TODO: window vs sketch size
-        default_scaling_factors = [0.7071] # TODO: FD vs iSVD
+        default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236] # TODO: FD vs iSVD
+        # default_scaling_factors = [0.7071] # TODO: window vs sketch size
 
     for scaling_factor in default_scaling_factors:
 
