@@ -1166,23 +1166,42 @@ warnings.filterwarnings("ignore")
 
 # for scaling_factor in [-3.0,-2.0, -1.0, 0.0, 1.0, 2.0, 3.0]:
 
-plot_spectrum = True 
+# plot_spectrum = True 
+# plot_jer_residual = False #
+# plot_trace_error = True # 
+# plot_eig_err_heatmap = False
+# plot_trace_error_only_log = True
+# plot_tr_angles = False
+# plot_str_angles_only_log = True
+# plot_detailed_iterations = False
+# plot_ev_change = True #
+# plot_time_elapsed = False 
+# plot_regular_residual = True
+# plot_reservoir_residual = True
+# plot_angles = False
+# plot_angles_indi = False #
+# plot_entropy = True 
+# plot_wholespace_residual = False
+# plot_ws_reg = True
+# plot_leftout = True
+plot_spectrum = False 
 plot_jer_residual = False #
-plot_trace_error = True # 
+plot_trace_error = False # 
 plot_eig_err_heatmap = False
-plot_trace_error_only_log = True
+plot_trace_error_only_log = False
 plot_tr_angles = False
-plot_str_angles_only_log = True
+plot_str_angles_only_log = False
 plot_detailed_iterations = False
-plot_ev_change = True #
+plot_ev_change = False #
 plot_time_elapsed = False 
-plot_regular_residual = True
-plot_reservoir_residual = True
+plot_regular_residual = False
+plot_reservoir_residual = False
 plot_angles = False
 plot_angles_indi = False #
-plot_entropy = True 
+plot_entropy = False 
 plot_wholespace_residual = False
-plot_ws_reg = True
+plot_ws_reg = False
+plot_leftout = True
 
 missing_data = []
 incomplete_data = []
@@ -1214,6 +1233,7 @@ for matrix_size in [matrix_size_default]:
         default_scaling_factors = [1.0, 10.0]
         if matrix_name_prefix == "kernel_stocks":
             default_scaling_factors = [10.0, 2.2361, 0.7071, 0.2236]
+        default_scaling_factors = 0.7071#TODO: Change
         # for scaling_factor in [2.0, 1.5, 1.0, 0.5, 0.0]:
         # for scaling_factor in [1.0, 10.0, 100.0]:
         # for scaling_factor in [10.0]:
@@ -1241,8 +1261,8 @@ for matrix_size in [matrix_size_default]:
             #     reservoir_size_default = k_default
             for k in [k_default]:
             # for k in [10, 20, 50, 100, 200, 400, 600, 800, 1000]:
-                # for random_seed in ["", "_2", "_3"]:
-                for random_seed in [""]:
+                for random_seed in ["", "_2", "_3"]:
+                # for random_seed in [""]:
                     if matrix_name_prefix == "pdb1HYS" and scaling_factor != 1.0:
                         continue
                     if not ("kernel" in matrix_name_prefix or "hyperboloid" in matrix_name_prefix) and scaling_factor != 1.0:
@@ -1350,6 +1370,7 @@ for matrix_size in [matrix_size_default]:
                                                             postfix += f"{reservoir_size}"
                                                         
                                                         size = 100 if k <= 100 else k #k #100
+                                                        stream_size = 1 #size 
                                                         if matrix_name_prefix in ["Queen_4147"]:
                                                             size = 414711
                                                             # k = 100
@@ -1415,7 +1436,10 @@ for matrix_size in [matrix_size_default]:
                                                             # matrices_random[0] = '_random_uniform'
                                                             # matrix_type = '_random_uniform_col_perm'
                                                             colors = plt.cm.rainbow(np.linspace(0, 1, 6))
-                                                            # matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_" + f"size_{size}_k_{k}"
+                                                            # matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_" + f"size_{size}_k_{k}" 
+                                                            
+                                                            # TODO: stream size and k sweep here
+                                                            postfix = f"_ssize_{stream_size}" + postfix if stream_size != size else postfix
                                                             matrices = {
                                                                 f'{matrix_name}{matrix_type}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[0], '-', '.'],
                                                             #     f'{matrix_name}{matrix_type2}_size_{size}{postfix}': [colors[0], ':', 'o'],
@@ -2177,6 +2201,63 @@ for matrix_size in [matrix_size_default]:
                                                                             regular_residuals_figures.append([current_figure, filename])
                                                                             plt.close()
                                                                 
+                                                            if plot_leftout:
+                                                                data_list = []
+                                                                for dir_path, label in zip(dir_paths, labels):
+                                                                    current_totals = []
+                                                                    current_throws = []
+                                                                    current_throw = 0
+                                                                    for iteration in range(last_available_file_number+1):
+                                                                        file_path = os.path.join(dir_path, f'leftout_data_{iteration}.npz')
+                                                                        try:
+                                                                            data = np.load(file_path, allow_pickle=True)
+                                                                            current_total = data['current_total']
+                                                                            throw = data['throw']
+                                                                            current_throw += throw
+                                                                            iter_num = data['iteration']
+                                                                            current_totals.append(current_total)
+                                                                            current_throws.append(current_throw)
+                                                                            print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
+                                                                        except FileNotFoundError:
+                                                                            print(f"File not found: {file_path}")
+                                                                    data_list.append([current_totals, current_throws, label]) 
+                                                                        
+                                                                plt.figure(figsize=(12, 6))
+                                                                i = 0
+                                                                for (current_totals, current_throws, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                                                                    i += 1
+                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_totals)), label=f'{label}', linestyle=linestyle, marker=marker,
+                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
+                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_throws)), label=f'{label}', linestyle=linestyle, marker=marker,
+                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
+                                                                plt.ylabel("log leftout")
+                                                                plt.xlabel("Iteration")
+                                                                plt.title(f"(Log) Leftout over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
+                                                                plt.legend()
+                                                                plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                                                                plt.tight_layout()
+                                                                #plt.show()
+                                                                plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}leftout_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
+                                                                plt.close()
+
+                                                                plt.figure(figsize=(12, 6))
+                                                                i = 0
+                                                                for (current_totals, current_throws, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                                                                    i += 1
+                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_totals)), label=f'{label}', linestyle=linestyle, marker=marker,
+                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
+                                                                    plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs(current_throws)), label=f'{label}', linestyle=linestyle, marker=marker,
+                                                                            color=color, alpha=0.7, markevery=i, markersize=12)
+                                                                plt.ylabel("leftout")
+                                                                plt.xlabel("Iteration")
+                                                                plt.title(f"Leftout over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
+                                                                plt.legend()
+                                                                plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                                                                plt.tight_layout()
+                                                                #plt.show()
+                                                                plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}leftout_over_time_{'_'.join(labels[-1].split(' '))}.png")
+                                                                plt.close()
+
                                                             if plot_tr_angles:
                                                                 data_list = []
                                                                 for dir_path, label in zip(dir_paths, labels):
