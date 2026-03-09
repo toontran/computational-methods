@@ -1370,7 +1370,7 @@ for matrix_size in [matrix_size_default]:
                                                             postfix += f"{reservoir_size}"
                                                         
                                                         size = 100 if k <= 100 else k #k #100
-                                                        stream_size = 1 #size 
+                                                        stream_size = size #size TODO: change to 1 for FD vs iSVD
                                                         if matrix_name_prefix in ["Queen_4147"]:
                                                             size = 414711
                                                             # k = 100
