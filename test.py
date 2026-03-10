@@ -11,52 +11,79 @@ BASE_PREFIX = "kernel_stocks_5000_0.7071_isvd_random_uniform"
 SIZE = 110
 RESERVOIR_METHOD = "greedy"
 
-def load_trace_error_curve(exp_dir):
-    files = glob.glob(os.path.join(exp_dir, "spectrum_data_*.npz"))
-    if not files:
-        return None
+# Choose which scalar whole-space curve to plot:
+#   "ws_reg_2norm" -> whole_space_regular_residuals_2norm   (preferred if available)
+#   "ws_reg_fro"   -> whole_space_regular_residuals_fro
+#   "fallback_l2"  -> np.linalg.norm(approx_residuals, 2) from residuals_data_*.npz
+#   "fallback_max" -> np.max(np.abs(approx_residuals)) from residuals_data_*.npz
+MODE = "ws_reg_2norm"
 
-    file_numbers = sorted(
-        int(re.search(r"spectrum_data_(\d+)\.npz$", os.path.basename(f)).group(1))
-        for f in files
-    )
-
-    # keep only consecutive files starting at 0, matching the original script logic
-    last_consecutive = -1
-    current = 0
-    file_number_set = set(file_numbers)
-    while current in file_number_set:
-        last_consecutive = current
-        current += 1
-
-    if last_consecutive < 0:
-        return None
-
-    Ss = []
-    S_exact = None
-
-    for iteration in range(last_consecutive + 1):
-        path = os.path.join(exp_dir, f"spectrum_data_{iteration}.npz")
-        data = np.load(path, allow_pickle=True)
-        Ss.append(data["S"].reshape(1, -1))
-        S_exact = data["S_exact"]
-
-    Ss = np.concatenate(Ss, axis=0)
-    rank_limit = min(10, Ss.shape[1])
-    tr_S = np.sum(Ss[:, :rank_limit], axis=1)
-    denom = np.sum(S_exact[:rank_limit])
-
-    e_i = np.abs(denom - tr_S) / denom
-    e_i = np.clip(e_i, np.finfo(float).eps, None)
-    return e_i
 
 def parse_ssize_k(folder_name):
     m = re.search(r"_ssize_(\d+)_k_(\d+)_reservoir_", folder_name)
     if not m:
         return None
-    ssize = int(m.group(1))
-    k = int(m.group(2))
-    return ssize, k
+    return int(m.group(1)), int(m.group(2))
+
+
+def list_consecutive_iterations(exp_dir, prefix):
+    files = glob.glob(os.path.join(exp_dir, f"{prefix}_*.npz"))
+    if not files:
+        return []
+
+    nums = []
+    for f in files:
+        m = re.search(rf"{re.escape(prefix)}_(\d+)\.npz$", os.path.basename(f))
+        if m:
+            nums.append(int(m.group(1)))
+    nums = sorted(set(nums))
+
+    consecutive = []
+    j = 0
+    numset = set(nums)
+    while j in numset:
+        consecutive.append(j)
+        j += 1
+    return consecutive
+
+
+def load_wholespace_curve(exp_dir, mode="ws_reg_2norm"):
+    # First try the exact whole-space residual files used by plot_wholespace_residual
+    reservoir_iters = list_consecutive_iterations(exp_dir, "reservoir_residuals_data")
+
+    if reservoir_iters and mode in {"ws_reg_2norm", "ws_reg_fro"}:
+        curve = []
+        field = (
+            "whole_space_regular_residuals_2norm"
+            if mode == "ws_reg_2norm"
+            else "whole_space_regular_residuals_fro"
+        )
+        for j in reservoir_iters:
+            data = np.load(os.path.join(exp_dir, f"reservoir_residuals_data_{j}.npz"), allow_pickle=True)
+            curve.append(float(data[field]))
+        return np.asarray(curve), f"exact:{field}"
+
+    # Fallback: aggregate the saved per-vector residuals
+    residual_iters = list_consecutive_iterations(exp_dir, "residuals_data")
+    if not residual_iters:
+        return None, None
+
+    curve = []
+    for j in residual_iters:
+        data = np.load(os.path.join(exp_dir, f"residuals_data_{j}.npz"), allow_pickle=True)
+        r = np.asarray(data["approx_residuals"]).reshape(-1)
+
+        if mode == "fallback_max":
+            value = np.max(np.abs(r))
+        else:
+            # default fallback
+            value = np.linalg.norm(r, 2)
+
+        curve.append(float(value))
+
+    label = "fallback:max(approx_residuals)" if mode == "fallback_max" else "fallback:l2(approx_residuals)"
+    return np.asarray(curve), label
+
 
 all_folders = [
     d for d in os.listdir(OUTPUT_DIR)
@@ -73,37 +100,41 @@ for folder in all_folders:
     if ssize + k == SIZE:
         selected.append((ssize, k, folder))
 
-selected.sort(key=lambda x: x[0])  # sort by ssize
+selected.sort(key=lambda x: x[0])
 
 plt.figure(figsize=(12, 8))
+used_source_kind = None
 
 for ssize, k, folder in selected:
     exp_dir = os.path.join(OUTPUT_DIR, folder)
-    curve = load_trace_error_curve(exp_dir)
+    curve, source_kind = load_wholespace_curve(exp_dir, mode=MODE)
     if curve is None:
-        print(f"Skipping {folder}: no usable spectrum_data_*.npz")
+        print(f"Skipping {folder}: no usable residual files found")
         continue
 
-    x = np.arange(1, len(curve) + 1)   # avoid 0 for log scale
+    if used_source_kind is None:
+        used_source_kind = source_kind
 
-    plt.loglog(
-        x,
+    curve = np.clip(curve, np.finfo(float).eps, None)
+
+    plt.semilogy(
+        np.arange(len(curve)),
         curve,
         marker="o",
         label=f"ssize={ssize}, k={k}"
     )
 
 plt.xlabel("Window index")
-plt.ylabel("Relative trace error")
-plt.title(f"{BASE_PREFIX}, size={SIZE}, reservoir={RESERVOIR_METHOD}")
+plt.ylabel("Whole-space residual")
+plt.title(f"{BASE_PREFIX}, size={SIZE}, reservoir={RESERVOIR_METHOD}\nsource={used_source_kind}")
 plt.grid(True, which="both", linestyle="--", alpha=0.5)
-plt.legend(fontsize=9, ncol=2)
+plt.legend(fontsize=8, ncol=2)
 plt.tight_layout()
 
 os.makedirs(FIG_DIR, exist_ok=True)
 save_path = os.path.join(
     FIG_DIR,
-    f"{BASE_PREFIX}_size_{SIZE}_all_ssize_k_sum_{SIZE}_error_over_time_log_compare.png"
+    f"{BASE_PREFIX}_size_{SIZE}_all_ssize_k_sum_{SIZE}_ws_residual_compare_{MODE}.png"
 )
 plt.savefig(save_path, bbox_inches="tight", dpi=200)
 plt.show()
