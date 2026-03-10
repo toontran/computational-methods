@@ -1625,9 +1625,8 @@ for (
                     if plot_ev_change:
                         if plot_S_quotient:
                             Ss = Ss_quotient
-                        num_evs = 10
                         try:
-                            err_mat = np.abs(data['S_exact'][:len(data['S'])].reshape(1,-1) - Ss[:,:len(data['S'])])/data['S_exact'][:num_evs]
+                            err_mat = np.abs(data['S_exact'][:len(data['S'])].reshape(1,-1) - Ss[:,:len(data['S'])])/data['S_exact'][:len(data['S'])]
                         except:
                             import pdb;pdb.set_trace()
                         err_mat = err_mat.real
@@ -2079,7 +2078,7 @@ for (
                         regular_residuals = []
                         reservoir_residuals_quotient = []
                         regular_residuals_quotient = []
-                        num_ev = 10
+                        num_ev = len(data['S'])
                         fig, ax = plt.subplots(figsize=(8, 6))
                         for iteration in range(last_available_file_number+1):
                             # Load data
