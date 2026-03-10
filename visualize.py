@@ -1264,6 +1264,7 @@ error_kinds = ["both"]
 reservoir_methods = ["greedy"]
 
 plot_S_quotient_opts = [True, False]
+# plot_S_quotient_opts = [True, False]
 
 
 for (
@@ -1626,7 +1627,7 @@ for (
                             Ss = Ss_quotient
                         num_evs = 10
                         try:
-                            err_mat = np.abs(data['S_exact'][:num_evs].reshape(1,-1) - Ss[:,:num_evs])/data['S_exact'][:num_evs]
+                            err_mat = np.abs(data['S_exact'][:len(data['S'])].reshape(1,-1) - Ss[:,:len(data['S'])])/data['S_exact'][:num_evs]
                         except:
                             import pdb;pdb.set_trace()
                         err_mat = err_mat.real
