@@ -1457,8 +1457,9 @@ for (
                 k_vals = np.array([1, 2, 4, 8, 16, 32, 64, 102, 106, 108, 109])
                 mem_size = 110
                 stream_sizes = mem_size - k_vals
+                print("Stream_sizes = ", stream_sizes)
                 # ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
-                ks_and_stream_sizes = [(k, stream_size) for k, stream_size in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
+                ks_and_stream_sizes = [(k_, stream_size_) for k_, stream_size_ in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
                 size = 110 # TODO: stream vs window sizes
                 old_postfix = postfix
                 for k, stream_size in ks_and_stream_sizes:
