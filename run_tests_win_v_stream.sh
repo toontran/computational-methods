@@ -2,14 +2,14 @@
 
 # Fixed experiment settings
 method_name="isvd"
-mem_size=110
+mem_size=129
 
 # List of matrices
 matrices=(
     # "kernel_stocks_1000_0.7071"
-    "bad_case1_1024"
-    "bad_case2_1024"
-    "bad_case3_1024"
+    "bad_case1_1000"
+    "bad_case2_1000"
+    "bad_case3_1000"
 )
 
 # Manually specified k values
@@ -28,8 +28,7 @@ k_values=(
     1
     8
     64
-    102
-    109
+    128
 )
 
 usage() {

@@ -320,7 +320,7 @@ if __name__ == "__main__":
         np.random.seed(10)
 
         _, _, N = matrix_name.split("_")
-        N, rank = int(N), k if k is not None else 10
+        N, rank = int(N), k if k is not None else 8
 
         # Top r vectors: spread
         U_top = np.random.randn(N, rank)
@@ -353,7 +353,7 @@ if __name__ == "__main__":
         np.random.seed(10)
 
         _, _, N = matrix_name.split("_")
-        N, rank = int(N), k if k is not None else 10
+        N, rank = int(N), k if k is not None else 8
 
         # Concentrated top block (Hadamard-style)
         if rank == 1:
@@ -392,7 +392,7 @@ if __name__ == "__main__":
         np.random.seed(10)
 
         _, _, N = matrix_name.split("_")
-        N, rank = int(N), k if k is not None else 10
+        N, rank = int(N), k if k is not None else 8
 
         # Concentrated top block (Hadamard-style)
         if rank == 1:
