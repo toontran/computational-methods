@@ -7,9 +7,9 @@ mem_size=110
 # List of matrices
 matrices=(
     # "kernel_stocks_1000_0.7071"
-    "bad_case1_1000"
-    "bad_case2_1000"
-    "bad_case3_1000"
+    "bad_case1_1024"
+    "bad_case2_1024"
+    "bad_case3_1024"
 )
 
 # Manually specified k values

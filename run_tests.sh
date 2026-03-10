@@ -52,9 +52,9 @@ matrices=(
     # "kernel_stocks_1000_0.7071"
     # "kernel_stocks_1000_0.2236"
 
-    "bad_case1_1000"
-    "bad_case2_1000"
-    "bad_case3_1000"
+    "bad_case1_1024"
+    "bad_case2_1024"
+    "bad_case3_1024"
 
     #"kernel_random_20000_1.0"
     # "kernel_random_20000_5.0"
