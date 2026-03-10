@@ -84,8 +84,10 @@ for ssize, k, folder in selected:
         print(f"Skipping {folder}: no usable spectrum_data_*.npz")
         continue
 
-    plt.semilogy(
-        np.arange(len(curve)),
+    x = np.arange(1, len(curve) + 1)   # avoid 0 for log scale
+
+    plt.loglog(
+        x,
         curve,
         marker="o",
         label=f"ssize={ssize}, k={k}"
