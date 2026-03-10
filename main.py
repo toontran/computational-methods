@@ -301,6 +301,7 @@ if __name__ == "__main__":
         A_is_sym_psd = True
     elif "synthetic" in matrix_name:
         np.random.seed(10)
+        # input (you can change this)
         _, N, rank = matrix_name.split("_")  
         N, rank = int(N), int(rank)
 
@@ -310,6 +311,8 @@ if __name__ == "__main__":
         S = np.linspace(1, 15, N)**2
         Q = Q[:, :rank]
         S = S[:rank]
+
+        # Must be defined
         title = ""
         A_csr = Q @ np.diag(S) @ Q.T
         A_is_sym_psd = True
@@ -882,7 +885,7 @@ if __name__ == "__main__":
     # print(random_uniform_perms[:10])
     # raise
     save_mat = False
-    no_og = False
+    no_og = True
     no_adaptive = False 
     if save_mat:
         import scipy
@@ -990,7 +993,9 @@ if __name__ == "__main__":
                                             name = matrix_postfix + f"_{method}_" + f"Vapprox{'_withS' if with_S else ''}_{num_Vs}_" + row_permutation + "_" 
                                             name += "reversed_" if is_reversed else "" 
                                             name += "true_" if use_true_matrix else ""
-                                            name += f"size_{size}_k_{k}"
+                                            name += f"size_{size}"
+                                            name += f"_ssize_{stream_size}" if stream_size != size else ""
+                                            name += f"_k_{k}"
                                             name += f"_factor_{threshold_factor}" if threshold_factor != 1e2 else ""
                                             name += f"_reservoir_{reservoir_method}" if reservoir_method != "uniform" else ""
                                             if method == "isvddemix" and reservoir_size != 10 and reservoir_method == "greedy":
