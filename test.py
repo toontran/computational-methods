@@ -4,72 +4,109 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
-BASE_DIR = "figures"
+OUTPUT_DIR = "output"
+FIG_DIR = "figures"
 
-# Fixed setting requested
-PREFIX = "log_stocks_5000_0.7071_isvd_random_uniform"
+BASE_PREFIX = "kernel_stocks_5000_0.7071_isvd_random_uniform"
 SIZE = 110
+RESERVOIR_METHOD = "greedy"
 
-# Match folders like:
-# figures/log_stocks_5000_0.7071_isvd_random_uniform_size_110_ssize_46_k_64_reservoir_greedy/
-folder_re = re.compile(
-    rf"^{re.escape(PREFIX)}_size_{SIZE}_ssize_(\d+)_k_(\d+)_reservoir_greedy$"
-)
-
-def load_relative_trace_error(folder):
-    files = sorted(
-        glob.glob(os.path.join(folder, "spectrum_data_*.npz")),
-        key=lambda x: int(os.path.splitext(os.path.basename(x))[0].split("_")[-1])
-    )
+def load_trace_error_curve(exp_dir):
+    files = glob.glob(os.path.join(exp_dir, "spectrum_data_*.npz"))
     if not files:
         return None
 
-    e = []
-    for f in files:
-        data = np.load(f)
-        S = data["S"]
+    file_numbers = sorted(
+        int(re.search(r"spectrum_data_(\d+)\.npz$", os.path.basename(f)).group(1))
+        for f in files
+    )
+
+    # keep only consecutive files starting at 0, matching the original script logic
+    last_consecutive = -1
+    current = 0
+    file_number_set = set(file_numbers)
+    while current in file_number_set:
+        last_consecutive = current
+        current += 1
+
+    if last_consecutive < 0:
+        return None
+
+    Ss = []
+    S_exact = None
+
+    for iteration in range(last_consecutive + 1):
+        path = os.path.join(exp_dir, f"spectrum_data_{iteration}.npz")
+        data = np.load(path, allow_pickle=True)
+        Ss.append(data["S"].reshape(1, -1))
         S_exact = data["S_exact"]
 
-        limit_S = min(10, len(S))
-        denom = np.sum(S_exact[:limit_S])
-        if denom == 0:
-            e.append(np.nan)
-        else:
-            tr_S = np.sum(S[:limit_S])
-            e.append(np.abs(np.sum(S_exact[:limit_S]) - tr_S) / denom)
-    return np.asarray(e)
+    Ss = np.concatenate(Ss, axis=0)
+    rank_limit = min(10, Ss.shape[1])
+    tr_S = np.sum(Ss[:, :rank_limit], axis=1)
+    denom = np.sum(S_exact[:rank_limit])
 
-curves = []
+    e_i = np.abs(denom - tr_S) / denom
+    e_i = np.clip(e_i, np.finfo(float).eps, None)
+    return e_i
 
-for path in glob.glob(os.path.join(BASE_DIR, f"{PREFIX}_size_{SIZE}_ssize_*_k_*_reservoir_greedy")):
-    name = os.path.basename(path.rstrip("/\\"))
-    m = folder_re.match(name)
+def parse_ssize_k(folder_name):
+    m = re.search(r"_ssize_(\d+)_k_(\d+)_reservoir_", folder_name)
     if not m:
-        continue
-
+        return None
     ssize = int(m.group(1))
     k = int(m.group(2))
+    return ssize, k
 
-    if ssize + k != SIZE:
+all_folders = [
+    d for d in os.listdir(OUTPUT_DIR)
+    if d.startswith(f"{BASE_PREFIX}_size_{SIZE}_ssize_")
+    and d.endswith(f"_reservoir_{RESERVOIR_METHOD}")
+]
+
+selected = []
+for folder in all_folders:
+    parsed = parse_ssize_k(folder)
+    if parsed is None:
+        continue
+    ssize, k = parsed
+    if ssize + k == SIZE:
+        selected.append((ssize, k, folder))
+
+selected.sort(key=lambda x: x[0])  # sort by ssize
+
+plt.figure(figsize=(12, 8))
+
+for ssize, k, folder in selected:
+    exp_dir = os.path.join(OUTPUT_DIR, folder)
+    curve = load_trace_error_curve(exp_dir)
+    if curve is None:
+        print(f"Skipping {folder}: no usable spectrum_data_*.npz")
         continue
 
-    e = load_relative_trace_error(path)
-    if e is None:
-        continue
-
-    curves.append((ssize, k, e))
-
-curves.sort(key=lambda t: t[0])  # sort by ssize
-
-plt.figure(figsize=(12, 7))
-for ssize, k, e in curves:
-    plt.semilogy(np.arange(len(e)), e, marker="o", label=f"ssize={ssize}, k={k}")
+    plt.semilogy(
+        np.arange(len(curve)),
+        curve,
+        marker="o",
+        label=f"ssize={ssize}, k={k}"
+    )
 
 plt.xlabel("Window index")
 plt.ylabel("Relative trace error")
-plt.title(f"Relative trace error over windows\n{PREFIX}, size={SIZE}, ssize+k={SIZE}")
+plt.title(f"{BASE_PREFIX}, size={SIZE}, reservoir={RESERVOIR_METHOD}")
 plt.grid(True, which="both", linestyle="--", alpha=0.5)
-plt.legend(ncol=2, fontsize=9)
+plt.legend(fontsize=9, ncol=2)
 plt.tight_layout()
-plt.savefig(f"{PREFIX}_size_{SIZE}_all_pairs_trace_error_compare.png", bbox_inches="tight")
+
+os.makedirs(FIG_DIR, exist_ok=True)
+save_path = os.path.join(
+    FIG_DIR,
+    f"{BASE_PREFIX}_size_{SIZE}_all_ssize_k_sum_{SIZE}_error_over_time_log_compare.png"
+)
+plt.savefig(save_path, bbox_inches="tight", dpi=200)
 plt.show()
+
+print(f"Saved to: {save_path}")
+print("Included folders:")
+for ssize, k, folder in selected:
+    print(f"  ssize={ssize:>3}, k={k:>3} -> {folder}")
