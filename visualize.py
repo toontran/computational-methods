@@ -1330,7 +1330,7 @@ for (
 
         if not ("kernel" in matrix_name_prefix or "hyperboloid" in matrix_name_prefix) and scaling_factor != 1.0:
             continue
-        size = 100 if k <= 100 else k #k #100
+        size = 100 if k_default <= 100 else k_default #k #100
         if matrix_name_prefix in ["Queen_4147"]:
             size = 414711
             # k = 100
