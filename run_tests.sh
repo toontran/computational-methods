@@ -1,6 +1,6 @@
 #!/bin/bash
 
-window_size="" # 1 if FD v iSVD
+window_size="1" # 1 if FD v iSVD
 
 # List of matrices
 matrices=(
@@ -47,10 +47,10 @@ matrices=(
     # "kernel_stocks_100000_0.7071"
     # "kernel_stocks_100000_0.2236"
 
-    "kernel_stocks_5000_10.0"
-    "kernel_stocks_5000_2.2361"
-    "kernel_stocks_5000_0.7071"
-    "kernel_stocks_5000_0.2236"
+    "kernel_stocks_1000_10.0"
+    "kernel_stocks_1000_2.2361"
+    "kernel_stocks_1000_0.7071"
+    "kernel_stocks_1000_0.2236"
 
     #"kernel_random_20000_1.0"
     # "kernel_random_20000_5.0"

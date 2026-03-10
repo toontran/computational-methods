@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fixed experiment settings
-matrix_name="kernel_stocks_5000_0.7071"
+matrix_name="kernel_stocks_1000_0.7071"
 method_name="isvd"
 mem_size=110
 
