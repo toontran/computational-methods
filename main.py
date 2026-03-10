@@ -316,6 +316,118 @@ if __name__ == "__main__":
         title = ""
         A_csr = Q @ np.diag(S) @ Q.T
         A_is_sym_psd = True
+    elif "bad_case1" in matrix_name:
+        np.random.seed(10)
+
+        _, _, N = matrix_name.split("_")
+        N, rank = int(N), k if k is not None else 10
+
+        # Top r vectors: spread
+        U_top = np.random.randn(N, rank)
+        U_top, _ = np.linalg.qr(U_top)
+
+        # Tail: identity-like directions
+        tail_dim = N - rank
+        U_tail_init = np.eye(N)[:, rank:]
+
+        # Remove projection onto top space
+        U_tail = U_tail_init - U_top @ (U_top.T @ U_tail_init)
+        U_tail, _ = np.linalg.qr(U_tail)
+
+        U = np.concatenate([U_top, U_tail], axis=1)
+
+        # spectrum
+        beta_top = 0.5
+        alpha_tail = 0.0145
+
+        sigma_top = np.arange(1, rank + 1)**(-beta_top)
+        sigma_tail = np.arange(1, tail_dim + 1)**(-alpha_tail)
+        sigma_tail = sigma_tail / sigma_tail[0]
+
+        S = np.concatenate([sigma_top, sigma_tail])**2
+
+        title = ""
+        A_csr = U @ np.diag(S) @ U.T
+        A_is_sym_psd = True
+    elif "bad_case2" in matrix_name:
+        np.random.seed(10)
+
+        _, _, N = matrix_name.split("_")
+        N, rank = int(N), k if k is not None else 10
+
+        # Concentrated top block (Hadamard-style)
+        if rank == 1:
+            Hdim = 2
+        else:
+            Hdim = rank
+
+        from scipy.linalg import hadamard
+        H = hadamard(Hdim).astype(float) / np.sqrt(Hdim)
+
+        U_top = np.zeros((N, rank))
+        U_top[:Hdim, :rank] = H[:, :rank]
+
+        # Tail: spread random vectors
+        tail_dim = N - rank
+        Q = np.random.randn(N, tail_dim)
+        Q = Q - U_top @ (U_top.T @ Q)
+        U_tail, _ = np.linalg.qr(Q)
+
+        U = np.concatenate([U_top, U_tail], axis=1)
+
+        # spectrum
+        beta_top = 0.5
+        alpha_tail = 0.0145
+
+        sigma_top = np.arange(1, rank + 1)**(-beta_top)
+        sigma_tail = np.arange(1, tail_dim + 1)**(-alpha_tail)
+        sigma_tail = sigma_tail / sigma_tail[0]
+
+        S = np.concatenate([sigma_top, sigma_tail])**2
+
+        title = ""
+        A_csr = U @ np.diag(S) @ U.T
+        A_is_sym_psd = True
+    elif "bad_case3" in matrix_name:
+        np.random.seed(10)
+
+        _, _, N = matrix_name.split("_")
+        N, rank = int(N), k if k is not None else 10
+
+        # Concentrated top block (Hadamard-style)
+        if rank == 1:
+            Hdim = 2
+        else:
+            Hdim = rank
+
+        from scipy.linalg import hadamard
+        H = hadamard(Hdim).astype(float) / np.sqrt(Hdim)
+
+        U_top = np.zeros((N, rank))
+        U_top[:Hdim, :rank] = H[:, :rank]
+
+        # Tail: identity-like
+        tail_dim = N - rank
+        U_tail_init = np.eye(N)[:, rank:]
+
+        U_tail = U_tail_init - U_top @ (U_top.T @ U_tail_init)
+        U_tail, _ = np.linalg.qr(U_tail)
+
+        U = np.concatenate([U_top, U_tail], axis=1)
+
+        # spectrum
+        beta_top = 0.5
+        alpha_tail = 0.0145
+
+        sigma_top = np.arange(1, rank + 1)**(-beta_top)
+        sigma_tail = np.arange(1, tail_dim + 1)**(-alpha_tail)
+        sigma_tail = sigma_tail / sigma_tail[0]
+
+        S = np.concatenate([sigma_top, sigma_tail])**2
+
+        title = ""
+        A_csr = U @ np.diag(S) @ U.T
+        A_is_sym_psd = True
     elif "test_coherence" in matrix_name:
         np.random.seed(10)
         _, _, num_points, lengthscale = matrix_name.split("_")[:4]  
@@ -885,7 +997,7 @@ if __name__ == "__main__":
     # print(random_uniform_perms[:10])
     # raise
     save_mat = False
-    no_og = True
+    no_og = False
     no_adaptive = False 
     if save_mat:
         import scipy

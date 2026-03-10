@@ -52,6 +52,10 @@ matrices=(
     "kernel_stocks_1000_0.7071"
     "kernel_stocks_1000_0.2236"
 
+    "bad_case1_1000"
+    "bad_case2_1000"
+    "bad_case3_1000"
+
     #"kernel_random_20000_1.0"
     # "kernel_random_20000_5.0"
     #"kernel_random_20000_10.0"
@@ -106,6 +110,7 @@ matrices=(
     # "Wissgott/parabolic_fem"
     # "Botonakis/thermomech_dM"
     # "AMD/G2_circuit"
+
 )
 
 # List of methods
