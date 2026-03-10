@@ -11,20 +11,19 @@ BASE_PREFIX = "kernel_stocks_1000_0.7071_isvd"
 SIZE = 110
 RESERVOIR_METHOD = "greedy"
 
-# Preferred:
-#   "ws_reg_2norm"  -> from reservoir_residuals_data_*.npz
-# Fallbacks:
-#   "fallback_l2"   -> l2 norm of approx_residuals from residuals_data_*.npz
-#   "fallback_max"  -> max abs entry of approx_residuals from residuals_data_*.npz
-MODE = "ws_reg_2norm"
+# Residual mode:
+#   "ws_reg_2norm"  -> use reservoir_residuals_data_* if available
+#   "fallback_l2"   -> use ||approx_residuals||_2 from residuals_data_*
+#   "fallback_max"  -> use max(abs(approx_residuals)) from residuals_data_*
+RESIDUAL_MODE = "ws_reg_2norm"
 
-# Whether to draw variability band across seeds
-SHOW_BAND = True
+SHOW_BAND = True   # min-max band across seeds
+TRACE_RANK = 10    # same top-r trace comparison as before
 
 
 def parse_folder(folder_name):
     """
-    Parse folders like:
+    Examples:
       kernel_stocks_1000_0.7071_isvd_random_uniform_size_110_ssize_109_k_1_reservoir_greedy
       kernel_stocks_1000_0.7071_isvd_random_uniform_4_size_110_ssize_109_k_1_reservoir_greedy
     """
@@ -40,10 +39,9 @@ def parse_folder(folder_name):
     if not m:
         return None
 
-    seed = int(m.group("seed")) if m.group("seed") is not None else 1
     return {
         "prefix": m.group("prefix"),
-        "seed": seed,
+        "seed": int(m.group("seed")) if m.group("seed") is not None else 1,
         "size": int(m.group("size")),
         "ssize": int(m.group("ssize")),
         "k": int(m.group("k")),
@@ -72,8 +70,8 @@ def list_consecutive_iterations(exp_dir, prefix):
     return out
 
 
-def load_wholespace_curve(exp_dir, mode="ws_reg_2norm"):
-    # Exact whole-space residual files, if present
+def load_residual_curve(exp_dir, mode="ws_reg_2norm"):
+    # Preferred exact whole-space residual files
     reservoir_iters = list_consecutive_iterations(exp_dir, "reservoir_residuals_data")
     if reservoir_iters and mode == "ws_reg_2norm":
         curve = []
@@ -85,7 +83,7 @@ def load_wholespace_curve(exp_dir, mode="ws_reg_2norm"):
             curve.append(float(data["whole_space_regular_residuals_2norm"]))
         return np.asarray(curve), "exact:whole_space_regular_residuals_2norm"
 
-    # Fallback to residuals_data_*.npz
+    # Fallback to per-vector residuals
     residual_iters = list_consecutive_iterations(exp_dir, "residuals_data")
     if not residual_iters:
         return None, None
@@ -99,24 +97,70 @@ def load_wholespace_curve(exp_dir, mode="ws_reg_2norm"):
         r = np.asarray(data["approx_residuals"]).reshape(-1)
 
         if mode == "fallback_max":
-            value = np.max(np.abs(r))
+            val = np.max(np.abs(r))
+            source = "fallback:max(abs(approx_residuals))"
         else:
-            value = np.linalg.norm(r, 2)
+            val = np.linalg.norm(r, 2)
+            source = "fallback:l2(approx_residuals)"
 
-        curve.append(float(value))
+        curve.append(float(val))
 
-    source = "fallback:max(approx_residuals)" if mode == "fallback_max" else "fallback:l2(approx_residuals)"
     return np.asarray(curve), source
 
 
-# Collect matching folders
-groups = {}  # (ssize, k) -> list of (seed, folder_name)
+def load_trace_error_curve(exp_dir, rank_limit=10):
+    iters = list_consecutive_iterations(exp_dir, "spectrum_data")
+    if not iters:
+        return None
 
+    Ss = []
+    S_exact = None
+
+    for j in iters:
+        data = np.load(
+            os.path.join(exp_dir, f"spectrum_data_{j}.npz"),
+            allow_pickle=True
+        )
+        S = np.asarray(data["S"]).reshape(-1)
+        S_exact = np.asarray(data["S_exact"]).reshape(-1)
+        Ss.append(S)
+
+    min_rank = min(min(len(S) for S in Ss), len(S_exact), rank_limit)
+    if min_rank <= 0:
+        return None
+
+    denom = np.sum(S_exact[:min_rank])
+    if denom == 0:
+        return None
+
+    curve = []
+    for S in Ss:
+        tr_S = np.sum(S[:min_rank])
+        e = np.abs(denom - tr_S) / np.abs(denom)
+        curve.append(float(e))
+
+    return np.asarray(curve)
+
+
+def aggregate_seed_curves(curves):
+    """
+    Align curves to shortest length and return mean/min/max and mean endpoint.
+    """
+    min_len = min(len(c) for c in curves)
+    arr = np.stack([c[:min_len] for c in curves], axis=0)
+    mean_curve = arr.mean(axis=0)
+    low_curve = arr.min(axis=0)
+    high_curve = arr.max(axis=0)
+    mean_endpoint = arr[:, -1].mean()
+    return mean_curve, low_curve, high_curve, mean_endpoint, min_len
+
+
+# Collect matching folders grouped by (ssize, k)
+groups = {}
 for folder in os.listdir(OUTPUT_DIR):
     parsed = parse_folder(folder)
     if parsed is None:
         continue
-
     if parsed["prefix"] != BASE_PREFIX:
         continue
     if parsed["size"] != SIZE:
@@ -129,72 +173,98 @@ for folder in os.listdir(OUTPUT_DIR):
     key = (parsed["ssize"], parsed["k"])
     groups.setdefault(key, []).append((parsed["seed"], folder))
 
-# Sort each group by seed
 for key in groups:
     groups[key].sort(key=lambda x: x[0])
 
-# Plot one averaged curve per (ssize, k)
-plt.figure(figsize=(13, 8))
-source_kind_used = None
+sorted_keys = sorted(groups.keys(), key=lambda x: x[0])
 
-sorted_keys = sorted(groups.keys(), key=lambda x: x[0])  # sort by ssize
+fig, (ax_res, ax_tr) = plt.subplots(1, 2, figsize=(16, 7))
+
+residual_source_kind = None
+used_any_residual = False
+used_any_trace = False
 
 for ssize, k in sorted_keys:
     seed_folders = groups[(ssize, k)]
 
-    curves = []
-    seeds_found = []
+    residual_curves = []
+    trace_curves = []
+    seeds_used_residual = []
+    seeds_used_trace = []
 
     for seed, folder in seed_folders:
         exp_dir = os.path.join(OUTPUT_DIR, folder)
-        curve, source_kind = load_wholespace_curve(exp_dir, mode=MODE)
-        if curve is None:
-            print(f"Skipping seed {seed} for {folder}: no usable residual files")
-            continue
 
-        curve = np.clip(curve, np.finfo(float).eps, None)
-        curves.append(curve)
-        seeds_found.append(seed)
+        # Residual
+        rcurve, source_kind = load_residual_curve(exp_dir, mode=RESIDUAL_MODE)
+        if rcurve is not None:
+            rcurve = np.clip(rcurve, np.finfo(float).eps, None)
+            residual_curves.append(rcurve)
+            seeds_used_residual.append(seed)
+            if residual_source_kind is None:
+                residual_source_kind = source_kind
 
-        if source_kind_used is None:
-            source_kind_used = source_kind
+        # Trace error
+        tcurve = load_trace_error_curve(exp_dir, rank_limit=TRACE_RANK)
+        if tcurve is not None:
+            tcurve = np.clip(tcurve, np.finfo(float).eps, None)
+            trace_curves.append(tcurve)
+            seeds_used_trace.append(seed)
 
-    if not curves:
-        continue
+    # Residual plot
+    if residual_curves:
+        mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(residual_curves)
+        x = np.arange(1, npts + 1)  # start at 1 so log x-scale works
+        label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
+        line, = ax_res.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
+        if SHOW_BAND and len(residual_curves) > 1:
+            ax_res.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
+        used_any_residual = True
+        print(f"Residual  (ssize={ssize}, k={k}) seeds used: {seeds_used_residual}, mean endpoint={mean_endpoint:.6e}")
 
-    min_len = min(len(c) for c in curves)
-    arr = np.stack([c[:min_len] for c in curves], axis=0)
+    # Trace plot
+    if trace_curves:
+        mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(trace_curves)
+        x = np.arange(1, npts + 1)  # start at 1 so log x-scale works
+        label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(trace_curves)}"
+        line, = ax_tr.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
+        if SHOW_BAND and len(trace_curves) > 1:
+            ax_tr.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
+        used_any_trace = True
+        print(f"TraceErr  (ssize={ssize}, k={k}) seeds used: {seeds_used_trace}, mean endpoint={mean_endpoint:.6e}")
 
-    mean_curve = arr.mean(axis=0)
-    lower_curve = arr.min(axis=0)
-    upper_curve = arr.max(axis=0)
+# Set x-axis to log scale on both plots
+for ax in (ax_res, ax_tr):
+    ax.set_xscale("log")
+    ax.grid(True, which="both", linestyle="--", alpha=0.5)
+    ax.set_xlabel("Window index (log scale)")
 
-    x = np.arange(min_len)
-    label = f"ssize={ssize}, k={k} (n={len(curves)})"
-
-    line, = plt.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
-
-    if SHOW_BAND and len(curves) > 1:
-        plt.fill_between(x, lower_curve, upper_curve, alpha=0.18, color=line.get_color())
-
-    print(f"(ssize={ssize}, k={k}) seeds used: {seeds_found}")
-
-plt.xlabel("Window index")
-plt.ylabel("Whole-space residual")
-plt.title(
-    f"{BASE_PREFIX}_random_uniform[*], size={SIZE}, reservoir={RESERVOIR_METHOD}\n"
-    f"mean across seeds, source={source_kind_used}"
+ax_res.set_ylabel("Whole-space residual")
+ax_res.set_title(
+    f"Residual: {BASE_PREFIX}_random_uniform[*]\n"
+    f"size={SIZE}, reservoir={RESERVOIR_METHOD}, source={residual_source_kind}"
 )
-plt.grid(True, which="both", linestyle="--", alpha=0.5)
-plt.legend(fontsize=8, ncol=2)
-plt.tight_layout()
 
+ax_tr.set_ylabel("Relative trace error")
+ax_tr.set_title(
+    f"Trace error: {BASE_PREFIX}_random_uniform[*]\n"
+    f"size={SIZE}, reservoir={RESERVOIR_METHOD}, top-{TRACE_RANK} trace"
+)
+
+if used_any_residual:
+    ax_res.legend(fontsize=8, ncol=1)
+if used_any_trace:
+    ax_tr.legend(fontsize=8, ncol=1)
+
+plt.tight_layout()
 os.makedirs(FIG_DIR, exist_ok=True)
+
 save_path = os.path.join(
     FIG_DIR,
-    f"{BASE_PREFIX}_random_uniform_allseeds_size_{SIZE}_all_ssize_k_sum_{SIZE}_ws_residual_compare_{MODE}.png"
+    f"{BASE_PREFIX}_random_uniform_allseeds_size_{SIZE}_all_ssize_k_sum_{SIZE}_"
+    f"residual_and_trace_compare.png"
 )
-plt.savefig(save_path, bbox_inches="tight", dpi=200)
-# plt.show()
+plt.savefig(save_path, bbox_inches="tight", dpi=220)
+plt.show()
 
-print(f"Saved to: {save_path}")
+print(f"\nSaved to: {save_path}")
