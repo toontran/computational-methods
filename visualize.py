@@ -1636,7 +1636,8 @@ for (
                         fig, ax = plt.subplots(figsize=(12, 8))
                         num_sv = err_mat.shape[1]
                         color_range = np.linspace(0, 1.0, num_sv)
-                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        if num_sv > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
                         color_range = np.sort(color_range)
                         colors = plt.cm.jet(color_range)
                         # Plot each window's data
@@ -2118,7 +2119,8 @@ for (
                         # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - data['S'].sum()) / data['S_exact'][:len(data['S'])].sum()                                                                    
                         # cmap = plt.cm.plasma # viridis
                         color_range = np.linspace(0, 1.0, reservoir_residuals.shape[1])
-                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        if reservoir_residuals.shape[1] > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
                         color_range = np.sort(color_range)
                         colors = plt.cm.jet(color_range)
                         if not plot_S_quotient:
@@ -2549,7 +2551,8 @@ for (
                     # import pdb;pdb.set_trace()
                         fig, ax = plt.subplots(figsize=(12, 8))
                         color_range = np.linspace(0, 1.0, s_list.shape[1])
-                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        if s_list.shape[1] > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
                         color_range = np.sort(color_range)
                         colors = plt.cm.jet(color_range)
                         # Plot each window's data
@@ -2626,7 +2629,8 @@ for (
                     # import pdb;pdb.set_trace()
                         fig, ax = plt.subplots(figsize=(12, 8))
                         color_range = np.linspace(0, 1.0, s_list.shape[1])
-                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        if s_list.shape[1] > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
                         color_range = np.sort(color_range)
                         colors = plt.cm.jet(color_range)
                         # Plot each window's data
