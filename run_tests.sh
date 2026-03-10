@@ -47,10 +47,10 @@ matrices=(
     # "kernel_stocks_100000_0.7071"
     # "kernel_stocks_100000_0.2236"
 
-    "kernel_stocks_1000_10.0"
-    "kernel_stocks_1000_2.2361"
-    "kernel_stocks_1000_0.7071"
-    "kernel_stocks_1000_0.2236"
+    # "kernel_stocks_1000_10.0"
+    # "kernel_stocks_1000_2.2361"
+    # "kernel_stocks_1000_0.7071"
+    # "kernel_stocks_1000_0.2236"
 
     "bad_case1_1000"
     "bad_case2_1000"
@@ -140,7 +140,7 @@ methods=(
     # "isvddemix2"
     # "isvddemix3"
     # "isvdst"
-    # "isvdstG" # <------ set here
+    "isvdstG" # <------ set here
     # "isvddemixst"
     # "isvddemixstG"
 )
