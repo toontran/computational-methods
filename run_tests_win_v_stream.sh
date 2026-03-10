@@ -13,17 +13,22 @@ matrices=(
 )
 
 # Manually specified k values
+# k_values=(
+#     1
+#     4
+#     8
+#     32
+#     64
+#     102
+#     106
+#     108
+#     109
+# )
 k_values=(
     1
-    2
-    4
     8
-    16
-    32
     64
     102
-    106
-    108
     109
 )
 
