@@ -1325,16 +1325,38 @@ for (
                 matrix_size = 5000
                 k_default = 10
             reservoir_size_default = k_default
+        if matrix_name_prefix == "pdb1HYS" and scaling_factor != 1.0:
+            continue
 
-        for k in [k_default]:
+        if not ("kernel" in matrix_name_prefix or "hyperboloid" in matrix_name_prefix) and scaling_factor != 1.0:
+            continue
+        size = 100 if k <= 100 else k #k #100
+        if matrix_name_prefix in ["Queen_4147"]:
+            size = 414711
+            # k = 100
+        elif matrix_name_prefix in ["Flan_1565"]:
+            size = 156479
+            # k = 100
+        elif "parabolic_fem" in matrix_name_prefix:
+            size = 26291
+        elif "circuit" in matrix_name_prefix:
+            size = 7505
+        elif "thermomech" in matrix_name_prefix:
+            size = 10215
+        elif matrix_name_prefix in ["kernel_stocks"]:
+            size = 100 #5000, 100
+
+        stream_size = 1 #size TODO: change to 1 for FD vs iSVD
+        k_vals = np.array([1, 2, 4, 8, 16, 32, 64, 102, 106, 108, 109])
+        mem_size = 110
+        stream_sizes = mem_size - k_vals
+        print("Stream_sizes = ", stream_sizes)
+        # ks_and_stream_sizes = [(k_default, stream_size)] # TODO: FD vs iSVD
+        ks_and_stream_sizes = [(k_, stream_size_) for k_, stream_size_ in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
+        size = mem_size # TODO: stream vs window sizes
+        for k, stream_size in ks_and_stream_sizes:
+        # for k in [k_default]:
         # for k in [10, 20, 50, 100, 200, 400, 600, 800, 1000]:
-
-            if matrix_name_prefix == "pdb1HYS" and scaling_factor != 1.0:
-                continue
-
-            if not ("kernel" in matrix_name_prefix or "hyperboloid" in matrix_name_prefix) and scaling_factor != 1.0:
-                continue
-
             ev_change_figures = []
             trace_error_figures = []
             regular_residuals_figures = []
@@ -1385,22 +1407,7 @@ for (
             if "isvddemix" in name_postfix and reservoir_size != 10 and reservoir_method == "greedy":
                 postfix += f"{reservoir_size}"
             
-            size = 100 if k <= 100 else k #k #100
-            stream_size = 1 #size TODO: change to 1 for FD vs iSVD
-            if matrix_name_prefix in ["Queen_4147"]:
-                size = 414711
-                # k = 100
-            elif matrix_name_prefix in ["Flan_1565"]:
-                size = 156479
-                # k = 100
-            elif "parabolic_fem" in matrix_name_prefix:
-                size = 26291
-            elif "circuit" in matrix_name_prefix:
-                size = 7505
-            elif "thermomech" in matrix_name_prefix:
-                size = 10215
-            elif matrix_name_prefix in ["kernel_stocks"]:
-                size = 100 #5000, 100
+            
             # is_reversed = False
             # matrix_name = "bodyy4"
             # matrix_name = "kronecker_graph_13_0.3"
@@ -1454,306 +1461,266 @@ for (
                 colors = plt.cm.rainbow(np.linspace(0, 1, 6))
                 # matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_" + f"size_{size}_k_{k}" 
                 
-                k_vals = np.array([1, 2, 4, 8, 16, 32, 64, 102, 106, 108, 109])
-                mem_size = 110
-                stream_sizes = mem_size - k_vals
-                print("Stream_sizes = ", stream_sizes)
-                # ks_and_stream_sizes = [(k, stream_size)] # TODO: FD vs iSVD
-                ks_and_stream_sizes = [(k_, stream_size_) for k_, stream_size_ in zip(k_vals, stream_sizes)] # TODO: stream vs window sizes
-                size = 110 # TODO: stream vs window sizes
-                old_postfix = postfix
-                for k, stream_size in ks_and_stream_sizes:
-                    postfix = old_postfix
-                    postfix = f"_ssize_{stream_size}" + postfix if stream_size != size else postfix
-                    matrices = {
-                        f'{matrix_name}{matrix_type}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[0], '-', '.'],
-                    #     f'{matrix_name}{matrix_type2}_size_{size}{postfix}': [colors[0], ':', 'o'],
-                    #     f'{matrix_name}{matrix_type3}': [colors[0], '-.'],
-                    # f'{matrix_name}_decreasing_norm{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[1], '-.', '^'],
-                    # f'{matrix_name}_increasing_norm{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[2], '-.', '^'],
-                    # f'{matrix_name}_decreasing_V2{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[2], '-.', '^'],
-                        # f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}': [colors[2], '-'],
-                    #     f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}': [colors[3], '-'],
-                    #     f'{matrix_name}_Vapprox_reversed_{num_Vs}{matrix_type}': [colors[4], '-']
-                    }
-                    # num_Vs_list = [1,10,100]
-                    # num_Vs_list = [1,5,10]
-                    num_Vs_list = [10]
-                    if "_isvd1by1" in name_postfix:
-                        num_Vs_list = []
-                    # import pdb;pdb.set_trace()
-                    Vs_list = np.unique([min(x, k) for x in num_Vs_list])
-                    # import pdb;pdb.set_trace()
-                    # matrices.update({
-                    # f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[3+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
-                    # })
-                    # matrices.update({
-                    # f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[len(matrices)+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
-                    # })
-                    # matrices.update({
-                    #     f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type2}_size_{size}{postfix}': [colors[2+i], ':', '*'] for i, num_Vs in enumerate([1,10,100])
-                    # })
+                
+                postfix = f"_ssize_{stream_size}" + postfix if stream_size != size else postfix
+                matrices = {
+                    f'{matrix_name}{matrix_type}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[0], '-', '.'],
+                #     f'{matrix_name}{matrix_type2}_size_{size}{postfix}': [colors[0], ':', 'o'],
+                #     f'{matrix_name}{matrix_type3}': [colors[0], '-.'],
+                # f'{matrix_name}_decreasing_norm{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[1], '-.', '^'],
+                # f'{matrix_name}_increasing_norm{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[2], '-.', '^'],
+                # f'{matrix_name}_decreasing_V2{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[2], '-.', '^'],
+                    # f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}': [colors[2], '-'],
+                #     f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}': [colors[3], '-'],
+                #     f'{matrix_name}_Vapprox_reversed_{num_Vs}{matrix_type}': [colors[4], '-']
+                }
+                # num_Vs_list = [1,10,100]
+                # num_Vs_list = [1,5,10]
+                num_Vs_list = [10]
+                if "_isvd1by1" in name_postfix:
+                    num_Vs_list = []
+                # import pdb;pdb.set_trace()
+                Vs_list = np.unique([min(x, k) for x in num_Vs_list])
+                # import pdb;pdb.set_trace()
+                # matrices.update({
+                # f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[3+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
+                # })
+                # matrices.update({
+                # f'{matrix_name}_Vapprox_{num_Vs}{matrix_type}{"_reversed" if is_reversed else ""}{"_true" if use_true_matrix else ""}_size_{size}{postfix}': [colors[len(matrices)+i], '-', 's'] for i, num_Vs in enumerate(Vs_list)
+                # })
+                # matrices.update({
+                #     f'{matrix_name}_Vapprox_withS_{num_Vs}{matrix_type2}_size_{size}{postfix}': [colors[2+i], ':', '*'] for i, num_Vs in enumerate([1,10,100])
+                # })
 
-                    print("Matrices:", matrices.keys())
+                print("Matrices:", matrices.keys())
 
-                    # matrix_name = 'temp'
-                    # figure_dir = 'figures'
-                    # matrices = [f'{matrix_name}',]
-                    # colors = plt.cm.rainbow(np.linspace(0, 1, 5))
-                    # matrices = {f'{matrix_name}': [colors[0], '-']}
+                # matrix_name = 'temp'
+                # figure_dir = 'figures'
+                # matrices = [f'{matrix_name}',]
+                # colors = plt.cm.rainbow(np.linspace(0, 1, 5))
+                # matrices = {f'{matrix_name}': [colors[0], '-']}
 
-                    dir_paths = [f"{figure_dir}/{matrix_postfix}/" for matrix_postfix in matrices]
-                    # dir_path = dir_paths[1]
-                    # print(dir_paths)
-                    # raise
+                dir_paths = [f"{figure_dir}/{matrix_postfix}/" for matrix_postfix in matrices]
+                # dir_path = dir_paths[1]
+                # print(dir_paths)
+                # raise
 
-                    labels = [' '.join(s.split('_')[1:]) for s in matrices]
-                    label_colors = {k:v[0] for k,v in matrices.items()}
-                    label_linestyles = {k:v[1] for k,v in matrices.items()}
-                    label_markers = {k:v[2] for k,v in matrices.items()}
-                    label_colors = label_colors.values()
-                    label_linestyles = label_linestyles.values()
-                    label_markers = label_markers.values()
+                labels = [' '.join(s.split('_')[1:]) for s in matrices]
+                label_colors = {k:v[0] for k,v in matrices.items()}
+                label_linestyles = {k:v[1] for k,v in matrices.items()}
+                label_markers = {k:v[2] for k,v in matrices.items()}
+                label_colors = label_colors.values()
+                label_linestyles = label_linestyles.values()
+                label_markers = label_markers.values()
 
-                    last_available_file_number = np.inf
-                    for dir_path in dir_paths:
-                        # Use glob to find files matching the pattern
-                        files = glob.glob(os.path.join(dir_path, f'spectrum_data_*.npz'))
+                last_available_file_number = np.inf
+                for dir_path in dir_paths:
+                    # Use glob to find files matching the pattern
+                    files = glob.glob(os.path.join(dir_path, f'spectrum_data_*.npz'))
 
-                        # Extract the numeric part from each file and convert to an integer
-                        file_numbers = sorted([int(os.path.splitext(file)[0].split('_')[-1]) for file in files])
-                    #     print(dir_path, files)
-                        if len(file_numbers) == 0:
-                            print("Path", dir_path, "not available")
-                            continue
-                        last_consecutive = -1
-                        current = 0
-                        
-                        while current in file_numbers:
-                            last_consecutive = current
-                            current += 1
-
-                        last_file_number = last_consecutive#file_numbers[-1]
-                        if last_file_number < last_available_file_number:
-                            last_available_file_number = last_file_number
-
-                    if last_available_file_number == np.inf:
-                        print("No available file found for", dir_paths[0])
+                    # Extract the numeric part from each file and convert to an integer
+                    file_numbers = sorted([int(os.path.splitext(file)[0].split('_')[-1]) for file in files])
+                #     print(dir_path, files)
+                    if len(file_numbers) == 0:
+                        print("Path", dir_path, "not available")
                         continue
-
-                    # Load data first
-                    data_list = []
-                    smallest_ei = np.inf
+                    last_consecutive = -1
+                    current = 0
                     
-                    is_incomplete = False
-                    is_missing = False
-                    for dir_path, label in zip(dir_paths, labels):
-                        tr_S = []
-                        tr_S_quotient = []
-                        Ss = []
-                        Ss_quotient = []
-                        err_mat = []
-                        
-                        for iteration in range(last_available_file_number+1):
-                            file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
-                            try:
-                                data = np.load(file_path, allow_pickle=True)
-                                Ss.append(data['S'].reshape(1,-1))
-                                trace = np.sum(data['S'])
-                                tr_S.append(trace)
-                                # import pdb;pdb.set_trace()
-                                if not data['S_quotient'] is None:
-                                    Ss_quotient.append(data['S_quotient'].reshape(1,-1))
-                                    trace_quotient = np.sum(data['S_quotient'])
-                                    tr_S_quotient.append(trace_quotient)
-                                # print(data['S'], data['S_exact'][:len(data['S'])])
-                    #             raise
-                            except FileNotFoundError:
-                                is_incomplete = True
-                                print(f"File not found: {file_path}")
-                                break
-                        
-                        if len(Ss) == 0:
-                            is_missing = True
-                            missing_data.append(dir_path)
-                            continue
-                        elif is_incomplete:
-                            incomplete_data.append(dir_path)
+                    while current in file_numbers:
+                        last_consecutive = current
+                        current += 1
 
-                        limit_S = min(10, len(data['S']))
-                        # limit_S = len(data['S'])
-                        # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
-                        Ss = np.concatenate(Ss, axis=0)
-                        tr_S = np.sum(Ss[:, :limit_S], axis=1)
-                        if not data['S_quotient'] is None: #name_postfix == "" or name_postfix ==:
-                            # Ss_quotient = np.concatenate(Ss_quotient, axis=0)
-                            Ss_quotient = pad_and_concatenate(Ss_quotient, axis=0)
-                            tr_S_quotient = np.sum(Ss_quotient[:, :limit_S], axis=1)
-                            if plot_S_quotient:
-                                tr_S = tr_S_quotient
+                    last_file_number = last_consecutive#file_numbers[-1]
+                    if last_file_number < last_available_file_number:
+                        last_available_file_number = last_file_number
+
+                if last_available_file_number == np.inf:
+                    print("No available file found for", dir_paths[0])
+                    continue
+
+                # Load data first
+                data_list = []
+                smallest_ei = np.inf
+                
+                is_incomplete = False
+                is_missing = False
+                for dir_path, label in zip(dir_paths, labels):
+                    tr_S = []
+                    tr_S_quotient = []
+                    Ss = []
+                    Ss_quotient = []
+                    err_mat = []
+                    
+                    for iteration in range(last_available_file_number+1):
+                        file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
                         try:
-                            e_i = np.abs(data['S_exact'][:limit_S].sum() - tr_S) / data['S_exact'][:limit_S].sum()
+                            data = np.load(file_path, allow_pickle=True)
+                            Ss.append(data['S'].reshape(1,-1))
+                            trace = np.sum(data['S'])
+                            tr_S.append(trace)
+                            # import pdb;pdb.set_trace()
+                            if not data['S_quotient'] is None:
+                                Ss_quotient.append(data['S_quotient'].reshape(1,-1))
+                                trace_quotient = np.sum(data['S_quotient'])
+                                tr_S_quotient.append(trace_quotient)
+                            # print(data['S'], data['S_exact'][:len(data['S'])])
+                #             raise
+                        except FileNotFoundError:
+                            is_incomplete = True
+                            print(f"File not found: {file_path}")
+                            break
+                    
+                    if len(Ss) == 0:
+                        is_missing = True
+                        missing_data.append(dir_path)
+                        continue
+                    elif is_incomplete:
+                        incomplete_data.append(dir_path)
+
+                    limit_S = min(10, len(data['S']))
+                    # limit_S = len(data['S'])
+                    # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
+                    Ss = np.concatenate(Ss, axis=0)
+                    tr_S = np.sum(Ss[:, :limit_S], axis=1)
+                    if not data['S_quotient'] is None: #name_postfix == "" or name_postfix ==:
+                        # Ss_quotient = np.concatenate(Ss_quotient, axis=0)
+                        Ss_quotient = pad_and_concatenate(Ss_quotient, axis=0)
+                        tr_S_quotient = np.sum(Ss_quotient[:, :limit_S], axis=1)
+                        if plot_S_quotient:
+                            tr_S = tr_S_quotient
+                    try:
+                        e_i = np.abs(data['S_exact'][:limit_S].sum() - tr_S) / data['S_exact'][:limit_S].sum()
+                    except:
+                        import pdb;pdb.set_trace()
+                    e_i = np.clip(e_i, np.finfo(float).eps, None)
+                    exact_temp = data['S_exact'][:len(data['S'])]
+                    # print(Ss[-1])
+                    
+                    
+                    data_list.append((e_i, label))
+                    if smallest_ei > min(e_i):
+                        smallest_ei = min(e_i)
+
+                    if plot_eig_err_heatmap:
+                        if plot_S_quotient:
+                            Ss = Ss_quotient
+                        err_mat = np.abs(data['S_exact'][:len(data['S'])].reshape(-1,1) - Ss)/data['S_exact'][:len(data['S'])]
+                        err_mat = err_mat.real
+                        # import pdb;pdb.set_trace()
+                        # err_mat = np.concatenate(err_mat, axis=1).real
+                        # import pdb;pdb.set_trace()
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                        sns.heatmap(np.log10(err_mat), 
+            #                 cmap='viridis',  # Color scheme
+                            cbar_kws={'label': 'Value'},  # Colorbar label
+                            # xticklabels=False,  # Hide x-axis labels for cleaner look
+                            # yticklabels=False,
+                            ax=ax)
+                        
+                        plt.savefig(f"figures/{matrix_name}_heatmap_error_over_time_{'_'.join(label.split(' '))}.png")
+                        plt.close()
+
+                    if plot_ev_change:
+                        if plot_S_quotient:
+                            Ss = Ss_quotient
+                        num_evs = 10
+                        try:
+                            err_mat = np.abs(data['S_exact'][:num_evs].reshape(1,-1) - Ss[:,:num_evs])/data['S_exact'][:num_evs]
                         except:
                             import pdb;pdb.set_trace()
-                        e_i = np.clip(e_i, np.finfo(float).eps, None)
-                        exact_temp = data['S_exact'][:len(data['S'])]
-                        # print(Ss[-1])
-                        
-                        
-                        data_list.append((e_i, label))
-                        if smallest_ei > min(e_i):
-                            smallest_ei = min(e_i)
+                        err_mat = err_mat.real
+                        # import pdb;pdb.set_trace()
+                        # err_mat = np.concatenate(err_mat, axis=1).real
+                        # import pdb;pdb.set_trace()
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                        num_sv = err_mat.shape[1]
+                        color_range = np.linspace(0, 1.0, num_sv)
+                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+                        # Plot each window's data
+                        for i in range(num_sv):
+                            plt.semilogy(np.arange(err_mat.shape[0]), err_mat[:,i], color=colors[i], label=f'Eigenvalue #{i}', marker='o')
+                        #     plt.scatter(np.arange(err_mat.shape[0]), err_mat[:,i], color=colors[i], label=f'Eigenvalue #{i}')
+                        # plt.yscale('log')
+                        plt.legend()
+                        # if scaling_factor == 2.0:
+                        #     plt.ylim(1e-7, 1e2)
+                        # elif scaling_factor == 1.0:
+                        #     plt.ylim(1e-7, 10**(0.5))
+                        # elif scaling_factor == 5.0:
+                        #     plt.ylim(1e-9,1e1)
+                        # elif scaling_factor == 10.0:
+                        #     plt.ylim(1e-11,1e3)
+                        # elif scaling_factor == 20.0:
+                        #     plt.ylim(10**(-14.5), 1e2)
+                        plt.ylabel("Relative eigenvalue difference")
+                        plt.xlabel("Window")
+                        plt.xticks(fontsize=15)
+                        plt.yticks(fontsize=15)
+                        plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
+                        plt.grid()
+                        filename = f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}sv_error_over_time_{'_'.join(label.split(' '))}.png"
+                        # plt.savefig()
+                        current_fig = plt.gcf()
+                        ev_change_figures.append([current_fig, filename])
+                        plt.close()
 
-                        if plot_eig_err_heatmap:
-                            if plot_S_quotient:
-                                Ss = Ss_quotient
-                            err_mat = np.abs(data['S_exact'][:len(data['S'])].reshape(-1,1) - Ss)/data['S_exact'][:len(data['S'])]
-                            err_mat = err_mat.real
-                            # import pdb;pdb.set_trace()
-                            # err_mat = np.concatenate(err_mat, axis=1).real
-                            # import pdb;pdb.set_trace()
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                            sns.heatmap(np.log10(err_mat), 
-                #                 cmap='viridis',  # Color scheme
-                                cbar_kws={'label': 'Value'},  # Colorbar label
-                                # xticklabels=False,  # Hide x-axis labels for cleaner look
-                                # yticklabels=False,
-                                ax=ax)
-                            
-                            plt.savefig(f"figures/{matrix_name}_heatmap_error_over_time_{'_'.join(label.split(' '))}.png")
-                            plt.close()
+                if is_missing:
+                    continue
 
-                        if plot_ev_change:
-                            if plot_S_quotient:
-                                Ss = Ss_quotient
-                            num_evs = 10
-                            try:
-                                err_mat = np.abs(data['S_exact'][:num_evs].reshape(1,-1) - Ss[:,:num_evs])/data['S_exact'][:num_evs]
-                            except:
-                                import pdb;pdb.set_trace()
-                            err_mat = err_mat.real
-                            # import pdb;pdb.set_trace()
-                            # err_mat = np.concatenate(err_mat, axis=1).real
-                            # import pdb;pdb.set_trace()
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                            num_sv = err_mat.shape[1]
-                            color_range = np.linspace(0, 1.0, num_sv)
-                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-                            # Plot each window's data
-                            for i in range(num_sv):
-                                plt.semilogy(np.arange(err_mat.shape[0]), err_mat[:,i], color=colors[i], label=f'Eigenvalue #{i}', marker='o')
-                            #     plt.scatter(np.arange(err_mat.shape[0]), err_mat[:,i], color=colors[i], label=f'Eigenvalue #{i}')
-                            # plt.yscale('log')
-                            plt.legend()
-                            # if scaling_factor == 2.0:
-                            #     plt.ylim(1e-7, 1e2)
-                            # elif scaling_factor == 1.0:
-                            #     plt.ylim(1e-7, 10**(0.5))
-                            # elif scaling_factor == 5.0:
-                            #     plt.ylim(1e-9,1e1)
-                            # elif scaling_factor == 10.0:
-                            #     plt.ylim(1e-11,1e3)
-                            # elif scaling_factor == 20.0:
-                            #     plt.ylim(10**(-14.5), 1e2)
-                            plt.ylabel("Relative eigenvalue difference")
-                            plt.xlabel("Window")
-                            plt.xticks(fontsize=15)
-                            plt.yticks(fontsize=15)
-                            plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
-                            plt.grid()
-                            filename = f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}sv_error_over_time_{'_'.join(label.split(' '))}.png"
-                            # plt.savefig()
-                            current_fig = plt.gcf()
-                            ev_change_figures.append([current_fig, filename])
-                            plt.close()
+                if plot_spectrum:
+                    plt.figure(figsize=(12, 6))
+                    # plt.plot(np.arange(data["S_exact"].shape[0]), np.log10(data["S_exact"]), label=matrix_name)
+                    plt.semilogy(np.arange(data["S_exact"].shape[0]), data["S_exact"], label=matrix_name)
+                    plt.ylabel("Eigenvalue", fontsize=16)
+                    plt.xlabel("Index", fontsize=16)
+                    plt.title(f"Spectrum")
+                    plt.legend()
+                    plt.xticks(fontsize=15)
+                    plt.yticks(fontsize=15)
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    plt.savefig(f"figures/{matrix_name}_spectrum.png")
+                    plt.close()
 
-                    if is_missing:
-                        continue
+                    # if scaling_factor == 2.0:
+                    #     viz_rank = 70
+                    # elif scaling_factor == 1.0:
+                    #     viz_rank = 300
+                    # else:
+                    #     viz_rank = None
 
-                    if plot_spectrum:
+                    viz_rank = 50
+
+                    if viz_rank is not None:
                         plt.figure(figsize=(12, 6))
                         # plt.plot(np.arange(data["S_exact"].shape[0]), np.log10(data["S_exact"]), label=matrix_name)
-                        plt.semilogy(np.arange(data["S_exact"].shape[0]), data["S_exact"], label=matrix_name)
-                        plt.ylabel("Eigenvalue", fontsize=16)
-                        plt.xlabel("Index", fontsize=16)
+                        plt.semilogy(np.arange(viz_rank), data["S_exact"][:viz_rank], label=matrix_name)
+                        plt.ylabel("Eigenvalue")
+                        plt.xlabel("Index")
                         plt.title(f"Spectrum")
                         plt.legend()
+                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
                         plt.xticks(fontsize=15)
                         plt.yticks(fontsize=15)
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
                         plt.tight_layout()
-                        plt.savefig(f"figures/{matrix_name}_spectrum.png")
+                        plt.savefig(f"figures/{matrix_name}_spectrum_zoomed.png")
                         plt.close()
+                # matrix_size = len(data['S_exact'])
+                
+                # plt.semilogy(data['S_exact'][:100])
+                # plt.title(f"Lengthscale  {scaling_factor}")
+                # plt.ylabel("Eigenvalue")
+                # plt.xlabel("Index")
+                # plt.savefig(f"figures/{matrix_name}_{scaling_factor}_spectrum.png")
+                
+                # plt.close()
+                # continue
 
-                        # if scaling_factor == 2.0:
-                        #     viz_rank = 70
-                        # elif scaling_factor == 1.0:
-                        #     viz_rank = 300
-                        # else:
-                        #     viz_rank = None
-
-                        viz_rank = 50
-
-                        if viz_rank is not None:
-                            plt.figure(figsize=(12, 6))
-                            # plt.plot(np.arange(data["S_exact"].shape[0]), np.log10(data["S_exact"]), label=matrix_name)
-                            plt.semilogy(np.arange(viz_rank), data["S_exact"][:viz_rank], label=matrix_name)
-                            plt.ylabel("Eigenvalue")
-                            plt.xlabel("Index")
-                            plt.title(f"Spectrum")
-                            plt.legend()
-                            plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                            plt.xticks(fontsize=15)
-                            plt.yticks(fontsize=15)
-                            plt.tight_layout()
-                            plt.savefig(f"figures/{matrix_name}_spectrum_zoomed.png")
-                            plt.close()
-                    # matrix_size = len(data['S_exact'])
-                    
-                    # plt.semilogy(data['S_exact'][:100])
-                    # plt.title(f"Lengthscale  {scaling_factor}")
-                    # plt.ylabel("Eigenvalue")
-                    # plt.xlabel("Index")
-                    # plt.savefig(f"figures/{matrix_name}_{scaling_factor}_spectrum.png")
-                    
-                    # plt.close()
-                    # continue
-
-                    if plot_trace_error:
-                        if not plot_trace_error_only_log:
-                            plt.figure(figsize=(12, 6))
-                            i = 0
-                            for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                                i += 1
-                                if e_i[0] == 0:
-                                    print("Initial Error is already 0!")
-                                    break
-                                # import pdb;pdb.set_trace()
-                                # plt.plot(np.arange(last_available_file_number+1), ((e_i)/e_i[0]), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
-                                #         color=color, alpha=0.7, markevery=i, markersize=12)
-                                plt.plot(np.arange(last_available_file_number+1), ((e_i)), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
-                                        color=color, alpha=0.7, markevery=i, markersize=12)
-
-                            # plt.plot(np.arange(last_available_file_number+1), (1-np.arange(last_available_file_number+1)/(last_available_file_number+1)),
-                            #         label='1-k/n', linestyle='--', alpha=0.7)
-
-                        
-                            plt.ylabel("$e_k\ /\ e_0$", fontsize=16)
-                            plt.xlabel("Iteration", fontsize=16)
-                            plt.title(f"Error $e_k\ /\ e_0$ over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                            plt.legend()
-                            plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                            plt.tight_layout()
-                            plt.xticks(fontsize=15)
-                            plt.yticks(fontsize=15)
-                            # plt.ylim([-0.01, 1.01])
-                            #plt.show()
-                            plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_{'_'.join(labels[-1].split(' '))}.png")
-                            plt.close()
-                            
-
+                if plot_trace_error:
+                    if not plot_trace_error_only_log:
                         plt.figure(figsize=(12, 6))
                         i = 0
                         for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
@@ -1761,955 +1728,19 @@ for (
                             if e_i[0] == 0:
                                 print("Initial Error is already 0!")
                                 break
-                            if "Vapprox" not in label:
-                                method_d_trace_error[name_postfix+"_quotient" if plot_S_quotient else name_postfix] = e_i
-                            # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                            #         color=color, alpha=0.7, markevery=i, markersize=12)
-                            plt.semilogy(np.arange(last_available_file_number+1), np.abs((e_i)), label=f'{label}', linestyle=linestyle, marker=marker,
-                                    color=color, alpha=0.7, markevery=i, markersize=12)
                             # import pdb;pdb.set_trace()
-                        # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        #          label='1-k/n', linestyle='--', alpha=0.7)
-                        # if scaling_factor == 2.0:
-                        #     plt.ylim(-7,1)
-                        # elif scaling_factor == 5.0:
-                        #     plt.ylim(-7,1)
-                        # elif scaling_factor == 10.0:
-                        #     plt.ylim(-6,0)
-                        # elif scaling_factor == 20.0:
-                        #     plt.ylim(-8,0)
-                        plt.ylabel("e_k", fontsize=16)
+                            # plt.plot(np.arange(last_available_file_number+1), ((e_i)/e_i[0]), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
+                            #         color=color, alpha=0.7, markevery=i, markersize=12)
+                            plt.plot(np.arange(last_available_file_number+1), ((e_i)), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
+                                    color=color, alpha=0.7, markevery=i, markersize=12)
+
+                        # plt.plot(np.arange(last_available_file_number+1), (1-np.arange(last_available_file_number+1)/(last_available_file_number+1)),
+                        #         label='1-k/n', linestyle='--', alpha=0.7)
+
+                    
+                        plt.ylabel("$e_k\ /\ e_0$", fontsize=16)
                         plt.xlabel("Iteration", fontsize=16)
-                        plt.title(f"Relative Eigenvalue Error over Iterations, Length Scale: {(scaling_factor):.1f}")
-                        plt.legend()
-                        plt.xticks(fontsize=15)
-                        plt.yticks(fontsize=15)
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        plt.tight_layout()
-                        #plt.show()
-                        # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
-                        current_figure = plt.gcf()
-                        filename = f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png"
-                        trace_error_figures.append([current_figure, filename])
-                        plt.close()
-
-                    import glob
-
-                    S_exact = None
-
-                    def plot_multiple_graphs_single_iteration(dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
-                                                            colors=None, linestyles=None, with_S_exact=True, rel_A_norm=False,
-                                                            with_angles=False, markers=None):
-                        # Create a figure with 4 subplots in a row
-                        num_plots = 4 if with_angles else 3
-                        fig, axs = plt.subplots(1, num_plots, figsize=(36, 8))  # 4 * (12, 8) for width    
-
-                        # 1. Spectrum comparison plot
-                        load_and_plot_spectrum_comparison(dir_paths, iteration, labels, colors=colors, linestyles=linestyles, markers=markers,
-                                                        with_S_exact=with_S_exact, rel_A_norm=False, axs=[axs[0], axs[1]])
-                        
-                        # 2. Residuals plot
-                        load_and_plot_same_iteration_residuals(dir_paths, iteration, labels, is_sym_psd, colors=colors, 
-                                                            linestyles=linestyles, markers=markers, ax=axs[2])
-                        
-                        
-                        
-                        # # 3. Relative difference w.r.t A_norm plot
-                        # if rel_A_norm:
-                        #     load_and_plot_spectrum_comparison(dir_paths, iteration, labels, colors=colors, linestyles=linestyles, 
-                        #                                       with_S_exact=with_S_exact, rel_A_norm=True, ax=axs[3])
-                        # else:
-                        #     axs[3].axis('off')  # Turn off the axis if rel_A_norm is False
-                        
-                        # 4. Canonical angles plot
-                        if with_angles:
-                            load_and_plot_multiple_canonical_angles(dir_paths, iteration, labels, ax=axs[3])
-                        
-                        plt.tight_layout()
-                        
-                        if save_path:
-                            plt.savefig(save_path, bbox_inches='tight', dpi=300)
-                        
-                        #plt.show()
-
-                        plt.savefig(f"figures/{matrix_name}_it_{iteration}_{'_'.join(labels[-1].split(' '))}.png")
-                        plt.close()
-
-                    # Modified functions to work with the new combined plot
-
-                    def load_and_plot_same_iteration_residuals(dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
-                                                            colors=None, linestyles=None, ax=None, markers=None):
-                        if ax is None:
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                        
-                        colors = plt.cm.rainbow(np.linspace(0, 1, len(dir_paths))) if colors is None else colors
-                        linestyles = ['-' for _ in colors] if linestyles is None else linestyles
-
-                        i = 0
-                        for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
-                            i += 1
-                            if is_sym_psd:
-                                file_path = os.path.join(dir_path, f'residuals_sym_psd_data_{iteration}.npz')
-                    #             file_path = os.path.join(dir_path, f'residuals_sym_psd_data_truncated_{iteration}.npz')
-                    #             file_path = os.path.join(dir_path, f'residuals_sym_psd_data_truncated_Rayleigh_{iteration}.npz')
-                            else:
-                                file_path = os.path.join(dir_path, f'residuals_data_{iteration}.npz')
-                    #         print(file_path); raise
-                            try:
-                                data = np.load(file_path)
-                                approx_residuals = data['approx_residuals']
-                                ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
-                            except FileNotFoundError:
-                                print(f"File not found: {file_path}")
-                                break
-
-                        if is_sym_psd:
-                            ax.set_ylabel('Residual Norm (sym pd)')
-                            ax.set_title(f'Residuals Comparison - Iteration {iteration}')
-                        else:
-                            ax.set_ylabel('Residual Norm (not sym pd)')
-                            ax.set_title(f'Residuals Comparison - Iteration {iteration}')
-
-                        ax.set_xlabel('Index')
-                        ax.legend()
-                        ax.grid(True)
-
-                    def load_and_plot_spectrum_comparison(dir_paths, iteration, labels, save_dir=None,
-                                                        colors=None, linestyles=None, with_S_exact=True, 
-                                                        rel_A_norm=False, axs=None, markers=None):
-                        global S_exact
-                        if axs is None:
-                            raise
-                            fig, ax = plt.subplots(figsize=(12, 8))
-
-                        ax = axs[0]
-                        colors = plt.cm.rainbow(np.linspace(0, 1, len(dir_paths))) if colors is None else colors
-                        linestyles = ['-' for _ in colors] if linestyles is None else linestyles
-                        
-                        # Load exact spectrum from the first directory
-                        exact_file_path = os.path.join(dir_paths[0], f'spectrum_data_{iteration}.npz')
-                        exact_data = np.load(exact_file_path)
-
-                        if with_S_exact:
-                            S_exact = exact_data['S_exact']
-                        else:
-                            exact_file_path = os.path.join(dir_paths[-1], f'spectrum_data_{2000}.npz')
-                            exact_data = np.load(exact_file_path)
-                            S_exact = exact_data['S']
-                        
-                        i = 0
-                        for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
-                            i += 1
-                            file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
-                            
-                            try:
-                                data = np.load(file_path)
-                                S = data['S']
-                                if rel_A_norm:
-                                    file_path = os.path.join(dir_path, f'diffspec_relA_data_{iteration}.npz')
-                                    data = np.load(file_path)            
-                                    rel_diff = data['diff']
-                                    ax.semilogy(rel_diff, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
-                                else:
-                                    ax.semilogy(S, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
-                            except FileNotFoundError:
-                                print(f"File not found: {file_path}")
-                                break
-
-                        if not S_exact is None and not rel_A_norm:
-                            ax.semilogy(S_exact[:len(S)], label='Exact', color='black', linestyle='--')
-
-                        ax.set_xlabel('Index')
-                        # else:
-                        ax.set_ylabel('Singular Value')
-                        ax.set_title(f'Spectrum Comparison - Iteration {iteration}')
-                        ax.legend()
-                        ax.grid(True)
-
-                        # Plot relative difference to S_exact
-                        i = 0
-                        for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
-                            # file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
-                            i += 1
-                            file_path = os.path.join(dir_path, f'diffspec_relS_data_{iteration}.npz')
-                    #         print(file_path); raise
-                            try:
-                                if with_S_exact:
-                                    data = np.load(file_path)
-                                    rel_diff = data['diff']
-                                    axs[1].semilogy(rel_diff, label=label, color=color, linestyle=linestyle, marker=marker, alpha=0.7,
-                                                    markevery=i, markersize=12)
-                                    
-                                    if iteration == 7:
-                                        file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
-                                        data = np.load(file_path)
-                                        S = data['S']
-                                        rel_diff_2 = np.abs(S-S_exact[:len(S)]) / S_exact[:len(S)]
-                                        # import pdb;pdb.set_trace()
-                                else:
-                                    file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
-                                    data = np.load(file_path)
-                                    S = data['S']
-                                    rel_diff = np.abs(S-S_exact) / S_exact
-                                    axs[1].semilogy(rel_diff, label=label, color=color, linestyle=linestyle, marker=marker, alpha=0.7,
-                                                    markevery=i, markersize=12)
-                    #             if "exact" in label or "random" in label:
-                    #                 plt.semilogy(rel_diff, label=label, color=color, linestyle='--', alpha=0.7)
-                    #             else:
-                    #                 plt.semilogy(rel_diff, label=label, color=color, alpha=0.7)
-                            except FileNotFoundError:
-                                print(f"File not found: {file_path}")
-                                break
-
-                        axs[1].set_xlabel('Index')
-                        axs[1].set_ylabel('Relative Difference')
-                        axs[1].set_title(f'Relative Difference w.r.t S_exact - Iteration {iteration}')
-                        axs[1].legend()
-                        axs[1].grid(True)
-
-                    def load_and_plot_multiple_canonical_angles(dir_paths, iteration, labels, save_path=None, additional_labels="", ax=None):
-                        if ax is None:
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                        
-                        num_experiments = len(dir_paths)
-                        positions = np.arange(1, num_experiments + 1)
-                        width = 0.2
-                        
-                        all_data = []
-                        all_bp = []
-                        
-                        for i, (dir_path, label) in enumerate(zip(dir_paths, labels)):
-                            file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
-                            
-                            try:
-                                data = np.load(file_path)
-                                s = data['s']
-                                C = np.log10(np.clip(np.abs(data['C']), 1e-32,1)-np.eye(len(s)))
-                    #             C = np.log10(np.clip(1-np.abs(data['C']), 1e-32,1))
-                                sns.heatmap(C, 
-                    #                 cmap='viridis',  # Color scheme
-                                    cbar_kws={'label': 'Value'},  # Colorbar label
-                                    xticklabels=False,  # Hide x-axis labels for cleaner look
-                                    yticklabels=False,
-                                    ax=ax,
-                                    vmin=-12)
-                    #             print((1-np.abs(data['C']))[0,0])
-                                ax.set_title('$\log(|V_{approx}^T\ x\ V| - I)$ (element-wise)')
-                    #             plt.imshow(C)
-                    #             plt.show()
-                                return
-                                all_data.append(s)
-                                
-                                bp = ax.boxplot(s, positions=[positions[i]], widths=width, patch_artist=True)
-                                all_bp.append(bp)
-                                
-                                # Add annotations (simplified for space)
-                                x_pos = positions[i]
-                                min_val, max_val = np.min(s), np.max(s)
-                                q1, median_val, q3 = np.percentile(s, [25, 50, 75])
-                                ax.annotate(f'Med: {1-np.exp(-median_val):.4f}', (x_pos, median_val), xytext=(5, 0), 
-                                            textcoords='offset points', ha='left', va='center', fontsize=8)
-                                
-                            except FileNotFoundError:
-                                print(f"File not found: {file_path}")
-                                break
-                        
-                        ax.set_title(f'Canonical Angles Comparison - Iteration {iteration}')
-                        ax.set_ylabel('Values')
-                        ax.set_ylim(0, -np.log10(1e-4)+0.1)
-                        
-                        y_ticks = np.array([0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1])
-                        ax.set_yticks(-np.log10(1 - y_ticks + 1e-4))
-                        ax.set_yticklabels([f"{y}" for y in y_ticks])
-                        
-                        ax.set_xticks(positions)
-                        ax.set_xticklabels(labels, rotation=45, ha='right')
-                        
-                        ax.grid(axis='y')
-                        #plt.show()
-
-                        # plt.savefig(f"figures/it_{iteration}.png")
-                        # plt.close()
-                        
-                        # plt.plot(np.arange(len(s)), s)
-                        # plt.show()
-
-                    # dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
-                    # colors=None, linestyles=None, with_S_exact=True, rel_A_norm=False
-                    # for i in range(10):
-                        
-                    # import pdb;pdb.set_trace()
-                    start = 3
-                    end = last_available_file_number
-                    n_steps = 3
-
-                    # Using linspace to include both start and end with n_steps intervals
-                    the_rest = np.linspace(start, end, n_steps+1, dtype=int)[1:] 
-                    the_rest = np.minimum(np.ones(the_rest.shape)*end, the_rest)
-                    start = min(start, end)
-
-                    iterations = np.concatenate([np.array(range(start)), np.minimum(np.ones(the_rest.shape)*end, the_rest)])
-                    iterations = np.unique(iterations)
-                    # for i in [20,40,80,320,1280,2000]:
-                    # for i in range(10):
-                    # for i in the_rest:
-                    # if end == 1:
-                    #     import pdb;pdb.set_trace()
-                    if plot_detailed_iterations:
-                        print("Generating per iteration plots")
-                        for i in iterations:
-                            print(i, start, end, the_rest)
-                            i = int(i)
-                            plot_multiple_graphs_single_iteration(
-                                dir_paths, 
-                                i,  
-                                labels, 
-                                is_sym_psd=True, 
-                                colors=label_colors,
-                                linestyles=label_linestyles,
-                                markers=label_markers,
-                                with_S_exact=True,
-                                with_angles=True,
-                            )
-
-                    # import pdb;pdb.set_trace()
-                    reservoir_size = int(reservoir_size)
-                    if (name_postfix == "_isvd" or "_isvd1by1" in name_postfix or "demix" in name_postfix or "isvdst" in name_postfix) and plot_jer_residual:
-                        for dir_path, label in zip(dir_paths, labels):
-                            reservoir_residuals = []
-                            regular_residuals = []
-                            reservoir_residuals_quotient = []
-                            regular_residuals_quotient = []
-                            num_ev = 10
-                            fig, ax = plt.subplots(figsize=(8, 6))
-                            for iteration in range(last_available_file_number+1):
-                                # Load data
-                                file_path = os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz')
-                                try:
-                                    data = np.load(file_path)
-                                    res_residuals = data['reservoir_residuals'].reshape(1,-1)[:, :num_ev]
-                                    res_residuals *= np.sqrt(matrix_size / reservoir_size)
-                                    reg_residuals = data['regular_residuals'].reshape(1,-1)[:, :num_ev]
-                                    reservoir_residuals.append(res_residuals)
-                                    regular_residuals.append(reg_residuals)
-                                    res_residuals_quotient = data['reservoir_residuals_quotient'].reshape(1,-1)[:, :num_ev]
-                                    res_residuals_quotient *= np.sqrt(matrix_size / reservoir_size)
-                                    reg_residuals_quotient = data['regular_residuals_quotient'].reshape(1,-1)[:, :num_ev]
-                                    reservoir_residuals_quotient.append(res_residuals_quotient)
-                                    regular_residuals_quotient.append(reg_residuals_quotient)
-
-                                    # trace = np.sum(data['S'])
-                                    # tr_S.append(trace)
-                                    # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            
-                            reservoir_residuals = pad_and_concatenate(reservoir_residuals, axis=0)
-                            regular_residuals = pad_and_concatenate(regular_residuals, axis=0)
-                            reservoir_residuals_quotient = pad_and_concatenate(reservoir_residuals_quotient, axis=0)
-                            regular_residuals_quotient = pad_and_concatenate(regular_residuals_quotient, axis=0)
-
-                            # reservoir_residuals = np.concatenate(reservoir_residuals, axis=0)
-                            # regular_residuals = np.concatenate(regular_residuals, axis=0)
-                            # reservoir_residuals_quotient = np.concatenate(reservoir_residuals_quotient, axis=0)
-                            # regular_residuals_quotient = np.concatenate(regular_residuals_quotient, axis=0)
-                            # regular_residuals = np.concatenate(regular_residuals, axis=0)
-                            # print(regular_residuals_quotient)
-                            # import pdb;pdb.set_trace()
-                            # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - data['S'].sum()) / data['S_exact'][:len(data['S'])].sum()                                                                    
-                            # cmap = plt.cm.plasma # viridis
-                            color_range = np.linspace(0, 1.0, reservoir_residuals.shape[1])
-                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-                            if not plot_S_quotient:
-                                if plot_reservoir_residual:
-                                    fig, ax = plt.subplots(figsize=(12, 8))
-                                    
-                                    for i in range(reservoir_residuals.shape[1]):
-                                        ax.semilogy(range(reservoir_residuals.shape[0]), reservoir_residuals[:,i], color=colors[i], marker='o')
-                                        # ax.scatter(range(reservoir_residuals.shape[0]), reservoir_residuals[:,i], color=colors[i])
-                                    ax.set_yscale('log')
-                                    ax.grid(True)
-                                    ax.set_xlabel('window index', fontsize=16)
-                                    ax.set_ylabel('residual', fontsize=16)
-                                    # ax.set_ylim(1e-2, 1e2)
-                                    
-                                    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, reservoir_residuals.shape[1]))
-                                    # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, reservoir_residuals.shape[1]+1))
-                                    # cbar.ax.set_yticklabels(range(1, reservoir_residuals.shape[1]+1))
-                                    # plt.rc(('xtick.major', 'ytick.major'), width=2.5, size=20)
-                                    plt.xticks(fontsize=15)
-                                    plt.yticks(fontsize=15)
-                                    plt.tight_layout()
-                                    plt.legend()
-                                    plt.title(f"reservoir_residuals_{'_'.join(label.split(' '))}")
-                                    plt.savefig(f"figures/{matrix_name}_reservoir_residuals_{'_'.join(label.split(' '))}.png")
-                                    plt.close()
-                                    # import pdb;pdb.set_trace()
-                                
-                                if plot_regular_residual:
-                                    fig, ax = plt.subplots(figsize=(12, 8))
-                                    for i in range(regular_residuals.shape[1]):
-                                        ax.semilogy(range(regular_residuals.shape[0]), regular_residuals[:,i], color=colors[i], marker='o')
-                                        # ax.scatter(range(regular_residuals.shape[0]), regular_residuals[:,i], color=colors[i])
-                                    ax.set_yscale('log')
-                                    ax.grid(True)
-                                    ax.set_xlabel('window index', fontsize=16)
-                                    ax.set_ylabel('residual', fontsize=16)
-                                    # ax.set_ylim(1e-2, 1e2)
-                                    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, regular_residuals.shape[1]))
-                                    # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, regular_residuals.shape[1]+1))
-                                    # cbar.ax.set_yticklabels(range(1, regular_residuals.shape[1]+1))
-                                    plt.xticks(fontsize=15)
-                                    plt.yticks(fontsize=15)
-                                    plt.tight_layout()
-                                    plt.legend()
-                                    plt.title(f"regular_residuals_{'_'.join(label.split(' '))}")
-                                    # plt.savefig(f"figures/{matrix_name}_regular_residuals_{'_'.join(label.split(' '))}.png")
-                                    current_figure = plt.gcf()
-                                    filename = f"figures/{matrix_name}_regular_residuals_{'_'.join(label.split(' '))}.png"
-                                    regular_residuals_figures.append([current_figure, filename])
-                                    plt.close()
-
-
-                            # ==== Quotient ====
-                            if plot_S_quotient:
-                                if plot_reservoir_residual:
-                                    fig, ax = plt.subplots(figsize=(12, 8))
-                                    for i in range(reservoir_residuals_quotient.shape[1]):
-                                        ax.semilogy(range(reservoir_residuals_quotient.shape[0]), reservoir_residuals_quotient[:,i], color=colors[i], marker='o')
-                                        # ax.scatter(range(reservoir_residuals_quotient.shape[0]), reservoir_residuals_quotient[:,i], color=colors[i])
-                                    ax.set_yscale('log')
-                                    ax.grid(True)
-                                    ax.set_xlabel('window index', fontsize=16)
-                                    ax.set_ylabel('residual', fontsize=16)
-                                    # ax.set_ylim(1e-2, 1e2)
-                                    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, reservoir_residuals_quotient.shape[1]))
-                                    # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, reservoir_residuals_quotient.shape[1]+1))
-                                    # cbar.ax.set_yticklabels(range(1, reservoir_residuals_quotient.shape[1]+1))
-                                    plt.xticks(fontsize=15)
-                                    plt.yticks(fontsize=15)
-                                    plt.tight_layout()
-                                    plt.legend()
-                                    plt.title(f"reservoir_residuals_quotient_{'_'.join(label.split(' '))}")
-                                    plt.savefig(f"figures/{matrix_name}_reservoir_residuals_quotient_{'_'.join(label.split(' '))}.png")
-                                    plt.close()
-
-                                if plot_regular_residual:
-                                    fig, ax = plt.subplots(figsize=(12, 8))
-                                    for i in range(regular_residuals_quotient.shape[1]):
-                                        ax.semilogy(range(regular_residuals_quotient.shape[0]), regular_residuals_quotient[:,i], color=colors[i], marker='o')
-                                        # ax.scatter(range(regular_residuals_quotient.shape[0]), regular_residuals_quotient[:,i], color=colors[i])
-                                    # ax.set_yscale('log')
-                                    ax.grid(True)
-                                    ax.set_xlabel('window index', fontsize=16)
-                                    ax.set_ylabel('residual', fontsize=16)
-                                    # if scaling_factor == 2.0:
-                                    #     ax.set_ylim(1e-13, 1e4)
-                                    # elif scaling_factor == 0.0:
-                                    #     ax.set_ylim(1e-4, 1e2)
-                                    # if scaling_factor == 2.0:
-                                    #     ax.set_ylim(1e-2, 1e4)
-                                    # elif scaling_factor == 5.0:
-                                    #     ax.set_ylim(1e-4,1e6)
-                                    # elif scaling_factor == 10.0:
-                                    #     ax.set_ylim(1e-6,10**(4.5))
-                                    # elif scaling_factor == 20.0:
-                                    #     ax.set_ylim(10**(-9), 10**(4.5))
-                                    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, regular_residuals_quotient.shape[1]))
-                                    # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, regular_residuals_quotient.shape[1]+1))
-                                    # cbar.ax.set_yticklabels(range(1, regular_residuals_quotient.shape[1]+1))
-                                    plt.xticks(fontsize=15)
-                                    plt.yticks(fontsize=15)
-                                    plt.tight_layout()
-                                    plt.legend()
-                                    plt.title(f"regular_residuals_quotient_{'_'.join(label.split(' '))}")
-                                    # plt.savefig()
-                                    current_figure = plt.gcf()
-                                    filename = f"figures/{matrix_name}_regular_residuals_quotient_{'_'.join(label.split(' '))}.png"
-                                    regular_residuals_figures.append([current_figure, filename])
-                                    plt.close()
-                        
-                    if plot_leftout:
-                        data_list = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            current_totals = []
-                            current_throws = []
-                            current_throw = 0
-                            for iteration in range(last_available_file_number+1):
-                                file_path = os.path.join(dir_path, f'leftout_data_{iteration}.npz')
-                                try:
-                                    data = np.load(file_path, allow_pickle=True)
-                                    current_total = data['current_total']
-                                    throw = data['throw']
-                                    current_throw += throw
-                                    iter_num = data['iteration']
-                                    current_totals.append(current_total)
-                                    current_throws.append(current_throw)
-                                    # print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            data_list.append([current_totals, current_throws, label]) 
-                        
-                        combined_log_figures = []
-
-                        for current_totals, current_throws, label in data_list:
-                            current_totals = np.asarray(current_totals)
-                            current_throws = np.asarray(current_throws)
-
-                            fig, ax = plt.subplots(figsize=(12, 8))
-
-                            num_sv = current_totals.shape[1]
-                            windows = np.arange(current_totals.shape[0])
-
-                            color_range = np.linspace(0, 1.0, num_sv)
-                            if num_sv > 2:
-                                color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-
-                            for i in range(num_sv):
-                                ax.semilogy(
-                                    windows,
-                                    np.abs(current_totals[:, i]),
-                                    color=colors[i],
-                                    linestyle='-',
-                                    marker='o',
-                                    label=f'Total #{i}'
-                                )
-                                ax.semilogy(
-                                    windows,
-                                    np.abs(current_throws[:, i]),
-                                    color=colors[i],
-                                    linestyle='--',
-                                    marker='x',
-                                    label=f'Throw #{i}'
-                                )
-
-                            ax.legend()
-                            ax.set_ylabel("Energy (log scale)")
-                            ax.set_xlabel("Window")
-                            ax.tick_params(axis='x', labelrotation=45)
-                            ax.set_title(f"{label}_total_and_throw_log")
-                            ax.grid(True)
-
-                            filename = f"figures/{matrix_name}_total_throw_log_{'_'.join(label.split(' '))}.png"
-                            current_fig = plt.gcf()
-                            combined_log_figures.append([current_fig, filename])
-                            plt.close()
-
-                        combined_linear_figures = []
-
-                        for current_totals, current_throws, label in data_list:
-                            current_totals = np.asarray(current_totals)
-                            current_throws = np.asarray(current_throws)
-
-                            fig, ax = plt.subplots(figsize=(12, 8))
-
-                            num_sv = current_totals.shape[1]
-                            windows = np.arange(current_totals.shape[0])
-
-                            color_range = np.linspace(0, 1.0, num_sv)
-                            if num_sv > 2:
-                                color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-
-                            for i in range(num_sv):
-                                ax.plot(
-                                    windows,
-                                    current_totals[:, i],
-                                    color=colors[i],
-                                    linestyle='-',
-                                    # marker='o',
-                                    label=f'Total #{i}'
-                                )
-                                ax.plot(
-                                    windows,
-                                    current_throws[:, i],
-                                    color=colors[i],
-                                    linestyle='--',
-                                    # marker='x',
-                                    label=f'Throw #{i}'
-                                )
-
-                            ax.legend()
-                            ax.set_ylabel("Energy")
-                            ax.set_xlabel("Window")
-                            ax.tick_params(axis='x', labelrotation=45)
-                            ax.set_title(f"{label}_total_and_throw_linear")
-                            ax.grid(True)
-
-                            filename = f"figures/{matrix_name}_total_throw_linear_{'_'.join(label.split(' '))}.png"
-                            current_fig = plt.gcf()
-                            combined_linear_figures.append([current_fig, filename])
-                            plt.close()
-
-                        total_figures = []
-                        throw_figures = []
-
-                        for current_totals, current_throws, label in data_list:
-
-                            current_totals = np.asarray(current_totals)
-                            current_throws = np.asarray(current_throws)
-
-                            num_sv = current_totals.shape[1]
-                            windows = np.arange(current_totals.shape[0])
-
-                            color_range = np.linspace(0, 1.0, num_sv)
-                            if num_sv > 2:
-                                color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-
-                            # -------- totals plot --------
-                            fig, ax = plt.subplots(figsize=(12, 8))
-
-                            for i in range(num_sv):
-                                ax.plot(
-                                    windows,
-                                    current_totals[:, i],
-                                    color=colors[i],
-                                    # marker='o',
-                                    label=f'Eigenvalue #{i}'
-                                )
-
-                            ax.legend()
-                            ax.set_ylabel("Current total")
-                            ax.set_xlabel("Window")
-                            ax.tick_params(axis='x', labelsize=15, labelrotation=45)
-                            ax.tick_params(axis='y', labelsize=15)
-                            ax.set_title(f"{label}_current_total")
-                            ax.grid(True)
-
-                            filename = f"figures/{matrix_name}_current_total_{'_'.join(label.split(' '))}.png"
-                            current_fig = plt.gcf()
-                            total_figures.append([current_fig, filename])
-                            plt.close()
-
-                            # -------- throws plot --------
-                            fig, ax = plt.subplots(figsize=(12, 8))
-
-                            for i in range(num_sv):
-                                ax.plot(
-                                    windows,
-                                    current_throws[:, i],
-                                    color=colors[i],
-                                    # marker='o',
-                                    label=f'Eigenvalue #{i}'
-                                )
-
-                            ax.legend()
-                            ax.set_ylabel("Cumulative throw")
-                            ax.set_xlabel("Window")
-                            ax.tick_params(axis='x', labelsize=15, labelrotation=45)
-                            ax.tick_params(axis='y', labelsize=15)
-                            ax.set_title(f"{label}_cumulative_throw")
-                            ax.grid(True)
-
-                            filename = f"figures/{matrix_name}_cumulative_throw_{'_'.join(label.split(' '))}.png"
-                            current_fig = plt.gcf()
-                            throw_figures.append([current_fig, filename])
-                            plt.close()
-                        
-
-                    if plot_tr_angles:
-                        data_list = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            tr_angles = []
-                            s_list = []
-                            additional_labels = ""
-                            for iteration in range(last_available_file_number+1):
-                                file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
-                                
-                                try:
-                                    data = np.load(file_path)
-                                    S = data['C']
-                                    # S = 
-                                    # S = np.sqrt(1-np.clip(S**2, 0,1)) 
-                                    s = np.linalg.svd(S, compute_uv=False)
-                                    s = np.sqrt(1-np.clip(s**2, 0,1))
-                                    s_list.append(s.reshape(1,-1))
-
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            
-                            limit_S = min(10, s_list[0].shape[-1])
-                            # limit_S = len(data['S'])
-                            # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
-                            s_list = np.concatenate(s_list, axis=0)
-                            e_i = np.sum(s_list[:, :limit_S], axis=1)
-                            e_i = e_i / limit_S
-                            # print(Ss[-1])
-                            # print(e_i)
-                            # import pdb;pdb.set_trace()
-                            
-                            data_list.append((e_i, label))
-                            if smallest_ei > min(e_i):
-                                smallest_ei = min(e_i)
-
-                        # if not plot_tr_angles_only_log:
-                        #     plt.figure(figsize=(12, 6))
-                        #     i = 0
-                        #     for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                        #         i += 1
-                        #         if e_i[0] == 0:
-                        #             print("Initial Error is already 0!")
-                        #             break
-                        #         # import pdb;pdb.set_trace()
-                        #         # plt.plot(np.arange(last_available_file_number+1), ((e_i)/e_i[0]), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
-                        #         #         color=color, alpha=0.7, markevery=i, markersize=12)
-                        #         plt.plot(np.arange(last_available_file_number+1), ((e_i)), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
-                        #                 color=color, alpha=0.7, markevery=i, markersize=12)
-
-                        #     # plt.plot(np.arange(last_available_file_number+1), (1-np.arange(last_available_file_number+1)/(last_available_file_number+1)),
-                        #     #         label='1-k/n', linestyle='--', alpha=0.7)
-
-                        #     plt.ylabel("$e_k\ /\ e_0$")
-                        #     plt.xlabel("Iteration")
-                        #     plt.title(f"Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                        #     plt.legend()
-                        #     plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        #     plt.tight_layout()
-                        #     # plt.ylim([-0.01, 1.01])
-                        #     #plt.show()
-                        #     plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_{'_'.join(labels[-1].split(' '))}.png")
-                        #     plt.close()
-                        
-                        # import pdb;pdb.set_trace()
-                        plt.figure(figsize=(12, 6))
-                        i = 0
-                        for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                            i += 1
-                            if e_i[0] == 0:
-                                print("Initial Error is already 0!")
-                                break
-                            # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                            #         color=color, alpha=0.7, markevery=i, markersize=12)
-                            plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i))), label=f'{label}', linestyle=linestyle, marker=marker,
-                                    color=color, alpha=0.7, markevery=i, markersize=12)
-                        # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        #          label='1-k/n', linestyle='--', alpha=0.7)
-
-                        plt.ylabel("log $e_k\ /\ e_0$")
-                        plt.xlabel("Iteration")
-                        plt.title(f"(Log) Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                        plt.legend()
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        plt.tight_layout()
-                        #plt.show()
-                        plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
-                        plt.close()
-
-                    if plot_angles:
-                        data_list = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            tr_angles = []
-                            s_list = []
-                            additional_labels = ""
-                            for iteration in range(last_available_file_number+1):
-                                file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
-                                
-                                try:
-                                    data = np.load(file_path)
-                                    S = data['C']
-                                    # S = 
-                                    # S = np.sqrt(1-np.clip(S**2, 0,1)) 
-                                    try:
-                                        s = np.linalg.svd(S, compute_uv=False)
-                                    except:
-                                        import pdb;pdb.set_trace()
-                                    s = np.sqrt(1-np.clip(s**2, 0,1))
-                                    s_list.append(s.reshape(1,-1))
-                                    # import pdb;pdb.set_trace()
-
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            
-                            limit_S = min(10, s_list[0].shape[-1])
-                            # limit_S = len(data['S'])
-                            # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
-                            s_list = np.concatenate(s_list, axis=0)
-                            e_i = np.sum(s_list[:, :limit_S], axis=1)
-                            e_i = e_i / limit_S
-                            # print(Ss[-1])
-                            # print(e_i)
-                            # import pdb;pdb.set_trace()
-                            
-                            data_list.append((e_i, label))
-                            if smallest_ei > min(e_i):
-                                smallest_ei = min(e_i)
-
-                            # if "demix" in label and scaling_factor == 2.0:
-                            #     import pdb;pdb.set_trace()
-
-                        # import pdb;pdb.set_trace()
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                            color_range = np.linspace(0, 1.0, s_list.shape[1])
-                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-                            # Plot each window's data
-                            for i in range(s_list.shape[1]):
-                                try:
-                                    plt.semilogy(np.arange(s_list.shape[0]), s_list[:,i], color=colors[i], label=f'Principle Angle #{i}', marker='o', alpha=0.7)
-                                except:
-                                    # import pdb;pdb.set_trace()
-                                    raise
-                            # Find min and max non-zero values for better y-limit setting
-                            all_values = s_list.flatten()
-                            non_zero_values = all_values[all_values > 0]
-                            if len(non_zero_values) > 0:
-                                y_min = np.min(non_zero_values) * 0.8  # Padding below
-                                y_max = np.max(all_values) * 1.2       # Padding above
-                                plt.ylim(y_min, y_max)
-                            plt.ylim([1e-8,1])
-                            plt.legend()
-                            # plt.yscale('log')
-                            plt.ylabel("Relative eigenvalue difference")
-                            plt.xlabel("Window")
-                            plt.xticks(fontsize=15)
-                            plt.yticks(fontsize=15)
-                            plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
-                            plt.grid()
-                            plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}angles_over_time_{'_'.join(label.split(' '))}.png")
-                            plt.close()
-
-                    if plot_angles_indi:
-                        data_list = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            tr_angles = []
-                            s_list = []
-                            additional_labels = ""
-                            for iteration in range(last_available_file_number+1):
-                                file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
-                                
-                                try:
-                                    data = np.load(file_path)
-                                    S = data['C']
-                                    s = np.linalg.norm(S,axis=0)
-                                    # S = 
-                                    # S = np.sqrt(1-np.clip(S**2, 0,1)) 
-                                    # try:
-                                    #     s = np.linalg.svd(S, compute_uv=False)
-                                    # except:
-                                    #     import pdb;pdb.set_trace()
-                                    # s = np.sqrt(1-np.clip(s**2, 0,1))
-                                    s = np.sqrt(1-np.clip(s**2,0,1))
-                                    s_list.append(s.reshape(1,-1))
-                                    # import pdb;pdb.set_trace()
-
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            
-                            limit_S = min(10, s_list[0].shape[-1])
-                            # limit_S = len(data['S'])
-                            # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
-                            s_list = np.concatenate(s_list, axis=0)
-                            e_i = np.sum(s_list[:, :limit_S], axis=1)
-                            e_i = e_i / limit_S
-                            # print(Ss[-1])
-                            # print(e_i)
-                            # import pdb;pdb.set_trace()
-                            
-                            data_list.append((e_i, label))
-                            if smallest_ei > min(e_i):
-                                smallest_ei = min(e_i)
-
-                            # if "demix" in label and scaling_factor == 2.0:
-                            #     import pdb;pdb.set_trace()
-
-                        # import pdb;pdb.set_trace()
-                            fig, ax = plt.subplots(figsize=(12, 8))
-                            color_range = np.linspace(0, 1.0, s_list.shape[1])
-                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                            color_range = np.sort(color_range)
-                            colors = plt.cm.jet(color_range)
-                            # Plot each window's data
-                            for i in range(s_list.shape[1]):
-                                try:
-                                    plt.semilogy(np.arange(s_list.shape[0]), s_list[:,i], color=colors[i], label=f'Principle Angle #{i}', marker='o', alpha=0.7)
-                                except:
-                                    # import pdb;pdb.set_trace()
-                                    raise
-                            # Find min and max non-zero values for better y-limit setting
-                            all_values = s_list.flatten()
-                            non_zero_values = all_values[all_values > 0]
-                            if len(non_zero_values) > 0:
-                                y_min = np.min(non_zero_values) * 0.8  # Padding below
-                                y_max = np.max(all_values) * 1.2       # Padding above
-                                plt.ylim(y_min, y_max)
-                            plt.ylim([1e-8,1])
-                            plt.legend()
-                            # plt.yscale('log')
-                            plt.ylabel("Relative eigenvalue difference")
-                            plt.xlabel("Window")
-                            plt.xticks(fontsize=15)
-                            plt.yticks(fontsize=15)
-                            plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
-                            plt.grid()
-                            plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}angles_indi_over_time_{'_'.join(label.split(' '))}.png")
-                            plt.close()
-                        # plt.figure(figsize=(12, 6))
-                        # i = 0
-                        # for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                        #     i += 1
-                        #     if e_i[0] == 0:
-                        #         print("Initial Error is already 0!")
-                        #         break
-                        #     # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                        #     #         color=color, alpha=0.7, markevery=i, markersize=12)
-                        #     plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i))), label=f'{label}', linestyle=linestyle, marker=marker,
-                        #             color=color, alpha=0.7, markevery=i, markersize=12)
-                        # # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        # #          label='1-k/n', linestyle='--', alpha=0.7)
-
-                        # plt.ylabel("log $e_k\ /\ e_0$")
-                        # plt.xlabel("Iteration")
-                        # plt.title(f"(Log) Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
-                        # plt.legend()
-                        # plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        # plt.tight_layout()
-                        # #plt.show()
-                        # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
-                        # plt.close()
-                    
-                    if plot_time_elapsed:
-                        from matplotlib import cm
-
-                        # Create figure and axis
-                        plt.figure(figsize=(12, 6))
-                        time_elapsed = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            file_path = os.path.join(dir_path, f'other_info.npz')
-                            try:
-                                data = np.load(file_path, allow_pickle=True)
-                                # import pdb;pdb.set_trace()
-                                other_info = data['other_info'].item()
-                                time_elapsed.append(other_info["time_elapsed"])
-                            except FileNotFoundError:
-                                print(f"File not found: {file_path}")
-                                break
-                        time_elapsed = np.array(time_elapsed)
-
-                        # Generate a color map based on number of categories
-                        num_categories = len(time_elapsed)
-                        categories = np.arange(num_categories)
-                        cmap = cm.get_cmap('viridis', num_categories)  # 'tab10', 'tab20', 'viridis', etc.
-
-                        # Plot each bar individually with its own label and color
-                        for i, (category, value, label) in enumerate(zip(categories, time_elapsed, labels)):
-                            plt.bar(i, np.log10(value), color=cmap(i), label=label)
-
-                        plt.ylabel("10^{x} Time Elapsed", fontsize=16)
-                        plt.xlabel("", fontsize=16)
-                        plt.title(f"")
+                        plt.title(f"Error $e_k\ /\ e_0$ over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
                         plt.legend()
                         plt.grid(True, which='both', linestyle='--', alpha=0.5)
                         plt.tight_layout()
@@ -2717,294 +1748,1261 @@ for (
                         plt.yticks(fontsize=15)
                         # plt.ylim([-0.01, 1.01])
                         #plt.show()
-                        plt.savefig(f"figures/{matrix_name}_time_elapsed_{'_'.join(labels[-1].split(' '))}.png")
+                        plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_{'_'.join(labels[-1].split(' '))}.png")
+                        plt.close()
+                        
+
+                    plt.figure(figsize=(12, 6))
+                    i = 0
+                    for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                        i += 1
+                        if e_i[0] == 0:
+                            print("Initial Error is already 0!")
+                            break
+                        if "Vapprox" not in label:
+                            method_d_trace_error[name_postfix+"_quotient" if plot_S_quotient else name_postfix] = e_i
+                        # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                        #         color=color, alpha=0.7, markevery=i, markersize=12)
+                        plt.semilogy(np.arange(last_available_file_number+1), np.abs((e_i)), label=f'{label}', linestyle=linestyle, marker=marker,
+                                color=color, alpha=0.7, markevery=i, markersize=12)
+                        # import pdb;pdb.set_trace()
+                    # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    #          label='1-k/n', linestyle='--', alpha=0.7)
+                    # if scaling_factor == 2.0:
+                    #     plt.ylim(-7,1)
+                    # elif scaling_factor == 5.0:
+                    #     plt.ylim(-7,1)
+                    # elif scaling_factor == 10.0:
+                    #     plt.ylim(-6,0)
+                    # elif scaling_factor == 20.0:
+                    #     plt.ylim(-8,0)
+                    plt.ylabel("e_k", fontsize=16)
+                    plt.xlabel("Iteration", fontsize=16)
+                    plt.title(f"Relative Eigenvalue Error over Iterations, Length Scale: {(scaling_factor):.1f}")
+                    plt.legend()
+                    plt.xticks(fontsize=15)
+                    plt.yticks(fontsize=15)
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    #plt.show()
+                    # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
+                    current_figure = plt.gcf()
+                    filename = f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png"
+                    trace_error_figures.append([current_figure, filename])
+                    plt.close()
+
+                import glob
+
+                S_exact = None
+
+                def plot_multiple_graphs_single_iteration(dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
+                                                        colors=None, linestyles=None, with_S_exact=True, rel_A_norm=False,
+                                                        with_angles=False, markers=None):
+                    # Create a figure with 4 subplots in a row
+                    num_plots = 4 if with_angles else 3
+                    fig, axs = plt.subplots(1, num_plots, figsize=(36, 8))  # 4 * (12, 8) for width    
+
+                    # 1. Spectrum comparison plot
+                    load_and_plot_spectrum_comparison(dir_paths, iteration, labels, colors=colors, linestyles=linestyles, markers=markers,
+                                                    with_S_exact=with_S_exact, rel_A_norm=False, axs=[axs[0], axs[1]])
+                    
+                    # 2. Residuals plot
+                    load_and_plot_same_iteration_residuals(dir_paths, iteration, labels, is_sym_psd, colors=colors, 
+                                                        linestyles=linestyles, markers=markers, ax=axs[2])
+                    
+                    
+                    
+                    # # 3. Relative difference w.r.t A_norm plot
+                    # if rel_A_norm:
+                    #     load_and_plot_spectrum_comparison(dir_paths, iteration, labels, colors=colors, linestyles=linestyles, 
+                    #                                       with_S_exact=with_S_exact, rel_A_norm=True, ax=axs[3])
+                    # else:
+                    #     axs[3].axis('off')  # Turn off the axis if rel_A_norm is False
+                    
+                    # 4. Canonical angles plot
+                    if with_angles:
+                        load_and_plot_multiple_canonical_angles(dir_paths, iteration, labels, ax=axs[3])
+                    
+                    plt.tight_layout()
+                    
+                    if save_path:
+                        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+                    
+                    #plt.show()
+
+                    plt.savefig(f"figures/{matrix_name}_it_{iteration}_{'_'.join(labels[-1].split(' '))}.png")
+                    plt.close()
+
+                # Modified functions to work with the new combined plot
+
+                def load_and_plot_same_iteration_residuals(dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
+                                                        colors=None, linestyles=None, ax=None, markers=None):
+                    if ax is None:
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                    
+                    colors = plt.cm.rainbow(np.linspace(0, 1, len(dir_paths))) if colors is None else colors
+                    linestyles = ['-' for _ in colors] if linestyles is None else linestyles
+
+                    i = 0
+                    for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
+                        i += 1
+                        if is_sym_psd:
+                            file_path = os.path.join(dir_path, f'residuals_sym_psd_data_{iteration}.npz')
+                #             file_path = os.path.join(dir_path, f'residuals_sym_psd_data_truncated_{iteration}.npz')
+                #             file_path = os.path.join(dir_path, f'residuals_sym_psd_data_truncated_Rayleigh_{iteration}.npz')
+                        else:
+                            file_path = os.path.join(dir_path, f'residuals_data_{iteration}.npz')
+                #         print(file_path); raise
+                        try:
+                            data = np.load(file_path)
+                            approx_residuals = data['approx_residuals']
+                            ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
+                        except FileNotFoundError:
+                            print(f"File not found: {file_path}")
+                            break
+
+                    if is_sym_psd:
+                        ax.set_ylabel('Residual Norm (sym pd)')
+                        ax.set_title(f'Residuals Comparison - Iteration {iteration}')
+                    else:
+                        ax.set_ylabel('Residual Norm (not sym pd)')
+                        ax.set_title(f'Residuals Comparison - Iteration {iteration}')
+
+                    ax.set_xlabel('Index')
+                    ax.legend()
+                    ax.grid(True)
+
+                def load_and_plot_spectrum_comparison(dir_paths, iteration, labels, save_dir=None,
+                                                    colors=None, linestyles=None, with_S_exact=True, 
+                                                    rel_A_norm=False, axs=None, markers=None):
+                    global S_exact
+                    if axs is None:
+                        raise
+                        fig, ax = plt.subplots(figsize=(12, 8))
+
+                    ax = axs[0]
+                    colors = plt.cm.rainbow(np.linspace(0, 1, len(dir_paths))) if colors is None else colors
+                    linestyles = ['-' for _ in colors] if linestyles is None else linestyles
+                    
+                    # Load exact spectrum from the first directory
+                    exact_file_path = os.path.join(dir_paths[0], f'spectrum_data_{iteration}.npz')
+                    exact_data = np.load(exact_file_path)
+
+                    if with_S_exact:
+                        S_exact = exact_data['S_exact']
+                    else:
+                        exact_file_path = os.path.join(dir_paths[-1], f'spectrum_data_{2000}.npz')
+                        exact_data = np.load(exact_file_path)
+                        S_exact = exact_data['S']
+                    
+                    i = 0
+                    for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
+                        i += 1
+                        file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
+                        
+                        try:
+                            data = np.load(file_path)
+                            S = data['S']
+                            if rel_A_norm:
+                                file_path = os.path.join(dir_path, f'diffspec_relA_data_{iteration}.npz')
+                                data = np.load(file_path)            
+                                rel_diff = data['diff']
+                                ax.semilogy(rel_diff, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
+                            else:
+                                ax.semilogy(S, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
+                        except FileNotFoundError:
+                            print(f"File not found: {file_path}")
+                            break
+
+                    if not S_exact is None and not rel_A_norm:
+                        ax.semilogy(S_exact[:len(S)], label='Exact', color='black', linestyle='--')
+
+                    ax.set_xlabel('Index')
+                    # else:
+                    ax.set_ylabel('Singular Value')
+                    ax.set_title(f'Spectrum Comparison - Iteration {iteration}')
+                    ax.legend()
+                    ax.grid(True)
+
+                    # Plot relative difference to S_exact
+                    i = 0
+                    for dir_path, label, color, linestyle, marker in zip(dir_paths, labels, colors, linestyles, markers):
+                        # file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
+                        i += 1
+                        file_path = os.path.join(dir_path, f'diffspec_relS_data_{iteration}.npz')
+                #         print(file_path); raise
+                        try:
+                            if with_S_exact:
+                                data = np.load(file_path)
+                                rel_diff = data['diff']
+                                axs[1].semilogy(rel_diff, label=label, color=color, linestyle=linestyle, marker=marker, alpha=0.7,
+                                                markevery=i, markersize=12)
+                                
+                                if iteration == 7:
+                                    file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
+                                    data = np.load(file_path)
+                                    S = data['S']
+                                    rel_diff_2 = np.abs(S-S_exact[:len(S)]) / S_exact[:len(S)]
+                                    # import pdb;pdb.set_trace()
+                            else:
+                                file_path = os.path.join(dir_path, f'spectrum_data_{iteration}.npz')
+                                data = np.load(file_path)
+                                S = data['S']
+                                rel_diff = np.abs(S-S_exact) / S_exact
+                                axs[1].semilogy(rel_diff, label=label, color=color, linestyle=linestyle, marker=marker, alpha=0.7,
+                                                markevery=i, markersize=12)
+                #             if "exact" in label or "random" in label:
+                #                 plt.semilogy(rel_diff, label=label, color=color, linestyle='--', alpha=0.7)
+                #             else:
+                #                 plt.semilogy(rel_diff, label=label, color=color, alpha=0.7)
+                        except FileNotFoundError:
+                            print(f"File not found: {file_path}")
+                            break
+
+                    axs[1].set_xlabel('Index')
+                    axs[1].set_ylabel('Relative Difference')
+                    axs[1].set_title(f'Relative Difference w.r.t S_exact - Iteration {iteration}')
+                    axs[1].legend()
+                    axs[1].grid(True)
+
+                def load_and_plot_multiple_canonical_angles(dir_paths, iteration, labels, save_path=None, additional_labels="", ax=None):
+                    if ax is None:
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                    
+                    num_experiments = len(dir_paths)
+                    positions = np.arange(1, num_experiments + 1)
+                    width = 0.2
+                    
+                    all_data = []
+                    all_bp = []
+                    
+                    for i, (dir_path, label) in enumerate(zip(dir_paths, labels)):
+                        file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
+                        
+                        try:
+                            data = np.load(file_path)
+                            s = data['s']
+                            C = np.log10(np.clip(np.abs(data['C']), 1e-32,1)-np.eye(len(s)))
+                #             C = np.log10(np.clip(1-np.abs(data['C']), 1e-32,1))
+                            sns.heatmap(C, 
+                #                 cmap='viridis',  # Color scheme
+                                cbar_kws={'label': 'Value'},  # Colorbar label
+                                xticklabels=False,  # Hide x-axis labels for cleaner look
+                                yticklabels=False,
+                                ax=ax,
+                                vmin=-12)
+                #             print((1-np.abs(data['C']))[0,0])
+                            ax.set_title('$\log(|V_{approx}^T\ x\ V| - I)$ (element-wise)')
+                #             plt.imshow(C)
+                #             plt.show()
+                            return
+                            all_data.append(s)
+                            
+                            bp = ax.boxplot(s, positions=[positions[i]], widths=width, patch_artist=True)
+                            all_bp.append(bp)
+                            
+                            # Add annotations (simplified for space)
+                            x_pos = positions[i]
+                            min_val, max_val = np.min(s), np.max(s)
+                            q1, median_val, q3 = np.percentile(s, [25, 50, 75])
+                            ax.annotate(f'Med: {1-np.exp(-median_val):.4f}', (x_pos, median_val), xytext=(5, 0), 
+                                        textcoords='offset points', ha='left', va='center', fontsize=8)
+                            
+                        except FileNotFoundError:
+                            print(f"File not found: {file_path}")
+                            break
+                    
+                    ax.set_title(f'Canonical Angles Comparison - Iteration {iteration}')
+                    ax.set_ylabel('Values')
+                    ax.set_ylim(0, -np.log10(1e-4)+0.1)
+                    
+                    y_ticks = np.array([0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1])
+                    ax.set_yticks(-np.log10(1 - y_ticks + 1e-4))
+                    ax.set_yticklabels([f"{y}" for y in y_ticks])
+                    
+                    ax.set_xticks(positions)
+                    ax.set_xticklabels(labels, rotation=45, ha='right')
+                    
+                    ax.grid(axis='y')
+                    #plt.show()
+
+                    # plt.savefig(f"figures/it_{iteration}.png")
+                    # plt.close()
+                    
+                    # plt.plot(np.arange(len(s)), s)
+                    # plt.show()
+
+                # dir_paths, iteration, labels, is_sym_psd=False, save_path=None,
+                # colors=None, linestyles=None, with_S_exact=True, rel_A_norm=False
+                # for i in range(10):
+                    
+                # import pdb;pdb.set_trace()
+                start = 3
+                end = last_available_file_number
+                n_steps = 3
+
+                # Using linspace to include both start and end with n_steps intervals
+                the_rest = np.linspace(start, end, n_steps+1, dtype=int)[1:] 
+                the_rest = np.minimum(np.ones(the_rest.shape)*end, the_rest)
+                start = min(start, end)
+
+                iterations = np.concatenate([np.array(range(start)), np.minimum(np.ones(the_rest.shape)*end, the_rest)])
+                iterations = np.unique(iterations)
+                # for i in [20,40,80,320,1280,2000]:
+                # for i in range(10):
+                # for i in the_rest:
+                # if end == 1:
+                #     import pdb;pdb.set_trace()
+                if plot_detailed_iterations:
+                    print("Generating per iteration plots")
+                    for i in iterations:
+                        print(i, start, end, the_rest)
+                        i = int(i)
+                        plot_multiple_graphs_single_iteration(
+                            dir_paths, 
+                            i,  
+                            labels, 
+                            is_sym_psd=True, 
+                            colors=label_colors,
+                            linestyles=label_linestyles,
+                            markers=label_markers,
+                            with_S_exact=True,
+                            with_angles=True,
+                        )
+
+                # import pdb;pdb.set_trace()
+                reservoir_size = int(reservoir_size)
+                if (name_postfix == "_isvd" or "_isvd1by1" in name_postfix or "demix" in name_postfix or "isvdst" in name_postfix) and plot_jer_residual:
+                    for dir_path, label in zip(dir_paths, labels):
+                        reservoir_residuals = []
+                        regular_residuals = []
+                        reservoir_residuals_quotient = []
+                        regular_residuals_quotient = []
+                        num_ev = 10
+                        fig, ax = plt.subplots(figsize=(8, 6))
+                        for iteration in range(last_available_file_number+1):
+                            # Load data
+                            file_path = os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz')
+                            try:
+                                data = np.load(file_path)
+                                res_residuals = data['reservoir_residuals'].reshape(1,-1)[:, :num_ev]
+                                res_residuals *= np.sqrt(matrix_size / reservoir_size)
+                                reg_residuals = data['regular_residuals'].reshape(1,-1)[:, :num_ev]
+                                reservoir_residuals.append(res_residuals)
+                                regular_residuals.append(reg_residuals)
+                                res_residuals_quotient = data['reservoir_residuals_quotient'].reshape(1,-1)[:, :num_ev]
+                                res_residuals_quotient *= np.sqrt(matrix_size / reservoir_size)
+                                reg_residuals_quotient = data['regular_residuals_quotient'].reshape(1,-1)[:, :num_ev]
+                                reservoir_residuals_quotient.append(res_residuals_quotient)
+                                regular_residuals_quotient.append(reg_residuals_quotient)
+
+                                # trace = np.sum(data['S'])
+                                # tr_S.append(trace)
+                                # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
+                                break
+                        
+                        reservoir_residuals = pad_and_concatenate(reservoir_residuals, axis=0)
+                        regular_residuals = pad_and_concatenate(regular_residuals, axis=0)
+                        reservoir_residuals_quotient = pad_and_concatenate(reservoir_residuals_quotient, axis=0)
+                        regular_residuals_quotient = pad_and_concatenate(regular_residuals_quotient, axis=0)
+
+                        # reservoir_residuals = np.concatenate(reservoir_residuals, axis=0)
+                        # regular_residuals = np.concatenate(regular_residuals, axis=0)
+                        # reservoir_residuals_quotient = np.concatenate(reservoir_residuals_quotient, axis=0)
+                        # regular_residuals_quotient = np.concatenate(regular_residuals_quotient, axis=0)
+                        # regular_residuals = np.concatenate(regular_residuals, axis=0)
+                        # print(regular_residuals_quotient)
+                        # import pdb;pdb.set_trace()
+                        # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - data['S'].sum()) / data['S_exact'][:len(data['S'])].sum()                                                                    
+                        # cmap = plt.cm.plasma # viridis
+                        color_range = np.linspace(0, 1.0, reservoir_residuals.shape[1])
+                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+                        if not plot_S_quotient:
+                            if plot_reservoir_residual:
+                                fig, ax = plt.subplots(figsize=(12, 8))
+                                
+                                for i in range(reservoir_residuals.shape[1]):
+                                    ax.semilogy(range(reservoir_residuals.shape[0]), reservoir_residuals[:,i], color=colors[i], marker='o')
+                                    # ax.scatter(range(reservoir_residuals.shape[0]), reservoir_residuals[:,i], color=colors[i])
+                                ax.set_yscale('log')
+                                ax.grid(True)
+                                ax.set_xlabel('window index', fontsize=16)
+                                ax.set_ylabel('residual', fontsize=16)
+                                # ax.set_ylim(1e-2, 1e2)
+                                
+                                # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, reservoir_residuals.shape[1]))
+                                # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, reservoir_residuals.shape[1]+1))
+                                # cbar.ax.set_yticklabels(range(1, reservoir_residuals.shape[1]+1))
+                                # plt.rc(('xtick.major', 'ytick.major'), width=2.5, size=20)
+                                plt.xticks(fontsize=15)
+                                plt.yticks(fontsize=15)
+                                plt.tight_layout()
+                                plt.legend()
+                                plt.title(f"reservoir_residuals_{'_'.join(label.split(' '))}")
+                                plt.savefig(f"figures/{matrix_name}_reservoir_residuals_{'_'.join(label.split(' '))}.png")
+                                plt.close()
+                                # import pdb;pdb.set_trace()
+                            
+                            if plot_regular_residual:
+                                fig, ax = plt.subplots(figsize=(12, 8))
+                                for i in range(regular_residuals.shape[1]):
+                                    ax.semilogy(range(regular_residuals.shape[0]), regular_residuals[:,i], color=colors[i], marker='o')
+                                    # ax.scatter(range(regular_residuals.shape[0]), regular_residuals[:,i], color=colors[i])
+                                ax.set_yscale('log')
+                                ax.grid(True)
+                                ax.set_xlabel('window index', fontsize=16)
+                                ax.set_ylabel('residual', fontsize=16)
+                                # ax.set_ylim(1e-2, 1e2)
+                                # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, regular_residuals.shape[1]))
+                                # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, regular_residuals.shape[1]+1))
+                                # cbar.ax.set_yticklabels(range(1, regular_residuals.shape[1]+1))
+                                plt.xticks(fontsize=15)
+                                plt.yticks(fontsize=15)
+                                plt.tight_layout()
+                                plt.legend()
+                                plt.title(f"regular_residuals_{'_'.join(label.split(' '))}")
+                                # plt.savefig(f"figures/{matrix_name}_regular_residuals_{'_'.join(label.split(' '))}.png")
+                                current_figure = plt.gcf()
+                                filename = f"figures/{matrix_name}_regular_residuals_{'_'.join(label.split(' '))}.png"
+                                regular_residuals_figures.append([current_figure, filename])
+                                plt.close()
+
+
+                        # ==== Quotient ====
+                        if plot_S_quotient:
+                            if plot_reservoir_residual:
+                                fig, ax = plt.subplots(figsize=(12, 8))
+                                for i in range(reservoir_residuals_quotient.shape[1]):
+                                    ax.semilogy(range(reservoir_residuals_quotient.shape[0]), reservoir_residuals_quotient[:,i], color=colors[i], marker='o')
+                                    # ax.scatter(range(reservoir_residuals_quotient.shape[0]), reservoir_residuals_quotient[:,i], color=colors[i])
+                                ax.set_yscale('log')
+                                ax.grid(True)
+                                ax.set_xlabel('window index', fontsize=16)
+                                ax.set_ylabel('residual', fontsize=16)
+                                # ax.set_ylim(1e-2, 1e2)
+                                # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, reservoir_residuals_quotient.shape[1]))
+                                # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, reservoir_residuals_quotient.shape[1]+1))
+                                # cbar.ax.set_yticklabels(range(1, reservoir_residuals_quotient.shape[1]+1))
+                                plt.xticks(fontsize=15)
+                                plt.yticks(fontsize=15)
+                                plt.tight_layout()
+                                plt.legend()
+                                plt.title(f"reservoir_residuals_quotient_{'_'.join(label.split(' '))}")
+                                plt.savefig(f"figures/{matrix_name}_reservoir_residuals_quotient_{'_'.join(label.split(' '))}.png")
+                                plt.close()
+
+                            if plot_regular_residual:
+                                fig, ax = plt.subplots(figsize=(12, 8))
+                                for i in range(regular_residuals_quotient.shape[1]):
+                                    ax.semilogy(range(regular_residuals_quotient.shape[0]), regular_residuals_quotient[:,i], color=colors[i], marker='o')
+                                    # ax.scatter(range(regular_residuals_quotient.shape[0]), regular_residuals_quotient[:,i], color=colors[i])
+                                # ax.set_yscale('log')
+                                ax.grid(True)
+                                ax.set_xlabel('window index', fontsize=16)
+                                ax.set_ylabel('residual', fontsize=16)
+                                # if scaling_factor == 2.0:
+                                #     ax.set_ylim(1e-13, 1e4)
+                                # elif scaling_factor == 0.0:
+                                #     ax.set_ylim(1e-4, 1e2)
+                                # if scaling_factor == 2.0:
+                                #     ax.set_ylim(1e-2, 1e4)
+                                # elif scaling_factor == 5.0:
+                                #     ax.set_ylim(1e-4,1e6)
+                                # elif scaling_factor == 10.0:
+                                #     ax.set_ylim(1e-6,10**(4.5))
+                                # elif scaling_factor == 20.0:
+                                #     ax.set_ylim(10**(-9), 10**(4.5))
+                                # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(1, regular_residuals_quotient.shape[1]))
+                                # cbar = fig.colorbar(sm, ax=ax, label='pair index', ticks=range(1, regular_residuals_quotient.shape[1]+1))
+                                # cbar.ax.set_yticklabels(range(1, regular_residuals_quotient.shape[1]+1))
+                                plt.xticks(fontsize=15)
+                                plt.yticks(fontsize=15)
+                                plt.tight_layout()
+                                plt.legend()
+                                plt.title(f"regular_residuals_quotient_{'_'.join(label.split(' '))}")
+                                # plt.savefig()
+                                current_figure = plt.gcf()
+                                filename = f"figures/{matrix_name}_regular_residuals_quotient_{'_'.join(label.split(' '))}.png"
+                                regular_residuals_figures.append([current_figure, filename])
+                                plt.close()
+                    
+                if plot_leftout:
+                    data_list = []
+                    for dir_path, label in zip(dir_paths, labels):
+                        current_totals = []
+                        current_throws = []
+                        current_throw = 0
+                        for iteration in range(last_available_file_number+1):
+                            file_path = os.path.join(dir_path, f'leftout_data_{iteration}.npz')
+                            try:
+                                data = np.load(file_path, allow_pickle=True)
+                                current_total = data['current_total']
+                                throw = data['throw']
+                                current_throw += throw
+                                iter_num = data['iteration']
+                                current_totals.append(current_total)
+                                current_throws.append(current_throw)
+                                # print(f"Iteration {iter_num}: current_total={current_total}, throw={throw}, label={label}")
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
+                                break
+                        data_list.append([current_totals, current_throws, label]) 
+                    
+                    combined_log_figures = []
+
+                    for current_totals, current_throws, label in data_list:
+                        current_totals = np.asarray(current_totals)
+                        current_throws = np.asarray(current_throws)
+
+                        fig, ax = plt.subplots(figsize=(12, 8))
+
+                        num_sv = current_totals.shape[1]
+                        windows = np.arange(current_totals.shape[0])
+
+                        color_range = np.linspace(0, 1.0, num_sv)
+                        if num_sv > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+
+                        for i in range(num_sv):
+                            ax.semilogy(
+                                windows,
+                                np.abs(current_totals[:, i]),
+                                color=colors[i],
+                                linestyle='-',
+                                marker='o',
+                                label=f'Total #{i}'
+                            )
+                            ax.semilogy(
+                                windows,
+                                np.abs(current_throws[:, i]),
+                                color=colors[i],
+                                linestyle='--',
+                                marker='x',
+                                label=f'Throw #{i}'
+                            )
+
+                        ax.legend()
+                        ax.set_ylabel("Energy (log scale)")
+                        ax.set_xlabel("Window")
+                        ax.tick_params(axis='x', labelrotation=45)
+                        ax.set_title(f"{label}_total_and_throw_log")
+                        ax.grid(True)
+
+                        filename = f"figures/{matrix_name}_total_throw_log_{'_'.join(label.split(' '))}.png"
+                        current_fig = plt.gcf()
+                        combined_log_figures.append([current_fig, filename])
                         plt.close()
 
-                    if plot_entropy and matrix_name not in entropy_d:
-                        # Create figure and axis
-                        plt.figure(figsize=(12, 6))
-                        entropy = []
-                        dir_path = dir_paths[0]
-                        label = labels[0]
+                    combined_linear_figures = []
+
+                    for current_totals, current_throws, label in data_list:
+                        current_totals = np.asarray(current_totals)
+                        current_throws = np.asarray(current_throws)
+
+                        fig, ax = plt.subplots(figsize=(12, 8))
+
+                        num_sv = current_totals.shape[1]
+                        windows = np.arange(current_totals.shape[0])
+
+                        color_range = np.linspace(0, 1.0, num_sv)
+                        if num_sv > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+
+                        for i in range(num_sv):
+                            ax.plot(
+                                windows,
+                                current_totals[:, i],
+                                color=colors[i],
+                                linestyle='-',
+                                # marker='o',
+                                label=f'Total #{i}'
+                            )
+                            ax.plot(
+                                windows,
+                                current_throws[:, i],
+                                color=colors[i],
+                                linestyle='--',
+                                # marker='x',
+                                label=f'Throw #{i}'
+                            )
+
+                        ax.legend()
+                        ax.set_ylabel("Energy")
+                        ax.set_xlabel("Window")
+                        ax.tick_params(axis='x', labelrotation=45)
+                        ax.set_title(f"{label}_total_and_throw_linear")
+                        ax.grid(True)
+
+                        filename = f"figures/{matrix_name}_total_throw_linear_{'_'.join(label.split(' '))}.png"
+                        current_fig = plt.gcf()
+                        combined_linear_figures.append([current_fig, filename])
+                        plt.close()
+
+                    total_figures = []
+                    throw_figures = []
+
+                    for current_totals, current_throws, label in data_list:
+
+                        current_totals = np.asarray(current_totals)
+                        current_throws = np.asarray(current_throws)
+
+                        num_sv = current_totals.shape[1]
+                        windows = np.arange(current_totals.shape[0])
+
+                        color_range = np.linspace(0, 1.0, num_sv)
+                        if num_sv > 2:
+                            color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+
+                        # -------- totals plot --------
+                        fig, ax = plt.subplots(figsize=(12, 8))
+
+                        for i in range(num_sv):
+                            ax.plot(
+                                windows,
+                                current_totals[:, i],
+                                color=colors[i],
+                                # marker='o',
+                                label=f'Eigenvalue #{i}'
+                            )
+
+                        ax.legend()
+                        ax.set_ylabel("Current total")
+                        ax.set_xlabel("Window")
+                        ax.tick_params(axis='x', labelsize=15, labelrotation=45)
+                        ax.tick_params(axis='y', labelsize=15)
+                        ax.set_title(f"{label}_current_total")
+                        ax.grid(True)
+
+                        filename = f"figures/{matrix_name}_current_total_{'_'.join(label.split(' '))}.png"
+                        current_fig = plt.gcf()
+                        total_figures.append([current_fig, filename])
+                        plt.close()
+
+                        # -------- throws plot --------
+                        fig, ax = plt.subplots(figsize=(12, 8))
+
+                        for i in range(num_sv):
+                            ax.plot(
+                                windows,
+                                current_throws[:, i],
+                                color=colors[i],
+                                # marker='o',
+                                label=f'Eigenvalue #{i}'
+                            )
+
+                        ax.legend()
+                        ax.set_ylabel("Cumulative throw")
+                        ax.set_xlabel("Window")
+                        ax.tick_params(axis='x', labelsize=15, labelrotation=45)
+                        ax.tick_params(axis='y', labelsize=15)
+                        ax.set_title(f"{label}_cumulative_throw")
+                        ax.grid(True)
+
+                        filename = f"figures/{matrix_name}_cumulative_throw_{'_'.join(label.split(' '))}.png"
+                        current_fig = plt.gcf()
+                        throw_figures.append([current_fig, filename])
+                        plt.close()
+                    
+
+                if plot_tr_angles:
+                    data_list = []
+                    for dir_path, label in zip(dir_paths, labels):
+                        tr_angles = []
+                        s_list = []
+                        additional_labels = ""
+                        for iteration in range(last_available_file_number+1):
+                            file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
+                            
+                            try:
+                                data = np.load(file_path)
+                                S = data['C']
+                                # S = 
+                                # S = np.sqrt(1-np.clip(S**2, 0,1)) 
+                                s = np.linalg.svd(S, compute_uv=False)
+                                s = np.sqrt(1-np.clip(s**2, 0,1))
+                                s_list.append(s.reshape(1,-1))
+
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
+                                break
+                        
+                        limit_S = min(10, s_list[0].shape[-1])
+                        # limit_S = len(data['S'])
+                        # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
+                        s_list = np.concatenate(s_list, axis=0)
+                        e_i = np.sum(s_list[:, :limit_S], axis=1)
+                        e_i = e_i / limit_S
+                        # print(Ss[-1])
+                        # print(e_i)
+                        # import pdb;pdb.set_trace()
+                        
+                        data_list.append((e_i, label))
+                        if smallest_ei > min(e_i):
+                            smallest_ei = min(e_i)
+
+                    # if not plot_tr_angles_only_log:
+                    #     plt.figure(figsize=(12, 6))
+                    #     i = 0
+                    #     for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                    #         i += 1
+                    #         if e_i[0] == 0:
+                    #             print("Initial Error is already 0!")
+                    #             break
+                    #         # import pdb;pdb.set_trace()
+                    #         # plt.plot(np.arange(last_available_file_number+1), ((e_i)/e_i[0]), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
+                    #         #         color=color, alpha=0.7, markevery=i, markersize=12)
+                    #         plt.plot(np.arange(last_available_file_number+1), ((e_i)), label=f'{label}, init err: {e_i[0]}', linestyle=linestyle, marker=marker,
+                    #                 color=color, alpha=0.7, markevery=i, markersize=12)
+
+                    #     # plt.plot(np.arange(last_available_file_number+1), (1-np.arange(last_available_file_number+1)/(last_available_file_number+1)),
+                    #     #         label='1-k/n', linestyle='--', alpha=0.7)
+
+                    #     plt.ylabel("$e_k\ /\ e_0$")
+                    #     plt.xlabel("Iteration")
+                    #     plt.title(f"Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
+                    #     plt.legend()
+                    #     plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    #     plt.tight_layout()
+                    #     # plt.ylim([-0.01, 1.01])
+                    #     #plt.show()
+                    #     plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_{'_'.join(labels[-1].split(' '))}.png")
+                    #     plt.close()
+                    
+                    # import pdb;pdb.set_trace()
+                    plt.figure(figsize=(12, 6))
+                    i = 0
+                    for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                        i += 1
+                        if e_i[0] == 0:
+                            print("Initial Error is already 0!")
+                            break
+                        # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                        #         color=color, alpha=0.7, markevery=i, markersize=12)
+                        plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i))), label=f'{label}', linestyle=linestyle, marker=marker,
+                                color=color, alpha=0.7, markevery=i, markersize=12)
+                    # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    #          label='1-k/n', linestyle='--', alpha=0.7)
+
+                    plt.ylabel("log $e_k\ /\ e_0$")
+                    plt.xlabel("Iteration")
+                    plt.title(f"(Log) Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
+                    plt.legend()
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    #plt.show()
+                    plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
+                    plt.close()
+
+                if plot_angles:
+                    data_list = []
+                    for dir_path, label in zip(dir_paths, labels):
+                        tr_angles = []
+                        s_list = []
+                        additional_labels = ""
+                        for iteration in range(last_available_file_number+1):
+                            file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
+                            
+                            try:
+                                data = np.load(file_path)
+                                S = data['C']
+                                # S = 
+                                # S = np.sqrt(1-np.clip(S**2, 0,1)) 
+                                try:
+                                    s = np.linalg.svd(S, compute_uv=False)
+                                except:
+                                    import pdb;pdb.set_trace()
+                                s = np.sqrt(1-np.clip(s**2, 0,1))
+                                s_list.append(s.reshape(1,-1))
+                                # import pdb;pdb.set_trace()
+
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
+                                break
+                        
+                        limit_S = min(10, s_list[0].shape[-1])
+                        # limit_S = len(data['S'])
+                        # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
+                        s_list = np.concatenate(s_list, axis=0)
+                        e_i = np.sum(s_list[:, :limit_S], axis=1)
+                        e_i = e_i / limit_S
+                        # print(Ss[-1])
+                        # print(e_i)
+                        # import pdb;pdb.set_trace()
+                        
+                        data_list.append((e_i, label))
+                        if smallest_ei > min(e_i):
+                            smallest_ei = min(e_i)
+
+                        # if "demix" in label and scaling_factor == 2.0:
+                        #     import pdb;pdb.set_trace()
+
+                    # import pdb;pdb.set_trace()
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                        color_range = np.linspace(0, 1.0, s_list.shape[1])
+                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+                        # Plot each window's data
+                        for i in range(s_list.shape[1]):
+                            try:
+                                plt.semilogy(np.arange(s_list.shape[0]), s_list[:,i], color=colors[i], label=f'Principle Angle #{i}', marker='o', alpha=0.7)
+                            except:
+                                # import pdb;pdb.set_trace()
+                                raise
+                        # Find min and max non-zero values for better y-limit setting
+                        all_values = s_list.flatten()
+                        non_zero_values = all_values[all_values > 0]
+                        if len(non_zero_values) > 0:
+                            y_min = np.min(non_zero_values) * 0.8  # Padding below
+                            y_max = np.max(all_values) * 1.2       # Padding above
+                            plt.ylim(y_min, y_max)
+                        plt.ylim([1e-8,1])
+                        plt.legend()
+                        # plt.yscale('log')
+                        plt.ylabel("Relative eigenvalue difference")
+                        plt.xlabel("Window")
+                        plt.xticks(fontsize=15)
+                        plt.yticks(fontsize=15)
+                        plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
+                        plt.grid()
+                        plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}angles_over_time_{'_'.join(label.split(' '))}.png")
+                        plt.close()
+
+                if plot_angles_indi:
+                    data_list = []
+                    for dir_path, label in zip(dir_paths, labels):
+                        tr_angles = []
+                        s_list = []
+                        additional_labels = ""
+                        for iteration in range(last_available_file_number+1):
+                            file_path = os.path.join(dir_path, f'canonical_angles{additional_labels}_data_{iteration}.npz')
+                            
+                            try:
+                                data = np.load(file_path)
+                                S = data['C']
+                                s = np.linalg.norm(S,axis=0)
+                                # S = 
+                                # S = np.sqrt(1-np.clip(S**2, 0,1)) 
+                                # try:
+                                #     s = np.linalg.svd(S, compute_uv=False)
+                                # except:
+                                #     import pdb;pdb.set_trace()
+                                # s = np.sqrt(1-np.clip(s**2, 0,1))
+                                s = np.sqrt(1-np.clip(s**2,0,1))
+                                s_list.append(s.reshape(1,-1))
+                                # import pdb;pdb.set_trace()
+
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
+                                break
+                        
+                        limit_S = min(10, s_list[0].shape[-1])
+                        # limit_S = len(data['S'])
+                        # e_i = np.abs(data['S_exact'][:len(data['S'])].sum() - tr_S) / data['S_exact'][:len(data['S'])].sum()
+                        s_list = np.concatenate(s_list, axis=0)
+                        e_i = np.sum(s_list[:, :limit_S], axis=1)
+                        e_i = e_i / limit_S
+                        # print(Ss[-1])
+                        # print(e_i)
+                        # import pdb;pdb.set_trace()
+                        
+                        data_list.append((e_i, label))
+                        if smallest_ei > min(e_i):
+                            smallest_ei = min(e_i)
+
+                        # if "demix" in label and scaling_factor == 2.0:
+                        #     import pdb;pdb.set_trace()
+
+                    # import pdb;pdb.set_trace()
+                        fig, ax = plt.subplots(figsize=(12, 8))
+                        color_range = np.linspace(0, 1.0, s_list.shape[1])
+                        color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                        color_range = np.sort(color_range)
+                        colors = plt.cm.jet(color_range)
+                        # Plot each window's data
+                        for i in range(s_list.shape[1]):
+                            try:
+                                plt.semilogy(np.arange(s_list.shape[0]), s_list[:,i], color=colors[i], label=f'Principle Angle #{i}', marker='o', alpha=0.7)
+                            except:
+                                # import pdb;pdb.set_trace()
+                                raise
+                        # Find min and max non-zero values for better y-limit setting
+                        all_values = s_list.flatten()
+                        non_zero_values = all_values[all_values > 0]
+                        if len(non_zero_values) > 0:
+                            y_min = np.min(non_zero_values) * 0.8  # Padding below
+                            y_max = np.max(all_values) * 1.2       # Padding above
+                            plt.ylim(y_min, y_max)
+                        plt.ylim([1e-8,1])
+                        plt.legend()
+                        # plt.yscale('log')
+                        plt.ylabel("Relative eigenvalue difference")
+                        plt.xlabel("Window")
+                        plt.xticks(fontsize=15)
+                        plt.yticks(fontsize=15)
+                        plt.title(f"{label}_{'quotient' if plot_S_quotient else ''}")
+                        plt.grid()
+                        plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}angles_indi_over_time_{'_'.join(label.split(' '))}.png")
+                        plt.close()
+                    # plt.figure(figsize=(12, 6))
+                    # i = 0
+                    # for (e_i, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                    #     i += 1
+                    #     if e_i[0] == 0:
+                    #         print("Initial Error is already 0!")
+                    #         break
+                    #     # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                    #     #         color=color, alpha=0.7, markevery=i, markersize=12)
+                    #     plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i))), label=f'{label}', linestyle=linestyle, marker=marker,
+                    #             color=color, alpha=0.7, markevery=i, markersize=12)
+                    # # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    # #          label='1-k/n', linestyle='--', alpha=0.7)
+
+                    # plt.ylabel("log $e_k\ /\ e_0$")
+                    # plt.xlabel("Iteration")
+                    # plt.title(f"(Log) Tr( sin $\\theta$ ) over Iterations, Length Scale: 1e{(scaling_factor):.1f}")
+                    # plt.legend()
+                    # plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    # plt.tight_layout()
+                    # #plt.show()
+                    # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}tr_angles_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
+                    # plt.close()
+                
+                if plot_time_elapsed:
+                    from matplotlib import cm
+
+                    # Create figure and axis
+                    plt.figure(figsize=(12, 6))
+                    time_elapsed = []
+                    for dir_path, label in zip(dir_paths, labels):
                         file_path = os.path.join(dir_path, f'other_info.npz')
                         try:
                             data = np.load(file_path, allow_pickle=True)
                             # import pdb;pdb.set_trace()
                             other_info = data['other_info'].item()
-                            entropy.append(other_info["true_normalized_entropy"])
-
-                            data_S = np.load(os.path.join(dir_path, "spectrum_data_0.npz"), allow_pickle=True)
-                            S_exact = data_S["S_exact"]
-
-                            p = S_exact / np.sum(S_exact)
-                            ent = sp.stats.entropy(p, base=2)
-                            # calculate 
-                            erank = 2**(ent)
-
-                            data_row_perm = np.load(os.path.join(dir_path, f'row_order_final.npz'), allow_pickle=True)
-                            matrix_size = data_row_perm["row_permutation"].shape[0]
-
-                            # low_S_exact = np.pad(S_exact, (0, matrix_size - len(S_exact)), 'constant')
-
-
-                            
+                            time_elapsed.append(other_info["time_elapsed"])
                         except FileNotFoundError:
                             print(f"File not found: {file_path}")
                             break
-                            # raise
-                        entropy = np.array(entropy).squeeze()
-                        entropy_d["_".join(matrix_name.split("_")[:-1])] = [entropy, erank, matrix_size, len(S_exact)]
+                    time_elapsed = np.array(time_elapsed)
 
-                    if plot_wholespace_residual:
-                        data_list = []
-                        for dir_path, label in zip(dir_paths, labels):
-                            reservoir_residuals = []
-                            regular_residuals = []
-                            reservoir_residuals_quotient = []
-                            regular_residuals_quotient = []
-                            ws_reg_res_2norms = []
-                            ws_reg_res_fros = []
-                            ws_res_res_2norms = []
-                            ws_res_res_fros = []
-                            ws_reg_res_quotient_2norms = []
-                            ws_reg_res_quotient_fros = []
-                            ws_res_res_quotient_2norms = []
-                            ws_res_res_quotient_fros = []
-                            fig, ax = plt.subplots(figsize=(8, 6))
-                            for iteration in range(last_available_file_number+1):
-                                # Load data
-                                file_path = os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz')
-                                try:
-                                    data = np.load(file_path)
-                                    # res_residuals = data['reservoir_residuals'].reshape(1,-1)
-                                    # res_residuals *= np.sqrt(matrix_size / reservoir_size)
-                                    # reg_residuals = data['regular_residuals'].reshape(1,-1)
-                                    # reservoir_residuals.append(res_residuals)
-                                    # regular_residuals.append(reg_residuals)
-                                    # res_residuals_quotient = data['reservoir_residuals_quotient'].reshape(1,-1) 
-                                    # res_residuals_quotient *= np.sqrt(matrix_size / reservoir_size)
-                                    # reg_residuals_quotient = data['regular_residuals_quotient'].reshape(1,-1) 
-                                    # reservoir_residuals_quotient.append(res_residuals_quotient)
-                                    # regular_residuals_quotient.append(reg_residuals_quotient)
-                                    ws_reg_res_2norms.append(data["whole_space_regular_residuals_2norm"])
-                                    ws_reg_res_fros.append(data["whole_space_regular_residuals_fro"])
-                                    ws_res_res_2norms.append(data["whole_space_reservoir_residuals_2norm"])
-                                    ws_res_res_fros.append(data["whole_space_reservoir_residuals_fro"])
-                                    ws_reg_res_quotient_2norms.append(data["whole_space_regular_residuals_quotient_2norm"])
-                                    ws_reg_res_quotient_fros.append(data["whole_space_regular_residuals_quotient_fro"])
-                                    ws_res_res_quotient_2norms.append(data["whole_space_reservoir_residuals_quotient_2norm"])
-                                    ws_res_res_quotient_fros.append(data["whole_space_reservoir_residuals_quotient_fro"])
+                    # Generate a color map based on number of categories
+                    num_categories = len(time_elapsed)
+                    categories = np.arange(num_categories)
+                    cmap = cm.get_cmap('viridis', num_categories)  # 'tab10', 'tab20', 'viridis', etc.
 
-                                    # trace = np.sum(data['S'])
-                                    # tr_S.append(trace)
-                                    # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
-                                except FileNotFoundError:
-                                    print(f"File not found: {file_path}")
-                                    break
-                            if plot_ws_reg: 
-                                if plot_ws_quotient:
-                                    data_list.append([ws_reg_res_quotient_fros, label])
-                                else:
-                                    data_list.append([ws_reg_res_fros, label])
-                            else:
-                                if plot_ws_quotient:
-                                    data_list.append([ws_res_res_quotient_fros, label])
-                                else:
-                                    data_list.append([ws_res_res_fros, label])
+                    # Plot each bar individually with its own label and color
+                    for i, (category, value, label) in enumerate(zip(categories, time_elapsed, labels)):
+                        plt.bar(i, np.log10(value), color=cmap(i), label=label)
 
-                        plt.figure(figsize=(12, 6))
-                        i = 0
-                        for (ws_res, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
-                            i += 1
-                            if e_i[0] == 0:
-                                print("Initial Error is already 0!")
+                    plt.ylabel("10^{x} Time Elapsed", fontsize=16)
+                    plt.xlabel("", fontsize=16)
+                    plt.title(f"")
+                    plt.legend()
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    plt.xticks(fontsize=15)
+                    plt.yticks(fontsize=15)
+                    # plt.ylim([-0.01, 1.01])
+                    #plt.show()
+                    plt.savefig(f"figures/{matrix_name}_time_elapsed_{'_'.join(labels[-1].split(' '))}.png")
+                    plt.close()
+
+                if plot_entropy and matrix_name not in entropy_d:
+                    # Create figure and axis
+                    plt.figure(figsize=(12, 6))
+                    entropy = []
+                    dir_path = dir_paths[0]
+                    label = labels[0]
+                    file_path = os.path.join(dir_path, f'other_info.npz')
+                    try:
+                        data = np.load(file_path, allow_pickle=True)
+                        # import pdb;pdb.set_trace()
+                        other_info = data['other_info'].item()
+                        entropy.append(other_info["true_normalized_entropy"])
+
+                        data_S = np.load(os.path.join(dir_path, "spectrum_data_0.npz"), allow_pickle=True)
+                        S_exact = data_S["S_exact"]
+
+                        p = S_exact / np.sum(S_exact)
+                        ent = sp.stats.entropy(p, base=2)
+                        # calculate 
+                        erank = 2**(ent)
+
+                        data_row_perm = np.load(os.path.join(dir_path, f'row_order_final.npz'), allow_pickle=True)
+                        matrix_size = data_row_perm["row_permutation"].shape[0]
+
+                        # low_S_exact = np.pad(S_exact, (0, matrix_size - len(S_exact)), 'constant')
+
+
+                        
+                    except FileNotFoundError:
+                        print(f"File not found: {file_path}")
+                        break
+                        # raise
+                    entropy = np.array(entropy).squeeze()
+                    entropy_d["_".join(matrix_name.split("_")[:-1])] = [entropy, erank, matrix_size, len(S_exact)]
+
+                if plot_wholespace_residual:
+                    data_list = []
+                    for dir_path, label in zip(dir_paths, labels):
+                        reservoir_residuals = []
+                        regular_residuals = []
+                        reservoir_residuals_quotient = []
+                        regular_residuals_quotient = []
+                        ws_reg_res_2norms = []
+                        ws_reg_res_fros = []
+                        ws_res_res_2norms = []
+                        ws_res_res_fros = []
+                        ws_reg_res_quotient_2norms = []
+                        ws_reg_res_quotient_fros = []
+                        ws_res_res_quotient_2norms = []
+                        ws_res_res_quotient_fros = []
+                        fig, ax = plt.subplots(figsize=(8, 6))
+                        for iteration in range(last_available_file_number+1):
+                            # Load data
+                            file_path = os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz')
+                            try:
+                                data = np.load(file_path)
+                                # res_residuals = data['reservoir_residuals'].reshape(1,-1)
+                                # res_residuals *= np.sqrt(matrix_size / reservoir_size)
+                                # reg_residuals = data['regular_residuals'].reshape(1,-1)
+                                # reservoir_residuals.append(res_residuals)
+                                # regular_residuals.append(reg_residuals)
+                                # res_residuals_quotient = data['reservoir_residuals_quotient'].reshape(1,-1) 
+                                # res_residuals_quotient *= np.sqrt(matrix_size / reservoir_size)
+                                # reg_residuals_quotient = data['regular_residuals_quotient'].reshape(1,-1) 
+                                # reservoir_residuals_quotient.append(res_residuals_quotient)
+                                # regular_residuals_quotient.append(reg_residuals_quotient)
+                                ws_reg_res_2norms.append(data["whole_space_regular_residuals_2norm"])
+                                ws_reg_res_fros.append(data["whole_space_regular_residuals_fro"])
+                                ws_res_res_2norms.append(data["whole_space_reservoir_residuals_2norm"])
+                                ws_res_res_fros.append(data["whole_space_reservoir_residuals_fro"])
+                                ws_reg_res_quotient_2norms.append(data["whole_space_regular_residuals_quotient_2norm"])
+                                ws_reg_res_quotient_fros.append(data["whole_space_regular_residuals_quotient_fro"])
+                                ws_res_res_quotient_2norms.append(data["whole_space_reservoir_residuals_quotient_2norm"])
+                                ws_res_res_quotient_fros.append(data["whole_space_reservoir_residuals_quotient_fro"])
+
+                                # trace = np.sum(data['S'])
+                                # tr_S.append(trace)
+                                # ax.semilogy(approx_residuals, label=f'{label}', color=color, linestyle=linestyle, marker=marker, alpha=0.7, markevery=i, markersize=12)
+                            except FileNotFoundError:
+                                print(f"File not found: {file_path}")
                                 break
-                            if "Vapprox" not in label:
-                                method_d_residuals[name_postfix+"_quotient" if plot_S_quotient else name_postfix] = ws_res
-                            # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                            #         color=color, alpha=0.7, markevery=i, markersize=12)
-                            plt.semilogy(np.arange(last_available_file_number+1), ws_res, label=f'{label}', linestyle=linestyle, marker=marker,
-                                    color=color, alpha=0.7, markevery=i, markersize=12)
-                            # import pdb;pdb.set_trace()
-                        # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        #          label='1-k/n', linestyle='--', alpha=0.7)
-                        # if scaling_factor == 2.0:
-                        #     plt.ylim(-7,1)
-                        # elif scaling_factor == 5.0:
-                        #     plt.ylim(-7,1)
-                        # elif scaling_factor == 10.0:
-                        #     plt.ylim(-6,0)
-                        # elif scaling_factor == 20.0:
-                        #     plt.ylim(-8,0)
-                        plt.ylabel("Residual", fontsize=16)
-                        plt.xlabel("Iteration", fontsize=16)
-                        plt.title(f"Whole space residual over Windows, Length Scale: {(scaling_factor):.1f}")
-                        plt.legend()
-                        plt.xticks(fontsize=15)
-                        plt.yticks(fontsize=15)
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        plt.tight_layout()
-                        #plt.show()
-                        # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
-                        current_figure = plt.gcf()
-                        filename = f"figures/{matrix_name}_{'quotient_' if plot_ws_quotient else ''}ws_residuals_over_time_log_{'_'.join(labels[-1].split(' '))}.png"
-                        ws_residual_figures.append([current_figure, filename])
-                        plt.close()
-
-
-                    # Plot and change y_axis
-                    # ev_change_figures = []
-                    # trace_error_figures = []
-                    # regular_residuals_figures = []
-                    # Find the global y-limits across all figures
-                    def set_figures_same_ylim(figures):
-                        all_ylims = []
-                        for fig, _ in figures:
-                            current_ylim = fig.axes[0].get_ylim()
-                            all_ylims.extend(current_ylim)
-
-                        # Set common ylim based on global range
-                        if len(all_ylims) == 0:
-                            # skip
-                            return
-                        global_ymin = min(all_ylims)
-                        global_ymax = max(all_ylims)
-
-                        # Apply to all figures
-                        for fig, _ in figures:
-                            fig.axes[0].set_ylim(global_ymin, global_ymax)
-
-                        for fig, file_path in figures:
-                            # for quality in range(100, 5, -5):
-                            quality = 80
-                            fig.savefig(file_path, format='jpg', dpi=100,
-                                        bbox_inches='tight', pad_inches=0,
-                                        pil_kwargs={'quality': quality, 'optimize': True})
-                            #     print(f"Compressed to ~{os.path.getsize(file_path)/1024:.1f}KB with quality {quality}")
-                            # raise
-                            # print(file_path)
-                        # print(all_ylims)
-                        # import pdb;pdb.set_trace()
-
-                    if plot_ev_change:
-                        set_figures_same_ylim(ev_change_figures)
-                    if plot_trace_error:
-                        set_figures_same_ylim(trace_error_figures)
-                    if plot_jer_residual:
-                        set_figures_same_ylim(regular_residuals_figures)
-                        # import pdb;pdb.set_trace()
-                    if plot_wholespace_residual:
-                        set_figures_same_ylim(ws_residual_figures)
-                    if plot_leftout:
-                        set_figures_same_ylim(combined_log_figures)
-                        set_figures_same_ylim(combined_linear_figures)
-                        set_figures_same_ylim(total_figures)
-                        set_figures_same_ylim(throw_figures)
-
-
-                    if method_d_trace_error and method_d_residuals:
-                        # Create a list to control legend order: iSVD, Quotient, then demix
-                        method_order = []
-                        for n in method_d_trace_error.keys():
-                            if "isvddemix" in n and not "quotient" in n:
-                                continue
-                            method_order.append(n)
-
-                        # Sort methods: iSVD first, then quotient, then demix
-                        def sort_key(method_name):
-                            if "isvd" in method_name.lower() and "demix" not in method_name.lower():
-                                return (0, method_name)  # iSVD methods first
-                            elif "quotient" in method_name.lower():
-                                return (1, method_name)  # Quotient methods second
-                            elif "demix" in method_name.lower():
-                                return (2, method_name)  # Demix methods last
+                        if plot_ws_reg: 
+                            if plot_ws_quotient:
+                                data_list.append([ws_reg_res_quotient_fros, label])
                             else:
-                                return (3, method_name)  # Other methods at the end
-
-                        method_order.sort(key=sort_key)
-
-                        color_range = np.linspace(0, 1.0, len(method_order))
-                        # color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                        color_range = np.sort(color_range)
-                        colors = plt.cm.jet(color_range)
-                        plt.figure(figsize=(12, 6))
-                        # print(method_d_trace_error.keys())
-                        # import pdb;pdb.set_trace()
-                        for n, color in zip(method_order, colors):
-                            if "isvddemix" in n and not "quotient" in n:
-                                continue
-                            # print(f"Label: '{n}'") 
-                            # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                            #         color=color, alpha=0.7, markevery=i, markersize=12)
-                            if "isvddemix" in n and "quotient" in n:
-                                name = "Demix"
-                            elif "quotient" in n:
-                                name = "Least Squares"
+                                data_list.append([ws_reg_res_fros, label])
+                        else:
+                            if plot_ws_quotient:
+                                data_list.append([ws_res_res_quotient_fros, label])
                             else:
-                                name = "iSVD"
-                            plt.semilogy(np.arange(len(method_d_trace_error[n])), np.abs(method_d_trace_error[n]), label=f'{name}', marker='o',
-                                    color=color, alpha=0.7, markersize=12)
-                            # import pdb;pdb.set_trace()
-                        # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        #          label='1-k/n', linestyle='--', alpha=0.7)
-                        plt.ylabel("Relative trace error", fontsize=16)
-                        plt.xlabel("Window index", fontsize=16)
-                        plt.title(f"Relative Trace Error over Windows, Length Scale: {(scaling_factor)}")
-                        plt.legend()
-                        # legend = plt.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
-                        # print(legend)
-                        plt.yticks(fontsize=15)
-                        # Set custom x-axis ticks to show even numbers (2, 4, 6, 8, ...)
-                        max_x = max([len(method_d_trace_error[n]) for n in method_order]) - 1
-                        tick_positions = np.arange(0, max_x + 1, 2)  # Start from 2, step by 2
-                        plt.xticks(tick_positions, fontsize=15)
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        plt.tight_layout()
-                        #plt.show()
-                        plt.savefig(f"figures/{matrix_name}_method_error_over_time_log.png", bbox_inches='tight')
-                        plt.close()
+                                data_list.append([ws_res_res_fros, label])
 
-                        # color_range = np.linspace(0, 1.0, len(method_d_residuals))
-                        # # color_range[2] = (color_range[-1] + color_range[-2]) / 2
-                        # color_range = np.sort(color_range)
-                        # colors = plt.cm.jet(color_range)
-                        plt.figure(figsize=(12, 6))
-                        # print(method_d_residuals.keys())
+                    plt.figure(figsize=(12, 6))
+                    i = 0
+                    for (ws_res, label), color, linestyle, marker in zip(data_list, label_colors, label_linestyles, label_markers):
+                        i += 1
+                        if e_i[0] == 0:
+                            print("Initial Error is already 0!")
+                            break
+                        if "Vapprox" not in label:
+                            method_d_residuals[name_postfix+"_quotient" if plot_S_quotient else name_postfix] = ws_res
+                        # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                        #         color=color, alpha=0.7, markevery=i, markersize=12)
+                        plt.semilogy(np.arange(last_available_file_number+1), ws_res, label=f'{label}', linestyle=linestyle, marker=marker,
+                                color=color, alpha=0.7, markevery=i, markersize=12)
                         # import pdb;pdb.set_trace()
-                        for n, color in zip(method_order, colors):
-                            if "isvddemix" in n and not "quotient" in n:
-                                continue
-                            if "isvddemix" in n and "quotient" in n:
-                                name = "Demix"
-                            elif "quotient" in n:
-                                name = "Least Squares"
-                            else:
-                                name = "iSVD"
-                            # print(f"Label: '{n}'") 
-                            # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
-                            #         color=color, alpha=0.7, markevery=i, markersize=12)
-                            plt.semilogy(np.arange(len(method_d_residuals[n])), np.abs(method_d_residuals[n]), label=f'{name}', marker='o',
-                                    color=color, alpha=0.7, markersize=12)
-                            # import pdb;pdb.set_trace()
-                        # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
-                        #          label='1-k/n', linestyle='--', alpha=0.7)
-                        plt.ylabel("Whole space residual", fontsize=16)
-                        plt.xlabel("Window index", fontsize=16)
-                        plt.title(f"Whole Space Residual over Windows, Length Scale: {(scaling_factor)}")
-                        plt.legend()
+                    # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    #          label='1-k/n', linestyle='--', alpha=0.7)
+                    # if scaling_factor == 2.0:
+                    #     plt.ylim(-7,1)
+                    # elif scaling_factor == 5.0:
+                    #     plt.ylim(-7,1)
+                    # elif scaling_factor == 10.0:
+                    #     plt.ylim(-6,0)
+                    # elif scaling_factor == 20.0:
+                    #     plt.ylim(-8,0)
+                    plt.ylabel("Residual", fontsize=16)
+                    plt.xlabel("Iteration", fontsize=16)
+                    plt.title(f"Whole space residual over Windows, Length Scale: {(scaling_factor):.1f}")
+                    plt.legend()
+                    plt.xticks(fontsize=15)
+                    plt.yticks(fontsize=15)
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    #plt.show()
+                    # plt.savefig(f"figures/{matrix_name}_{'quotient_' if plot_S_quotient else ''}error_over_time_log_{'_'.join(labels[-1].split(' '))}.png")
+                    current_figure = plt.gcf()
+                    filename = f"figures/{matrix_name}_{'quotient_' if plot_ws_quotient else ''}ws_residuals_over_time_log_{'_'.join(labels[-1].split(' '))}.png"
+                    ws_residual_figures.append([current_figure, filename])
+                    plt.close()
 
-                        # Set custom x-axis ticks to show even numbers (2, 4, 6, 8, ...)
-                        max_x = max([len(method_d_trace_error[n]) for n in method_order]) - 1
-                        tick_positions = np.arange(0, max_x + 1, 2)  # Start from 2, step by 2
-                        plt.xticks(tick_positions, fontsize=15)
-                        # legend = plt.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
-                        # print(legend)
-                        plt.yticks(fontsize=15)
-                        plt.grid(True, which='both', linestyle='--', alpha=0.5)
-                        plt.tight_layout()
-                        #plt.show()
-                        plt.savefig(f"figures/{matrix_name}_method_residuals_ws_over_time_log.png", bbox_inches='tight')
-                        plt.close()
+
+                # Plot and change y_axis
+                # ev_change_figures = []
+                # trace_error_figures = []
+                # regular_residuals_figures = []
+                # Find the global y-limits across all figures
+                def set_figures_same_ylim(figures):
+                    all_ylims = []
+                    for fig, _ in figures:
+                        current_ylim = fig.axes[0].get_ylim()
+                        all_ylims.extend(current_ylim)
+
+                    # Set common ylim based on global range
+                    if len(all_ylims) == 0:
+                        # skip
+                        return
+                    global_ymin = min(all_ylims)
+                    global_ymax = max(all_ylims)
+
+                    # Apply to all figures
+                    for fig, _ in figures:
+                        fig.axes[0].set_ylim(global_ymin, global_ymax)
+
+                    for fig, file_path in figures:
+                        # for quality in range(100, 5, -5):
+                        quality = 80
+                        fig.savefig(file_path, format='jpg', dpi=100,
+                                    bbox_inches='tight', pad_inches=0,
+                                    pil_kwargs={'quality': quality, 'optimize': True})
+                        #     print(f"Compressed to ~{os.path.getsize(file_path)/1024:.1f}KB with quality {quality}")
+                        # raise
+                        # print(file_path)
+                    # print(all_ylims)
+                    # import pdb;pdb.set_trace()
+
+                if plot_ev_change:
+                    set_figures_same_ylim(ev_change_figures)
+                if plot_trace_error:
+                    set_figures_same_ylim(trace_error_figures)
+                if plot_jer_residual:
+                    set_figures_same_ylim(regular_residuals_figures)
+                    # import pdb;pdb.set_trace()
+                if plot_wholespace_residual:
+                    set_figures_same_ylim(ws_residual_figures)
+                if plot_leftout:
+                    set_figures_same_ylim(combined_log_figures)
+                    set_figures_same_ylim(combined_linear_figures)
+                    set_figures_same_ylim(total_figures)
+                    set_figures_same_ylim(throw_figures)
+
+
+                if method_d_trace_error and method_d_residuals:
+                    # Create a list to control legend order: iSVD, Quotient, then demix
+                    method_order = []
+                    for n in method_d_trace_error.keys():
+                        if "isvddemix" in n and not "quotient" in n:
+                            continue
+                        method_order.append(n)
+
+                    # Sort methods: iSVD first, then quotient, then demix
+                    def sort_key(method_name):
+                        if "isvd" in method_name.lower() and "demix" not in method_name.lower():
+                            return (0, method_name)  # iSVD methods first
+                        elif "quotient" in method_name.lower():
+                            return (1, method_name)  # Quotient methods second
+                        elif "demix" in method_name.lower():
+                            return (2, method_name)  # Demix methods last
+                        else:
+                            return (3, method_name)  # Other methods at the end
+
+                    method_order.sort(key=sort_key)
+
+                    color_range = np.linspace(0, 1.0, len(method_order))
+                    # color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                    color_range = np.sort(color_range)
+                    colors = plt.cm.jet(color_range)
+                    plt.figure(figsize=(12, 6))
+                    # print(method_d_trace_error.keys())
+                    # import pdb;pdb.set_trace()
+                    for n, color in zip(method_order, colors):
+                        if "isvddemix" in n and not "quotient" in n:
+                            continue
+                        # print(f"Label: '{n}'") 
+                        # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                        #         color=color, alpha=0.7, markevery=i, markersize=12)
+                        if "isvddemix" in n and "quotient" in n:
+                            name = "Demix"
+                        elif "quotient" in n:
+                            name = "Least Squares"
+                        else:
+                            name = "iSVD"
+                        plt.semilogy(np.arange(len(method_d_trace_error[n])), np.abs(method_d_trace_error[n]), label=f'{name}', marker='o',
+                                color=color, alpha=0.7, markersize=12)
+                        # import pdb;pdb.set_trace()
+                    # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    #          label='1-k/n', linestyle='--', alpha=0.7)
+                    plt.ylabel("Relative trace error", fontsize=16)
+                    plt.xlabel("Window index", fontsize=16)
+                    plt.title(f"Relative Trace Error over Windows, Length Scale: {(scaling_factor)}")
+                    plt.legend()
+                    # legend = plt.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
+                    # print(legend)
+                    plt.yticks(fontsize=15)
+                    # Set custom x-axis ticks to show even numbers (2, 4, 6, 8, ...)
+                    max_x = max([len(method_d_trace_error[n]) for n in method_order]) - 1
+                    tick_positions = np.arange(0, max_x + 1, 2)  # Start from 2, step by 2
+                    plt.xticks(tick_positions, fontsize=15)
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    #plt.show()
+                    plt.savefig(f"figures/{matrix_name}_method_error_over_time_log.png", bbox_inches='tight')
+                    plt.close()
+
+                    # color_range = np.linspace(0, 1.0, len(method_d_residuals))
+                    # # color_range[2] = (color_range[-1] + color_range[-2]) / 2
+                    # color_range = np.sort(color_range)
+                    # colors = plt.cm.jet(color_range)
+                    plt.figure(figsize=(12, 6))
+                    # print(method_d_residuals.keys())
+                    # import pdb;pdb.set_trace()
+                    for n, color in zip(method_order, colors):
+                        if "isvddemix" in n and not "quotient" in n:
+                            continue
+                        if "isvddemix" in n and "quotient" in n:
+                            name = "Demix"
+                        elif "quotient" in n:
+                            name = "Least Squares"
+                        else:
+                            name = "iSVD"
+                        # print(f"Label: '{n}'") 
+                        # plt.plot(np.arange(last_available_file_number+1), np.log10(np.abs((e_i)/e_i[0])), label=f'{label}', linestyle=linestyle, marker=marker,
+                        #         color=color, alpha=0.7, markevery=i, markersize=12)
+                        plt.semilogy(np.arange(len(method_d_residuals[n])), np.abs(method_d_residuals[n]), label=f'{name}', marker='o',
+                                color=color, alpha=0.7, markersize=12)
+                        # import pdb;pdb.set_trace()
+                    # plt.plot(np.arange(last_available_file_number+1), np.log10(1-np.arange(last_available_file_number)/last_available_file_number),
+                    #          label='1-k/n', linestyle='--', alpha=0.7)
+                    plt.ylabel("Whole space residual", fontsize=16)
+                    plt.xlabel("Window index", fontsize=16)
+                    plt.title(f"Whole Space Residual over Windows, Length Scale: {(scaling_factor)}")
+                    plt.legend()
+
+                    # Set custom x-axis ticks to show even numbers (2, 4, 6, 8, ...)
+                    max_x = max([len(method_d_trace_error[n]) for n in method_order]) - 1
+                    tick_positions = np.arange(0, max_x + 1, 2)  # Start from 2, step by 2
+                    plt.xticks(tick_positions, fontsize=15)
+                    # legend = plt.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
+                    # print(legend)
+                    plt.yticks(fontsize=15)
+                    plt.grid(True, which='both', linestyle='--', alpha=0.5)
+                    plt.tight_layout()
+                    #plt.show()
+                    plt.savefig(f"figures/{matrix_name}_method_residuals_ws_over_time_log.png", bbox_inches='tight')
+                    plt.close()
 
 if plot_entropy:
     # print(entropy_d)
