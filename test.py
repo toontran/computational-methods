@@ -148,10 +148,10 @@ def aggregate_seed_curves(curves):
     """
     min_len = min(len(c) for c in curves)
     arr = np.log10(np.stack([c[:min_len] for c in curves], axis=0))
-    mean_curve = arr.mean(axis=0)
-    low_curve = arr.min(axis=0)
-    high_curve = arr.max(axis=0)
-    mean_endpoint = arr[:, -1].mean()
+    mean_curve = 10**arr.mean(axis=0)
+    low_curve = 10**arr.min(axis=0)
+    high_curve = 10**arr.max(axis=0)
+    mean_endpoint = 10**arr[:, -1].mean()
     return mean_curve, low_curve, high_curve, mean_endpoint, min_len
 
 
