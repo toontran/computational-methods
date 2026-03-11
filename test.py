@@ -11,7 +11,7 @@ FIG_DIR = "figures"
 # BASE_PREFIX = "bad_case2_1000_isvd"
 # BASE_PREFIX = "bad_case3_1000_isvd"
 # BASE_PREFIX = "kernel_stocks_1000_0.7071_isvd"
-# BASE_PREFIX = "kernel_stocks_1000_2.2361_isvd"
+BASE_PREFIX = "kernel_stocks_1000_2.2361_isvd"
 
 SIZE = 129
 RESERVOIR_METHOD = "greedy"
