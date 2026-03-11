@@ -184,7 +184,8 @@ residual_source_kind = None
 used_any_residual = False
 used_any_trace = False
 
-import pdb;pdb.set_trace()
+# import pdb;pdb.set_trace()
+sorted_keys = [(ssize, k) for ssize, k in sorted_keys if k > 10]
 for ssize, k in sorted_keys:
     seed_folders = groups[(ssize, k)]
 
