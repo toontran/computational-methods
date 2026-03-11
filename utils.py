@@ -1503,8 +1503,6 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
             combined = sp.sparse.vstack([S.reshape(-1, 1) * Vt, next_window])
         # 
         
-        # TODO: Remove debug
-        print(f"isvd_partial_step_: S before:{S[:2]}")
         # U_sketch, S, Vt = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
         print("Computing SVD...")
         start_time = time.time()
@@ -1512,9 +1510,6 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         gc.collect()
         print_memory_usage(f"Before, window {j+1}")
         U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
-        # TODO: Remove debug
-        print(f"isvd_partial_step_: S after:{S[:2]}")
-        import pdb;pdb.set_trace()
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
         
@@ -3858,8 +3853,6 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         
         # Extract the next window
         window_indices = row_permutation[start_idx:end_idx]
-        # TODO: Remove debug
-        print(f"Processing rows {start_idx} to {end_idx} (exclusive)")
         next_window = A_csr[window_indices, :]
          
         
@@ -4050,10 +4043,6 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
 
          
         S, Vt = ret[:2]
-        # TODO: Remove debug
-        all_indices_until_now = row_permutation[:end_idx]
-        _, S_correct_current, _ = compute_svd(A_csr[all_indices_until_now, :], k, is_sparse=False)
-        print(f"Current S: {S[:10] if S is not None else S} vs. correct S: {S_correct_current[:10]}")
 
 
         entropies = []
