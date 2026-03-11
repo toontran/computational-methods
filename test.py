@@ -7,39 +7,38 @@ import matplotlib.pyplot as plt
 OUTPUT_DIR = "output"
 FIG_DIR = "figures"
 
-MATRIX_PREFIXES = [
+MATRIX_NAMES = [
     "kernel_stocks_1000_10.0",
     "kernel_stocks_1000_2.2361",
     "kernel_stocks_1000_0.7071",
     "kernel_stocks_1000_0.2236",
 ]
 
-METHOD = "isvd"
-RANDOM_KIND = "random_uniform"
-WINDOW_SIZE = 1              # ssize = 1
+METHODS = ["isvd", "isvdstG"]
+
+SIZE = 100
+SSIZE = 1
+K = 10
 RESERVOIR_METHOD = "greedy"
 
-# Preferred:
-#   "ws_reg_2norm"
-# Fallbacks:
-#   "fallback_l2"
-#   "fallback_max"
+# Residual source:
+#   "ws_reg_2norm" -> use whole_space_regular_residuals_2norm from reservoir_residuals_data_*.npz
+#   "fallback_l2"  -> use ||approx_residuals||_2 from residuals_data_*.npz
+#   "fallback_max" -> use max(abs(approx_residuals)) from residuals_data_*.npz
 RESIDUAL_MODE = "ws_reg_2norm"
 
-SHOW_BAND = True
 TRACE_RANK = 10
+SHOW_BAND = True
 
 
 def parse_folder(folder_name):
     """
     Examples:
-      kernel_stocks_1000_0.7071_isvd_random_uniform_size_110_ssize_1_k_109_reservoir_greedy
-      kernel_stocks_1000_0.7071_isvd_random_uniform_4_size_110_ssize_1_k_109_reservoir_greedy
+      kernel_stocks_1000_0.2236_isvd_random_uniform_size_100_ssize_1_k_10_reservoir_greedy
+      kernel_stocks_1000_0.2236_isvdstG_random_uniform_4_size_100_ssize_1_k_10_reservoir_greedy
     """
     pattern = re.compile(
-        r"^(?P<matrix>kernel_stocks_\d+_[^_]+)"
-        r"_(?P<method>[^_]+)"
-        r"_random_uniform"
+        r"^(?P<matrix>kernel_stocks_\d+_[^_]+)_(?P<method>isvd(?:stG)?)_random_uniform"
         r"(?:_(?P<seed>\d+))?"
         r"_size_(?P<size>\d+)"
         r"_ssize_(?P<ssize>\d+)"
@@ -134,7 +133,6 @@ def load_trace_error_curve(exp_dir, rank_limit=10):
         S = np.asarray(data["S"]).reshape(-1)
         S_exact = np.asarray(data["S_exact"]).reshape(-1)
         Ss.append(S)
-        S_exact = S_exact
 
     min_rank = min(min(len(S) for S in Ss), len(S_exact), rank_limit)
     if min_rank <= 0:
@@ -163,50 +161,42 @@ def aggregate_seed_curves(curves):
     return mean_curve, low_curve, high_curve, mean_endpoint, min_len
 
 
-def collect_groups(matrix_prefix):
-    """
-    Group by k only, since ssize is fixed to WINDOW_SIZE=1.
-    Return:
-      { k : [(seed, folder_name), ...] }
-    """
-    groups = {}
+# Collect matching folders by (matrix, method)
+groups = {}
+for folder in os.listdir(OUTPUT_DIR):
+    parsed = parse_folder(folder)
+    if parsed is None:
+        continue
+    if parsed["matrix"] not in MATRIX_NAMES:
+        continue
+    if parsed["method"] not in METHODS:
+        continue
+    if parsed["size"] != SIZE:
+        continue
+    if parsed["ssize"] != SSIZE:
+        continue
+    if parsed["k"] != K:
+        continue
+    if parsed["reservoir"] != RESERVOIR_METHOD:
+        continue
 
-    for folder in os.listdir(OUTPUT_DIR):
-        parsed = parse_folder(folder)
-        if parsed is None:
-            continue
-        if parsed["matrix"] != matrix_prefix:
-            continue
-        if parsed["method"] != METHOD:
-            continue
-        if parsed["reservoir"] != RESERVOIR_METHOD:
-            continue
-        if parsed["ssize"] != WINDOW_SIZE:
-            continue
+    key = (parsed["matrix"], parsed["method"])
+    groups.setdefault(key, []).append((parsed["seed"], folder))
 
-        k = parsed["k"]
-        groups.setdefault(k, []).append((parsed["seed"], folder))
+for key in groups:
+    groups[key].sort(key=lambda x: x[0])
 
-    for k in groups:
-        groups[k].sort(key=lambda x: x[0])
+fig, axes = plt.subplots(len(MATRIX_NAMES), 2, figsize=(16, 5 * len(MATRIX_NAMES)), squeeze=False)
 
-    return groups
+residual_source_kind = None
 
+for row, matrix_name in enumerate(MATRIX_NAMES):
+    ax_res = axes[row, 0]
+    ax_tr = axes[row, 1]
 
-os.makedirs(FIG_DIR, exist_ok=True)
-
-for matrix_prefix in MATRIX_PREFIXES:
-    groups = collect_groups(matrix_prefix)
-    sorted_ks = sorted(groups.keys())
-
-    fig, (ax_res, ax_tr) = plt.subplots(1, 2, figsize=(16, 7))
-    residual_source_kind = None
-
-    used_any_residual = False
-    used_any_trace = False
-
-    for k in sorted_ks:
-        seed_folders = groups[k]
+    for method in METHODS:
+        key = (matrix_name, method)
+        seed_folders = groups.get(key, [])
 
         residual_curves = []
         trace_curves = []
@@ -234,56 +224,48 @@ for matrix_prefix in MATRIX_PREFIXES:
         if residual_curves:
             mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(residual_curves)
             x = np.arange(1, npts + 1)
-            label = f"k={k}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
-            line, = ax_res.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
+            label = f"{method}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
+            line, = ax_res.semilogy(x, mean_curve, marker="o", linewidth=1.8, label=label)
             if SHOW_BAND and len(residual_curves) > 1:
                 ax_res.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
-            used_any_residual = True
 
-            print(f"[{matrix_prefix}] residual k={k}: seeds={residual_seeds}, mean endpoint={mean_endpoint:.6e}")
+            print(f"{matrix_name} | residual | {method} | seeds={residual_seeds} | mean end={mean_endpoint:.6e}")
 
         # Trace panel
         if trace_curves:
             mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(trace_curves)
             x = np.arange(1, npts + 1)
-            label = f"k={k}, end={mean_endpoint:.3e}, n={len(trace_curves)}"
-            line, = ax_tr.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
+            label = f"{method}, end={mean_endpoint:.3e}, n={len(trace_curves)}"
+            line, = ax_tr.semilogy(x, mean_curve, marker="o", linewidth=1.8, label=label)
             if SHOW_BAND and len(trace_curves) > 1:
                 ax_tr.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
-            used_any_trace = True
 
-            print(f"[{matrix_prefix}] trace    k={k}: seeds={trace_seeds}, mean endpoint={mean_endpoint:.6e}")
+            print(f"{matrix_name} | trace    | {method} | seeds={trace_seeds} | mean end={mean_endpoint:.6e}")
 
-    for ax in (ax_res, ax_tr):
-        ax.set_xscale("log")
-        ax.grid(True, which="both", linestyle="--", alpha=0.5)
-        ax.set_xlabel("Window index (log scale)")
-
+    # format residual axis
+    ax_res.set_xscale("log")
+    ax_res.grid(True, which="both", linestyle="--", alpha=0.5)
+    ax_res.set_xlabel("Window index (log scale)")
     ax_res.set_ylabel("Whole-space residual")
-    ax_res.set_title(
-        f"{matrix_prefix}, ssize={WINDOW_SIZE}\n"
-        f"Residual, source={residual_source_kind}"
-    )
+    ax_res.set_title(f"{matrix_name}: residual\nsize={SIZE}, ssize={SSIZE}, k={K}, source={residual_source_kind}")
+    ax_res.legend(fontsize=9)
 
+    # format trace axis
+    ax_tr.set_xscale("log")
+    ax_tr.grid(True, which="both", linestyle="--", alpha=0.5)
+    ax_tr.set_xlabel("Window index (log scale)")
     ax_tr.set_ylabel("Relative trace error")
-    ax_tr.set_title(
-        f"{matrix_prefix}, ssize={WINDOW_SIZE}\n"
-        f"Trace error, top-{TRACE_RANK} trace"
-    )
+    ax_tr.set_title(f"{matrix_name}: trace error\nsize={SIZE}, ssize={SSIZE}, k={K}, top-{TRACE_RANK} trace")
+    ax_tr.legend(fontsize=9)
 
-    if used_any_residual:
-        ax_res.legend(fontsize=8, ncol=1)
-    if used_any_trace:
-        ax_tr.legend(fontsize=8, ncol=1)
+plt.tight_layout()
+os.makedirs(FIG_DIR, exist_ok=True)
 
-    plt.tight_layout()
+save_path = os.path.join(
+    FIG_DIR,
+    f"kernel_stocks_1000_compare_isvd_vs_isvdstG_size_{SIZE}_ssize_{SSIZE}_k_{K}_residual_and_trace.png"
+)
+plt.savefig(save_path, bbox_inches="tight", dpi=220)
+plt.show()
 
-    save_path = os.path.join(
-        FIG_DIR,
-        f"{matrix_prefix}_{METHOD}_{RANDOM_KIND}_ssize_{WINDOW_SIZE}_allk_residual_and_trace_compare.png"
-    )
-    plt.savefig(save_path, bbox_inches="tight", dpi=220)
-    plt.show()
-
-    print(f"\nSaved to: {save_path}\n")
-    
+print(f"\nSaved to: {save_path}")
