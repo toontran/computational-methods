@@ -131,8 +131,8 @@ def load_trace_error_curve(exp_dir, rank_limit=10):
         Ss.append(S)
 
     print(exp_dir)
-    if "k_64" in exp_dir:
-        import pdb;pdb.set_trace()
+    # if "k_64" in exp_dir:
+    #     import pdb;pdb.set_trace()
     min_rank = min(min(len(S) for S in Ss), len(S_exact), rank_limit)
     if min_rank <= 0:
         return None
