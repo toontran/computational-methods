@@ -13,7 +13,7 @@ FIG_DIR = "figures"
 # BASE_PREFIX = "kernel_stocks_1000_0.7071_isvd"
 BASE_PREFIX = "kernel_stocks_1000_2.2361_isvd"
 
-SIZE = 129
+SIZE = 110
 RESERVOIR_METHOD = "greedy"
 
 # Residual mode:
