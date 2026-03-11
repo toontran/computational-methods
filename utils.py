@@ -3840,11 +3840,12 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         
         # Calculate the start and end indices for this window
         if j == 0:
-            start_idx = j * window_size
-            end_idx = min((j + 1) * window_size, m)
+            start_idx = 0
+            end_idx = min(window_size, m)
         else:
-            start_idx = j * stream_size
-            end_idx = min((j + 1) * stream_size, m)
+            end_idx_window_1 = min(window_size, m)
+            start_idx = end_idx_window_1 + j * stream_size
+            end_idx = min(end_idx_window_1 + (j + 1) * stream_size, m)
         if end_idx <= start_idx:
             break
 
