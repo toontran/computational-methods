@@ -7,7 +7,7 @@ mem_size=110 #110, 129
 # List of matrices
 matrices=(
     # "kernel_stocks_1000_0.7071"
-    "kernel_stocks_1000_0.7071"
+    "kernel_stocks_1000_2.2361"
     # "bad_case1_1000"
     # "bad_case2_1000"
     # "bad_case3_1000"
