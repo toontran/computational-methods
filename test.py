@@ -218,7 +218,7 @@ for ssize, k in sorted_keys:
         x = np.arange(1, npts + 1)*ssize
         # x = np.arange(1, npts + 1)  # start at 1 so log x-scale works
         label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
-        line, = ax_res.plot(x, mean_curve, marker="o", linewidth=1.5, label=label)
+        line, = ax_res.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
         if SHOW_BAND and len(residual_curves) > 1:
             ax_res.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
         used_any_residual = True
@@ -229,7 +229,7 @@ for ssize, k in sorted_keys:
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(trace_curves)
         x = np.arange(1, npts + 1)*ssize  # start at 1 so log x-scale works
         label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(trace_curves)}"
-        line, = ax_tr.plot(x, mean_curve, marker="o", linewidth=1.5, label=label)
+        line, = ax_tr.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
         if SHOW_BAND and len(trace_curves) > 1:
             ax_tr.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
         used_any_trace = True
@@ -237,7 +237,7 @@ for ssize, k in sorted_keys:
 
 # Set x-axis to log scale on both plots
 for ax in (ax_res, ax_tr):
-    ax.set_xscale("log")
+    # ax.set_xscale("log")
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
     ax.set_xlabel("Window size (log scale)")
 
