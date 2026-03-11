@@ -3853,7 +3853,8 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         
         # Extract the next window
         window_indices = row_permutation[start_idx:end_idx]
-#         print("Index:", end_idx, len(row_permutation))
+        # TODO: Remove debug
+        print(f"Processing rows {start_idx} to {end_idx} (exclusive)")
         next_window = A_csr[window_indices, :]
          
         
@@ -4044,6 +4045,11 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
 
          
         S, Vt = ret[:2]
+        # TODO: Remove debug
+        all_indices_until_now = row_permutation[:end_idx]
+        _, S_correct_current, _ = compute_svd(A_csr[all_indices_until_now, :], k, is_sparse=is_sparse)
+        print(f"Current S: {S[:10] if S is not None else S} vs. correct S: {S_correct_current[:10]}")
+
 
         entropies = []
         for i in range(Vt.shape[0]):
