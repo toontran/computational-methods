@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 OUTPUT_DIR = "output"
 FIG_DIR = "figures"
 
-BASE_PREFIX = "bad_case1_1000_isvd"
+# BASE_PREFIX = "bad_case1_1000_isvd"
 # BASE_PREFIX = "bad_case2_1000_isvd"
 # BASE_PREFIX = "bad_case3_1000_isvd"
 # BASE_PREFIX = "kernel_stocks_1000_0.7071_isvd"
@@ -130,6 +130,8 @@ def load_trace_error_curve(exp_dir, rank_limit=10):
         S_exact = np.asarray(data["S_exact"]).reshape(-1)
         Ss.append(S)
 
+    if "k_64" in exp_dir:
+        import pdb;pdb.set_trace()
     min_rank = min(min(len(S) for S in Ss), len(S_exact), rank_limit)
     if min_rank <= 0:
         return None
