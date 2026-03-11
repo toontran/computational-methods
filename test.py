@@ -147,7 +147,7 @@ def aggregate_seed_curves(curves):
     Align curves to shortest length and return mean/min/max and mean endpoint.
     """
     min_len = min(len(c) for c in curves)
-    arr = np.stack([c[:min_len] for c in curves], axis=0)
+    arr = np.log10(np.stack([c[:min_len] for c in curves], axis=0))
     mean_curve = arr.mean(axis=0)
     low_curve = arr.min(axis=0)
     high_curve = arr.max(axis=0)
@@ -213,6 +213,7 @@ for ssize, k in sorted_keys:
 
     # Residual plot
     if residual_curves:
+        import pdb;pdb.set_trace()
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(residual_curves)
         x = np.arange(1, npts + 1)  # start at 1 so log x-scale works
         label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
