@@ -9,18 +9,19 @@ OUTPUT_DIR = "output"
 FIG_DIR = "figures"
 
 # Fixed experiment settings
-METHOD_NAME = "isvd"
-MEM_SIZE = 129
+WINDOW_SIZE = 1
+K = 8
 
-# List of matrices
 MATRICES = [
     "bad_case1_1000",
     "bad_case2_1000",
     "bad_case3_1000",
 ]
 
-# Manually specified k values
-K_VALUES = [1, 8, 64, 128]
+METHODS = [
+    "isvd",
+    "isvdstG",
+]
 
 # Trace error settings
 TRACE_RANK = 10
@@ -65,34 +66,50 @@ def list_consecutive_iterations(exp_dir: str, prefix: str):
 def parse_experiment_folder(folder_name: str):
     """
     Expected examples:
-      bad_case1_1000_isvd_random_uniform_size_129_k_1
-      bad_case1_1000_isvd_random_uniform_4_size_129_k_1
-      bad_case1_1000_isvd_random_uniform_size_129_ssize_128_k_1_reservoir_greedy
-      bad_case1_1000_isvd_random_uniform_2_size_129_ssize_121_k_8_reservoir_greedy
+      bad_case1_1000_isvd_random_uniform_size_1_k_8
+      bad_case1_1000_isvd_random_uniform_4_size_1_k_8
+      bad_case1_1000_isvd_size_1_k_8
+      bad_case1_1000_isvdstG_random_uniform_size_1_ssize_121_k_8_reservoir_greedy
     """
-    pattern = re.compile(
-        r"^(?P<matrix>.+?)_"
-        r"(?P<method>[^_]+)_random_uniform"
-        r"(?:_(?P<seed>\d+))?"
-        r"_size_(?P<size>\d+)"
-        r"(?:_ssize_(?P<ssize>\d+))?"
-        r"_k_(?P<k>\d+)"
-        r"(?:_reservoir_(?P<reservoir>.+))?$"
-    )
-    m = pattern.match(folder_name)
-    if not m:
-        return None
+    patterns = [
+        re.compile(
+            r"^(?P<matrix>.+?)_"
+            r"(?P<method>[^_]+)_random_uniform"
+            r"(?:_(?P<seed>\d+))?"
+            r"_size_(?P<size>\d+)"
+            r"(?:_ssize_(?P<ssize>\d+))?"
+            r"_k_(?P<k>\d+)"
+            r"(?:_reservoir_(?P<reservoir>.+))?$"
+        ),
+        re.compile(
+            r"^(?P<matrix>.+?)_"
+            r"(?P<method>[^_]+)"
+            r"_size_(?P<size>\d+)"
+            r"(?:_ssize_(?P<ssize>\d+))?"
+            r"_k_(?P<k>\d+)"
+            r"(?:_reservoir_(?P<reservoir>.+))?$"
+        ),
+    ]
 
-    return {
-        "matrix": m.group("matrix"),
-        "method": m.group("method"),
-        "seed": int(m.group("seed")) if m.group("seed") is not None else 1,
-        "size": int(m.group("size")),
-        "ssize": int(m.group("ssize")) if m.group("ssize") is not None else None,
-        "k": int(m.group("k")),
-        "reservoir": m.group("reservoir"),
-        "folder": folder_name,
-    }
+    for pattern in patterns:
+        m = pattern.match(folder_name)
+        if m:
+            seed = m.groupdict().get("seed")
+            ssize = m.groupdict().get("ssize")
+            reservoir = m.groupdict().get("reservoir")
+            return {
+                "matrix": m.group("matrix"),
+                "method": m.group("method"),
+                "seed": int(seed) if seed is not None else 1,
+                "size": int(m.group("size")),
+                "ssize": int(ssize) if ssize is not None else None,
+                "k": int(m.group("k")),
+                "reservoir": reservoir,
+                "folder": folder_name,
+                "is_random_uniform": "_random_uniform" in folder_name,
+            }
+
+    return None
 
 
 def load_trace_error_curve(exp_dir: str, rank_limit: int = 10):
@@ -272,7 +289,10 @@ def plot_component_matrix(
 
 
 def collect_experiments():
-    by_matrix_k = {matrix: {k: [] for k in K_VALUES} for matrix in MATRICES}
+    by_matrix_method = {
+        matrix: {method: [] for method in METHODS}
+        for matrix in MATRICES
+    }
 
     for folder in os.listdir(OUTPUT_DIR):
         parsed = parse_experiment_folder(folder)
@@ -280,30 +300,32 @@ def collect_experiments():
             continue
         if parsed["matrix"] not in MATRICES:
             continue
-        if parsed["method"] != METHOD_NAME:
+        if parsed["method"] not in METHODS:
             continue
-        if parsed["size"] != MEM_SIZE:
+        if parsed["size"] != WINDOW_SIZE:
             continue
-        if parsed["k"] not in K_VALUES:
+        if parsed["k"] != K:
             continue
 
-        by_matrix_k[parsed["matrix"]][parsed["k"]].append(parsed)
+        by_matrix_method[parsed["matrix"]][parsed["method"]].append(parsed)
 
     for matrix_name in MATRICES:
-        for k in K_VALUES:
-            by_matrix_k[matrix_name][k].sort(key=lambda x: (x["seed"], x["folder"]))
+        for method in METHODS:
+            by_matrix_method[matrix_name][method].sort(
+                key=lambda x: (x["seed"], x["folder"])
+            )
 
-    return by_matrix_k
+    return by_matrix_method
 
 
 def plot_trace_error_for_matrix(matrix_name: str, groups):
     plt.figure(figsize=(12, 6))
     any_trace = False
 
-    for k in K_VALUES:
-        candidates = groups[matrix_name][k]
+    for method in METHODS:
+        candidates = groups[matrix_name][method]
         if not candidates:
-            print(f"Missing experiments for matrix={matrix_name}, k={k}")
+            print(f"Missing experiments for matrix={matrix_name}, method={method}")
             continue
 
         curves = []
@@ -324,26 +346,26 @@ def plot_trace_error_for_matrix(matrix_name: str, groups):
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(curves)
         x = np.arange(1, npts + 1)
 
-        label = f"k={k}, end={mean_endpoint:.3e}, n={len(curves)}"
+        label = f"{method}, end={mean_endpoint:.3e}, n={len(curves)}"
         line, = plt.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
         if SHOW_BAND and len(curves) > 1:
             plt.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
 
-        print(f"Trace  {matrix_name}, k={k}, seeds={seeds_used}, mean endpoint={mean_endpoint:.6e}")
+        print(f"Trace  {matrix_name}, method={method}, seeds={seeds_used}, mean endpoint={mean_endpoint:.6e}")
         any_trace = True
 
     if any_trace:
         plt.xscale("log")
         plt.xlabel("Window index (log scale)")
         plt.ylabel("Relative trace error")
-        plt.title(f"{matrix_name}: trace error across k (mean over seeds)")
+        plt.title(f"{matrix_name}: trace error across methods (mean over seeds)\nwindow_size={WINDOW_SIZE}, k={K}")
         plt.grid(True, which="both", linestyle="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
 
         save_path = os.path.join(
             FIG_DIR,
-            f"{sanitize(matrix_name)}_size_{MEM_SIZE}_trace_error_compare_allseeds.png"
+            f"{sanitize(matrix_name)}_wsize_{WINDOW_SIZE}_k_{K}_trace_error_compare_methods_allseeds.png"
         )
         plt.savefig(save_path, bbox_inches="tight", dpi=220)
         print(f"Saved {save_path}")
@@ -356,10 +378,10 @@ def plot_residual_for_matrix(matrix_name: str, groups):
     any_res = False
     residual_source_kind = None
 
-    for k in K_VALUES:
-        candidates = groups[matrix_name][k]
+    for method in METHODS:
+        candidates = groups[matrix_name][method]
         if not candidates:
-            print(f"Missing experiments for matrix={matrix_name}, k={k}")
+            print(f"Missing experiments for matrix={matrix_name}, method={method}")
             continue
 
         curves = []
@@ -382,26 +404,29 @@ def plot_residual_for_matrix(matrix_name: str, groups):
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(curves)
         x = np.arange(1, npts + 1)
 
-        label = f"k={k}, end={mean_endpoint:.3e}, n={len(curves)}"
+        label = f"{method}, end={mean_endpoint:.3e}, n={len(curves)}"
         line, = plt.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
         if SHOW_BAND and len(curves) > 1:
             plt.fill_between(x, low_curve, high_curve, alpha=0.18, color=line.get_color())
 
-        print(f"Residual {matrix_name}, k={k}, seeds={seeds_used}, mean endpoint={mean_endpoint:.6e}")
+        print(f"Residual {matrix_name}, method={method}, seeds={seeds_used}, mean endpoint={mean_endpoint:.6e}")
         any_res = True
 
     if any_res:
         plt.xscale("log")
         plt.xlabel("Window index (log scale)")
         plt.ylabel("Whole-space residual")
-        plt.title(f"{matrix_name}: residual across k (mean over seeds, {residual_source_kind})")
+        plt.title(
+            f"{matrix_name}: residual across methods (mean over seeds, {residual_source_kind})\n"
+            f"window_size={WINDOW_SIZE}, k={K}"
+        )
         plt.grid(True, which="both", linestyle="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
 
         save_path = os.path.join(
             FIG_DIR,
-            f"{sanitize(matrix_name)}_size_{MEM_SIZE}_residual_compare_allseeds.png"
+            f"{sanitize(matrix_name)}_wsize_{WINDOW_SIZE}_k_{K}_residual_compare_methods_allseeds.png"
         )
         plt.savefig(save_path, bbox_inches="tight", dpi=220)
         print(f"Saved {save_path}")
@@ -413,8 +438,8 @@ def plot_leftout_for_all_experiments(groups):
     used_folders = set()
 
     for matrix_name in MATRICES:
-        for k in K_VALUES:
-            candidates = groups[matrix_name][k]
+        for method in METHODS:
+            candidates = groups[matrix_name][method]
             if not candidates:
                 continue
 
@@ -431,7 +456,7 @@ def plot_leftout_for_all_experiments(groups):
                     continue
 
                 windows = np.arange(current_totals.shape[0])
-                label_base = f"{matrix_name}, k={item['k']}, seed={item['seed']}"
+                label_base = f"{matrix_name}, method={method}, seed={item['seed']}, window_size={WINDOW_SIZE}, k={K}"
                 if item["ssize"] is not None:
                     label_base += f", ssize={item['ssize']}"
 
@@ -477,3 +502,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
