@@ -984,8 +984,8 @@ if __name__ == "__main__":
         # "manual_perm_reverse": perm[::-1],
         "random_uniform_2": random_uniform_perms[1],
         "random_uniform_3": random_uniform_perms[2],
-        "random_uniform_4": random_uniform_perms[3],
-        "random_uniform_5": random_uniform_perms[4],
+        # "random_uniform_4": random_uniform_perms[3],
+        # "random_uniform_5": random_uniform_perms[4],
         # "random_wr": random_uniform_streams[0],
     }
 
@@ -998,7 +998,7 @@ if __name__ == "__main__":
     # raise
     save_mat = False
     no_og = False
-    no_adaptive = False 
+    no_adaptive = True 
     if save_mat:
         import scipy
     

@@ -242,6 +242,7 @@ for ax in (ax_res, ax_tr):
     # ax.set_xscale("log")
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
     ax.set_xlabel("Window size (log scale)")
+    ax.set_xlim(left=750, right=1000)
 
 ax_res.set_ylabel("Whole-space residual")
 ax_res.set_title(
