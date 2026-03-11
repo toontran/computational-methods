@@ -1514,9 +1514,10 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
         # TODO: Remove debug
         print(f"isvd_partial_step_: S after:{S[:2]}")
+        import pdb;pdb.set_trace()
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
-
+        
         if not track_U:
             del U_sketch
             gc.collect()
