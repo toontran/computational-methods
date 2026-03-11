@@ -392,7 +392,7 @@ if __name__ == "__main__":
         np.random.seed(10)
 
         _, _, N = matrix_name.split("_")
-        N, rank = int(N), k if k is not None else 8
+        N, rank = int(N), k 
 
         # Concentrated top block (Hadamard-style)
         if rank == 1:

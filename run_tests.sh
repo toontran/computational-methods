@@ -1,6 +1,7 @@
 #!/bin/bash
 
 window_size="1" # 1 if FD v iSVD
+k=8
 
 # List of matrices
 matrices=(
@@ -210,4 +211,4 @@ echo "Method ($method_index): $method_name"
 
 # Run the Python script with both matrix and method parameters and log the output
 echo "Running main.py for matrix: $matrix_name with method: $method_name"
-python3 -u main.py "$matrix_name" "$method_name" "$window_size" 2>&1 | tee -a "$log_filename"
+python3 -u main.py "$matrix_name" "$method_name" "$window_size" "$k" 2>&1 | tee -a "$log_filename"
