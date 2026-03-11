@@ -13,9 +13,13 @@ WINDOW_SIZE = 1
 K = 8
 
 MATRICES = [
-    "bad_case1_1000",
-    "bad_case2_1000",
-    "bad_case3_1000",
+    # "bad_case1_1000",
+    # "bad_case2_1000",
+    # "bad_case3_1000",
+    "kernel_stocks_1000_10.0"
+    "kernel_stocks_1000_2.2361"
+    "kernel_stocks_1000_0.7071"
+    "kernel_stocks_1000_0.2236"
 ]
 
 METHODS = [
@@ -502,4 +506,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
