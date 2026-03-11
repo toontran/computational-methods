@@ -1503,7 +1503,8 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
             combined = sp.sparse.vstack([S.reshape(-1, 1) * Vt, next_window])
         # 
         
-
+        # TODO: Remove debug
+        print(f"isvd_partial_step_: S before:{S[:2]}")
         # U_sketch, S, Vt = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
         print("Computing SVD...")
         start_time = time.time()
@@ -1511,6 +1512,8 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
         gc.collect()
         print_memory_usage(f"Before, window {j+1}")
         U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
+        # TODO: Remove debug
+        print(f"isvd_partial_step_: S after:{S[:2]}")
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
 
