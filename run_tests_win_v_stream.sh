@@ -14,23 +14,23 @@ matrices=(
 )
 
 # Manually specified k values
-k_values=(
-    1
-    8
-    64
-    128
-)
 # k_values=(
 #     1
-#     4
 #     8
-#     32
 #     64
-#     102
-#     106
-#     108
-#     109
+#     128
 # )
+k_values=(
+    1
+    4
+    8
+    32
+    64
+    102
+    106
+    # 108
+    # 109
+)
 
 usage() {
     echo "Usage: $0 <experiment_number>"
