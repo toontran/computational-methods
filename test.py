@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -24,6 +25,20 @@ RESIDUAL_MODE = "ws_reg_2norm"
 
 SHOW_BAND = True   # min-max band across seeds
 TRACE_RANK = 10    # same top-r trace comparison as before
+
+
+def load_txt(filename):
+    with open(filename, "r") as f:
+        raw = json.load(f)
+
+    out = {}
+    for key, obj in raw.items():
+        if obj["type"] == "ndarray":
+            out[key] = np.array(obj["value"])
+        else:
+            out[key] = obj["value"]
+
+    return out
 
 
 def parse_folder(folder_name):
@@ -54,14 +69,54 @@ def parse_folder(folder_name):
     }
 
 
+def find_data_file(exp_dir, prefix, iteration):
+    """
+    Prefer .txt if present, otherwise .npz.
+    """
+    txt_path = os.path.join(exp_dir, f"{prefix}_{iteration}.txt")
+    npz_path = os.path.join(exp_dir, f"{prefix}_{iteration}.npz")
+
+    if os.path.exists(txt_path):
+        return txt_path
+    if os.path.exists(npz_path):
+        return npz_path
+    return None
+
+
+def load_data_file(path):
+    """
+    Load either .txt (via load_txt) or .npz.
+    Returns a normal dict-like object.
+    """
+    if path.endswith(".txt"):
+        return load_txt(path)
+    elif path.endswith(".npz"):
+        data = np.load(path, allow_pickle=True)
+        return {k: data[k] for k in data.files}
+    else:
+        raise ValueError(f"Unsupported file type: {path}")
+
+
 def list_consecutive_iterations(exp_dir, prefix):
-    files = glob.glob(os.path.join(exp_dir, f"{prefix}_*.npz"))
+    """
+    Find iterations for either:
+      prefix_0.txt, prefix_1.txt, ...
+    or
+      prefix_0.npz, prefix_1.npz, ...
+    and return the consecutive run starting from 0.
+    """
+    txt_files = glob.glob(os.path.join(exp_dir, f"{prefix}_*.txt"))
+    npz_files = glob.glob(os.path.join(exp_dir, f"{prefix}_*.npz"))
+    files = txt_files + npz_files
+
     if not files:
         return []
 
     nums = []
+    pattern = re.compile(rf"{re.escape(prefix)}_(\d+)\.(txt|npz)$")
+
     for f in files:
-        m = re.search(rf"{re.escape(prefix)}_(\d+)\.npz$", os.path.basename(f))
+        m = pattern.search(os.path.basename(f))
         if m:
             nums.append(int(m.group(1)))
 
@@ -81,10 +136,10 @@ def load_residual_curve(exp_dir, mode="ws_reg_2norm"):
     if reservoir_iters and mode == "ws_reg_2norm":
         curve = []
         for j in reservoir_iters:
-            data = np.load(
-                os.path.join(exp_dir, f"reservoir_residuals_data_{j}.npz"),
-                allow_pickle=True
-            )
+            path = find_data_file(exp_dir, "reservoir_residuals_data", j)
+            if path is None:
+                break
+            data = load_data_file(path)
             curve.append(float(data["whole_space_regular_residuals_2norm"]))
         return np.asarray(curve), "exact:whole_space_regular_residuals_2norm"
 
@@ -95,10 +150,10 @@ def load_residual_curve(exp_dir, mode="ws_reg_2norm"):
 
     curve = []
     for j in residual_iters:
-        data = np.load(
-            os.path.join(exp_dir, f"residuals_data_{j}.npz"),
-            allow_pickle=True
-        )
+        path = find_data_file(exp_dir, "residuals_data", j)
+        if path is None:
+            break
+        data = load_data_file(path)
         r = np.asarray(data["approx_residuals"]).reshape(-1)
 
         if mode == "fallback_max":
@@ -122,17 +177,20 @@ def load_trace_error_curve(exp_dir, rank_limit=10):
     S_exact = None
 
     for j in iters:
-        data = np.load(
-            os.path.join(exp_dir, f"spectrum_data_{j}.npz"),
-            allow_pickle=True
-        )
+        path = find_data_file(exp_dir, "spectrum_data", j)
+        if path is None:
+            break
+        data = load_data_file(path)
+
         S = np.asarray(data["S"]).reshape(-1)
         S_exact = np.asarray(data["S_exact"]).reshape(-1)
         Ss.append(S)
 
+    if not Ss or S_exact is None:
+        return None
+
     print(exp_dir)
-    # if "k_64" in exp_dir:
-    #     import pdb;pdb.set_trace()
+
     min_rank = min(min(len(S) for S in Ss), len(S_exact), rank_limit)
     if min_rank <= 0:
         return None
@@ -156,10 +214,10 @@ def aggregate_seed_curves(curves):
     """
     min_len = min(len(c) for c in curves)
     arr = np.log10(np.stack([c[:min_len] for c in curves], axis=0))
-    mean_curve = 10**arr.mean(axis=0)
-    low_curve = 10**arr.min(axis=0)
-    high_curve = 10**arr.max(axis=0)
-    mean_endpoint = 10**arr[:, -1].mean()
+    mean_curve = 10 ** arr.mean(axis=0)
+    low_curve = 10 ** arr.min(axis=0)
+    high_curve = 10 ** arr.max(axis=0)
+    mean_endpoint = 10 ** arr[:, -1].mean()
     return mean_curve, low_curve, high_curve, mean_endpoint, min_len
 
 
@@ -192,8 +250,8 @@ residual_source_kind = None
 used_any_residual = False
 used_any_trace = False
 
-# import pdb;pdb.set_trace()
 sorted_keys = [(ssize, k) for ssize, k in sorted_keys if k > 10]
+
 for ssize, k in sorted_keys:
     seed_folders = groups[(ssize, k)]
 
@@ -207,7 +265,7 @@ for ssize, k in sorted_keys:
 
         # Residual
         rcurve, source_kind = load_residual_curve(exp_dir, mode=RESIDUAL_MODE)
-        if rcurve is not None:
+        if rcurve is not None and len(rcurve) > 0:
             rcurve = np.clip(rcurve, np.finfo(float).eps, None)
             residual_curves.append(rcurve)
             seeds_used_residual.append(seed)
@@ -216,18 +274,16 @@ for ssize, k in sorted_keys:
 
         # Trace error
         tcurve = load_trace_error_curve(exp_dir, rank_limit=TRACE_RANK)
-        if tcurve is not None:
+        if tcurve is not None and len(tcurve) > 0:
             tcurve = np.clip(tcurve, np.finfo(float).eps, None)
             trace_curves.append(tcurve)
             seeds_used_trace.append(seed)
 
     # Residual plot
     if residual_curves:
-        # import pdb;pdb.set_trace()
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(residual_curves)
-        x = SIZE + np.arange(0, npts)*ssize
+        x = SIZE + np.arange(0, npts) * ssize
         x[-1] = 1000
-        # x = np.arange(1, npts + 1)  # start at 1 so log x-scale works
         label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(residual_curves)}"
         line, = ax_res.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
         if SHOW_BAND and len(residual_curves) > 1:
@@ -238,7 +294,7 @@ for ssize, k in sorted_keys:
     # Trace plot
     if trace_curves:
         mean_curve, low_curve, high_curve, mean_endpoint, npts = aggregate_seed_curves(trace_curves)
-        x = SIZE + np.arange(0, npts)*ssize  # start at 1 so log x-scale works
+        x = SIZE + np.arange(0, npts) * ssize
         x[-1] = 1000
         label = f"ssize={ssize}, k={k}, end={mean_endpoint:.3e}, n={len(trace_curves)}"
         line, = ax_tr.semilogy(x, mean_curve, marker="o", linewidth=1.5, label=label)
@@ -247,9 +303,7 @@ for ssize, k in sorted_keys:
         used_any_trace = True
         print(f"TraceErr  (ssize={ssize}, k={k}) seeds used: {seeds_used_trace}, mean endpoint={mean_endpoint:.6e}")
 
-# Set x-axis to log scale on both plots
 for ax in (ax_res, ax_tr):
-    # ax.set_xscale("log")
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
     ax.set_xlabel("Window size (log scale)")
     ax.set_xlim(left=750, right=1000)
