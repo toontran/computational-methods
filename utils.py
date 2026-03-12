@@ -25,6 +25,40 @@ import matplotlib
 import traceback
 matplotlib.use('Agg')
 
+import json
+
+def save_txt(filename, **kwargs):
+    data = {}
+
+    for key, value in kwargs.items():
+        if isinstance(value, np.ndarray):
+            data[key] = {
+                "type": "ndarray",
+                "value": value.tolist()
+            }
+        else:
+            data[key] = {
+                "type": "scalar",
+                "value": value
+            }
+
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+
+def load_txt(filename):
+    with open(filename, "r") as f:
+        raw = json.load(f)
+
+    out = {}
+    for key, obj in raw.items():
+        if obj["type"] == "ndarray":
+            out[key] = np.array(obj["value"])
+        else:
+            out[key] = obj["value"]
+
+    return out
+
 
 def sample_4d_hyperboloid(num_points, a, b, c, d):
     np.random.seed(420)
@@ -745,168 +779,344 @@ def plot_canonical_angles(Vt, Vt_exact, iteration, dir_path):
     plt.show()
     plt.close('all')
 
-def save_spectrum_comparison(S, S_exact, A_norm, name, iteration, dir_path, S_quotient=None):
-    # Create directory if it doesn't exist
+def save_spectrum_comparison(S, S_exact, A_norm, name, iteration, dir_path, S_quotient=None, save_in_text=True):
     os.makedirs(dir_path, exist_ok=True)
 
-    # Save data for the first plot
-    np.savez(os.path.join(dir_path, f'spectrum_data_{iteration}.npz'),
-             S=S, S_exact=S_exact, S_quotient=S_quotient, iteration=iteration,
-             allow_pickle=True)
+    ext = "txt" if save_in_text else "npz"
 
-    # Save data for the second plot
-    if not S_exact is None:
-        np.savez(os.path.join(dir_path, f'diffspec_relA_data_{iteration}.npz'),
-                 diff=np.abs(S - S_exact[:len(S)]) / A_norm, iteration=iteration,
-                 allow_pickle=True)
-    
-        # Save data for the third plot
-        np.savez(os.path.join(dir_path, f'diffspec_relS_data_{iteration}.npz'),
-                 diff=np.abs(S - S_exact[:len(S)]) / np.abs(S_exact[:len(S)]), iteration=iteration,
-                 allow_pickle=True)
+    # First plot data
+    filepath = os.path.join(dir_path, f"spectrum_data_{iteration}.{ext}")
+    if save_in_text:
+        save_txt(filepath, S=S, S_exact=S_exact, S_quotient=S_quotient, iteration=iteration)
+    else:
+        np.savez(
+            filepath,
+            S=S, S_exact=S_exact, S_quotient=S_quotient, iteration=iteration,
+            allow_pickle=True
+        )
+
+    if S_exact is not None:
+        diff_relA = np.abs(S - S_exact[:len(S)]) / A_norm
+        filepath = os.path.join(dir_path, f"diffspec_relA_data_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(filepath, diff=diff_relA, iteration=iteration)
+        else:
+            np.savez(filepath, diff=diff_relA, iteration=iteration, allow_pickle=True)
+
+        diff_relS = np.abs(S - S_exact[:len(S)]) / np.abs(S_exact[:len(S)])
+        filepath = os.path.join(dir_path, f"diffspec_relS_data_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(filepath, diff=diff_relS, iteration=iteration)
+        else:
+            np.savez(filepath, diff=diff_relS, iteration=iteration, allow_pickle=True)
 
     print(f"Data saved successfully for iteration {iteration}")
 
-def save_canonical_angles(Vt, Vt_exact, iteration, dir_path, additional_label=""):
-    # Compute the singular values of Q1.T @ Q2
-    # print(Vt.shape, Vt_exact.shape)
-    # print(Vt.shape, Vt_exact.shape
-    C = Vt @ Vt_exact[:Vt.shape[0], :].T
-    s = np.linalg.svd(C, compute_uv=False)
-    
-    # Compute the angles in radians
-    eps = 1e-6
-    # assert np.all(s > -1.0 - eps) and np.all(s < 1.0 + eps), "Invalid canonical correlation found" 
-    angles = np.arccos(np.clip(s, -1.0, 1.0))
-    print("Subspace angle 2:", max(angles), np.mean(angles))
-    
-    epsilon = 1e-4
-    s = -np.log(np.maximum(1 - s, epsilon))
 
-    # Create directory if it doesn't exist
+def save_residuals(A_csr, S, Vt,
+                   A_norm, name, iteration, dir_path, is_sym_psd,
+                   row_permutation, start_idx, end_idx, save_in_text=True):
     os.makedirs(dir_path, exist_ok=True)
 
-    # Save data
-    np.savez(os.path.join(dir_path, f'canonical_angles{additional_label}_data_{iteration}.npz'),
-             s=s, iteration=iteration, C=C,
-             allow_pickle=True)
-
-    print(f"Canonical angles data saved successfully for iteration {iteration}")
-
-def save_leftout(Vt, S, Vt_exact, combined, iteration, dir_path, additional_label=""):
-    current_total = np.linalg.norm(combined @ Vt_exact[:len(Vt),:].T, axis=0) # shape: (sketch_size,)
-    keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0) # shape: (sketch_size,)
-    throw = current_total - keep
-
-    # Create directory if it doesn't exist
-    os.makedirs(dir_path, exist_ok=True)
-
-    # Save data
-    np.savez(os.path.join(dir_path, f'leftout{additional_label}_data_{iteration}.npz'),
-             iteration=iteration, current_total=current_total, throw=throw,
-             allow_pickle=True)
-
-    print(f"Leftout data saved successfully for iteration {iteration}")
-
-def save_residuals(A_csr, S, Vt,  
-                   A_norm, name, iteration, dir_path, is_sym_psd, 
-                   row_permutation, start_idx, end_idx,):
-    # Create directory if it doesn't exist
-    os.makedirs(dir_path, exist_ok=True)
+    ext = "txt" if save_in_text else "npz"
 
     if is_sym_psd:
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = (A_csr @ Vt[i].T) - (S[i]) * Vt[i].T
+                approx_res = (A_csr @ Vt[i].T) - S[i] * Vt[i].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
-        
+
         approx_residuals_sym = np.array(approx_residuals_sym)
-        
-        # Save symmetric PSD data
-        np.savez(os.path.join(dir_path, f'residuals_sym_psd_data_{iteration}.npz'),
-                 approx_residuals=approx_residuals_sym,
-                 iteration=iteration,
-                 A_norm=A_norm,
-                 allow_pickle=True)
-        
+
+        filepath = os.path.join(dir_path, f"residuals_sym_psd_data_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                iteration=iteration,
+                A_norm=A_norm,
+            )
+        else:
+            np.savez(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                iteration=iteration,
+                A_norm=A_norm,
+                allow_pickle=True
+            )
+
         window_indices = row_permutation[start_idx:end_idx]
         approx_residuals_sym = []
-        # TODO: window_indices -> current_window
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = (A_csr[window_indices, :] @ Vt[i].T) - (S[i]) * Vt[i, window_indices].T
+                approx_res = (A_csr[window_indices, :] @ Vt[i].T) - S[i] * Vt[i, window_indices].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
-        
+
         approx_residuals_sym = np.array(approx_residuals_sym)
-        
-        # Save symmetric PSD data
-        np.savez(os.path.join(dir_path, f'residuals_sym_psd_data_truncated_{iteration}.npz'),
-                 approx_residuals=approx_residuals_sym,
-                 iteration=iteration,
-                 A_norm=A_norm,
-                 allow_pickle=True)
-        
+
+        filepath = os.path.join(dir_path, f"residuals_sym_psd_data_truncated_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                iteration=iteration,
+                A_norm=A_norm,
+            )
+        else:
+            np.savez(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                iteration=iteration,
+                A_norm=A_norm,
+                allow_pickle=True
+            )
+
         approx_residuals_sym = []
         approx_residuals_sym_full = []
         S_truncated_Rayleigh_list = []
         S_truncated_Rayleigh_full_list = []
-        
-        # TODO: Choose randomly vs. choose 
+
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                S_truncated_Rayleigh = np.dot(Vt[i, window_indices].T, A_csr[window_indices, :] @ Vt[i].T)
+                S_truncated_Rayleigh = np.dot(
+                    Vt[i, window_indices].T,
+                    A_csr[window_indices, :] @ Vt[i].T
+                )
                 sq_norm_V = np.dot(Vt[i, window_indices].T, Vt[i, window_indices].T)
-                S_truncated_Rayleigh_full = np.dot(Vt[i, row_permutation[:end_idx]].T, A_csr[row_permutation[:end_idx], :] @ Vt[i].T)
-                sq_norm_V_full = np.dot(Vt[i, row_permutation[:end_idx]].T, Vt[i, row_permutation[:end_idx]].T)
+
+                S_truncated_Rayleigh_full = np.dot(
+                    Vt[i, row_permutation[:end_idx]].T,
+                    A_csr[row_permutation[:end_idx], :] @ Vt[i].T
+                )
+                sq_norm_V_full = np.dot(
+                    Vt[i, row_permutation[:end_idx]].T,
+                    Vt[i, row_permutation[:end_idx]].T
+                )
+
                 if sq_norm_V == 0:
                     S_truncated_Rayleigh = np.nan
                 else:
                     S_truncated_Rayleigh /= sq_norm_V
+
                 if sq_norm_V_full == 0:
                     S_truncated_Rayleigh_full = np.nan
                 else:
                     S_truncated_Rayleigh_full /= sq_norm_V_full
-                approx_res = (A_csr[window_indices, :] @ Vt[i].T) - (S_truncated_Rayleigh) * Vt[i, window_indices].T
-                approx_res_full = (A_csr[row_permutation[:end_idx], :] @ Vt[i].T) - (S_truncated_Rayleigh) * Vt[i, row_permutation[:end_idx]].T
+
+                approx_res = (
+                    A_csr[window_indices, :] @ Vt[i].T
+                ) - S_truncated_Rayleigh * Vt[i, window_indices].T
+
+                approx_res_full = (
+                    A_csr[row_permutation[:end_idx], :] @ Vt[i].T
+                ) - S_truncated_Rayleigh * Vt[i, row_permutation[:end_idx]].T
+
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
-                approx_residuals_sym_full.append(np.linalg.norm(approx_res) / A_norm)
+                approx_residuals_sym_full.append(np.linalg.norm(approx_res_full) / A_norm)
                 S_truncated_Rayleigh_list.append(S_truncated_Rayleigh)
                 S_truncated_Rayleigh_full_list.append(S_truncated_Rayleigh_full)
-        
+
         approx_residuals_sym = np.array(approx_residuals_sym)
-        S_truncated_Rayleigh_list = np.array(S_truncated_Rayleigh_list)
         approx_residuals_sym_full = np.array(approx_residuals_sym_full)
+        S_truncated_Rayleigh_list = np.array(S_truncated_Rayleigh_list)
         S_truncated_Rayleigh_full_list = np.array(S_truncated_Rayleigh_full_list)
-        
-        # Save symmetric PSD data
-        np.savez(os.path.join(dir_path, f'residuals_sym_psd_data_truncated_Rayleigh_{iteration}.npz'),
-                 approx_residuals=approx_residuals_sym,
-                 approx_residuals_full=approx_residuals_sym_full,
-                 iteration=iteration,
-                 S_truncated_Rayleigh_list=S_truncated_Rayleigh_list,
-                 S_truncated_Rayleigh_full_list=S_truncated_Rayleigh_full_list,
-                 A_norm=A_norm,
-                 allow_pickle=True
-                 )
+
+        filepath = os.path.join(dir_path, f"residuals_sym_psd_data_truncated_Rayleigh_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                approx_residuals_full=approx_residuals_sym_full,
+                iteration=iteration,
+                S_truncated_Rayleigh_list=S_truncated_Rayleigh_list,
+                S_truncated_Rayleigh_full_list=S_truncated_Rayleigh_full_list,
+                A_norm=A_norm,
+            )
+        else:
+            np.savez(
+                filepath,
+                approx_residuals=approx_residuals_sym,
+                approx_residuals_full=approx_residuals_sym_full,
+                iteration=iteration,
+                S_truncated_Rayleigh_list=S_truncated_Rayleigh_list,
+                S_truncated_Rayleigh_full_list=S_truncated_Rayleigh_full_list,
+                A_norm=A_norm,
+                allow_pickle=True
+            )
+
     else:
         approx_residuals = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
                 u = A_csr @ Vt[i].T
                 u = u / np.linalg.norm(u)
-                approx_res = (A_csr.T @ u) - (S[i]) * Vt[i].T
+                approx_res = (A_csr.T @ u) - S[i] * Vt[i].T
                 approx_residuals.append(np.linalg.norm(approx_res) / A_norm)
-        
+
         approx_residuals = np.array(approx_residuals)
-        
-        # Save non-symmetric PSD data
-        np.savez(os.path.join(dir_path, f'residuals_data_{iteration}.npz'),
-                 approx_residuals=approx_residuals,
-                 iteration=iteration,
-                 allow_pickle=True)
+
+        filepath = os.path.join(dir_path, f"residuals_data_{iteration}.{ext}")
+        if save_in_text:
+            save_txt(filepath, approx_residuals=approx_residuals, iteration=iteration)
+        else:
+            np.savez(
+                filepath,
+                approx_residuals=approx_residuals,
+                iteration=iteration,
+                allow_pickle=True
+            )
 
     print(f"Residuals data saved successfully for iteration {iteration}")
+
+
+def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
+                             S, Vt, A_norm, A_csr, S_quotient,
+                             name, iteration, dir_path, save_in_text=True):
+    os.makedirs(dir_path, exist_ok=True)
+
+    ext = "txt" if save_in_text else "npz"
+
+    print_memory_usage(f"Before residual reservoir, window {iteration+1}")
+
+    reservoir_Vt = reservoir @ Vt.T
+    regular_Vt = A_csr @ Vt.T
+
+    Vt_permuted = Vt[:, row_permutation[reservoir_idx]]
+
+    reservoir_residuals = []
+    regular_residuals = []
+    reservoir_residuals_quotient = []
+    regular_residuals_quotient = []
+
+    for i in range(len(S_quotient)):
+        # reservoir_res = reservoir_Vt[:, i] - (S[i]) * Vt_permuted
+        # reservoir_res_quotient = reservoir_Vt[:, i] - S_quotient[i] * Vt_permuted
+        reservoir_res = reservoir_Vt[:, i] - S[i] * Vt_permuted[i]
+        reservoir_res_quotient = reservoir_Vt[:, i] - S_quotient[i] * Vt_permuted[i]
+        regular_res = regular_Vt[:, i] - S[i] * Vt[i]
+        regular_res_quotient = regular_Vt[:, i] - S_quotient[i] * Vt[i]
+
+        reservoir_residuals_quotient.append(np.linalg.norm(reservoir_res_quotient))
+        regular_residuals_quotient.append(np.linalg.norm(regular_res_quotient))
+        reservoir_residuals.append(np.linalg.norm(reservoir_res))
+        regular_residuals.append(np.linalg.norm(regular_res))
+
+    reservoir_residuals = np.array(reservoir_residuals)
+    regular_residuals = np.array(regular_residuals)
+    reservoir_residuals_quotient = np.array(reservoir_residuals_quotient)
+    regular_residuals_quotient = np.array(regular_residuals_quotient)
+
+    whole_space_regular_residuals = regular_Vt - S[:len(S_quotient)] * Vt.T
+    whole_space_regular_residuals_2norm = np.linalg.norm(whole_space_regular_residuals, ord=2)
+    whole_space_regular_residuals_fro = np.linalg.norm(whole_space_regular_residuals, ord="fro")
+
+    whole_space_reservoir_residuals = reservoir_Vt - S[:len(S_quotient)] * Vt_permuted.T
+    whole_space_reservoir_residuals_2norm = np.linalg.norm(whole_space_reservoir_residuals, ord=2)
+    whole_space_reservoir_residuals_fro = np.linalg.norm(whole_space_reservoir_residuals, ord="fro")
+
+    whole_space_regular_residuals_quotient = regular_Vt - S_quotient * Vt.T
+    whole_space_regular_residuals_quotient_2norm = np.linalg.norm(whole_space_regular_residuals_quotient, ord=2)
+    whole_space_regular_residuals_quotient_fro = np.linalg.norm(whole_space_regular_residuals_quotient, ord="fro")
+
+    whole_space_reservoir_residuals_quotient = reservoir_Vt - S_quotient * Vt_permuted.T
+    whole_space_reservoir_residuals_quotient_2norm = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord=2)
+    whole_space_reservoir_residuals_quotient_fro = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord="fro")
+
+    print("reservoir_residuals_quotient:", reservoir_residuals_quotient)
+    print(f"2: {whole_space_reservoir_residuals_quotient_2norm:.3f}, fro: {whole_space_reservoir_residuals_quotient_fro:.3f}")
+    print("regular_residuals_quotient:", regular_residuals_quotient)
+    print(f"2: {whole_space_regular_residuals_quotient_2norm:.3f}, fro: {whole_space_regular_residuals_quotient_fro:.3f}")
+
+    filepath = os.path.join(dir_path, f"reservoir_residuals_data_{iteration}.{ext}")
+    if save_in_text:
+        save_txt(
+            filepath,
+            reservoir_residuals=reservoir_residuals,
+            regular_residuals=regular_residuals,
+            reservoir_residuals_quotient=reservoir_residuals_quotient,
+            regular_residuals_quotient=regular_residuals_quotient,
+            whole_space_regular_residuals_2norm=whole_space_regular_residuals_2norm,
+            whole_space_regular_residuals_fro=whole_space_regular_residuals_fro,
+            whole_space_reservoir_residuals_2norm=whole_space_reservoir_residuals_2norm,
+            whole_space_reservoir_residuals_fro=whole_space_reservoir_residuals_fro,
+            whole_space_regular_residuals_quotient_2norm=whole_space_regular_residuals_quotient_2norm,
+            whole_space_regular_residuals_quotient_fro=whole_space_regular_residuals_quotient_fro,
+            whole_space_reservoir_residuals_quotient_2norm=whole_space_reservoir_residuals_quotient_2norm,
+            whole_space_reservoir_residuals_quotient_fro=whole_space_reservoir_residuals_quotient_fro,
+            iteration=iteration,
+            A_norm=A_norm,
+        )
+    else:
+        np.savez(
+            filepath,
+            reservoir_residuals=reservoir_residuals,
+            regular_residuals=regular_residuals,
+            reservoir_residuals_quotient=reservoir_residuals_quotient,
+            regular_residuals_quotient=regular_residuals_quotient,
+            whole_space_regular_residuals_2norm=whole_space_regular_residuals_2norm,
+            whole_space_regular_residuals_fro=whole_space_regular_residuals_fro,
+            whole_space_reservoir_residuals_2norm=whole_space_reservoir_residuals_2norm,
+            whole_space_reservoir_residuals_fro=whole_space_reservoir_residuals_fro,
+            whole_space_regular_residuals_quotient_2norm=whole_space_regular_residuals_quotient_2norm,
+            whole_space_regular_residuals_quotient_fro=whole_space_regular_residuals_quotient_fro,
+            whole_space_reservoir_residuals_quotient_2norm=whole_space_reservoir_residuals_quotient_2norm,
+            whole_space_reservoir_residuals_quotient_fro=whole_space_reservoir_residuals_quotient_fro,
+            iteration=iteration,
+            A_norm=A_norm,
+            allow_pickle=True
+        )
+
+    del reservoir_Vt, regular_Vt, reservoir_residuals, regular_residuals, reservoir_residuals_quotient, regular_residuals_quotient
+    gc.collect()
+    print_memory_usage(f"After residual reservoir, window {iteration+1}")
+
+
+def save_canonical_angles(Vt, Vt_exact, iteration, dir_path, additional_label="", save_in_text=True):
+    C = Vt @ Vt_exact[:Vt.shape[0], :].T
+    s = np.linalg.svd(C, compute_uv=False)
+
+    angles = np.arccos(np.clip(s, -1.0, 1.0))
+    print("Subspace angle 2:", max(angles), np.mean(angles))
+
+    epsilon = 1e-4
+    s = -np.log(np.maximum(1 - s, epsilon))
+
+    os.makedirs(dir_path, exist_ok=True)
+
+    ext = "txt" if save_in_text else "npz"
+    filepath = os.path.join(dir_path, f"canonical_angles{additional_label}_data_{iteration}.{ext}")
+
+    if save_in_text:
+        save_txt(filepath, s=s, iteration=iteration, C=C)
+    else:
+        np.savez(filepath, s=s, iteration=iteration, C=C, allow_pickle=True)
+
+    print(f"Canonical angles data saved successfully for iteration {iteration}")
+
+
+def save_leftout(Vt, S, Vt_exact, combined, iteration, dir_path, additional_label="", save_in_text=True):
+    current_total = np.linalg.norm(combined @ Vt_exact[:len(Vt), :].T, axis=0)
+    keep = np.linalg.norm((S[:, None] * Vt) @ Vt_exact[:len(Vt), :].T, axis=0)
+    throw = current_total - keep
+
+    os.makedirs(dir_path, exist_ok=True)
+
+    ext = "txt" if save_in_text else "npz"
+    filepath = os.path.join(dir_path, f"leftout{additional_label}_data_{iteration}.{ext}")
+
+    if save_in_text:
+        save_txt(filepath, iteration=iteration, current_total=current_total, throw=throw)
+    else:
+        np.savez(
+            filepath,
+            iteration=iteration,
+            current_total=current_total,
+            throw=throw,
+            allow_pickle=True
+        )
+
+    print(f"Leftout data saved successfully for iteration {iteration}")
 
     
 # def make_operator(window, n, w, V, S):
@@ -938,94 +1148,94 @@ def inverse_permutation(perm):
         inverse[perm[i]] = i
     return np.array(inverse)
 
-def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
-                             S, Vt, A_norm, A_csr, S_quotient,
-                             name, iteration, dir_path):
-    # Create directory if it doesn't exist
-    os.makedirs(dir_path, exist_ok=True)
+# def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
+#                              S, Vt, A_norm, A_csr, S_quotient,
+#                              name, iteration, dir_path):
+#     # Create directory if it doesn't exist
+#     os.makedirs(dir_path, exist_ok=True)
 
-    print_memory_usage(f"Before residual reservoir, window {iteration+1}")
+#     print_memory_usage(f"Before residual reservoir, window {iteration+1}")
     
-    reservoir_Vt = reservoir @ Vt.T  
-    regular_Vt = A_csr @ Vt.T  
+#     reservoir_Vt = reservoir @ Vt.T  
+#     regular_Vt = A_csr @ Vt.T  
 
-    Vt_permuted = Vt[:, row_permutation[reservoir_idx]]
+#     Vt_permuted = Vt[:, row_permutation[reservoir_idx]]
 
-    #TODO: test this, then do rayleigh
-    reservoir_residuals = []
-    regular_residuals = []
-    reservoir_residuals_quotient = []
-    regular_residuals_quotient = []
-    for i in range(len(S_quotient)):
-        # print(reservoir.shape, Vt[i].shape, S[i])
-        reservoir_res = reservoir_Vt[:, i] - (S[i]) * Vt_permuted
-        reservoir_res_quotient = reservoir_Vt[:, i]- (S_quotient[i]) * Vt_permuted
-        # if A_csr.shape[1] < 5e4:
-        regular_res = regular_Vt[:, i] - (S[i]) * Vt[i]
-        regular_res_quotient = regular_Vt[:, i] - (S_quotient[i]) * Vt[i]
-        reservoir_residuals_quotient.append(np.linalg.norm(reservoir_res_quotient))
-        regular_residuals_quotient.append(np.linalg.norm(regular_res_quotient))
-        reservoir_residuals.append(np.linalg.norm(reservoir_res))
-        regular_residuals.append(np.linalg.norm(regular_res))
+#     #TODO: test this, then do rayleigh
+#     reservoir_residuals = []
+#     regular_residuals = []
+#     reservoir_residuals_quotient = []
+#     regular_residuals_quotient = []
+#     for i in range(len(S_quotient)):
+#         # print(reservoir.shape, Vt[i].shape, S[i])
+#         reservoir_res = reservoir_Vt[:, i] - (S[i]) * Vt_permuted
+#         reservoir_res_quotient = reservoir_Vt[:, i]- (S_quotient[i]) * Vt_permuted
+#         # if A_csr.shape[1] < 5e4:
+#         regular_res = regular_Vt[:, i] - (S[i]) * Vt[i]
+#         regular_res_quotient = regular_Vt[:, i] - (S_quotient[i]) * Vt[i]
+#         reservoir_residuals_quotient.append(np.linalg.norm(reservoir_res_quotient))
+#         regular_residuals_quotient.append(np.linalg.norm(regular_res_quotient))
+#         reservoir_residuals.append(np.linalg.norm(reservoir_res))
+#         regular_residuals.append(np.linalg.norm(regular_res))
         
-    reservoir_residuals = np.array(reservoir_residuals)
-    regular_residuals = np.array(regular_residuals)
-    reservoir_residuals_quotient = np.array(reservoir_residuals_quotient)
-    regular_residuals_quotient = np.array(regular_residuals_quotient)
+#     reservoir_residuals = np.array(reservoir_residuals)
+#     regular_residuals = np.array(regular_residuals)
+#     reservoir_residuals_quotient = np.array(reservoir_residuals_quotient)
+#     regular_residuals_quotient = np.array(regular_residuals_quotient)
 
     
-    # save both fro and 2-norm
-    whole_space_regular_residuals = regular_Vt - S[:len(S_quotient)] * Vt.T
-    whole_space_regular_residuals_2norm = np.linalg.norm(whole_space_regular_residuals, ord=2)
-    whole_space_regular_residuals_fro = np.linalg.norm(whole_space_regular_residuals, ord='fro')
-    whole_space_reservoir_residuals = reservoir_Vt - S[:len(S_quotient)] * Vt_permuted.T
-    whole_space_reservoir_residuals_2norm = np.linalg.norm(whole_space_reservoir_residuals, ord=2)
-    whole_space_reservoir_residuals_fro = np.linalg.norm(whole_space_reservoir_residuals, ord='fro')
+#     # save both fro and 2-norm
+#     whole_space_regular_residuals = regular_Vt - S[:len(S_quotient)] * Vt.T
+#     whole_space_regular_residuals_2norm = np.linalg.norm(whole_space_regular_residuals, ord=2)
+#     whole_space_regular_residuals_fro = np.linalg.norm(whole_space_regular_residuals, ord='fro')
+#     whole_space_reservoir_residuals = reservoir_Vt - S[:len(S_quotient)] * Vt_permuted.T
+#     whole_space_reservoir_residuals_2norm = np.linalg.norm(whole_space_reservoir_residuals, ord=2)
+#     whole_space_reservoir_residuals_fro = np.linalg.norm(whole_space_reservoir_residuals, ord='fro')
 
-    whole_space_regular_residuals_quotient = regular_Vt - S_quotient * Vt.T
-    whole_space_regular_residuals_quotient_2norm = np.linalg.norm(whole_space_regular_residuals_quotient, ord=2)
-    whole_space_regular_residuals_quotient_fro = np.linalg.norm(whole_space_regular_residuals_quotient, ord='fro')
-    whole_space_reservoir_residuals_quotient = reservoir_Vt - S_quotient * Vt_permuted.T
-    whole_space_reservoir_residuals_quotient_2norm = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord=2)
-    whole_space_reservoir_residuals_quotient_fro = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord='fro')
+#     whole_space_regular_residuals_quotient = regular_Vt - S_quotient * Vt.T
+#     whole_space_regular_residuals_quotient_2norm = np.linalg.norm(whole_space_regular_residuals_quotient, ord=2)
+#     whole_space_regular_residuals_quotient_fro = np.linalg.norm(whole_space_regular_residuals_quotient, ord='fro')
+#     whole_space_reservoir_residuals_quotient = reservoir_Vt - S_quotient * Vt_permuted.T
+#     whole_space_reservoir_residuals_quotient_2norm = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord=2)
+#     whole_space_reservoir_residuals_quotient_fro = np.linalg.norm(whole_space_reservoir_residuals_quotient, ord='fro')
 
-    # print(S[0], reservoir_residuals[0], Vt[0, -10:], A_csr[0, -10:])
-    # print(S[2], reservoir_residuals[2], Vt[2, -10:])
-    # print(S[4], reservoir_residuals[4], Vt[4, -10:])
-    # if "rs_50" in name:
-    # print(reservoir_residuals)
-    print("reservoir_residuals_quotient:", reservoir_residuals_quotient)
-    print(f"2: {whole_space_reservoir_residuals_quotient_2norm:.3f}, fro: {whole_space_reservoir_residuals_quotient_fro:.3f}")
-    print("regular_residuals_quotient:", regular_residuals_quotient)
-    print(f"2: {whole_space_regular_residuals_quotient_2norm:.3f}, fro: {whole_space_regular_residuals_quotient_fro:.3f}")
+#     # print(S[0], reservoir_residuals[0], Vt[0, -10:], A_csr[0, -10:])
+#     # print(S[2], reservoir_residuals[2], Vt[2, -10:])
+#     # print(S[4], reservoir_residuals[4], Vt[4, -10:])
+#     # if "rs_50" in name:
+#     # print(reservoir_residuals)
+#     print("reservoir_residuals_quotient:", reservoir_residuals_quotient)
+#     print(f"2: {whole_space_reservoir_residuals_quotient_2norm:.3f}, fro: {whole_space_reservoir_residuals_quotient_fro:.3f}")
+#     print("regular_residuals_quotient:", regular_residuals_quotient)
+#     print(f"2: {whole_space_regular_residuals_quotient_2norm:.3f}, fro: {whole_space_regular_residuals_quotient_fro:.3f}")
      
-    # if iteration == 9:
-        # print(regular_res[:10], reservoir_res)
-        # inv_perm = inverse_permutation(row_permutation)
-        # print(inv_perm[reservoir_idx])
+#     # if iteration == 9:
+#         # print(regular_res[:10], reservoir_res)
+#         # inv_perm = inverse_permutation(row_permutation)
+#         # print(inv_perm[reservoir_idx])
     
     
     
-    # Save symmetric PSD data
-    np.savez(os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz'),
-                reservoir_residuals=reservoir_residuals,
-                regular_residuals=regular_residuals,
-                reservoir_residuals_quotient=reservoir_residuals_quotient,
-                regular_residuals_quotient=regular_residuals_quotient,
-                whole_space_regular_residuals_2norm=whole_space_regular_residuals_2norm,
-                whole_space_regular_residuals_fro=whole_space_regular_residuals_fro,
-                whole_space_reservoir_residuals_2norm=whole_space_reservoir_residuals_2norm,
-                whole_space_reservoir_residuals_fro=whole_space_reservoir_residuals_fro,
-                whole_space_regular_residuals_quotient_2norm=whole_space_regular_residuals_quotient_2norm,
-                whole_space_regular_residuals_quotient_fro=whole_space_regular_residuals_quotient_fro,
-                whole_space_reservoir_residuals_quotient_2norm=whole_space_reservoir_residuals_quotient_2norm,
-                whole_space_reservoir_residuals_quotient_fro=whole_space_reservoir_residuals_quotient_fro,
-                iteration=iteration,
-                A_norm=A_norm,
-                allow_pickle=True)
-    del reservoir_Vt, regular_Vt, reservoir_residuals, regular_residuals, reservoir_residuals_quotient, regular_residuals_quotient
-    gc.collect()
-    print_memory_usage(f"After residual reservoir, window {iteration+1}")
+#     # Save symmetric PSD data
+#     np.savez(os.path.join(dir_path, f'reservoir_residuals_data_{iteration}.npz'),
+#                 reservoir_residuals=reservoir_residuals,
+#                 regular_residuals=regular_residuals,
+#                 reservoir_residuals_quotient=reservoir_residuals_quotient,
+#                 regular_residuals_quotient=regular_residuals_quotient,
+#                 whole_space_regular_residuals_2norm=whole_space_regular_residuals_2norm,
+#                 whole_space_regular_residuals_fro=whole_space_regular_residuals_fro,
+#                 whole_space_reservoir_residuals_2norm=whole_space_reservoir_residuals_2norm,
+#                 whole_space_reservoir_residuals_fro=whole_space_reservoir_residuals_fro,
+#                 whole_space_regular_residuals_quotient_2norm=whole_space_regular_residuals_quotient_2norm,
+#                 whole_space_regular_residuals_quotient_fro=whole_space_regular_residuals_quotient_fro,
+#                 whole_space_reservoir_residuals_quotient_2norm=whole_space_reservoir_residuals_quotient_2norm,
+#                 whole_space_reservoir_residuals_quotient_fro=whole_space_reservoir_residuals_quotient_fro,
+#                 iteration=iteration,
+#                 A_norm=A_norm,
+#                 allow_pickle=True)
+#     del reservoir_Vt, regular_Vt, reservoir_residuals, regular_residuals, reservoir_residuals_quotient, regular_residuals_quotient
+#     gc.collect()
+#     print_memory_usage(f"After residual reservoir, window {iteration+1}")
     
 def compute_svd(A, k, is_sparse=True):
     if not is_sparse:
@@ -1422,7 +1632,8 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
               track_discarded, discarded_list,
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None, reserved=None,
-              use_soft_threshold=False, use_Ghashami=False, dir_path=""):
+              use_soft_threshold=False, use_Ghashami=False, dir_path=""
+              save_in_text=True,):
     
     if not col_permutation is None:
         next_window = next_window[:, col_permutation]
@@ -1759,7 +1970,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
     if not Vt_exact is None:
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
-        save_leftout(Vt, S, Vt_exact, combined, j, dir_path)
+        save_leftout(Vt, S, Vt_exact, combined, j, dir_path, save_in_text=save_in_text)
     del combined
     gc.collect()
     return Vt, S, reservoir, reservoir_idx 
@@ -1774,7 +1985,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
               total_S_reduced,
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None,  V_focus=None, reserved=None, adaptive_order_ours=False, return_ours=False,
-              use_soft_threshold=False, use_Ghashami=False,
+              use_soft_threshold=False, use_Ghashami=False, save_in_text=True,
     ):
     Vt, S, reservoir, reservoir_idx = isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
               window_indices, A_csr, Vt_exact,
@@ -1783,7 +1994,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=Vt, S=S, reserved=reserved,
               use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami,
-              dir_path=dir_path)
+              dir_path=dir_path, save_in_text=save_in_text)
 #     if not col_permutation is None:
 #         next_window = next_window[:, col_permutation]
 #     if isinstance(A_csr, csr_matrix):
@@ -2226,14 +2437,14 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
     print_memory_usage(f"Before saving, window {j+1}")
     print("j:", j)
     save_spectrum_comparison(S+total_S_reduced, S_exact, 
-                                A_norm, name, j, dir_path, S_quotient=S_quotient)
+                                A_norm, name, j, dir_path, S_quotient=S_quotient, save_in_text=save_in_text)
     save_residuals(A_csr, S+total_S_reduced, Vt, 
                     A_norm, name, j, dir_path, is_sym_psd,
-                    row_permutation, start_idx, end_idx)
+                    row_permutation, start_idx, end_idx, save_in_text=save_in_text)
     if reservoir_size > 0:
         save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
                                     S, Vt, A_norm, A_csr, S_quotient, 
-                                    name, j, dir_path) 
+                                    name, j, dir_path, save_in_text=save_in_text)
         
     # temp = compute_eigenvector_error(A_csr, S_exact[0], Vt_exact[0,:], Vt[0,:])
     # print(temp['result_norm'])
@@ -2242,10 +2453,10 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
     if not Vt_exact is None:
         print("Reconstruction quality:", np.linalg.norm(Vt - Vt_exact[:Vt.shape[0], :], 'fro'))
         save_canonical_angles(Vt, Vt_exact, 
-                                j, dir_path)
+                                j, dir_path, save_in_text=save_in_text)
     if j == W - 1 and track_U and not U_exact is None and not is_sym_psd:
         save_canonical_angles(U.T, U_exact.T, 
-                                j, dir_path, additional_label="_U")
+                                j, dir_path, additional_label="_U", save_in_text=save_in_text)
     print_memory_usage(f"After canonical angles, window {j+1}")
 
     if not S_exact is None:
@@ -2288,6 +2499,7 @@ def isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, 
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None,  V_focus=None, reserved=None, 
               use_soft_threshold=False, use_Ghashami=False,
+              save_in_text=True,
     ):
     return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
@@ -2298,7 +2510,7 @@ def isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, 
               total_S_reduced,
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=Vt, S=S,  V_focus=V_focus, reserved=reserved, adaptive_order_ours=False, return_ours=False,
-              use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami,
+              use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami, save_in_text=save_in_text,
     )
 
 def isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
@@ -3745,6 +3957,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
          num_Vs=None, track_U=False, track_discarded=False, with_S=False, V_focus=None, reverse=False,
          return_row_order=False, stream_size=None, col_permutation=None, reservoir_size=0, reservoir_method="uniform",
          method="isvd", use_true_matrix=False, track_reconstruction_error=False, threshold_factor=100,# nystrom 
+         save_in_text=True,
          ):
     global Vt
 
@@ -3867,7 +4080,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 threshold_factor, track_reconstruction_error, reconstruction_errors,
                 use_true_matrix, m, return_row_order,
                 total_S_reduced, 
-                Vt=Vt, S=S,inverse_perm=inverse_perm, V_focus=V_focus, )
+                Vt=Vt, S=S,inverse_perm=inverse_perm, V_focus=V_focus,)
             elif method == "isvd":
                 print("Doing iSVD..")
                 ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
@@ -3878,7 +4091,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 num_Vs, with_S, reverse, return_row_order,
                 total_S_reduced,
                 reservoir_size, reservoir_idx, reservoir, reservoir_method,
-                Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
+                Vt=Vt, S=S, V_focus=V_focus, reserved=reserved, save_in_text=save_in_text)
             elif method == "isvdls":
                 print("Doing iSVD..")
                 ret = isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
@@ -3978,7 +4191,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 total_S_reduced,
                 reservoir_size, reservoir_idx, reservoir, reservoir_method,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved,
-                use_soft_threshold=True, use_Ghashami=False)
+                use_soft_threshold=True, use_Ghashami=False, save_in_text=save_in_text)
             elif method == "isvdstG":
                 print("Doing iSVD..")
                 ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
@@ -3990,7 +4203,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 total_S_reduced,
                 reservoir_size, reservoir_idx, reservoir, reservoir_method,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved,
-                use_soft_threshold=True, use_Ghashami=False)
+                use_soft_threshold=True, use_Ghashami=False, save_in_text=save_in_text)
             elif method == "isvddemixst":
                 print("Doing iSVD..")
                 ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,

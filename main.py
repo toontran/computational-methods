@@ -241,6 +241,7 @@ if __name__ == "__main__":
     matrix_postfix = matrix_name.split('/')[-1]
     figure_dir = "output"
     url = f'https://suitesparse-collection-website.herokuapp.com/MM/{matrix_name}.tar.gz'
+    save_in_text = True
 
     if figure_dir and not os.path.exists(figure_dir):
         print("Making directory:", figure_dir)
@@ -846,6 +847,8 @@ if __name__ == "__main__":
             plt.xlabel("Samples")
             plt.ylabel("Samples")
             plt.savefig(f'{figure_dir}/{matrix_postfix}_heatmap.png', dpi=100)
+    else:
+        save_in_text = False
     # raise
 
     if A_csr.shape[1] < 5e4:
@@ -1081,6 +1084,7 @@ if __name__ == "__main__":
                                                 reservoir_size=reservoir_size,
                                                 reservoir_method=reservoir_method,
                                                 method=method,
+                                                save_in_text=save_in_text,
                                                 )
                                 if row_permutation != "original" and not "random" in row_permutation and \
                                     row_permutation != "manual_perm":
@@ -1133,6 +1137,7 @@ if __name__ == "__main__":
                                                         reservoir_method=reservoir_method,
                                                         method=method,
                                                         return_row_order=True,
+                                                        save_in_text=save_in_text,
                                                         )
                                         if save_mat:
                                             filename = f'perms/matrix_data_{matrix_name}_{row_permutation}_Vapprox_withS_{num_Vs}.mat'
