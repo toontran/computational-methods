@@ -111,4 +111,4 @@ echo "mem_size: $mem_size"
 
 # Run the Python script
 echo "Running main.py ..."
-python3 -u main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
+python3 -u -X faulthandler main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
