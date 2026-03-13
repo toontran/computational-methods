@@ -2,7 +2,7 @@
 
 # Fixed experiment settings
 method_name="isvd"
-mem_size=110 #110, 129
+mem_size=129 #110, 129
 
 # List of matrices
 matrices=(
@@ -16,27 +16,27 @@ matrices=(
     # "HB/plat1919"
     # "HB/1138_bus"
 )
-
+    
 # Manually specified k values
-# k_values=(
-#     2
-#     4
-#     8
-#     32
-#     64
-#     128
-# )
 k_values=(
-    1
+    2
     4
     8
     32
     64
-    102
-    106
-    # 108
-    109
+    128
 )
+# k_values=(
+#     1
+#     4
+#     8
+#     32
+#     64
+#     102
+#     106
+#     # 108
+#     109
+# )
 
 usage() {
     echo "Usage: $0 <experiment_number>"
