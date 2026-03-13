@@ -871,7 +871,7 @@ def save_residuals(A_csr, S, Vt,
                 A_norm=A_norm,
                 allow_pickle=True
             )
-
+        
         approx_residuals_sym = []
         approx_residuals_sym_full = []
         S_truncated_Rayleigh_list = []
