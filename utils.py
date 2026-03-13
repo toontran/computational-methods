@@ -871,7 +871,7 @@ def save_residuals(A_csr, S, Vt,
                 A_norm=A_norm,
                 allow_pickle=True
             )
-        
+
         approx_residuals_sym = []
         approx_residuals_sym_full = []
         S_truncated_Rayleigh_list = []
@@ -1885,6 +1885,9 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
                         
                         # Try next ranked element
                         rank += 1
+                    
+                    if rank >= len(sorted_indices):
+                        break
                     
                     # Move to next row, reset rank if we've gone through all rows
                     row_idx = (row_idx + 1) % k
