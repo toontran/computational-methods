@@ -23,6 +23,13 @@ matplotlib.use('Agg')
 
 from utils import *
 
+import faulthandler
+import signal
+import sys
+
+faulthandler.enable(file=sys.stderr, all_threads=True)
+faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)
+
 
 def find_sparsity_thresholds(matrix, target_sparsities=[0.90, 0.95, 0.99, 0.999], 
                            return_sparse_matrices=False, plot=False):
