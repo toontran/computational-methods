@@ -2,7 +2,6 @@
 
 # Fixed experiment settings
 method_name="isvd"
-mem_size=129 #110, 129
 
 # List of matrices
 matrices=(
@@ -16,62 +15,91 @@ matrices=(
     # "HB/plat1919"
     # "HB/1138_bus"
 )
-    
-# Manually specified k values
-k_values=(
-    2
-    4
-    8
-    32
-    64
-    128
-)
-# k_values=(
-#     1
-#     4
-#     8
-#     32
-#     64
-#     102
-#     106
-#     # 108
-#     109
-# )
+
+get_mem_size() {
+    local matrix_name="$1"
+    case "$matrix_name" in
+        bad_case1_1000|bad_case2_1000|bad_case3_1000)
+            echo 129
+            ;;
+        *)
+            echo 110
+            ;;
+    esac
+}
+
+get_k_values() {
+    local matrix_name="$1"
+    case "$matrix_name" in
+        bad_case1_1000|bad_case2_1000|bad_case3_1000)
+            echo "2 4 8 32 64 128"
+            ;;
+        *)
+            echo "1 4 8 32 64 102 106 109"
+            ;;
+    esac
+}
+
+count_total_combinations() {
+    local total=0
+    local matrix_name
+    local k_values_local
+    local k_array
+
+    for matrix_name in "${matrices[@]}"; do
+        k_values_local="$(get_k_values "$matrix_name")"
+        read -r -a k_array <<< "$k_values_local"
+        total=$((total + ${#k_array[@]}))
+    done
+
+    echo "$total"
+}
 
 usage() {
+    local total_combinations
+    local running_start
+    local running_end
+    local matrix_name
+    local mem_size_local
+    local k_values_local
+    local k_array
+    local i
+
+    total_combinations=$(count_total_combinations)
+
     echo "Usage: $0 <experiment_number>"
-    echo "Experiment number should be between 0 and $((${#matrices[@]} * ${#k_values[@]} - 1))"
+    echo "Experiment number should be between 0 and $((total_combinations - 1))"
     echo ""
     echo "Fixed settings:"
-    echo "  Method:   $method_name"
-    echo "  mem_size: $mem_size"
+    echo "  Method: $method_name"
     echo "  win_size: mem_size - k"
     echo ""
-    echo "Matrix index = experiment_number / ${#k_values[@]}"
-    echo "k index      = experiment_number % ${#k_values[@]}"
+    echo "Experiment numbering is assigned sequentially across matrices."
     echo ""
 
-    echo "Available matrices:"
-    for i in "${!matrices[@]}"; do
-        echo "  $i: ${matrices[i]}"
+    echo "Available matrices and their parameter sets:"
+    running_start=0
+    for matrix_name in "${matrices[@]}"; do
+        mem_size_local=$(get_mem_size "$matrix_name")
+        k_values_local="$(get_k_values "$matrix_name")"
+        read -r -a k_array <<< "$k_values_local"
+        running_end=$((running_start + ${#k_array[@]} - 1))
+
+        echo "  $matrix_name"
+        echo "    mem_size=$mem_size_local"
+        echo "    experiment_numbers=$running_start..$running_end"
+        echo "    k values / win_size:"
+        for i in "${!k_array[@]}"; do
+            echo "      $i: k=${k_array[i]} -> win_size=$((mem_size_local - k_array[i]))"
+        done
+        echo ""
+
+        running_start=$((running_end + 1))
     done
 
-    echo ""
-    echo "Available k values:"
-    for i in "${!k_values[@]}"; do
-        echo "  $i: ${k_values[i]}    -> win_size=$((mem_size - ${k_values[i]}))"
-    done
-
-    echo ""
     echo "Example:"
-    example_exp=15
-    example_matrix_index=$((example_exp / ${#k_values[@]}))
-    example_k_index=$((example_exp % ${#k_values[@]}))
-    if [ "$example_exp" -lt "$((${#matrices[@]} * ${#k_values[@]}))" ]; then
-        echo "  experiment_number=$example_exp"
-        echo "  matrix_index=$example_matrix_index -> ${matrices[$example_matrix_index]}"
-        echo "  k_index=$example_k_index -> k=${k_values[$example_k_index]}"
-        echo "  win_size=$((mem_size - ${k_values[$example_k_index]}))"
+    if [ "$total_combinations" -gt 0 ]; then
+        echo "  $0 0"
     fi
 }
 
@@ -82,7 +110,7 @@ if [ $# -eq 0 ]; then
 fi
 
 experiment_number=$1
-total_combinations=$((${#matrices[@]} * ${#k_values[@]}))
+total_combinations=$(count_total_combinations)
 
 # Validate experiment number
 if ! [[ "$experiment_number" =~ ^[0-9]+$ ]] || [ "$experiment_number" -ge "$total_combinations" ]; then
@@ -92,15 +120,38 @@ if ! [[ "$experiment_number" =~ ^[0-9]+$ ]] || [ "$experiment_number" -ge "$tota
     exit 1
 fi
 
-# Map experiment number to matrix and k
-matrix_index=$((experiment_number / ${#k_values[@]}))
-k_index=$((experiment_number % ${#k_values[@]}))
+# Map experiment number to matrix and k, allowing per-matrix k lists
+remaining_index=$experiment_number
+selected_matrix=""
+selected_mem_size=""
+selected_k=""
 
-matrix_name="${matrices[$matrix_index]}"
-k="${k_values[$k_index]}"
+for matrix_name in "${matrices[@]}"; do
+    mem_size_local=$(get_mem_size "$matrix_name")
+    k_values_local="$(get_k_values "$matrix_name")"
+    read -r -a k_array <<< "$k_values_local"
+
+    if [ "$remaining_index" -lt "${#k_array[@]}" ]; then
+        selected_matrix="$matrix_name"
+        selected_mem_size="$mem_size_local"
+        selected_k="${k_array[$remaining_index]}"
+        break
+    fi
+
+    remaining_index=$((remaining_index - ${#k_array[@]}))
+done
+
+matrix_name="$selected_matrix"
+mem_size="$selected_mem_size"
+k="$selected_k"
 win_size=$((mem_size - k))
 
 # Safety check
+if [ -z "$matrix_name" ] || [ -z "$mem_size" ] || [ -z "$k" ]; then
+    echo "Error: Failed to map experiment number to a valid configuration."
+    exit 1
+fi
+
 if [ "$win_size" -le 0 ]; then
     echo "Error: win_size must be positive, but got win_size=$win_size from mem_size=$mem_size and k=$k"
     exit 1
@@ -115,10 +166,10 @@ log_filename="logs/${safe_matrix_name}_${method_name}_mem${mem_size}_win${win_si
 
 # Display selected configuration
 echo "Running experiment number: $experiment_number"
-echo "Matrix ($matrix_index): $matrix_name"
+echo "Matrix: $matrix_name"
 echo "Method: $method_name"
 echo "mem_size: $mem_size"
-echo "k ($k_index): $k"
+echo "k: $k"
 echo "win_size: $win_size"
 
 # Run the Python script
