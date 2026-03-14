@@ -20,6 +20,9 @@ matrices=(
     # "bad_case1_1000"
     # "bad_case2_1000"
     # "bad_case3_1000"
+    "FIDAP/ex3"
+    "HB/plat1919"
+    "HB/1138_bus"
 )
 
 # Window sizes to sweep
