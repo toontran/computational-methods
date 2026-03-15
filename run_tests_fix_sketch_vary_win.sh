@@ -24,12 +24,12 @@ matrices=(
     # "kernel_stocks_1000_0.7071"
     # "kernel_stocks_1000_1.0"
     # "kernel_stocks_1000_2.2361"
-    # "bad_case1_1000"
-    # "bad_case2_1000"
-    # "bad_case3_1000"
-    "FIDAP/ex3"
-    "HB/plat1919"
-    "HB/1138_bus"
+    "bad_case1_1000"
+    "bad_case2_1000"
+    "bad_case3_1000"
+    # "FIDAP/ex3"
+    # "HB/plat1919"
+    # "HB/1138_bus"
 )
 
 # Window sizes to sweep
@@ -39,7 +39,7 @@ win_sizes=(
     32
     128
     256
-)
+)   
 # win_sizes=(
 #     4
 #     32
