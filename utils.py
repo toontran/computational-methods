@@ -4273,10 +4273,35 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
             entropies.append(col_entropy)
         print("Entropies:", [float(f"{entropies[i]:.3f}") for i in range(Vt.shape[0])])
         print("Normalized Entropies:", [float(f"{e:.3f}") for e in (np.array(entropies) / np.log2(Vt_exact.shape[1]))[:Vt.shape[0]]])
-        np.savez(os.path.join(dir_path, f'approx_entropy_{j}.npz'),
+        normalized_entropies = np.array(entropies) / np.log2(Vt_exact.shape[1])
+        if save_in_text:
+            save_txt(
+                os.path.join(dir_path, f'approx_entropy_{j}.txt'),
+                entropies=np.array(entropies),
+                normalized_entropies=normalized_entropies
+            )
+        else:
+            np.savez(
+                os.path.join(dir_path, f'approx_entropy_{j}.npz'),
                 entropies=entropies,
-                normalized_entropies=np.array(entropies) / np.log2(Vt_exact.shape[1]),
-                allow_pickle=True)
+                normalized_entropies=normalized_entropies,
+                allow_pickle=True
+            )
+        
+        # Save other per-window info
+        if save_in_text:
+            save_txt(
+                os.path.join(dir_path, f'window_info_{j}.txt'),
+                start_idx=start_idx,
+                end_idx=end_idx,
+            )
+        else:
+            np.savez(
+                os.path.join(dir_path, f'window_info_{j}.npz'),
+                start_idx=start_idx,
+                end_idx=end_idx,
+                allow_pickle=True
+            )
 
         i = 2
         if current_method == "nystrom" or current_method == "isvdnew":
