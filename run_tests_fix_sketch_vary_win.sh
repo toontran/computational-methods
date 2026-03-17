@@ -6,7 +6,7 @@ method_name="isvd"
 # List of k values
 k_values=(
     4
-    # 16
+    16
 )
 
 # k_values=(
@@ -34,9 +34,9 @@ matrices=(
 
 # Window sizes to sweep
 win_sizes=(
-    # 1
-    # 4
-    # 32
+    1
+    4
+    32
     128
     256
 )   
