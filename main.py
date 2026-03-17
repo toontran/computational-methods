@@ -1008,7 +1008,7 @@ if __name__ == "__main__":
     # raise
     save_mat = False
     no_og = False
-    no_adaptive = False 
+    no_adaptive = True 
     if save_mat:
         import scipy
     

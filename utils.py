@@ -4344,8 +4344,16 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
     end_time = time.time()
     
     ret = [S, Vt] 
-    np.savez(os.path.join(dir_path, f'row_order_final.npz'),
-             row_permutation=row_permutation,)
+    if save_in_text:
+        save_txt(
+            os.path.join(dir_path, 'row_order_final.txt'),
+            row_permutation=row_permutation
+        )
+    else:
+        np.savez(
+            os.path.join(dir_path, 'row_order_final.npz'),
+            row_permutation=row_permutation
+        )
     
     entropies = []
     for i in range(Vt_exact.shape[0]):
@@ -4353,12 +4361,23 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         prob_dist = col**2 
         col_entropy = sp.stats.entropy(prob_dist, base=2)  # higher entropy means more spread out, lower means more concentrated)
         entropies.append(col_entropy)
-    np.savez(os.path.join(dir_path, f'other_info.npz'),
-                other_info={
-                    "time_elapsed": end_time-start_time,
-                    "true_normalized_entropy": np.array(entropies) / np.log2(Vt_exact.shape[1]),
-                },
-                allow_pickle=True)
+    true_normalized_entropy = np.array(entropies) / np.log2(Vt_exact.shape[1])
+
+    if save_in_text:
+        save_txt(
+            os.path.join(dir_path, 'other_info.txt'),
+            time_elapsed=end_time - start_time,
+            true_normalized_entropy=true_normalized_entropy
+        )
+    else:
+        np.savez(
+            os.path.join(dir_path, 'other_info.npz'),
+            other_info={
+                "time_elapsed": end_time - start_time,
+                "true_normalized_entropy": true_normalized_entropy,
+            },
+            allow_pickle=True
+        )
     if track_U:
         ret.append(U)
     if track_discarded:
