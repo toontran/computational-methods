@@ -4057,6 +4057,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
             end_idx_window_1 = min(window_size, m)
             start_idx = end_idx_window_1 + j * stream_size
             end_idx = min(end_idx_window_1 + (j + 1) * stream_size, m)
+        print(start_idx, end_idx)
         if end_idx <= start_idx:
             break
 
