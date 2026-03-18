@@ -249,6 +249,7 @@ if __name__ == "__main__":
     figure_dir = "output"
     url = f'https://suitesparse-collection-website.herokuapp.com/MM/{matrix_name}.tar.gz'
     save_in_text = True
+    fixed_rank = True
 
     if figure_dir and not os.path.exists(figure_dir):
         print("Making directory:", figure_dir)
@@ -329,6 +330,8 @@ if __name__ == "__main__":
 
         _, _, N = matrix_name.split("_")
         N, rank = int(N), k if k is not None else 8
+        if fixed_rank:
+            rank = 8
 
         # Top r vectors: spread
         U_top = np.random.randn(N, rank)
@@ -362,6 +365,8 @@ if __name__ == "__main__":
 
         _, _, N = matrix_name.split("_")
         N, rank = int(N), k if k is not None else 8
+        if fixed_rank:
+            rank = 8
 
         # Concentrated top block (Hadamard-style)
         if rank == 1:
@@ -401,6 +406,8 @@ if __name__ == "__main__":
 
         _, _, N = matrix_name.split("_")
         N, rank = int(N), k 
+        if fixed_rank:
+            rank = 8
 
         # Concentrated top block (Hadamard-style)
         if rank == 1:
