@@ -994,7 +994,8 @@ def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
         # reservoir_res_quotient = reservoir_Vt[:, i] - S_quotient[i] * Vt_permuted
         reservoir_res = reservoir_Vt[:, i] - S[i] * Vt_permuted[i]
         reservoir_res_quotient = reservoir_Vt[:, i] - S_quotient[i] * Vt_permuted[i]
-        regular_res = regular_Vt[:, i] - S[i] * Vt[i]
+        regular_res = regular_Vt[:, i] - np.dot(Vt[i,:], regular_Vt[:, i]) * Vt[i]
+        # regular_res = regular_Vt[:, i] - S[i] * Vt[i]
         regular_res_quotient = regular_Vt[:, i] - S_quotient[i] * Vt[i]
 
         reservoir_residuals_quotient.append(np.linalg.norm(reservoir_res_quotient))
