@@ -21,11 +21,11 @@ k_values=(
 
 # List of matrices
 matrices=(
-    # "kernel_stocks_1000_0.7071"
-    # "kernel_stocks_1000_1.0"
-    # "kernel_stocks_1000_2.2361"
-    # "bad_case1_1000"  
-    # "bad_case2_1000"
+    "kernel_stocks_1000_0.7071"
+    "kernel_stocks_1000_1.0"
+    "kernel_stocks_1000_2.2361"
+    "bad_case1_1000"  
+    "bad_case2_1000"
     "bad_case3_1000"
     "FIDAP/ex3"
     "HB/plat1919"
@@ -34,12 +34,12 @@ matrices=(
 
 # Window sizes to sweep
 win_sizes=(
-    # 1
-    # 8
     32
     128
     256
-)   
+)  
+    # 1
+    # 8 
 # win_sizes=(
 #     4
 #     32

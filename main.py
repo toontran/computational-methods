@@ -772,8 +772,8 @@ if __name__ == "__main__":
         A_csr = kernel[:,:]
         results3, sparse_mats = find_sparsity_thresholds(
             A_csr, 
-            target_sparsities=[sparsity],
-            return_sparse_matrices=True
+            target_sparsities=[sparsity], 
+            return_sparse_matrices=True 
         )
         
         print("Sparse matrix formats:")
@@ -1021,10 +1021,10 @@ if __name__ == "__main__":
     
     if A_csr.shape[1] < 5e4:
         k_default = 10
-        window_size = k_default*10
+        first_window_size = k_default*10
     # elif "stocks" in matrix_name:
     #     k_default = 10
-    #     window_size = A_csr.shape[0] // 20
+    #     first_window_size = A_csr.shape[0] // 20
     else:
         print("Large matrix, using larger k")
         k_default = 100 
@@ -1035,18 +1035,18 @@ if __name__ == "__main__":
         #         k_default = 20
         #     elif np.abs(lengthscale - 0.2236) < 1e-3:
         #         k_default = 50
-        window_size = A_csr.shape[0] // 20
+        first_window_size = A_csr.shape[0] // 20
     # For comparison with FD
     
     k_list = [k] if k else [k_default]
-    window_size = stream_size + k if stream_size else window_size
+    first_window_size = stream_size + k if stream_size else first_window_size
     for k in k_list:
     # for k in [200, 400, 600, 800, 1000]:
-        for size in [window_size]:
+        for size in [first_window_size]:
             # stream_size = size
             stream_size = size if not stream_size else stream_size
             # stream_size = mem_size - k if mem_size else size
-            # window_size = mem_size
+            # first_window_size = mem_size
 
             # for threshold_factor in [1e1, 1e2, 1e3, 1e4]:
             for threshold_factor in [1e2]:
@@ -1089,7 +1089,7 @@ if __name__ == "__main__":
                                                 figure_dir=figure_dir,
                                                 is_sym_psd=A_is_sym_psd,
                                                 stream_size=stream_size,
-                                                window_size=size,
+                                                first_window_size=size,
                                                 col_permutation=None,
                                                 track_reconstruction_error=True,
                                                 k=k,
@@ -1141,7 +1141,7 @@ if __name__ == "__main__":
                                                         num_Vs=num_Vs,
                                                         with_S=with_S,
                                                         stream_size=stream_size,
-                                                        window_size=size,
+                                                        first_window_size=size,
                                                         k=k,
                                                         track_reconstruction_error=True,
                                                         reverse=is_reversed, # False default, for decreasing norm approximations
@@ -1275,7 +1275,7 @@ if __name__ == "__main__":
     #                                                 figure_dir=figure_dir,
     #                                                 is_sym_psd=A_is_sym_psd,
     #                                                 stream_size=size,
-    #                                                 window_size=size,
+    #                                                 first_window_size=size,
     #                                                 col_permutation=None,
     #                                                 track_reconstruction_error=True,
     #                                                 k=k,
@@ -1321,7 +1321,7 @@ if __name__ == "__main__":
     #                                                     num_Vs=num_Vs,
     #                                                     with_S=True,
     #                                                     stream_size=size,
-    #                                                     window_size=size,
+    #                                                     first_window_size=size,
     #                                                     k=k,
     #                                                     track_reconstruction_error=True,
     #                                                     reverse=is_reversed, # False default, for decreasing norm approximations

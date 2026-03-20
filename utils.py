@@ -1367,7 +1367,7 @@ def compose_permutations(p1, p2):
     else:
         return [p1[p2[i]] for i in range(len(p1))]
 
-def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W, 
+def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W, 
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, reservoir_size, 
@@ -1385,9 +1385,9 @@ def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
     # print(next_window.shape)
     if j == 0:
         # Initial SVD for the first window
-        w = window_size
+        w = first_window_size
 
-        S11, V11 = sp.linalg.eig(next_window[:, :window_size])
+        S11, V11 = sp.linalg.eig(next_window[:, :first_window_size])
         idx = np.argsort(S11)[::-1]
         S11, V11 = S11[idx], V11[:, idx]
 
@@ -1418,11 +1418,11 @@ def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
          
         V = Vt.T
         V = V[compose_permutations(inverse_perm, row_permutation), :]  
-        print("Before recalculating:", (V[j*window_size:(j+1)*window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
+        print("Before recalculating:", (V[j*first_window_size:(j+1)*first_window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
 
         # Get new window
         current_window = next_window
-        w = window_size
+        w = first_window_size
         N = A_csr.shape[0]
 
         if track_reconstruction_error:
@@ -1435,8 +1435,8 @@ def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
             np.savez(os.path.join(dir_path, f'reconstruction_error.npz'),
                     reconstruction_errors=np.array(reconstruction_errors),)
 
-        # print("Window after:", prev_window[:, row_permutation][-3:,-5:], (V[(j-1)*window_size:(j)*window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
-        # print("Norm after:", np.linalg.norm(prev_window[:, row_permutation] - V[(j-1)*window_size:(j)*window_size,:] @ np.diag(S) @ V[:,:].T))
+        # print("Window after:", prev_window[:, row_permutation][-3:,-5:], (V[(j-1)*first_window_size:(j)*first_window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
+        # print("Norm after:", np.linalg.norm(prev_window[:, row_permutation] - V[(j-1)*first_window_size:(j)*first_window_size,:] @ np.diag(S) @ V[:,:].T))
         
          
 
@@ -1508,8 +1508,8 @@ def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
     inverse_perm = inverse_permutation(row_permutation)
     temp = compose_permutations(row_permutation, inverse_permutation(row_permutation))
     # print("Inverse is correct:", [i for i in range(len(temp)) if i != temp[i]])
-    print("Window before:", next_window[-3:,-5:], (V[j*window_size:(j+1)*window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
-    print("Norm before:", np.linalg.norm(next_window - V[j*window_size:(j+1)*window_size,:] @ np.diag(S) @ V[:,:].T))
+    print("Window before:", next_window[-3:,-5:], (V[j*first_window_size:(j+1)*first_window_size,:] @ np.diag(S) @ V[:,:].T)[-3:,-5:])
+    print("Norm before:", np.linalg.norm(next_window - V[j*first_window_size:(j+1)*first_window_size,:] @ np.diag(S) @ V[:,:].T))
     # prev_window = A_csr[window_indices, :]
     # prev_permutation = row_permutation
      
@@ -1627,7 +1627,7 @@ def soft_thresholding_Ghashami(S, ):
         import pdb; pdb.set_trace()
     return ret
 
-def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, Vt_exact,
               col_permutation, track_U, 
               track_discarded, discarded_list,
@@ -1733,8 +1733,8 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
 
 
         if track_discarded:
-            print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-            discarded_list.append([S[window_size:], Vt[window_size:, :]])
+            print(f"Discarding: {S[first_window_size:].shape}/{S.shape}")
+            discarded_list.append([S[first_window_size:], Vt[first_window_size:, :]])
         
 
         S = S[:k]
@@ -1974,13 +1974,14 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, wind
     if not Vt_exact is None:
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
+
         save_leftout(Vt, S, Vt_exact, combined, j, dir_path, save_in_text=save_in_text)
     del combined
     gc.collect()
     return Vt, S, reservoir, reservoir_idx 
 
 
-def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -1991,7 +1992,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
               Vt=None, S=None,  V_focus=None, reserved=None, adaptive_order_ours=False, return_ours=False,
               use_soft_threshold=False, use_Ghashami=False, save_in_text=True,
     ):
-    Vt, S, reservoir, reservoir_idx = isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    Vt, S, reservoir, reservoir_idx = isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, Vt_exact,
               col_permutation, track_U, 
               track_discarded, discarded_list,
@@ -1999,387 +2000,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
               Vt=Vt, S=S, reserved=reserved,
               use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami,
               dir_path=dir_path, save_in_text=save_in_text)
-#     if not col_permutation is None:
-#         next_window = next_window[:, col_permutation]
-#     if isinstance(A_csr, csr_matrix):
-#         if min(*A_csr.shape) < 3e4:
-#             next_window = next_window.toarray()
-#             is_sparse = False
-#         else:
-#             is_sparse = True
-#     else:
-#         is_sparse = False
 
-#     print("Sparse:", is_sparse)
-    
-#     # print(next_window.shape)
-    
-#     if j == 0:
-#             # Initial SVD for the first window
-        
-#         # Reverse the order to get largest singular values first
-#         # _, S, Vt = svds(next_window, k=r)
-#         # S = S[::-1]
-#         # Vt = Vt[::-1, :]
-        
-#         # U_sketch, S, Vt = sp.linalg.svd(next_window, lapack_driver="gesdd", full_matrices=False)
-#         # U_sketch, S, Vt = sp.sparse.linalg.svds(next_window, k=k+k//5)
-        
-#         del S, Vt
-#         gc.collect()
-#         print_memory_usage(f"Before, window {j+1}")
-#         U_sketch, S, Vt = compute_svd(next_window, k, is_sparse=is_sparse)
-
-#         if not track_U:
-#             del U_sketch
-#             gc.collect()
-
-#         print_memory_usage(f"After SVD, window {j+1}")
-# #             if track_discarded:
-# #                 print(l, S.shape, Vt.shape)
-# #                 discarded_list.append([S[l:], Vt[l:, :]])
-# #             print(S, Vt[0,:10])
-
-#         # # Test: get the last k instead
-#         # S = S[-k:]
-#         # Vt = Vt[-k:, :]
-
-#         S = S[:k]
-#         Vt = Vt[:k, :]
-#         if use_soft_threshold:
-#             if use_Ghashami:
-#                 S = soft_thresholding_Ghashami(S)
-#             else:
-#                 S = soft_thresholding(S, threshold=S[-1])
-        
-#         # B = S.reshape(-1, 1) * Vt
-
-#         if track_U:
-#             U = U_sketch
-         
-#     else:
-
-#         # Concatenate B[j-1] and the next window
-#         
-#         if isinstance(next_window, np.ndarray):
-#             combined = np.concatenate((S.reshape(-1, 1) * Vt, next_window), axis=0)
-#         else:
-#             combined = sp.sparse.vstack([S.reshape(-1, 1) * Vt, next_window])
-#         # 
-
-#         # U_sketch, S, Vt = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
-#         print("Computing SVD...")
-#         start_time = time.time()
-#         del S, Vt
-#         gc.collect()
-#         print_memory_usage(f"Before, window {j+1}")
-#         U_sketch, S, Vt = compute_svd(combined, k)
-#         svd_time = time.time() - start_time
-#         print(f"SVD completed in {svd_time:.4f} seconds")
-
-#         if not track_U:
-#             del U_sketch
-#             gc.collect()
-#         del combined
-#         gc.collect()
-#         print_memory_usage(f"After SVD, window {j+1}")
-#         
-
-
-#         if track_discarded:
-#             print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-#             discarded_list.append([S[window_size:], Vt[window_size:, :]])
-        
-
-#         S = S[:k]
-#         Vt = Vt[:k, :]
-#         if use_soft_threshold:
-#             if use_Ghashami:
-#                 S = soft_thresholding_Ghashami(S)
-#             else:
-#                 S = soft_thresholding(S, threshold=S[-1])
-
-#         # Update B
-#         # B = S.reshape(-1, 1) * Vt
-# #             print("B", B[0,:10])
-
-#         if track_U:
-#                 # Update U
-#             U_new = np.zeros((U.shape[0] + len(window_indices), U.shape[1] + len(window_indices)))
-#             U_new[:U.shape[0], :U.shape[1]] = U
-#             U_new[U.shape[0]:, U.shape[1]:] = np.eye(len(window_indices))
-#             U = U_new
-#             U = U @ U_sketch
-# #                 print("U", U.shape, U_sketch.shape)
-#             U = U[:, :k]
-        
-#     if reservoir_size > 0:
-#         # Need to switch between reservoir strats here
-#         if reservoir_method == "uniform":
-#             if reserved is None:
-#                 reservoir_idx = np.random.randint(0, end_idx, reservoir_size)
-                 
-#                 reservoir = next_window[reservoir_idx, :]
-#             else:
-#                 for idx in range(start_idx, end_idx):
-#                     # Generate random index
-#                     temp = np.random.randint(0, idx + 1)
-                    
-#                     # If j < s, replace element at position j
-#                     if temp < reservoir_size:
-#                         reservoir_idx[temp] = idx
-#                         reservoir[temp, :] = next_window[idx-start_idx, :]
-#         elif reservoir_method == "weighted":
-#             if reserved is None:
-#                 reservoir_idx = np.random.randint(0, end_idx, reservoir_size)
-                 
-#                 reservoir = next_window[reservoir_idx, :]
-#             else:
-#                 for idx in range(start_idx, end_idx):
-#                     # Generate random index
-#                     temp = np.random.randint(0, idx + 1)
-                    
-#                     # If j < s, replace element at position j
-#                     if temp < reservoir_size:
-#                         reservoir_idx[temp] = idx
-#                         reservoir[temp, :] = next_window[idx-start_idx, :]
-#         elif reservoir_method == "greedy":
-#             # if j == 0:
-#             #     # Pre-sort the absolute values for each row of Vt in the window
-#             #     sorted_indices_by_row = []
-#             #     for row in range(k):
-#             #         # Sort window indices by descending absolute value for this row
-#             #         sorted_indices = np.argsort(-np.abs(Vt[row, window_indices]))
-#             #         sorted_indices_by_row.append(sorted_indices)
-                
-#             #     # Now fill the reservoir using the pre-sorted indices
-#             #     for i in range(reservoir_size):
-#             #         row_idx = i % k       # Cycle through rows of Vt
-#             #         rank = i // k         # Which ranked element to select
-                    
-#             #         # Get the pre-sorted indices for this row
-#             #         sorted_indices = sorted_indices_by_row[row_idx]
-                    
-#             #         # Select the element with the appropriate rank
-#             #         if rank < len(sorted_indices):
-#             #             temp = sorted_indices[rank]
-#             #             reservoir_idx[i] = start_idx + temp
-#             #             reservoir[i, :] = next_window[temp]
-#             # else:
-#             #     # For each eigenvector, sort both window elements and reservoir elements together
-#             #     for row_idx in range(k):
-
-#             #         # Get current elements in reservoir belonging to this row
-#             #         row_reservoir_indices = [i for i in range(reservoir_size) if i % k == row_idx]
-                    
-#             #         # Combine window indices with reservoir indices for this row
-#             #         combined_indices = np.concatenate([window_indices, row_permutation[reservoir_idx]])
-                    
-#             #         # Sort by magnitude (descending)
-#             #         combined_magnitude = np.abs(Vt[row_idx, combined_indices])
-#             #         sorted_indices = np.argsort(-combined_magnitude)
-                    
-#             #         # Keep track of which elements came from window vs reservoir
-#             #         is_from_window = np.concatenate([
-#             #             np.ones(len(window_indices), dtype=bool),
-#             #             np.zeros(len(reservoir_idx), dtype=bool)
-#             #         ])
-                    
-#             #          
-#             #         # Fill this row's portion of the reservoir with top elements
-#             #         for rank, i in enumerate(row_reservoir_indices):
-#             #             if rank < len(sorted_indices):
-#             #                 idx = sorted_indices[rank]
-#             #                 if is_from_window[idx]:
-#             #                     # Element from window
-#             #                     window_idx = idx
-#             #                     reservoir_idx[i] = start_idx + window_idx
-#             #                     reservoir[i, :] = next_window[window_idx]
-#             #                 else:
-#             #                     # Element from reservoir
-#             #                     res_idx = idx - len(window_indices)
-#             #                     reservoir_idx[i] = reservoir_idx[res_idx]
-#             #                     reservoir[i, :] = reservoir[res_idx, :]
-#             if j == 0:
-#                 # Pre-sort the absolute values for each row of Vt in the window
-#                 sorted_indices_by_row = []
-#                 for row in range(k):
-#                     # Sort window indices by descending absolute value for this row
-#                     sorted_indices = np.argsort(-np.abs(Vt[row, window_indices]))
-#                     sorted_indices_by_row.append(sorted_indices)
-                
-#                 # Track which elements are already selected
-#                 selected_elements = set()
-                
-#                 # Now fill the reservoir using the pre-sorted indices
-#                 i = 0  # Reservoir position counter
-#                 row_idx = 0  # Start with first row
-#                 rank = 0  # Start with highest ranked element
-                
-#                 while i < reservoir_size and row_idx < k:
-#                     # Get the pre-sorted indices for this row
-#                     sorted_indices = sorted_indices_by_row[row_idx]
-                    
-#                     # Find next unselected element for this row
-#                     while rank < len(sorted_indices):
-#                         temp = sorted_indices[rank]
-#                         element_idx = start_idx + temp
-                        
-#                         # Check if this element is already selected
-#                         if element_idx not in selected_elements:
-#                             # Add to reservoir
-#                             reservoir_idx[i] = element_idx
-#                             if isinstance(next_window, np.ndarray):
-#                                 reservoir[i, :] = next_window[temp]
-#                             else:
-#                                 reservoir[i, :] = next_window[temp].toarray()
-#                             selected_elements.add(element_idx)
-#                             i += 1
-#                             break
-                        
-#                         # Try next ranked element
-#                         rank += 1
-                    
-#                     # Move to next row, reset rank if we've gone through all rows
-#                     row_idx = (row_idx + 1) % k
-#                     if row_idx == 0:
-#                         rank += 1  # Move to next rank for all rows
-#             else:
-#                 # For subsequent iterations
-#                 # Track which elements are already selected
-#                 selected_elements = set()
-                
-#                 for row_idx in range(k):
-#                     # Get current elements in reservoir belonging to this row
-#                     row_reservoir_indices = [i for i in range(reservoir_size) if i % k == row_idx]
-                    
-#                     # Combine window indices with reservoir indices 
-                     
-#                     combined_indices = np.concatenate([window_indices, row_permutation[reservoir_idx]])
-                    
-#                     # Sort by magnitude (descending)
-#                     combined_magnitude = np.abs(Vt[row_idx, combined_indices])
-#                     sorted_indices = np.argsort(-combined_magnitude)
-                    
-#                     # Keep track of which elements came from window vs reservoir
-#                     is_from_window = np.concatenate([
-#                         np.ones(len(window_indices), dtype=bool),
-#                         np.zeros(len(reservoir_idx), dtype=bool)
-#                     ])
-                    
-#                     # Fill this row's portion of the reservoir with top elements
-#                     rank = 0
-#                     for i in row_reservoir_indices:
-#                         # Find next unselected element
-#                         while rank < len(sorted_indices):
-#                             idx = sorted_indices[rank]
-                            
-#                             if is_from_window[idx]:
-#                                 # Element from window
-#                                 window_idx = idx
-#                                 element_idx = start_idx + window_idx
-                                
-#                                 # Check if already selected
-#                                 if element_idx not in selected_elements:
-#                                     if isinstance(next_window, np.ndarray):
-#                                         reservoir[i, :] = next_window[window_idx]
-#                                     else:
-#                                         reservoir[i, :] = next_window[window_idx].toarray()
-#                                     selected_elements.add(element_idx)
-#                                     break
-#                             else:
-#                                 # Element from reservoir
-#                                 res_idx = idx - len(window_indices)
-#                                 element_idx = reservoir_idx[res_idx]
-                                
-#                                 # Check if already selected
-#                                 if element_idx not in selected_elements:
-#                                     if isinstance(next_window, np.ndarray):
-#                                         reservoir[i, :] = next_window[res_idx]
-#                                     else:
-#                                         reservoir[i, :] = next_window[res_idx].toarray()
-#                                     selected_elements.add(element_idx)
-#                                     break
-                            
-#                             # Try next ranked element
-#                             rank += 1
-                            
-#                         # If we couldn't find an unselected element, leave this position unchanged
-#                         if rank >= len(sorted_indices):
-#                             # Could handle this case differently - e.g., by trying elements from other rows
-#                             pass
-                        
-#                         rank += 1  # Move to next rank for next iteration
-#             print("scores:")
-#             for row_idx in range(k):
-#                 print(np.abs(Vt[row_idx, row_permutation[reservoir_idx[[j for j in range(reservoir_size) if j % Vt.shape[0] == row_idx]]]]), end=", ")
-#         elif reservoir_method == "current_window":
-#             reservoir_idx = np.arange(start_idx, end_idx)
-#             reservoir = next_window
-#         else:
-#             raise NotImplementedError         
-
-    # Recalculate S based on Vt
-    # save: 1, as many above threshold as possible
-    # threshold = 1e-5
-
-    # # Create a boolean matrix where True = element > threshold
-    # bool_matrix = np.abs(Vt[:, window_indices]) > threshold
-    
-    # # Initialize arrays to track consecutive counts
-    # rows, cols = Vt[:, window_indices].shape
-    # counts = np.zeros(cols, dtype=int)
-    
-    # # For each row
-    # for col in range(cols):        
-    #     # Count consecutive elements above threshold starting from first column
-    #     count = 0
-    #     for row in range(rows):
-    #         if bool_matrix[row, col]:
-    #             count += 1
-    #         else:
-    #             break
-        
-    #     counts[col] = count
-
-    # # if top k best, use
-    # # https://stackoverflow.com/questions/6910641/how-do-i-get-indices-of-n-maximum-values-in-a-numpy-array
-    # best_row_index = np.argmax(counts)
-    # if reserved == None:
-    #     reserved = (row_permutation[best_row_index], next_window[best_row_index, :], counts[best_row_index])
-    # elif counts[best_row_index] > np.sum(reserved[2] > threshold):
-    #     reserved = (row_permutation[best_row_index], next_window[best_row_index, :], counts[best_row_index])
-    
-    # S_oneliners = []
-    # for i in range(k):
-    #     if np.abs(Vt[i, reserved[0]]) > threshold:
-    #         S_oneliner = np.dot(reserved[1], Vt[i]) / Vt[i, reserved[0]]
-    #     else:
-    #         S_oneliner = -1
-    #     S_oneliners.append(S_oneliner)
-    # S_oneliners = np.array(S_oneliners)
-    # print("S_oneliners:", S_oneliners[:10])
-
-     
-
-    # Compute with windows
-#     S_quotient = []
-#     for i in range(k):
-#         S_truncated_Rayleigh = np.dot(Vt[i, window_indices].T, A_csr[window_indices, :] @ Vt[i].T)
-#         sq_norm_V = np.dot(Vt[i, window_indices].T, Vt[i, window_indices].T)
-#         #S_truncated_Rayleigh_full = np.dot(Vt[i, row_permutation[:end_idx]].T, A_csr[row_permutation[:end_idx], :] @ Vt[i].T)
-#         #sq_norm_V_full = np.dot(Vt[i, row_permutation[:end_idx]].T, Vt[i, row_permutation[:end_idx]].T)
-#         if sq_norm_V == 0:
-#             S_truncated_Rayleigh = S[i]
-#         else:
-#             S_truncated_Rayleigh /= sq_norm_V
-# #                 S.append(S_truncated_Rayleigh)
-#         #if sq_norm_V_full == 0:
-#         #    S_truncated_Rayleigh_full = np.nan
-#         #else:
-#         #    S_truncated_Rayleigh_full /= sq_norm_V_full
-#         S_quotient.append(S_truncated_Rayleigh)
-#     S_quotient = np.array(S_quotient)
 
     # Compute with reservoir
     print_memory_usage(f"Before LS, window {j+1}")
@@ -2493,7 +2114,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size,
         ret.append(total_S_reduced)
     return ret
 
-def isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2505,7 +2126,7 @@ def isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, 
               use_soft_threshold=False, use_Ghashami=False,
               save_in_text=True,
     ):
-    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2517,7 +2138,7 @@ def isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, 
               use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami, save_in_text=save_in_text,
     )
 
-def isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2527,7 +2148,7 @@ def isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None,  V_focus=None, reserved=None, 
     ):
-    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2538,7 +2159,7 @@ def isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_siz
               Vt=Vt, S=S,  V_focus=V_focus, reserved=reserved, adaptive_order_ours=True, return_ours=False
     )
 
-def isvd_ls_2_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_ls_2_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2548,7 +2169,7 @@ def isvd_ls_2_step(next_window, row_permutation, j, start_idx, end_idx, window_s
               reservoir_size, reservoir_idx, reservoir, reservoir_method,
               Vt=None, S=None,  V_focus=None, reserved=None, 
     ):
-    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2611,7 +2232,7 @@ def make_A_operator(window, n, w, Vt, S):
     return sp.sparse.linalg.LinearOperator((size, size), matvec=matvec, rmatvec=matvec, dtype=np.float64)
 
 
-def isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2639,7 +2260,7 @@ def isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, window_si
     n = j + 1
     Vt = Vt.real
     S = S.real
-    A_op = make_A_operator(next_window, n, window_size, Vt, S)
+    A_op = make_A_operator(next_window, n, first_window_size, Vt, S)
     keep = k #len(S)
     S, V = sp.sparse.linalg.lobpcg(A_op, Vt.T, largest=True)
     
@@ -2658,8 +2279,8 @@ def isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, window_si
     
     # U_sketch, S, Vt = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
     # if track_discarded:
-    #     print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-    #     discarded_list.append([S[window_size:], Vt[window_size:, :]])
+    #     print(f"Discarding: {S[first_window_size:].shape}/{S.shape}")
+    #     discarded_list.append([S[first_window_size:], Vt[first_window_size:, :]])
     
     # Optional: Apply soft thresholding to singular values
     # S = soft_thresholding(S)
@@ -2785,7 +2406,7 @@ def isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, window_si
     return ret
 
 
-def isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -2851,8 +2472,8 @@ def isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, wind
         
         U_sketch, S_new, Vt_new = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
         if track_discarded: 
-            print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-            discarded_list.append([S[window_size:], Vt[window_size:, :]])
+            print(f"Discarding: {S[first_window_size:].shape}/{S.shape}")
+            discarded_list.append([S[first_window_size:], Vt[first_window_size:, :]])
         
         # Optional: Apply soft thresholding to singular values
         # S = soft_thresholding(S)
@@ -3001,8 +2622,8 @@ def isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, wind
         # current_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
         # current_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx]]) * S[current_eigenvector_idx])
 
-        # next_window_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx+window_size]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
-        # next_window_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx+window_size]]) * S[current_eigenvector_idx])
+        # next_window_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx+first_window_size]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
+        # next_window_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx+first_window_size]]) * S[current_eigenvector_idx])
         # # i = 0
         # print("scores:", current_scores, next_window_scores)
          
@@ -3069,7 +2690,7 @@ def isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, wind
     return ret
 
 
-def isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3135,8 +2756,8 @@ def isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, window_s
         
         U_sketch, S_new, Vt_new = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
         if track_discarded: 
-            print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-            discarded_list.append([S[window_size:], Vt[window_size:, :]])
+            print(f"Discarding: {S[first_window_size:].shape}/{S.shape}")
+            discarded_list.append([S[first_window_size:], Vt[first_window_size:, :]])
         
         # Optional: Apply soft thresholding to singular values
         # S = soft_thresholding(S)
@@ -3252,8 +2873,8 @@ def isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, window_s
         current_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
         current_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx]]) * S[current_eigenvector_idx])
 
-        next_window_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx+window_size]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
-        next_window_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx+window_size]]) * S[current_eigenvector_idx])
+        next_window_scores = np.sum(np.abs(Vt[current_eigenvector_idx+1:, row_permutation[:end_idx+first_window_size]]) * S[current_eigenvector_idx+1:].reshape(-1,1))
+        next_window_scores /= np.sum(np.abs(Vt[current_eigenvector_idx, row_permutation[:end_idx+first_window_size]]) * S[current_eigenvector_idx])
         # i = 0
         print("ev idx:", i)
         print("scores:", current_scores, next_window_scores)
@@ -3359,7 +2980,7 @@ def compute_eig(A, k):
     S_quotient[inf_mask] = np.inf
     V_coeffs = V_coeffs[:, idx]
 
-def isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3443,8 +3064,8 @@ def isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window
 
 
 #         if track_discarded:
-#             print(f"Discarding: {S[window_size:].shape}/{S.shape}")
-#             discarded_list.append([S[window_size:], Vt[window_size:, :]])
+#             print(f"Discarding: {S[first_window_size:].shape}/{S.shape}")
+#             discarded_list.append([S[first_window_size:], Vt[first_window_size:, :]])
         
 
 #         S = S[:k]
@@ -3675,7 +3296,7 @@ def isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window
 #         else:
 #             raise NotImplementedError
              
-    Vt, S, reservoir, reservoir_idx = isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    Vt, S, reservoir, reservoir_idx = isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, Vt_exact,
               col_permutation, track_U, 
               track_discarded, discarded_list,
@@ -3888,7 +3509,7 @@ def isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window
         ret.append(total_S_reduced)
     return ret
 
-def isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3899,7 +3520,7 @@ def isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_
               Vt=None, S=None,  V_focus=None, reserved=None, 
               use_soft_threshold=False, use_Ghashami=False,
     ):
-    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3911,7 +3532,7 @@ def isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_
               use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami,
         )
 
-def isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3921,7 +3542,7 @@ def isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, windo
               reservoir_size, reservoir_idx, reservoir, reservoir_method, 
               Vt=None, S=None,  V_focus=None, reserved=None, 
     ):
-    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3932,7 +3553,7 @@ def isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, windo
               Vt=Vt, S=S,  V_focus=V_focus, reserved=reserved, adaptive_order_ours=True, return_ours=False,
         )
 
-def isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+def isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3942,7 +3563,7 @@ def isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, windo
               reservoir_size, reservoir_idx, reservoir, reservoir_method, 
               Vt=None, S=None,  V_focus=None, reserved=None, 
     ):
-    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+    return isvd_demix_step_(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
               window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
               name, dir_path, 
               col_permutation, track_U, 
@@ -3956,7 +3577,7 @@ def isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, windo
 
 
 def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None, 
-         window_size=100, k=None,
+         first_window_size=100, k=None,
          num_windows=None, row_permutation=None, name="temp", figure_dir="figures", is_sym_psd=False,
          num_Vs=None, track_U=False, track_discarded=False, with_S=False, V_focus=None, reverse=False,
          return_row_order=False, stream_size=None, col_permutation=None, reservoir_size=0, reservoir_method="uniform",
@@ -3974,9 +3595,9 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
     # l = m // W  # window size
     # k = k if k and k < l else l-1 # Number of singular values/vectors to compute
     # r = min(k, m, l)
-    k = window_size if k is None else k # TODO
-    stream_size = window_size if stream_size is None else stream_size
-    W = (m - window_size) // stream_size + 1
+    k = first_window_size if k is None else k # TODO
+    stream_size = first_window_size if stream_size is None else stream_size
+    W = (m - first_window_size) // stream_size + 1
 
     # Create the directory if it doesn't exist
     dir_path = f"{figure_dir}/{name}/"
@@ -4053,9 +3674,9 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         # Calculate the start and end indices for this window
         if j == 0:
             start_idx = 0
-            end_idx = min(window_size, m)
+            end_idx = min(first_window_size, m)
         else:
-            end_idx_window_1 = min(window_size, m)
+            end_idx_window_1 = min(first_window_size, m)
             start_idx = end_idx_window_1 + (j-1)*stream_size
             end_idx = min(end_idx_window_1 + j*stream_size, m)
         if end_idx <= start_idx:
@@ -4076,7 +3697,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         def step_function(method):
             if method == "nystrom":
                 print("Doing Nystrom..")
-                ret = nystrom_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = nystrom_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, reservoir_size, 
@@ -4087,7 +3708,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S,inverse_perm=inverse_perm, V_focus=V_focus,)
             elif method == "isvd":
                 print("Doing iSVD..")
-                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4098,7 +3719,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved, save_in_text=save_in_text)
             elif method == "isvdls":
                 print("Doing iSVD..")
-                ret = isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_ls_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4109,7 +3730,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvdls2":
                 print("Doing iSVD..")
-                ret = isvd_ls_2_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_ls_2_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4120,7 +3741,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvdnew":
                 print("Doing iSVD..")
-                ret = isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_new_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4131,7 +3752,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, )
             elif method == "isvd1by1":
                 print("Doing iSVD..")
-                ret = isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_1by1_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4142,7 +3763,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvd1by1new":
                 print("Doing iSVD..")
-                ret = isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_1by1_new_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4153,7 +3774,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvddemix":
                 print("Doing iSVD..")
-                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4164,7 +3785,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvddemix2":
                 print("Doing iSVD..")
-                ret = isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_demix_2_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4175,7 +3796,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvddemix3":
                 print("Doing iSVD..")
-                ret = isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4186,7 +3807,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 Vt=Vt, S=S, V_focus=V_focus, reserved=reserved)
             elif method == "isvdst":
                 print("Doing iSVD..")
-                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4198,7 +3819,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 use_soft_threshold=True, use_Ghashami=False, save_in_text=save_in_text)
             elif method == "isvdstG":
                 print("Doing iSVD..")
-                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4210,7 +3831,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 use_soft_threshold=True, use_Ghashami=False, save_in_text=save_in_text)
             elif method == "isvddemixst":
                 print("Doing iSVD..")
-                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
@@ -4222,7 +3843,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
                 use_soft_threshold=True, use_Ghashami=False)
             elif method == "isvddemixstG":
                 print("Doing iSVD..")
-                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, window_size, k, W,
+                ret = isvd_demix_step(next_window, row_permutation, j, start_idx, end_idx, first_window_size, k, W,
                 window_indices, A_csr, S_exact, Vt_exact, U_exact, A_norm, is_sym_psd,
                 name, dir_path, 
                 col_permutation, track_U, 
