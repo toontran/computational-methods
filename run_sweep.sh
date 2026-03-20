@@ -7,10 +7,10 @@ set -euo pipefail
 method_name="isvd"
 
 # Single matrix for now
-matrix_name="kernel_stocks_1000_1.0"
+matrix_name="kernel_stocks_100000_1.0"
 
 # Matrix size N
-N=1000
+N=100000
 
 # Number of machines and which machine this script is for
 NUM_MACHINES=30

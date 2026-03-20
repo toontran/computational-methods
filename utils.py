@@ -3698,8 +3698,9 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
         
         # Extract the next window
         window_indices = row_permutation[start_idx:end_idx]
-        next_window = A_csr[window_indices, :]
-         
+        next_window = A_csr[window_indices, :] / S_exact[0] if S_exact is not None and S_exact[0] != 0 else A_csr[window_indices, :]
+        if S_exact is None:
+            print("No S_exact provided, skipping normalization of input matrix")
         
         def step_function(method):
             if method == "nystrom":
