@@ -154,5 +154,5 @@ for pair in "${assigned_pairs[@]}"; do
     echo "python3 -u -X faulthandler main.py \"$matrix_name\" \"$method_name\" \"$win_size\" \"$k\" 2>&1 | tee -a \"$log_filename\""
     echo ""
 
-    python3 -u -X faulthandler main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
+    # python3 -u -X faulthandler main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
 done
