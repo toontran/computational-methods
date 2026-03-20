@@ -1975,7 +1975,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, firs
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
         num_save_files = 50
-        if j == 0 or (j * (N - 1)) // W != ((j - 1) * (N - 1)) // W:
+        if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
             save_leftout(Vt, S, Vt_exact, combined, j, dir_path, save_in_text=save_in_text)
     del combined
     gc.collect()
@@ -2063,7 +2063,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
     print_memory_usage(f"Before saving, window {j+1}")
     print("j:", j)
     num_save_files = 50
-    if j == 0 or (j * (N - 1)) // W != ((j - 1) * (N - 1)) // W:
+    if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
         save_spectrum_comparison(S+total_S_reduced, S_exact, 
                                     A_norm, name, j, dir_path, S_quotient=S_quotient, save_in_text=save_in_text)
         save_residuals(A_csr, S+total_S_reduced, Vt, 
@@ -2081,12 +2081,12 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
     if not Vt_exact is None:
         print("Reconstruction quality:", np.linalg.norm(Vt - Vt_exact[:Vt.shape[0], :], 'fro'))
         num_save_files = 50
-        if j == 0 or (j * (N - 1)) // W != ((j - 1) * (N - 1)) // W:
+        if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
             save_canonical_angles(Vt, Vt_exact, 
                                     j, dir_path, save_in_text=save_in_text)
     if j == W - 1 and track_U and not U_exact is None and not is_sym_psd:
         num_save_files = 50
-        if j == 0 or (j * (N - 1)) // W != ((j - 1) * (N - 1)) // W:
+        if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
             save_canonical_angles(U.T, U_exact.T, 
                                     j, dir_path, additional_label="_U", save_in_text=save_in_text)
     print_memory_usage(f"After canonical angles, window {j+1}")
