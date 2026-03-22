@@ -2038,6 +2038,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, firs
         
 
     # np.linalg.norm(A_csr[row_permutation[reservoir_idx[0]]] - reservoir[0,:])
+    print("Vt shape:", Vt.shape)
     if not Vt_exact is None:
         print("\nSubspace angles each eigenvector")
         print(np.sum((Vt @ Vt_exact[:Vt.shape[0], :].T) ** 2, axis=0))
@@ -2069,6 +2070,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
               use_soft_threshold=use_soft_threshold, use_Ghashami=use_Ghashami,
               dir_path=dir_path, save_in_text=save_in_text)
 
+    print("Vt shape:", Vt.shape)
 
     # Compute with reservoir
     print_memory_usage(f"Before LS, window {j+1}")
@@ -2130,6 +2132,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
     print_memory_usage(f"Before saving, window {j+1}")
     print("j:", j)
     num_save_files = 50
+    print("Vt shape:", Vt.shape)
     if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
         save_spectrum_comparison(S+total_S_reduced, S_exact, 
                                     A_norm, name, j, dir_path, S_quotient=S_quotient, save_in_text=save_in_text)
@@ -2137,6 +2140,7 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
                         A_norm, name, j, dir_path, is_sym_psd,
                         row_permutation, start_idx, end_idx, save_in_text=save_in_text)
         if reservoir_size > 0:
+            print("Vt shape:", Vt.shape)
             save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
                                         S, Vt, A_norm, A_csr, S_quotient, 
                                         name, j, dir_path, save_in_text=save_in_text)
