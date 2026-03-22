@@ -960,7 +960,7 @@ if __name__ == "__main__":
                 print("single matmat(8) time:", time.time() - t0)
                 kernel_op = kernel.to_linear_operator()
                 # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
-                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel, k=200, maxiter=1)
+                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel, k=200)
             else:
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
             S_exact = S_exact[::-1]
