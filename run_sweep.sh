@@ -6,11 +6,11 @@ set -euo pipefail
 # =========================
 method_name="isvd"
 
-# Single matrix for now
-matrix_name="kernel_stocks_10000_1.0"
-
 # Matrix size N
-N=10000
+N=50000
+
+# Single matrix for now
+matrix_name="kernel_stocks_${N}_1.0"
 
 # Number of machines and which machine this script is for
 NUM_MACHINES=30
@@ -61,7 +61,7 @@ elif [ "$N" -le 100000 ]; then
 else
     k_max=100
 fi
-k_max=100 # remove later
+# k_max=100 # remove later
 win_min=17
 win_max=$((N / 5 - 1))
 
