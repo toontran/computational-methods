@@ -798,7 +798,7 @@ if __name__ == "__main__":
     else:
         # Download and read the matrix
         # A = download_and_read_matrix(url)
-        A = download_and_read_matrix_cached(url, cache_dir+"/"+matrix_name)
+        A = download_and_read_matrix_cached(url, cache_dir+"/"+matrix_name+".tar.gz")
         print(f"A's shape: {A.shape}, nonzeros: {A.nnz}")
         
         # Convert to CSR format for efficient operations
