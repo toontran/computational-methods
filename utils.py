@@ -224,6 +224,14 @@ class StreamingMatrix:
 #         return (self.n, self.n)
 
 
+import os
+import json
+import time
+import hashlib
+import numpy as np
+import scipy as sp
+
+
 class StreamingRBFKernel:
     def __init__(
         self,
@@ -232,14 +240,16 @@ class StreamingRBFKernel:
         kernel_noise_std=0.0,
         point_noise_std=0.0,
         block_size=1024,
-        dtype=np.float64,
+        cache_dir=None,
+        dtype=np.float32,
+        verbose=False,
     ):
-        self.points = np.asarray(points, dtype=dtype).copy()
+        self.points = np.asarray(points, dtype=np.float64).copy()
         self.lengthscale = float(lengthscale)
         self.n = len(points)
-        self.kernel_noise_std = float(kernel_noise_std)
         self.block_size = int(block_size)
-        self.dtype = dtype
+        self.dtype = np.dtype(dtype)
+        self.verbose = verbose
 
         if point_noise_std > 0.0:
             self.points += (
@@ -248,11 +258,15 @@ class StreamingRBFKernel:
                 * self.points
             )
 
-        if self.kernel_noise_std != 0.0:
+        if kernel_noise_std != 0.0:
             raise ValueError(
-                "kernel_noise_std must be 0 for LinearOperator-based SVD. "
-                "Current implementation of row noise is not a fixed linear operator."
+                "kernel_noise_std must be 0.0 for block-precomputed operator mode"
             )
+        self.kernel_noise_std = 0.0
+
+        self.cache_dir = cache_dir
+        self._matvec_calls = 0
+        self._matmat_calls = 0
 
     def __len__(self):
         return self.n
@@ -261,29 +275,21 @@ class StreamingRBFKernel:
     def shape(self):
         return (self.n, self.n)
 
-    def calculate_row(self, i):
-        diff = self.points - self.points[i]
-        sq_dists = np.sum(diff**2, axis=1)
-        rbf = np.exp(-sq_dists / (2 * self.lengthscale**2))
-        return rbf
-
     def _kernel_block(self, I, J):
-        """
-        Return K[I, J] without forming the whole matrix.
-        I, J can be slices or index arrays.
-        """
-        Xi = self.points[I]   # shape (bi, d)
-        Xj = self.points[J]   # shape (bj, d)
+        Xi = self.points[I]
+        Xj = self.points[J]
 
-        # Squared Euclidean distances:
-        # ||x-y||^2 = ||x||^2 + ||y||^2 - 2 x·y
         Xi_sq = np.sum(Xi * Xi, axis=1)[:, None]
         Xj_sq = np.sum(Xj * Xj, axis=1)[None, :]
         sq_dists = Xi_sq + Xj_sq - 2.0 * (Xi @ Xj.T)
-        np.maximum(sq_dists, 0.0, out=sq_dists)  # numerical cleanup
+        np.maximum(sq_dists, 0.0, out=sq_dists)
 
-        K = np.exp(-sq_dists / (2 * self.lengthscale**2))
-        return K
+        return np.exp(-sq_dists / (2.0 * self.lengthscale**2)).astype(
+            self.dtype, copy=False
+        )
+
+    def calculate_row(self, i):
+        return self._kernel_block(slice(i, i + 1), slice(None))[0]
 
     def __getitem__(self, key):
         if isinstance(key, tuple):
@@ -292,24 +298,98 @@ class StreamingRBFKernel:
             row_idx, col_idx = key, slice(None)
         return self._kernel_block(row_idx, col_idx)
 
+    def _cache_key(self):
+        h = hashlib.sha1()
+        h.update(str(self.n).encode())
+        h.update(str(self.points.shape[1:] if self.points.ndim > 1 else ()).encode())
+        h.update(str(self.lengthscale).encode())
+        h.update(str(self.block_size).encode())
+        h.update(str(self.dtype).encode())
+        h.update(str(self.points.dtype).encode())
+
+        # Small sample of points for sanity/versioning without hashing everything
+        flat = np.ascontiguousarray(self.points.reshape(-1))
+        sample_len = min(flat.size, 4096)
+        h.update(flat[:sample_len].tobytes())
+        return h.hexdigest()[:16]
+
+    def _resolved_cache_dir(self):
+        if self.cache_dir is None:
+            raise ValueError("cache_dir is None; block precompute requires a cache_dir")
+        return os.path.join(self.cache_dir, f"rbf_n{self.n}_ls{self.lengthscale:g}_{self._cache_key()}")
+
+    def _meta_path(self):
+        return os.path.join(self._resolved_cache_dir(), "meta.json")
+
+    def _block_path(self, i0, i1):
+        return os.path.join(self._resolved_cache_dir(), f"block_{i0}_{i1}.npy")
+
+    def precompute_blocks(self, overwrite=False):
+        cache_root = self._resolved_cache_dir()
+        os.makedirs(cache_root, exist_ok=True)
+
+        meta = {
+            "n": self.n,
+            "lengthscale": self.lengthscale,
+            "block_size": self.block_size,
+            "dtype": str(self.dtype),
+            "points_shape": tuple(self.points.shape),
+        }
+
+        with open(self._meta_path(), "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2)
+
+        t0 = time.time()
+        total_blocks = (self.n + self.block_size - 1) // self.block_size
+
+        for block_idx, i0 in enumerate(range(0, self.n, self.block_size), start=1):
+            i1 = min(i0 + self.block_size, self.n)
+            path = self._block_path(i0, i1)
+
+            if (not overwrite) and os.path.exists(path):
+                if self.verbose:
+                    print(f"[cache] skip existing block {block_idx}/{total_blocks}: {i0}:{i1}")
+                continue
+
+            bt = time.time()
+            K_block = self._kernel_block(slice(i0, i1), slice(None))
+            np.save(path, K_block, allow_pickle=False)
+
+            if self.verbose:
+                gb = K_block.nbytes / (1024**3)
+                print(
+                    f"[cache] wrote block {block_idx}/{total_blocks}: {i0}:{i1} "
+                    f"shape={K_block.shape} size={gb:.3f} GB "
+                    f"time={time.time() - bt:.2f}s"
+                )
+
+        if self.verbose:
+            print(f"[cache] done in {time.time() - t0:.2f}s -> {cache_root}")
+
+    def _load_block(self, i0, i1):
+        path = self._block_path(i0, i1)
+        if not os.path.exists(path):
+            raise FileNotFoundError(
+                f"Missing cached block {path}. Run precompute_blocks() first."
+            )
+        return np.load(path, mmap_mode="r")
+
     def matvec(self, v):
         v = np.asarray(v, dtype=self.dtype)
         if v.ndim != 1:
             raise ValueError("matvec expects a 1D vector")
 
+        self._matvec_calls += 1
         out = np.zeros(self.n, dtype=self.dtype)
-        bs = self.block_size
 
-        # Compute out = K @ v in row-blocks
-        for i0 in range(0, self.n, bs):
-            i1 = min(i0 + bs, self.n)
-            K_block = self._kernel_block(slice(i0, i1), slice(None))
+        for i0 in range(0, self.n, self.block_size):
+            i1 = min(i0 + self.block_size, self.n)
+            K_block = self._load_block(i0, i1)
             out[i0:i1] = K_block @ v
 
         return out
 
     def rmatvec(self, v):
-        # Kernel is symmetric if kernel_noise_std == 0
         return self.matvec(v)
 
     def matmat(self, V):
@@ -317,12 +397,12 @@ class StreamingRBFKernel:
         if V.ndim != 2:
             raise ValueError("matmat expects a 2D array")
 
+        self._matmat_calls += 1
         out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
-        bs = self.block_size
 
-        for i0 in range(0, self.n, bs):
-            i1 = min(i0 + bs, self.n)
-            K_block = self._kernel_block(slice(i0, i1), slice(None))
+        for i0 in range(0, self.n, self.block_size):
+            i1 = min(i0 + self.block_size, self.n)
+            K_block = self._load_block(i0, i1)
             out[i0:i1, :] = K_block @ V
 
         return out
@@ -339,70 +419,13 @@ class StreamingRBFKernel:
             rmatmat=self.rmatmat,
             dtype=self.dtype,
         )
-    
 
-class StreamingKroneckerGraph:
-    def __init__(self, SCALE, edgefactor):
-        self.SCALE = SCALE
-        self.N = 2**SCALE
-        self.M = int(edgefactor * self.N)
-        self.A, self.B, self.C = 0.57, 0.19, 0.19
-        self.ab = self.A + self.B
-        self.c_norm = self.C / (1 - (self.A + self.B))
-        self.a_norm = self.A / (self.A + self.B)
-        
-        # Generate and store the edge list
-        self.ijw = self._generate_edge_list()
-        
-    def _generate_edge_list(self):
-        ijw = np.ones((3, self.M))
-        for ib in range(1, self.SCALE + 1):
-            ii_bit = np.random.uniform(0, 1, size=(1, self.M)) > self.ab
-            jj_bit = np.random.uniform(0, 1, size=(1, self.M)) > (self.c_norm * ii_bit + self.a_norm * (~ii_bit))
-            ijw[0:2] += 2**(ib - 1) * np.append(ii_bit, jj_bit, axis=0)
-        
-        ijw[2] = np.random.uniform(0, 1, size=(1, self.M))
-        ijw[0] = np.random.permutation(ijw[0])
-        ijw[1] = np.random.permutation(ijw[1])
-        ijw[0:2] -= 1
-        return ijw
-    
-    def _calculate_row(self, i):
-        row = np.zeros(self.N)
-        mask = (self.ijw[0] == i) | (self.ijw[1] == i)
-        for j in range(self.M):
-            if mask[j]:
-                other_vertex = int(self.ijw[1][j] if self.ijw[0][j] == i else self.ijw[0][j])
-                weight = self.ijw[2][j]
-                if row[other_vertex] == 0 or weight < row[other_vertex]:
-                    row[other_vertex] = weight
-        return row
-    
-    def __getitem__(self, key):
-        if isinstance(key, tuple):
-            row_idx, col_idx = key
-        else:
-            row_idx, col_idx = key, slice(None)
-        
-        if isinstance(row_idx, int):
-            row = self._calculate_row(row_idx)
-            return row[col_idx]
-        elif isinstance(row_idx, slice):
-            start, stop, step = row_idx.indices(self.N)
-            rows = np.array([self._calculate_row(i) for i in range(start, stop, step)])
-            return rows[:, col_idx]
-        elif isinstance(row_idx, (list, np.ndarray)):
-            rows = np.array([self._calculate_row(i) for i in row_idx])
-            return rows[:, col_idx]
-        else:
-            raise IndexError("Invalid index type")
-
-    def __len__(self):
-        return self.N
-
-    @property
-    def shape(self):
-        return (self.N, self.N)
+    def stats(self):
+        return {
+            "matvec_calls": self._matvec_calls,
+            "matmat_calls": self._matmat_calls,
+            "cache_dir": self._resolved_cache_dir(),
+        }
         
 
 def abbreviate_phrase(phrase):

@@ -280,10 +280,11 @@ if __name__ == "__main__":
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
                                     kernel_noise_std=kernel_noise_std,
                                     point_noise_std=point_noise_std)
-        if num_points < 5e4:
-            A_csr = kernel[:,:]
-        else:
-            A_csr = kernel
+        # if num_points < 5e4:
+        #     A_csr = kernel[:,:]
+        # else:
+        #     A_csr = kernel
+        kernel.precompute_blocks(overwrite=False)
         title = ""
         A_is_sym_psd = True
         print("Kernel matrix done.")
