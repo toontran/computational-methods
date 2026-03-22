@@ -279,7 +279,8 @@ if __name__ == "__main__":
         print("Making kernel")
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
                                     kernel_noise_std=kernel_noise_std,
-                                    point_noise_std=point_noise_std)
+                                    point_noise_std=point_noise_std,
+                                    cache_dir=os.path.join("cache", matrix_name, "kernel_cache"))
         # if num_points < 5e4:
         #     A_csr = kernel[:,:]
         # else:
@@ -741,11 +742,13 @@ if __name__ == "__main__":
         else:
             raise Exception("Shape not supported")
         
-        kernel = StreamingRBFKernel(points, lengthscale=lengthscale)
-        if num_points < 5e4:
-            A_csr = kernel[:,:]
-        else:
-            A_csr = kernel
+        kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
+            cache_dir=os.path.join("cache", matrix_name, "kernel_cache"))
+        # if num_points < 5e4:
+        #     A_csr = kernel[:,:]
+        # else:
+        #     A_csr = kernel
+        kernel.precompute_blocks(overwrite=False)
         title = ""
         A_is_sym_psd = True
     elif "sparsify_" in matrix_name:
