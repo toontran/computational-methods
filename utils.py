@@ -380,6 +380,8 @@ class StreamingRBFKernel:
             raise ValueError("matvec expects a 1D vector")
 
         self._matvec_calls += 1
+        if self._matvec_calls % 50 == 0:
+            print(f"matvec calls: {self._matvec_calls}")
         out = np.zeros(self.n, dtype=self.dtype)
 
         for i0 in range(0, self.n, self.block_size):
@@ -398,6 +400,8 @@ class StreamingRBFKernel:
             raise ValueError("matmat expects a 2D array")
 
         self._matmat_calls += 1
+        if self._matmat_calls % 50 == 0:
+            print(f"matvec calls: {self._matmat_calls}")
         out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
 
         for i0 in range(0, self.n, self.block_size):
