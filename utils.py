@@ -225,75 +225,119 @@ class StreamingMatrix:
 
 
 class StreamingRBFKernel:
-    def __init__(self, points, lengthscale=1.0, kernel_noise_std=0.0, point_noise_std=0.0):
-        self.points = points.copy()
-        self.lengthscale = lengthscale
+    def __init__(
+        self,
+        points,
+        lengthscale=1.0,
+        kernel_noise_std=0.0,
+        point_noise_std=0.0,
+        block_size=1024,
+        dtype=np.float64,
+    ):
+        self.points = np.asarray(points, dtype=dtype).copy()
+        self.lengthscale = float(lengthscale)
         self.n = len(points)
-        self.kernel_noise_std = kernel_noise_std
-        self.points += point_noise_std * np.random.randn(*self.points.shape) * self.points
-        
-    def calculate_row(self, i):
-        """Original row calculation method - unchanged"""
-        diff = self.points - self.points[i]
-        sq_dists = np.sum(diff**2, axis=1)
-        rbf = np.exp(-sq_dists / (2*self.lengthscale**2))
-        rbf += self.kernel_noise_std * np.random.randn(*rbf.shape) * rbf
-        return rbf
-    
-    def __getitem__(self, key):
-        """Original indexing method - unchanged"""
-        if isinstance(key, tuple):
-            row_idx, col_idx = key
-        else:
-            row_idx, col_idx = key, slice(None)
-        
-        if isinstance(row_idx, int):
-            row = self.calculate_row(row_idx)
-            return row[col_idx]
-        elif isinstance(row_idx, slice):
-            start, stop, step = row_idx.indices(self.n)
-            rows = np.array([self.calculate_row(i) for i in range(start, stop, step)])
-            return rows[:, col_idx]
-        elif isinstance(row_idx, (list, np.ndarray)):
-            rows = np.array([self.calculate_row(i) for i in row_idx])
-            return rows[:, col_idx]
-        else:
-            raise IndexError("Invalid index type")
+        self.kernel_noise_std = float(kernel_noise_std)
+        self.block_size = int(block_size)
+        self.dtype = dtype
+
+        if point_noise_std > 0.0:
+            self.points += (
+                point_noise_std
+                * np.random.randn(*self.points.shape)
+                * self.points
+            )
+
+        if self.kernel_noise_std != 0.0:
+            raise ValueError(
+                "kernel_noise_std must be 0 for LinearOperator-based SVD. "
+                "Current implementation of row noise is not a fixed linear operator."
+            )
 
     def __len__(self):
-        """Original length method - unchanged"""
         return self.n
 
     @property
     def shape(self):
-        """Original shape property - unchanged"""
         return (self.n, self.n)
-    
-    # NEW METHODS for SVD functionality
-    def matvec(self, v):
-        """Efficient matrix-vector multiplication K @ v"""
-        if v.ndim == 1:
-            result = np.zeros(self.n)
-            for i in range(self.n):
-                # Reuse the existing calculate_row method
-                row = self.calculate_row(i)
-                result[i] = np.dot(row, v)
-            return result
+
+    def calculate_row(self, i):
+        diff = self.points - self.points[i]
+        sq_dists = np.sum(diff**2, axis=1)
+        rbf = np.exp(-sq_dists / (2 * self.lengthscale**2))
+        return rbf
+
+    def _kernel_block(self, I, J):
+        """
+        Return K[I, J] without forming the whole matrix.
+        I, J can be slices or index arrays.
+        """
+        Xi = self.points[I]   # shape (bi, d)
+        Xj = self.points[J]   # shape (bj, d)
+
+        # Squared Euclidean distances:
+        # ||x-y||^2 = ||x||^2 + ||y||^2 - 2 x·y
+        Xi_sq = np.sum(Xi * Xi, axis=1)[:, None]
+        Xj_sq = np.sum(Xj * Xj, axis=1)[None, :]
+        sq_dists = Xi_sq + Xj_sq - 2.0 * (Xi @ Xj.T)
+        np.maximum(sq_dists, 0.0, out=sq_dists)  # numerical cleanup
+
+        K = np.exp(-sq_dists / (2 * self.lengthscale**2))
+        return K
+
+    def __getitem__(self, key):
+        if isinstance(key, tuple):
+            row_idx, col_idx = key
         else:
-            # Handle matrix multiplication K @ V where V has multiple columns
-            return np.column_stack([self.matvec(v[:, j]) for j in range(v.shape[1])])
-    
+            row_idx, col_idx = key, slice(None)
+        return self._kernel_block(row_idx, col_idx)
+
+    def matvec(self, v):
+        v = np.asarray(v, dtype=self.dtype)
+        if v.ndim != 1:
+            raise ValueError("matvec expects a 1D vector")
+
+        out = np.zeros(self.n, dtype=self.dtype)
+        bs = self.block_size
+
+        # Compute out = K @ v in row-blocks
+        for i0 in range(0, self.n, bs):
+            i1 = min(i0 + bs, self.n)
+            K_block = self._kernel_block(slice(i0, i1), slice(None))
+            out[i0:i1] = K_block @ v
+
+        return out
+
     def rmatvec(self, v):
-        """Transpose multiplication K^T @ v (same as matvec for symmetric kernel)"""
+        # Kernel is symmetric if kernel_noise_std == 0
         return self.matvec(v)
-    
+
+    def matmat(self, V):
+        V = np.asarray(V, dtype=self.dtype)
+        if V.ndim != 2:
+            raise ValueError("matmat expects a 2D array")
+
+        out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
+        bs = self.block_size
+
+        for i0 in range(0, self.n, bs):
+            i1 = min(i0 + bs, self.n)
+            K_block = self._kernel_block(slice(i0, i1), slice(None))
+            out[i0:i1, :] = K_block @ V
+
+        return out
+
+    def rmatmat(self, V):
+        return self.matmat(V)
+
     def to_linear_operator(self):
-        """Convert to scipy LinearOperator for iterative methods"""
         return sp.sparse.linalg.LinearOperator(
-            (self.n, self.n),
+            shape=(self.n, self.n),
             matvec=self.matvec,
             rmatvec=self.rmatvec,
-            dtype=np.float64
+            matmat=self.matmat,
+            rmatmat=self.rmatmat,
+            dtype=self.dtype,
         )
     
 

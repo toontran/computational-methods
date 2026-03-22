@@ -16,7 +16,7 @@ N=100000
 NUM_MACHINES=30
 
 # Total number of (k, win_size) pairs to generate across all machines.
-# With 30 machines and 10 pairs each, use 300.
+# With 30 machines and 10 pairs each, use 300.  
 TOTAL_PAIRS=300
 
 usage() {
@@ -56,7 +56,15 @@ if ! [[ "$machine_id" =~ ^[0-9]+$ ]] || [ "$machine_id" -lt 0 ] || [ "$machine_i
 fi
 
 k_min=1
-k_max=$((N / 10 - 1))
+if [ "$N" -le 5000 ]; then
+    k_max=$(( N < 500 ? N - 1 : 500 ))
+elif [ "$N" -le 20000 ]; then
+    k_max=300
+elif [ "$N" -le 100000 ]; then
+    k_max=200
+else
+    k_max=100
+fi
 win_min=17
 win_max=$((N / 5 - 1))
 
@@ -151,8 +159,8 @@ for pair in "${assigned_pairs[@]}"; do
     echo "mem_size:  $mem_size"
     echo "Log file:  $log_filename"
     echo "Command:"
-    echo "python3 -u -X faulthandler main.py \"$matrix_name\" \"$method_name\" \"$win_size\" \"$k\" 2>&1 | tee -a \"$log_filename\""
+    echo "python3 -u main.py \"$matrix_name\" \"$method_name\" \"$win_size\" \"$k\" 2>&1 | tee -a \"$log_filename\""
     echo ""
 
-    python3 -u -X faulthandler main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
+    python3 -u main.py "$matrix_name" "$method_name" "$win_size" "$k" 2>&1 | tee -a "$log_filename"
 done

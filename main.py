@@ -741,7 +741,10 @@ if __name__ == "__main__":
             raise Exception("Shape not supported")
         
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale)
-        A_csr = kernel[:,:]
+        if num_points < 5e4:
+            A_csr = kernel[:,:]
+        else:
+            A_csr = kernel
         title = ""
         A_is_sym_psd = True
     elif "sparsify_" in matrix_name:
@@ -939,9 +942,9 @@ if __name__ == "__main__":
             U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
         else:
             if False and "kernel" in matrix_name:
-                # kernel_op = kernel.to_linear_operator()
+                kernel_op = kernel.to_linear_operator()
                 # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
-                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel[:,:], k=200)
+                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel, k=200, maxiter=1)
             else:
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
             S_exact = S_exact[::-1]
