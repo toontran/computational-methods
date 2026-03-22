@@ -375,7 +375,7 @@ class StreamingRBFKernel:
         return np.load(path, mmap_mode="r")
 
     def matvec(self, v):
-        v = np.asarray(v, dtype=self.dtype)
+        v = np.asarray(v, dtype=self.dtype).reshape(-1)
         if v.ndim != 1:
             raise ValueError("matvec expects a 1D vector")
 
