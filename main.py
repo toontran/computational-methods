@@ -280,7 +280,8 @@ if __name__ == "__main__":
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
                                     kernel_noise_std=kernel_noise_std,
                                     point_noise_std=point_noise_std,
-                                    cache_dir=os.path.join("cache", matrix_name, "kernel_cache"))
+                                    cache_dir=os.path.join("cache", matrix_name, "kernel_cache"),
+                                    verbose=True,)
         # if num_points < 5e4:
         #     A_csr = kernel[:,:]
         # else:
@@ -744,7 +745,8 @@ if __name__ == "__main__":
             raise Exception("Shape not supported")
         
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
-            cache_dir=os.path.join("cache", matrix_name, "kernel_cache"))
+            cache_dir=os.path.join("cache", matrix_name, "kernel_cache"),
+            verbose=True,)
         # if num_points < 5e4:
         #     A_csr = kernel[:,:]
         # else:
@@ -959,7 +961,7 @@ if __name__ == "__main__":
                 Y = kernel.matmat(V)
                 print("single matmat(8) time:", time.time() - t0)
                 # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
-                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
+                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr.to_linear_operator(), k=200)
             else:
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
             S_exact = S_exact[::-1]
