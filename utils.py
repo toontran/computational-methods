@@ -3676,7 +3676,7 @@ def isvd_demix_3_step(next_window, row_permutation, j, start_idx, end_idx, first
 
 def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None, 
          first_window_size=100, k=None,
-         num_windows=None, row_permutation=None, name="temp", figure_dir="figures", is_sym_psd=False,
+         num_windows=None, row_permutation=None, name="temp", output_dir="figures", is_sym_psd=False,
          num_Vs=None, track_U=False, track_discarded=False, with_S=False, V_focus=None, reverse=False,
          return_row_order=False, stream_size=None, col_permutation=None, reservoir_size=0, reservoir_method="uniform",
          method="isvd", use_true_matrix=False, track_reconstruction_error=False, threshold_factor=100,# nystrom 
@@ -3698,7 +3698,7 @@ def isvd(A_csr, S_exact=None, Vt_exact=None, U_exact=None,
     W = (m - first_window_size) // stream_size + 1
 
     # Create the directory if it doesn't exist
-    dir_path = f"{figure_dir}/{name}/"
+    dir_path = f"{output_dir}/{name}/"
     directory = os.path.dirname(dir_path) 
     if directory and not os.path.exists(directory):
         print("Making directory:", directory)
