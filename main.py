@@ -941,7 +941,7 @@ if __name__ == "__main__":
             data = np.load(file_path)
             U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
         else:
-            if False and "kernel" in matrix_name:
+            if True and "kernel" in matrix_name:
                 print("Using LinearOperator for kernel SVD")
                 v = np.random.randn(kernel.shape[1])
                 t0 = time.time()
