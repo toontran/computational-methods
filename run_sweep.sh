@@ -62,7 +62,7 @@ else
     k_max=100
 fi
 # k_max=100 # remove later
-win_min=17
+win_min=$((N / 100)) # at least 1% of N
 win_max=$((N / 5 - 1))
 
 if [ "$k_max" -lt "$k_min" ] || [ "$win_max" -lt "$win_min" ]; then
