@@ -246,14 +246,15 @@ if __name__ == "__main__":
     k = int(sys.argv[4]) if len(sys.argv) == 5 and sys.argv[4].isdigit() else None
 
     matrix_postfix = matrix_name.split('/')[-1]
-    figure_dir = "output"
+    output_dir = "output"
+    cache_dir = "cache"
     url = f'https://suitesparse-collection-website.herokuapp.com/MM/{matrix_name}.tar.gz'
     save_in_text = True
     fixed_rank = True
 
-    if figure_dir and not os.path.exists(figure_dir):
-        print("Making directory:", figure_dir)
-        os.makedirs(figure_dir)
+    if output_dir and not os.path.exists(output_dir):
+        print("Making directory:", output_dir)
+        os.makedirs(output_dir)
 
     if "hyperboloid" in matrix_name and (not "sparsify" in matrix_name):
         temp = matrix_name.split("_")
@@ -690,7 +691,7 @@ if __name__ == "__main__":
         # num_points = 10000
         lengthscale = lengthscale
         a, b, c, d = 1, 2, 3, 4
-        file_path = f'{figure_dir}/USVt_exact_{matrix_postfix.replace("kernel_random", "hyperboloid")}.npz'
+        file_path = f'{output_dir}/USVt_exact_{matrix_postfix.replace("kernel_random", "hyperboloid")}.npz'
             
         # Check if file exists
         if False and os.path.exists(file_path):
@@ -858,7 +859,7 @@ if __name__ == "__main__":
             loc='center', wrap=True) 
         fig.tight_layout() 
         #plt.show() 
-        fig.savefig(f'{figure_dir}/{matrix_postfix}.png', dpi=100) 
+        fig.savefig(f'{output_dir}/{matrix_postfix}.png', dpi=100) 
         plt.close(fig) 
     
         if "hyperboloid" in matrix_name:
@@ -871,7 +872,7 @@ if __name__ == "__main__":
             plt.title(matrix_name)
             plt.xlabel("Samples")
             plt.ylabel("Samples")
-            plt.savefig(f'{figure_dir}/{matrix_postfix}_heatmap.png', dpi=100)
+            plt.savefig(f'{output_dir}/{matrix_postfix}_heatmap.png', dpi=100)
     else:
         save_in_text = False
     # raise
@@ -885,68 +886,100 @@ if __name__ == "__main__":
         
         if "kernel_random" in matrix_name:
             U_exact, S_exact, Vt_exact = Q, S, Q.T 
-            # np.savez(f'{figure_dir}/US_exact1000_{matrix_postfix}.npz', U=U_exact[:,:1000], S=S_exact[:1000]) 
+            # np.savez(f'{output_dir}/US_exact1000_{matrix_postfix}.npz', U=U_exact[:,:1000], S=S_exact[:1000]) 
         elif "test_coherence" in matrix_name:
             U_exact, S_exact, Vt_exact = Q, S, Q.T 
         elif "hyperboloid" in matrix_name and \
                 (kernel_noise_std > 0.0 or point_noise_std > 0.0):
             kernel_true = StreamingRBFKernel(points, lengthscale=lengthscale)
-            kernel_true = kernel_true[:,:]
+            kernel_true = kernel_true[:, :]
 
-            file_path = f'{figure_dir}/USVt_exact_{matrix_postfix}.npz'
+            file_path = f'{output_dir}/USVt_exact_{matrix_postfix}.npz'
+            cache_path = f'{cache_dir}/USVt_exact_{matrix_postfix}.npz'
+
             if os.path.exists(file_path):
                 print(f"File found: {file_path}")
-                # Load the file
                 data = np.load(file_path)
+                U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
+            elif os.path.exists(cache_path):
+                print(f"File found in cache: {cache_path}")
+                data = np.load(cache_path)
                 U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
             else:
                 start_time = time.time()
                 print("Computing exact SVD for noisy kernel...")
                 if isinstance(kernel_true, csr_matrix):
-                    U_exact, S_exact, Vt_exact = sp.linalg.svd(kernel_true.todense(), lapack_driver="gesdd")
+                    U_exact, S_exact, Vt_exact = sp.linalg.svd(
+                        kernel_true.todense(), lapack_driver="gesdd"
+                    )
                 elif isinstance(kernel_true, StreamingRBFKernel) or isinstance(kernel_true, StreamingKroneckerGraph):
-                    U_exact, S_exact, Vt_exact = sp.linalg.svd(kernel_true[:,:], lapack_driver="gesdd")
-                else: 
-                    U_exact, S_exact, Vt_exact = sp.linalg.svd(kernel_true, lapack_driver="gesdd")
-                np.savez(file_path, U=None, S=S_exact[:1000], Vt_exact=Vt_exact[:1000, :])
+                    U_exact, S_exact, Vt_exact = sp.linalg.svd(
+                        kernel_true[:, :], lapack_driver="gesdd"
+                    )
+                else:
+                    U_exact, S_exact, Vt_exact = sp.linalg.svd(
+                        kernel_true, lapack_driver="gesdd"
+                    )
+
+                np.savez(
+                    file_path,
+                    U=None,
+                    S=S_exact[:1000],
+                    Vt_exact=Vt_exact[:1000, :]
+                )
                 exact_time = time.time() - start_time
-                print("Exact:", exact_time) 
+                print("Exact:", exact_time)
+
         else:
-            # Construct the file path
-            file_path = f'{figure_dir}/USVt_exact_{matrix_postfix}.npz'
-            
-            # Check if file exists
+            file_path = f'{output_dir}/USVt_exact_{matrix_postfix}.npz'
+            cache_path = f'{cache_dir}/USVt_exact_{matrix_postfix}.npz'
+
             if os.path.exists(file_path):
                 print(f"File found: {file_path}")
-                # Load the file
                 data = np.load(file_path)
+                U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
+            elif os.path.exists(cache_path):
+                print(f"File found in cache: {cache_path}")
+                data = np.load(cache_path)
                 U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
             else:
                 start_time = time.time()
                 print("Computing exact SVD...")
                 if isinstance(A_csr, csr_matrix):
-
                     U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=500)
                     S_exact = S_exact[::-1]
                     Vt_exact = Vt_exact[::-1, :]
                     U_exact = U_exact[:, ::-1]
                 elif isinstance(A_csr, StreamingRBFKernel) or isinstance(A_csr, StreamingKroneckerGraph):
-                    U_exact, S_exact, Vt_exact = sp.linalg.svd(A_csr[:,:], lapack_driver="gesdd")
-                else: 
-                    U_exact, S_exact, Vt_exact = sp.linalg.svd(A_csr, lapack_driver="gesdd")
-                # import pdb;pdb.set_trace()
-                np.savez(file_path, U=None, S=S_exact[:1000], Vt_exact=Vt_exact[:1000, :])
+                    U_exact, S_exact, Vt_exact = sp.linalg.svd(
+                        A_csr[:, :], lapack_driver="gesdd"
+                    )
+                else:
+                    U_exact, S_exact, Vt_exact = sp.linalg.svd(
+                        A_csr, lapack_driver="gesdd"
+                    )
+
+                np.savez(
+                    file_path,
+                    U=None,
+                    S=S_exact[:1000],
+                    Vt_exact=Vt_exact[:1000, :]
+                )
                 exact_time = time.time() - start_time
                 print("Exact:", exact_time)
     else:
         start_time = time.time()
-        file_path = f'{figure_dir}/USVt_exact_{matrix_postfix}.npz'
+        file_path = f'{output_dir}/USVt_exact_{matrix_postfix}.npz'
+        cache_path = f'{cache_dir}/USVt_exact_{matrix_postfix}.npz'
         print("Large matrix, computing svds")
 
         if os.path.exists(file_path):
             print(f"File found: {file_path}")
-            # Load the file
             data = np.load(file_path)
+            U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
+        elif os.path.exists(cache_path):
+            print(f"File found in cache: {cache_path}")
+            data = np.load(cache_path)
             U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
         else:
             if True and "kernel" in matrix_name:
@@ -956,18 +989,28 @@ if __name__ == "__main__":
                 y = kernel.matvec(v)
                 print("single matvec time:", time.time() - t0)
                 print("output norm:", np.linalg.norm(y))
+
                 V = np.random.randn(kernel.shape[1], 8)
                 t0 = time.time()
                 Y = kernel.matmat(V)
                 print("single matmat(8) time:", time.time() - t0)
-                # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
-                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr.to_linear_operator(), k=200)
+
+                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(
+                    A_csr.to_linear_operator(), k=200
+                )
             else:
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
+
             S_exact = S_exact[::-1]
             Vt_exact = Vt_exact[::-1, :]
             U_exact = U_exact[:, ::-1]
-            np.savez(file_path, U=None, S=S_exact[:1000], Vt_exact=Vt_exact[:1000, :])
+
+            np.savez(
+                file_path,
+                U=None,
+                S=S_exact[:1000],
+                Vt_exact=Vt_exact[:1000, :]
+            )
             exact_time = time.time() - start_time
             print("Exact:", exact_time)
     # raise
@@ -1106,7 +1149,7 @@ if __name__ == "__main__":
                                                 S_exact, Vt_exact, U_exact, 
                                                 row_permutation=permutations[row_permutation].copy(),
                                                 name=name,
-                                                figure_dir=figure_dir,
+                                                output_dir=output_dir,
                                                 is_sym_psd=A_is_sym_psd,
                                                 stream_size=stream_size,
                                                 first_window_size=size,
@@ -1156,7 +1199,7 @@ if __name__ == "__main__":
                                                         row_permutation=permutations[row_permutation].copy(), 
                                                         #  name=matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_reversed_" + f"size_{size}_k_{k}",
                                                         name=name, # row perm only initially
-                                                        figure_dir=figure_dir,
+                                                        output_dir=output_dir,
                                                         is_sym_psd=A_is_sym_psd,
                                                         num_Vs=num_Vs,
                                                         with_S=with_S,
@@ -1292,7 +1335,7 @@ if __name__ == "__main__":
     #                                                 S_exact, Vt_exact, U_exact, 
     #                                                 row_permutation=permutations[row_permutation].copy(),
     #                                                 name=name,
-    #                                                 figure_dir=figure_dir,
+    #                                                 output_dir=output_dir,
     #                                                 is_sym_psd=A_is_sym_psd,
     #                                                 stream_size=size,
     #                                                 first_window_size=size,
@@ -1336,7 +1379,7 @@ if __name__ == "__main__":
     #                                                     row_permutation=permutations[row_permutation].copy(), 
     #                                                     #  name=matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_reversed_" + f"size_{size}_k_{k}",
     #                                                     name=name, # row perm only initially
-    #                                                     figure_dir=figure_dir,
+    #                                                     output_dir=output_dir,
     #                                                     is_sym_psd=A_is_sym_psd,
     #                                                     num_Vs=num_Vs,
     #                                                     with_S=True,
