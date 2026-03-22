@@ -750,7 +750,7 @@ if __name__ == "__main__":
         # else:
         #     A_csr = kernel
         kernel.precompute_blocks(overwrite=False)
-        A_csr = kernel.to_linear_operator()
+        A_csr = kernel
         title = ""
         A_is_sym_psd = True
     elif "sparsify_" in matrix_name:

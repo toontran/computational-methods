@@ -409,6 +409,23 @@ class StreamingRBFKernel:
 
     def rmatmat(self, V):
         return self.matmat(V)
+        
+    def __matmul__(self, other):
+    other = np.asarray(other, dtype=self.dtype)
+    if other.ndim == 1:
+        if other.shape[0] != self.n:
+            raise ValueError(
+                f"matmul dimension mismatch: kernel shape={self.shape}, vector shape={other.shape}"
+            )
+        return self.matvec(other)
+    elif other.ndim == 2:
+        if other.shape[0] != self.n:
+            raise ValueError(
+                f"matmul dimension mismatch: kernel shape={self.shape}, matrix shape={other.shape}"
+            )
+        return self.matmat(other)
+    else:
+        raise ValueError("matmul expects a 1D or 2D ndarray")
 
     def to_linear_operator(self):
         return sp.sparse.linalg.LinearOperator(
