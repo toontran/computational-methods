@@ -1045,8 +1045,6 @@ def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
     ext = "txt" if save_in_text else "npz"
 
     print_memory_usage(f"Before residual reservoir, window {iteration+1}")
-    print("Vt shape:", Vt.shape)
-    print("A_csr shape:", A_csr.shape)
     reservoir_Vt = reservoir @ Vt.T
     regular_Vt = A_csr @ Vt.T
 

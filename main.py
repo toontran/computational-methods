@@ -286,7 +286,7 @@ if __name__ == "__main__":
         # else:
         #     A_csr = kernel
         kernel.precompute_blocks(overwrite=False)
-        A_csr = kernel
+        A_csr = kernel.to_linear_operator()
         title = ""
         A_is_sym_psd = True
         print("Kernel matrix done.")
@@ -750,7 +750,7 @@ if __name__ == "__main__":
         # else:
         #     A_csr = kernel
         kernel.precompute_blocks(overwrite=False)
-        A_csr = kernel
+        A_csr = kernel.to_linear_operator()
         title = ""
         A_is_sym_psd = True
     elif "sparsify_" in matrix_name:
@@ -958,9 +958,8 @@ if __name__ == "__main__":
                 t0 = time.time()
                 Y = kernel.matmat(V)
                 print("single matmat(8) time:", time.time() - t0)
-                kernel_op = kernel.to_linear_operator()
                 # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
-                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel, k=200)
+                U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
             else:
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(A_csr, k=200)
             S_exact = S_exact[::-1]
