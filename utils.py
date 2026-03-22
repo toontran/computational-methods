@@ -514,6 +514,8 @@ def download_and_read_matrix(url):
     return sparse.csr_matrix(matrix)
 
 def download_and_read_matrix_cached(url, cache_path):
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
     if not os.path.exists(cache_path):
         response = requests.get(url)
         response.raise_for_status()
