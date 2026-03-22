@@ -513,6 +513,34 @@ def download_and_read_matrix(url):
 
     return sparse.csr_matrix(matrix)
 
+def download_and_read_matrix_cached(url, cache_path):
+    if not os.path.exists(cache_path):
+        response = requests.get(url)
+        response.raise_for_status()
+        with open(cache_path, "wb") as f:
+            f.write(response.content)
+
+    with tarfile.open(cache_path, "r:gz") as tar:
+        mtx_file = [f for f in tar.getnames() if f.endswith('.mtx')][0]
+        f = tar.extractfile(mtx_file)
+        matrix = mmread(f)
+
+    return sparse.csr_matrix(matrix)
+
+def download_and_read_matrix(url, cache_path):
+    if os.path.exists(cache_path):
+        with tarfile.open(cache_path, "r:gz") as tar:
+            mtx_file = [f for f in tar.getnames() if f.endswith('.mtx')][0]
+            return sparse.csr_matrix(mmread(tar.extractfile(mtx_file)))
+
+    response = requests.get(url)
+    response.raise_for_status()
+
+    with open(cache_path, "wb") as f:
+        f.write(response.content)
+
+    return download_and_read_matrix(url, cache_path)
+
 # Optional: Soft thresholding function
 def soft_thresholding(S, threshold=0):
     return np.maximum(S - threshold, 0)

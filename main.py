@@ -797,7 +797,8 @@ if __name__ == "__main__":
         A_is_sym_psd = True
     else:
         # Download and read the matrix
-        A = download_and_read_matrix(url)
+        # A = download_and_read_matrix(url)
+        A = download_and_read_matrix_cached(url, cache_dir+"/"+matrix_name)
         print(f"A's shape: {A.shape}, nonzeros: {A.nnz}")
         
         # Convert to CSR format for efficient operations
