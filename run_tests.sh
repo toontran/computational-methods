@@ -111,6 +111,8 @@ matrices=(
     # "Wissgott/parabolic_fem"
     # "Botonakis/thermomech_dM"
     # "AMD/G2_circuit"
+    # "GHS_psdef/bmw7st_1" #100k 
+    # "ND/nd24k" #75k high nz
 
 )
 
