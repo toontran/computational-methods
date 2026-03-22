@@ -942,6 +942,16 @@ if __name__ == "__main__":
             U_exact, S_exact, Vt_exact = None, data['S'], data['Vt_exact']
         else:
             if False and "kernel" in matrix_name:
+                print("Using LinearOperator for kernel SVD")
+                v = np.random.randn(kernel.shape[1])
+                t0 = time.time()
+                y = kernel.matvec(v)
+                print("single matvec time:", time.time() - t0)
+                print("output norm:", np.linalg.norm(y))
+                V = np.random.randn(kernel.shape[1], 8)
+                t0 = time.time()
+                Y = kernel.matmat(V)
+                print("single matmat(8) time:", time.time() - t0)
                 kernel_op = kernel.to_linear_operator()
                 # U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel_op, k=200)
                 U_exact, S_exact, Vt_exact = sp.sparse.linalg.svds(kernel, k=200, maxiter=1)
