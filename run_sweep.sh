@@ -7,14 +7,14 @@ set -euo pipefail
 method_name="isvd"
 
 # Matrix size N
-N=74752
+N=141347
 
 # Single matrix for now
 # matrix_name="kernel_stocks_${N}_1.0"
-# matrix_name="GHS_psdef/bmw7st_1" # 141347
+matrix_name="GHS_psdef/bmw7st_1" # 141347
 # matrix_name="ND/nd24k" # 72,000
 # matrix_name="Rothberg/cfd2" # 123440
-matrix_name="Mulvey/finan512" # 74752
+# matrix_name="Mulvey/finan512" # 74752
 
 # Number of machines and which machine this script is for
 NUM_MACHINES=30
