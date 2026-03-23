@@ -875,7 +875,7 @@ if __name__ == "__main__":
             plt.ylabel("Samples")
             plt.savefig(f'{output_dir}/{matrix_postfix}_heatmap.png', dpi=100)
     else:
-        save_in_text = False
+        save_in_text = True # False
     # raise
 
     if A_csr.shape[1] < 5e4:
