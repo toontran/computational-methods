@@ -973,17 +973,18 @@ def save_spectrum_comparison(S, S_exact, A_norm, name, iteration, dir_path, S_qu
 
     ext = "txt" if save_in_text else "npz"
 
-    # First plot data
+    # Save S_exact only at iteration 0
     filepath = os.path.join(dir_path, f"spectrum_data_{iteration}.{ext}")
-    if save_in_text:
-        save_txt(filepath, S=S, S_exact=S_exact, S_quotient=S_quotient, iteration=iteration)
-    else:
-        np.savez(
-            filepath,
-            S=S, S_exact=S_exact, S_quotient=S_quotient, iteration=iteration,
-            allow_pickle=True
-        )
+    spectrum_kwargs = dict(S=S, S_quotient=S_quotient, iteration=iteration)
+    if iteration == 0 and S_exact is not None:
+        spectrum_kwargs["S_exact"] = S_exact
 
+    if save_in_text:
+        save_txt(filepath, **spectrum_kwargs)
+    else:
+        np.savez(filepath, **spectrum_kwargs, allow_pickle=True)
+
+    # These comparison files still need S_exact available in memory at save time
     if S_exact is not None:
         diff_relA = np.abs(S - S_exact[:len(S)]) / A_norm
         filepath = os.path.join(dir_path, f"diffspec_relA_data_{iteration}.{ext}")
