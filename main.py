@@ -962,7 +962,7 @@ if __name__ == "__main__":
                     )
 
                 np.savez(
-                    file_path,
+                    cache_path,
                     U=None,
                     S=S_exact[:1000],
                     Vt_exact=Vt_exact[:1000, :]
@@ -1008,7 +1008,7 @@ if __name__ == "__main__":
             U_exact = U_exact[:, ::-1]
 
             np.savez(
-                file_path,
+                cache_path,
                 U=None,
                 S=S_exact[:1000],
                 Vt_exact=Vt_exact[:1000, :]
