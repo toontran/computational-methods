@@ -1024,7 +1024,7 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0] - S[i] * Vt[i, window_indices].T
+                approx_res = (A_csr[window_indices, :] @ Vt[i].T) / S_exact[0] - S[i] * Vt[i, window_indices].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals_sym = np.array(approx_residuals_sym)
@@ -1055,7 +1055,7 @@ def save_residuals(A_csr, S, Vt,
             for i in range(len(S)):
                 S_truncated_Rayleigh = np.dot(
                     Vt[i, window_indices].T,
-                    (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0]
+                    (A_csr[window_indices, :] @ Vt[i].T) / S_exact[0]
                 )
                 sq_norm_V = np.dot(Vt[i, window_indices].T, Vt[i, window_indices].T)
 
@@ -1079,7 +1079,7 @@ def save_residuals(A_csr, S, Vt,
                     S_truncated_Rayleigh_full /= sq_norm_V_full
 
                 approx_res = (
-                    (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0]
+                    (A_csr[window_indices, :] @ Vt[i].T) / S_exact[0]
                 ) - S_truncated_Rayleigh * Vt[i, window_indices].T
 
                 approx_res_full = (
