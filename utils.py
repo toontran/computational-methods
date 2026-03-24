@@ -1024,7 +1024,7 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = ((A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T) - S[i] * Vt[i, window_indices].T
+                approx_res = (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0] - S[i] * Vt[i, window_indices].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals_sym = np.array(approx_residuals_sym)
@@ -1055,13 +1055,13 @@ def save_residuals(A_csr, S, Vt,
             for i in range(len(S)):
                 S_truncated_Rayleigh = np.dot(
                     Vt[i, window_indices].T,
-                    (A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T
+                    (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0]
                 )
                 sq_norm_V = np.dot(Vt[i, window_indices].T, Vt[i, window_indices].T)
 
                 S_truncated_Rayleigh_full = np.dot(
                     Vt[i, row_permutation[:end_idx]].T,
-                    (A_csr[row_permutation[:end_idx], :] / S_exact[0]) @ Vt[i].T
+                    (A_csr[row_permutation[:end_idx], :] @ Vt[i].T) / S_exact[0]
                 )
                 sq_norm_V_full = np.dot(
                     Vt[i, row_permutation[:end_idx]].T,
@@ -1079,11 +1079,11 @@ def save_residuals(A_csr, S, Vt,
                     S_truncated_Rayleigh_full /= sq_norm_V_full
 
                 approx_res = (
-                    (A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T
+                    (A_csr[window_indices, :] @ Vt[i].T) / / S_exact[0]
                 ) - S_truncated_Rayleigh * Vt[i, window_indices].T
 
                 approx_res_full = (
-                    (A_csr[row_permutation[:end_idx], :] / S_exact[0]) @ Vt[i].T
+                    (A_csr[row_permutation[:end_idx], :] @ Vt[i].T) / S_exact[0]
                 ) - S_truncated_Rayleigh * Vt[i, row_permutation[:end_idx]].T
 
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
@@ -1123,9 +1123,9 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                u = (A_csr / S_exact[0]) @ Vt[i].T
+                u = (A_csr @ Vt[i].T) / S_exact[0]
                 u = u / np.linalg.norm(u)
-                approx_res = ((A_csr.T / S_exact[0]) @ u) - S[i] * Vt[i].T
+                approx_res = ((A_csr.T @ u) / S_exact[0]) - S[i] * Vt[i].T
                 approx_residuals.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals = np.array(approx_residuals)
@@ -1153,7 +1153,7 @@ def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
 
     print_memory_usage(f"Before residual reservoir, window {iteration+1}")
     reservoir_Vt = reservoir @ Vt.T
-    regular_Vt = (A_csr / S_exact[0]) @ Vt.T
+    regular_Vt = (A_csr @ Vt.T) / S_exact[0]
 
     Vt_permuted = Vt[:, row_permutation[reservoir_idx]]
 
