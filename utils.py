@@ -36,6 +36,11 @@ def save_txt(filename, **kwargs):
                 "type": "ndarray",
                 "value": value.tolist()
             }
+        elif isinstance(value, (np.generic,)):  # catches np.float32, np.int64, etc.
+            data[key] = {
+                "type": "scalar",
+                "value": value.item()
+            }
         else:
             data[key] = {
                 "type": "scalar",
