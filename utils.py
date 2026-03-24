@@ -276,6 +276,8 @@ class StreamingRBFKernel:
         # Special-case in-memory cache when the whole kernel is a single block.
         self._single_block_memory = None
         self._single_block_range = None
+        self.small_matrix_threshold = 4096
+        self._full_matrix_memory = None
 
     def __len__(self):
         return self.n
@@ -296,6 +298,13 @@ class StreamingRBFKernel:
         return np.exp(-sq_dists / (2.0 * self.lengthscale**2)).astype(
             self.dtype, copy=False
         )
+
+    def _maybe_promote_full_matrix_to_memory(self):
+        if self._full_matrix_memory is not None:
+            return
+        if self.n > self.small_matrix_threshold:
+            return
+        self._full_matrix_memory = self._kernel_block(slice(None), slice(None))
 
     def calculate_row(self, i):
         return self._kernel_block(slice(i, i + 1), slice(None))[0]
@@ -431,8 +440,11 @@ class StreamingRBFKernel:
         if self._matvec_calls % 50 == 0:
             print(f"matvec calls: {self._matvec_calls}")
 
-        out = np.zeros(self.n, dtype=self.dtype)
+        self._maybe_promote_full_matrix_to_memory()
+        if self._full_matrix_memory is not None:
+            return self._full_matrix_memory @ v
 
+        out = np.zeros(self.n, dtype=self.dtype)
         for i0 in range(0, self.n, self.block_size):
             i1 = min(i0 + self.block_size, self.n)
             K_block = self._load_block(i0, i1)
@@ -456,8 +468,11 @@ class StreamingRBFKernel:
         if self._matmat_calls % 50 == 0:
             print(f"matmat calls: {self._matmat_calls}")
 
-        out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
+        self._maybe_promote_full_matrix_to_memory()
+        if self._full_matrix_memory is not None:
+            return self._full_matrix_memory @ V
 
+        out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
         for i0 in range(0, self.n, self.block_size):
             i1 = min(i0 + self.block_size, self.n)
             K_block = self._load_block(i0, i1)
