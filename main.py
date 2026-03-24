@@ -283,11 +283,11 @@ if __name__ == "__main__":
                                     point_noise_std=point_noise_std,
                                     cache_dir=os.path.join("cache", matrix_name, "kernel_cache"),
                                     verbose=True,)
-        # if num_points < 5e4:
-        #     A_csr = kernel[:,:]
-        # else:
-        #     A_csr = kernel
-        kernel.precompute_blocks(overwrite=False)
+        if num_points < 5e4:
+            A_csr = kernel[:,:]
+        else:
+            kernel.precompute_blocks(overwrite=False)
+            A_csr = kernel
         A_csr = kernel.to_linear_operator()
         title = ""
         A_is_sym_psd = True
@@ -748,12 +748,11 @@ if __name__ == "__main__":
         kernel = StreamingRBFKernel(points, lengthscale=lengthscale, 
             cache_dir=os.path.join("cache", matrix_name, "kernel_cache"),
             verbose=True,)
-        # if num_points < 5e4:
-        #     A_csr = kernel[:,:]
-        # else:
-        #     A_csr = kernel
-        kernel.precompute_blocks(overwrite=False)
-        A_csr = kernel
+        if num_points < 5e4:
+            A_csr = kernel[:,:]
+        else:
+            kernel.precompute_blocks(overwrite=False)
+            A_csr = kernel
         title = ""
         A_is_sym_psd = True
     elif "sparsify_" in matrix_name:
