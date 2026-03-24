@@ -273,6 +273,10 @@ class StreamingRBFKernel:
         self._matvec_calls = 0
         self._matmat_calls = 0
 
+        # Special-case in-memory cache when the whole kernel is a single block.
+        self._single_block_memory = None
+        self._single_block_range = None
+
     def __len__(self):
         return self.n
 
@@ -321,13 +325,37 @@ class StreamingRBFKernel:
     def _resolved_cache_dir(self):
         if self.cache_dir is None:
             raise ValueError("cache_dir is None; block precompute requires a cache_dir")
-        return os.path.join(self.cache_dir, f"rbf_n{self.n}_ls{self.lengthscale:g}_{self._cache_key()}")
+        return os.path.join(
+            self.cache_dir,
+            f"rbf_n{self.n}_ls{self.lengthscale:g}_{self._cache_key()}",
+        )
 
     def _meta_path(self):
         return os.path.join(self._resolved_cache_dir(), "meta.json")
 
     def _block_path(self, i0, i1):
         return os.path.join(self._resolved_cache_dir(), f"block_{i0}_{i1}.npy")
+
+    def _num_blocks(self):
+        return (self.n + self.block_size - 1) // self.block_size
+
+    def _maybe_promote_single_block_to_memory(self):
+        if self._single_block_memory is not None:
+            return
+
+        if self._num_blocks() != 1:
+            return
+
+        i0, i1 = 0, self.n
+        path = self._block_path(i0, i1)
+        if not os.path.exists(path):
+            return
+
+        if self.verbose:
+            print(f"[cache] loading single block into memory: {path}")
+
+        self._single_block_memory = np.load(path, allow_pickle=False)
+        self._single_block_range = (i0, i1)
 
     def precompute_blocks(self, overwrite=False):
         cache_root = self._resolved_cache_dir()
@@ -345,7 +373,7 @@ class StreamingRBFKernel:
             json.dump(meta, f, indent=2)
 
         t0 = time.time()
-        total_blocks = (self.n + self.block_size - 1) // self.block_size
+        total_blocks = self._num_blocks()
 
         for block_idx, i0 in enumerate(range(0, self.n, self.block_size), start=1):
             i1 = min(i0 + self.block_size, self.n)
@@ -368,10 +396,21 @@ class StreamingRBFKernel:
                     f"time={time.time() - bt:.2f}s"
                 )
 
+        # If there is only one block, keep it in memory after precompute.
+        self._maybe_promote_single_block_to_memory()
+
         if self.verbose:
             print(f"[cache] done in {time.time() - t0:.2f}s -> {cache_root}")
 
     def _load_block(self, i0, i1):
+        self._maybe_promote_single_block_to_memory()
+
+        if (
+            self._single_block_memory is not None
+            and self._single_block_range == (i0, i1)
+        ):
+            return self._single_block_memory
+
         path = self._block_path(i0, i1)
         if not os.path.exists(path):
             raise FileNotFoundError(
@@ -383,10 +422,15 @@ class StreamingRBFKernel:
         v = np.asarray(v, dtype=self.dtype).reshape(-1)
         if v.ndim != 1:
             raise ValueError("matvec expects a 1D vector")
+        if v.shape[0] != self.n:
+            raise ValueError(
+                f"matvec dimension mismatch: kernel shape={self.shape}, vector shape={v.shape}"
+            )
 
         self._matvec_calls += 1
         if self._matvec_calls % 50 == 0:
             print(f"matvec calls: {self._matvec_calls}")
+
         out = np.zeros(self.n, dtype=self.dtype)
 
         for i0 in range(0, self.n, self.block_size):
@@ -403,10 +447,15 @@ class StreamingRBFKernel:
         V = np.asarray(V, dtype=self.dtype)
         if V.ndim != 2:
             raise ValueError("matmat expects a 2D array")
+        if V.shape[0] != self.n:
+            raise ValueError(
+                f"matmat dimension mismatch: kernel shape={self.shape}, matrix shape={V.shape}"
+            )
 
         self._matmat_calls += 1
         if self._matmat_calls % 50 == 0:
-            print(f"matvec calls: {self._matmat_calls}")
+            print(f"matmat calls: {self._matmat_calls}")
+
         out = np.zeros((self.n, V.shape[1]), dtype=self.dtype)
 
         for i0 in range(0, self.n, self.block_size):
@@ -421,20 +470,22 @@ class StreamingRBFKernel:
 
     def __matmul__(self, other):
         other = np.asarray(other, dtype=self.dtype)
+
         if other.ndim == 1:
             if other.shape[0] != self.n:
                 raise ValueError(
                     f"matmul dimension mismatch: kernel shape={self.shape}, vector shape={other.shape}"
                 )
             return self.matvec(other)
-        elif other.ndim == 2:
+
+        if other.ndim == 2:
             if other.shape[0] != self.n:
                 raise ValueError(
                     f"matmul dimension mismatch: kernel shape={self.shape}, matrix shape={other.shape}"
                 )
             return self.matmat(other)
-        else:
-            raise ValueError("matmul expects a 1D or 2D ndarray")
+
+        raise ValueError("matmul expects a 1D or 2D ndarray")
 
     def to_linear_operator(self):
         return sp.sparse.linalg.LinearOperator(
@@ -451,8 +502,8 @@ class StreamingRBFKernel:
             "matvec_calls": self._matvec_calls,
             "matmat_calls": self._matmat_calls,
             "cache_dir": self._resolved_cache_dir(),
+            "single_block_in_memory": self._single_block_memory is not None,
         }
-        
 
 def abbreviate_phrase(phrase):
     # Remove parentheses and split the phrase into words
@@ -937,7 +988,7 @@ def save_spectrum_comparison(S, S_exact, A_norm, name, iteration, dir_path, S_qu
 
 
 def save_residuals(A_csr, S, Vt,
-                   A_norm, name, iteration, dir_path, is_sym_psd,
+                   S_exact, A_norm, name, iteration, dir_path, is_sym_psd,
                    row_permutation, start_idx, end_idx, save_in_text=True):
     os.makedirs(dir_path, exist_ok=True)
 
@@ -947,7 +998,7 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = (A_csr @ Vt[i].T) - S[i] * Vt[i].T
+                approx_res = ((A_csr/S_exact[0]) @ Vt[i].T) - S[i] * Vt[i].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals_sym = np.array(approx_residuals_sym)
@@ -973,7 +1024,7 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = (A_csr[window_indices, :] @ Vt[i].T) - S[i] * Vt[i, window_indices].T
+                approx_res = ((A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T) - S[i] * Vt[i, window_indices].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals_sym = np.array(approx_residuals_sym)
@@ -1004,13 +1055,13 @@ def save_residuals(A_csr, S, Vt,
             for i in range(len(S)):
                 S_truncated_Rayleigh = np.dot(
                     Vt[i, window_indices].T,
-                    A_csr[window_indices, :] @ Vt[i].T
+                    (A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T
                 )
                 sq_norm_V = np.dot(Vt[i, window_indices].T, Vt[i, window_indices].T)
 
                 S_truncated_Rayleigh_full = np.dot(
                     Vt[i, row_permutation[:end_idx]].T,
-                    A_csr[row_permutation[:end_idx], :] @ Vt[i].T
+                    (A_csr[row_permutation[:end_idx], :] / S_exact[0]) @ Vt[i].T
                 )
                 sq_norm_V_full = np.dot(
                     Vt[i, row_permutation[:end_idx]].T,
@@ -1028,11 +1079,11 @@ def save_residuals(A_csr, S, Vt,
                     S_truncated_Rayleigh_full /= sq_norm_V_full
 
                 approx_res = (
-                    A_csr[window_indices, :] @ Vt[i].T
+                    (A_csr[window_indices, :] / S_exact[0]) @ Vt[i].T
                 ) - S_truncated_Rayleigh * Vt[i, window_indices].T
 
                 approx_res_full = (
-                    A_csr[row_permutation[:end_idx], :] @ Vt[i].T
+                    (A_csr[row_permutation[:end_idx], :] / S_exact[0]) @ Vt[i].T
                 ) - S_truncated_Rayleigh * Vt[i, row_permutation[:end_idx]].T
 
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
@@ -1072,9 +1123,9 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                u = A_csr @ Vt[i].T
+                u = (A_csr / S_exact[0]) @ Vt[i].T
                 u = u / np.linalg.norm(u)
-                approx_res = (A_csr.T @ u) - S[i] * Vt[i].T
+                approx_res = ((A_csr.T / S_exact[0]) @ u) - S[i] * Vt[i].T
                 approx_residuals.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals = np.array(approx_residuals)
@@ -1094,7 +1145,7 @@ def save_residuals(A_csr, S, Vt,
 
 
 def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
-                             S, Vt, A_norm, A_csr, S_quotient,
+                             S, Vt, S_exact, A_norm, A_csr, S_quotient,
                              name, iteration, dir_path, save_in_text=True):
     os.makedirs(dir_path, exist_ok=True)
 
@@ -1102,7 +1153,7 @@ def save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
 
     print_memory_usage(f"Before residual reservoir, window {iteration+1}")
     reservoir_Vt = reservoir @ Vt.T
-    regular_Vt = A_csr @ Vt.T
+    regular_Vt = (A_csr / S_exact[0]) @ Vt.T
 
     Vt_permuted = Vt[:, row_permutation[reservoir_idx]]
 
@@ -1665,7 +1716,7 @@ def nystrom_step(next_window, row_permutation, j, start_idx, end_idx, first_wind
     save_spectrum_comparison(S+total_S_reduced, S_exact, 
                                 A_norm, name, j, dir_path)
     save_residuals(A_csr, S+total_S_reduced, Vt, 
-                    A_norm, name, j, dir_path, is_sym_psd,
+                    S_exact, A_norm, name, j, dir_path, is_sym_psd,
                     row_permutation, start_idx, end_idx) 
 
     if not Vt_exact is None:
@@ -2187,17 +2238,15 @@ def isvd_step_(next_window, row_permutation, j, start_idx, end_idx, first_window
     print_memory_usage(f"Before saving, window {j+1}")
     print("j:", j)
     num_save_files = 50
-    print("Vt shape:", Vt.shape)
     if j == 0 or (j * (num_save_files- 1)) // W != ((j - 1) * (num_save_files - 1)) // W:
         save_spectrum_comparison(S+total_S_reduced, S_exact, 
                                     A_norm, name, j, dir_path, S_quotient=S_quotient, save_in_text=save_in_text)
         save_residuals(A_csr, S+total_S_reduced, Vt, 
-                        A_norm, name, j, dir_path, is_sym_psd,
+                        S_exact, A_norm, name, j, dir_path, is_sym_psd,
                         row_permutation, start_idx, end_idx, save_in_text=save_in_text)
         if reservoir_size > 0:
-            print("Vt shape:", Vt.shape)
             save_residuals_reservoir(reservoir, reservoir_idx, row_permutation,
-                                        S, Vt, A_norm, A_csr, S_quotient, 
+                                        S, Vt, S_exact, A_norm, A_csr, S_quotient, 
                                         name, j, dir_path, save_in_text=save_in_text)
         
     # temp = compute_eigenvector_error(A_csr, S_exact[0], Vt_exact[0,:], Vt[0,:])

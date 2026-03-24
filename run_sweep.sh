@@ -7,7 +7,7 @@ set -euo pipefail
 method_name="isvd"
 
 # Matrix size N
-N=1000
+N=100000
 
 # Single matrix for now
 matrix_name="kernel_stocks_${N}_1.0"
