@@ -853,29 +853,31 @@ if __name__ == "__main__":
     # import pdb;pdb.set_trace()
     # raise
 
-    if A_csr.shape[1] < 5e4:
-        plt.figure(figsize=(12, 8)) 
-        fig, ax = matspy.spy_to_mpl(A_csr) 
-        title = ax.set_title(title, 
-            loc='center', wrap=True) 
-        fig.tight_layout() 
-        #plt.show() 
-        fig.savefig(f'{output_dir}/{matrix_postfix}.png', dpi=100) 
-        plt.close(fig) 
+
+    # Plot matrix
+    # if A_csr.shape[1] < 5e4:
+    #     plt.figure(figsize=(12, 8)) 
+    #     fig, ax = matspy.spy_to_mpl(A_csr) 
+    #     title = ax.set_title(title, 
+    #         loc='center', wrap=True) 
+    #     fig.tight_layout() 
+    #     #plt.show() 
+    #     fig.savefig(f'{output_dir}/{matrix_postfix}.png', dpi=100) 
+    #     plt.close(fig) 
     
-        if "hyperboloid" in matrix_name:
-            plt.figure(figsize=(10, 8))
-            im = plt.imshow(A_csr, 
-                    cmap='viridis',
-                    aspect='equal',
-                    origin='upper',  # to match the orientation in your image
-                    interpolation='nearest')
-            plt.title(matrix_name)
-            plt.xlabel("Samples")
-            plt.ylabel("Samples")
-            plt.savefig(f'{output_dir}/{matrix_postfix}_heatmap.png', dpi=100)
-    else:
-        save_in_text = True # False
+    #     if "hyperboloid" in matrix_name:
+    #         plt.figure(figsize=(10, 8))
+    #         im = plt.imshow(A_csr, 
+    #                 cmap='viridis',
+    #                 aspect='equal',
+    #                 origin='upper',  # to match the orientation in your image
+    #                 interpolation='nearest')
+    #         plt.title(matrix_name)
+    #         plt.xlabel("Samples")
+    #         plt.ylabel("Samples")
+    #         plt.savefig(f'{output_dir}/{matrix_postfix}_heatmap.png', dpi=100)
+    # else:
+    #     save_in_text = False # False
     # raise
 
     if A_csr.shape[1] < 5e4:
