@@ -952,7 +952,7 @@ if __name__ == "__main__":
                     S_exact = S_exact[::-1]
                     Vt_exact = Vt_exact[::-1, :]
                     U_exact = U_exact[:, ::-1]
-                elif isinstance(A_csr, StreamingRBFKernel) or isinstance(A_csr, StreamingKroneckerGraph):
+                elif isinstance(A_csr, StreamingRBFKernel): #or isinstance(A_csr, StreamingKroneckerGraph):
                     U_exact, S_exact, Vt_exact = sp.linalg.svd(
                         A_csr[:, :], lapack_driver="gesdd"
                     )
