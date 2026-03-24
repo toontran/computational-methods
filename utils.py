@@ -998,7 +998,7 @@ def save_residuals(A_csr, S, Vt,
         approx_residuals_sym = []
         if A_csr.shape[1] < 5e4:
             for i in range(len(S)):
-                approx_res = ((A_csr/S_exact[0]) @ Vt[i].T) - S[i] * Vt[i].T
+                approx_res = (A_csr @ Vt[i].T) / S_exact[0] - S[i] * Vt[i].T
                 approx_residuals_sym.append(np.linalg.norm(approx_res) / A_norm)
 
         approx_residuals_sym = np.array(approx_residuals_sym)
