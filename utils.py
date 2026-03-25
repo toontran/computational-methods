@@ -1429,6 +1429,7 @@ def inverse_permutation(perm):
 #     print_memory_usage(f"After residual reservoir, window {iteration+1}")
     
 def compute_svd(A, k, is_sparse=True, Vt=None):
+    is_sparse = True
     if not is_sparse:
         print("Small matrix")
         return sp.linalg.svd(A, lapack_driver="gesdd", full_matrices=False)
