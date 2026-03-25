@@ -7,7 +7,7 @@ set -euo pipefail
 method_name="isvd"
 
 # Matrix size N
-N=1000
+N=100000
 # N=141347
 
 # Single matrix for now
