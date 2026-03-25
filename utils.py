@@ -1916,6 +1916,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, firs
         # del S, Vt
         gc.collect()
         print_memory_usage(f"Before, window {j+1}")
+        print("k:", k)
         print("Vt shape before SVD:", Vt.shape if Vt is not None else "Vt is None")
         U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse, Vt=Vt)
         gc.collect()
