@@ -1434,14 +1434,11 @@ def compute_svd(A, k, is_sparse=True, Vt=None):
         print("Small matrix")
         return sp.linalg.svd(A, lapack_driver="gesdd", full_matrices=False)
     else:
-        print("Large matrix")
-        print("A:", A.shape, type(A))
-        print(Vt.shape if Vt is not None else "Vt is None")
-        u, s, vt = primme.svds(A, k=min(k + k//5, min(A.shape) - 1), which='LM', v0=Vt.T if Vt is not None else None)
-        # u, s, vt = sp.sparse.linalg.svds(A, k=min(k+k//5, min(A.shape)-1))
-        # s = s[::-1]
-        # vt = vt[::-1, :]
-        # u = u[:, ::-1]
+        # u, s, vt = primme.svds(A, k=min(k + k//5, min(A.shape) - 1), which='LM', v0=Vt.T if Vt is not None else None)
+        u, s, vt = sp.sparse.linalg.svds(A, k=min(k+k//5, min(A.shape)-1))
+        s = s[::-1]
+        vt = vt[::-1, :]
+        u = u[:, ::-1]
         if Vt is not None:
             del Vt
         return u,s,vt
