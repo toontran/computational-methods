@@ -26,6 +26,7 @@ import traceback
 matplotlib.use('Agg')
 
 import json
+import primme
 
 def save_txt(filename, **kwargs):
     data = {}
@@ -1427,16 +1428,19 @@ def inverse_permutation(perm):
 #     gc.collect()
 #     print_memory_usage(f"After residual reservoir, window {iteration+1}")
     
-def compute_svd(A, k, is_sparse=True):
+def compute_svd(A, k, is_sparse=True, Vt=None):
     if not is_sparse:
         print("Small matrix")
         return sp.linalg.svd(A, lapack_driver="gesdd", full_matrices=False)
     else:
         print("Large matrix")
-        u, s, vt = sp.sparse.linalg.svds(A, k=min(k+k//5, min(A.shape)-1))
-        s = s[::-1]
-        vt = vt[::-1, :]
-        u = u[:, ::-1]
+        u, s, vt = primme.svds(A, k=min(k + k//5, min(A.shape) - 1), which='LM', v0=Vt.T if Vt is not None else None)
+        # u, s, vt = sp.sparse.linalg.svds(A, k=min(k+k//5, min(A.shape)-1))
+        # s = s[::-1]
+        # vt = vt[::-1, :]
+        # u = u[:, ::-1]
+        if Vt is not None:
+            del Vt
         return u,s,vt
 
 def make_operator(window, N, n, w, V, S):
@@ -1449,8 +1453,7 @@ def make_operator(window, N, n, w, V, S):
         cross_term_first = window[:, :(n-1)*w].T @ x[(n-1)*w:n*w]
         result[:(n-1)*w] += cross_term_first.real
 
-        # Last block + cross terms
-        
+        # Last block + cross terms        
         try:
             result[(n-1)*w:n*w] = window[:, :n*w] @ x 
         except:
@@ -1864,7 +1867,7 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, firs
         print_memory_usage(f"Before, window {j+1}")
         start_time = time.time()
         combined = next_window
-        U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
+        U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse, Vt=None)
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
         if not track_U:
@@ -1907,10 +1910,10 @@ def isvd_partial_step_(next_window, row_permutation, j, start_idx, end_idx, firs
         # U_sketch, S, Vt = sp.linalg.svd(combined, lapack_driver="gesdd", full_matrices=False)
         print("Computing SVD...")
         start_time = time.time()
-        del S, Vt
+        # del S, Vt
         gc.collect()
         print_memory_usage(f"Before, window {j+1}")
-        U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse)
+        U_sketch, S, Vt = compute_svd(combined, k, is_sparse=is_sparse, Vt=Vt)
         svd_time = time.time() - start_time
         print(f"SVD completed in {svd_time:.4f} seconds")
         

@@ -7,7 +7,7 @@ set -euo pipefail
 method_name="isvd"
 
 # Matrix size N
-N=100000
+N=1000
 # N=141347
 
 # Single matrix for now
@@ -25,7 +25,7 @@ NUM_MACHINES=30
 
 # Total number of (k, win_size) pairs to generate across all machines.
 # With 30 machines and 10 pairs each, use 300.  
-TOTAL_PAIRS=300
+TOTAL_PAIRS=30
 
 usage() {
     echo "Usage: $0 <machine_id>"
