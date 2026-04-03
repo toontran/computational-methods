@@ -9,6 +9,10 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import hadamard, qr, svd
 
+from threadpoolctl import threadpool_limits
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
+
 seed = 0
 rng = np.random.default_rng(seed)
 np.random.seed(seed)   # for legacy / scipy calls
@@ -675,7 +679,8 @@ def build_structured_starts(M, Q, V_init, k, opts: EntropyOptions, rng):
                 starts.append(v)
 
         with timed(opts.time_stats, "build_structured_starts.svd"):
-            _, _, Vh = svd(M, full_matrices=False)
+            with threadpool_limits(limits=8, user_api="blas"):
+                _, _, Vh = svd(M, full_matrices=False)
         Vsvd = Vh.T
         num_v = min(Vsvd.shape[1], 4)
 
@@ -1160,7 +1165,8 @@ def entropy_iter_basis_basic(
         Q = np.zeros((d, 0))
 
         with timed(stats, "entropy_iter_basis_basic.svd"):
-            _, _, Vh = svd(M, full_matrices=False)
+            with threadpool_limits(limits=8, user_api="blas"):
+                _, _, Vh = svd(M, full_matrices=False)
         Vsvd = Vh.T
         num_top = min(4, Vsvd.shape[1])
         alpha_grid = [0.98, 0.9, 0.75, 0.5, 0.25, 0.0]
@@ -1794,7 +1800,8 @@ def run_streaming_experiment(
                                     V_r = V_new
 
                                     with timed(global_stats, "run_streaming_experiment.window_svd"):
-                                        _, _, Vh = svd(M, full_matrices=False)
+                                        with threadpool_limits(limits=8, user_api="blas"):
+                                            _, _, Vh = svd(M, full_matrices=False)
                                     v_ = Vh.T
                                     e1_proj = v_ @ (v_.T @ V[:, 0])
                                     e1_proj = e1_proj / safe_norm(e1_proj)
@@ -1817,7 +1824,8 @@ def run_streaming_experiment(
 
                                 elif mode in ("iSVD", "FD"):
                                     with timed(global_stats, "run_streaming_experiment.isvd_fd_svd"):
-                                        _, S_hat, V_hat = svd(M, full_matrices=False)
+                                        with threadpool_limits(limits=8, user_api="blas"):
+                                            _, S_hat, V_hat = svd(M, full_matrices=False)
                                     s = np.diag(S_hat) if S_hat.ndim == 2 else S_hat
                                     rr = min(r, len(s))
 
