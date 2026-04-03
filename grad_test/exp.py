@@ -3,7 +3,7 @@ import math
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 
 import numpy as np
 from numpy.linalg import norm
@@ -67,6 +67,112 @@ def timed(stats: Optional[TimeStats], key: str):
         yield
     finally:
         stats.add(key, time.perf_counter() - t0)
+
+
+# ============================================================
+# Matvec diagnostics
+# ============================================================
+
+@dataclass
+class MatvecStats:
+    matvec_count: int = 0
+    rmatvec_count: int = 0
+    matvec_time: float = 0.0
+    rmatvec_time: float = 0.0
+
+    def add_matvec(self, dt: float, cols: int = 1):
+        self.matvec_count += int(cols)
+        self.matvec_time += float(dt)
+
+    def add_rmatvec(self, dt: float, cols: int = 1):
+        self.rmatvec_count += int(cols)
+        self.rmatvec_time += float(dt)
+
+    def merge(self, other: "MatvecStats"):
+        self.matvec_count += other.matvec_count
+        self.rmatvec_count += other.rmatvec_count
+        self.matvec_time += other.matvec_time
+        self.rmatvec_time += other.rmatvec_time
+
+    @property
+    def matvec_pairs(self) -> int:
+        return min(self.matvec_count, self.rmatvec_count)
+
+    @property
+    def total_time(self) -> float:
+        return self.matvec_time + self.rmatvec_time
+
+    def as_dict(self) -> Dict[str, float]:
+        return {
+            "MATVEC_COUNT": self.matvec_count,
+            "RMATVEC_COUNT": self.rmatvec_count,
+            "MATVEC_PAIRS": self.matvec_pairs,
+            "matvec_time": self.matvec_time,
+            "rmatvec_time": self.rmatvec_time,
+            "matvec_total_time": self.total_time,
+        }
+
+
+def _num_rhs(x: np.ndarray) -> int:
+    return 1 if x.ndim == 1 else int(x.shape[1])
+
+
+def matvec(M: np.ndarray, v: np.ndarray, mvstats: Optional[MatvecStats] = None) -> np.ndarray:
+    t0 = time.perf_counter()
+    out = M @ v
+    if mvstats is not None:
+        mvstats.add_matvec(time.perf_counter() - t0, cols=_num_rhs(v))
+    return out
+
+
+def rmatvec(M: np.ndarray, u: np.ndarray, mvstats: Optional[MatvecStats] = None) -> np.ndarray:
+    t0 = time.perf_counter()
+    out = M.T @ u
+    if mvstats is not None:
+        mvstats.add_rmatvec(time.perf_counter() - t0, cols=_num_rhs(u))
+    return out
+
+
+def avg_matvec_pair_time(M: np.ndarray, trials: int = 50, seed: int = 0) -> Dict[str, float]:
+    rng = np.random.default_rng(seed)
+    n = M.shape[1]
+    times: List[float] = []
+    for _ in range(trials):
+        v = rng.standard_normal(n)
+        v /= max(norm(v), 1e-30)
+        t0 = time.perf_counter()
+        u = M @ v
+        _ = M.T @ u
+        times.append(time.perf_counter() - t0)
+    arr = np.array(times, dtype=float)
+    return {
+        "mean": float(np.mean(arr)),
+        "min": float(np.min(arr)),
+        "max": float(np.max(arr)),
+        "trials": int(trials),
+    }
+
+
+def plain_power_iteration(M: np.ndarray, iters: int = 50, seed: int = 0) -> Dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    v = rng.standard_normal(M.shape[1])
+    v /= max(norm(v), 1e-30)
+    mvstats = MatvecStats()
+    t0 = time.perf_counter()
+    for _ in range(iters):
+        u = matvec(M, v, mvstats)
+        u /= max(norm(u), 1e-30)
+        v = rmatvec(M, u, mvstats)
+        v /= max(norm(v), 1e-30)
+    wall = time.perf_counter() - t0
+    sigma = float(norm(M @ v))
+    return {
+        "iters": int(iters),
+        "sigma_est": sigma,
+        "wall_time": wall,
+        "matvec_stats": mvstats,
+        "vector": v,
+    }
 
 
 # ============================================================
@@ -228,6 +334,7 @@ class ContinuationOptions:
     progress_step_tol: float = 1e-10
     verbose: bool = True
     time_stats: Optional[TimeStats] = None
+    matvec_stats: Optional[MatvecStats] = None
 
 
 @dataclass
@@ -262,6 +369,7 @@ class EntropyOptions:
     num_random_mixtures: int = 4
     verbose: bool = False
     time_stats: Optional[TimeStats] = None
+    matvec_stats: Optional[MatvecStats] = None
 
 
 # ============================================================
@@ -327,50 +435,91 @@ def continuation_grid(c_target: float, num_stages: int) -> np.ndarray:
 # Entropy-score objective
 # ============================================================
 
-def entropy_logscore_grad_c(M: np.ndarray, v: np.ndarray, c: float, stats: Optional[TimeStats] = None):
+def entropy_logscore_grad_c(
+    M: np.ndarray,
+    v: np.ndarray,
+    c: float,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+):
     with timed(stats, "entropy_logscore_grad_c"):
-        y = M @ v
+        y = matvec(M, v, mvstats)
         y2 = safe_norm(y)
         y4_4 = max(float(np.sum(y**4)), 1e-30)
         y4 = y4_4 ** 0.25
 
         logf = (1.0 - c) * math.log(y2) + c * math.log(y4)
 
-        g2 = (M.T @ y) / (y2**2)
-        g4 = M.T @ (y**3) / y4_4
+        g2 = rmatvec(M, y, mvstats) / (y2**2)
+        g4 = rmatvec(M, y**3, mvstats) / y4_4
         grad = (1.0 - c) * g2 + c * g4
 
         H2 = -(math.log(y4_4) - 2.0 * math.log(y2**2))
         return logf, grad, y2, H2
 
 
-def entropy_logscore_grad(M: np.ndarray, v: np.ndarray, win: int, n: int, stats: Optional[TimeStats] = None):
+def entropy_logscore_grad(
+    M: np.ndarray,
+    v: np.ndarray,
+    win: int,
+    n: int,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+):
     with timed(stats, "entropy_logscore_grad"):
         c = target_c_from_win_n(win, n)
-        return entropy_logscore_grad_c(M, v, c, stats=stats)
+        return entropy_logscore_grad_c(M, v, c, stats=stats, mvstats=mvstats)
 
 
-def entropy_score_fast_c(M: np.ndarray, v: np.ndarray, c: float, stats: Optional[TimeStats] = None) -> float:
+def entropy_score_fast_c(
+    M: np.ndarray,
+    v: np.ndarray,
+    c: float,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+) -> float:
     with timed(stats, "entropy_score_fast_c"):
-        return float(math.exp(entropy_logscore_grad_c(M, v, c, stats=stats)[0]))
+        return float(math.exp(entropy_logscore_grad_c(M, v, c, stats=stats, mvstats=mvstats)[0]))
 
 
-def entropy_score_fast(M: np.ndarray, v: np.ndarray, win: int, n: int, stats: Optional[TimeStats] = None) -> float:
+def entropy_score_fast(
+    M: np.ndarray,
+    v: np.ndarray,
+    win: int,
+    n: int,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+) -> float:
     with timed(stats, "entropy_score_fast"):
-        return float(math.exp(entropy_logscore_grad(M, v, win, n, stats=stats)[0]))
+        return float(math.exp(entropy_logscore_grad(M, v, win, n, stats=stats, mvstats=mvstats)[0]))
 
 
 # ============================================================
 # Finite-difference Riemannian Hessian actions
 # ============================================================
 
-def riem_grad(M: np.ndarray, v: np.ndarray, Q: np.ndarray, win: int, n: int, stats: Optional[TimeStats] = None) -> np.ndarray:
-    _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=stats)
+def riem_grad(
+    M: np.ndarray,
+    v: np.ndarray,
+    Q: np.ndarray,
+    win: int,
+    n: int,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+) -> np.ndarray:
+    _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=stats, mvstats=mvstats)
     return tangent_proj(gradE, v, Q)
 
 
-def riem_grad_c(M: np.ndarray, v: np.ndarray, Q: np.ndarray, c: float, stats: Optional[TimeStats] = None) -> np.ndarray:
-    _, gradE, _, _ = entropy_logscore_grad_c(M, v, c, stats=stats)
+def riem_grad_c(
+    M: np.ndarray,
+    v: np.ndarray,
+    Q: np.ndarray,
+    c: float,
+    stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
+) -> np.ndarray:
+    _, gradE, _, _ = entropy_logscore_grad_c(M, v, c, stats=stats, mvstats=mvstats)
     return tangent_proj(gradE, v, Q)
 
 
@@ -383,6 +532,7 @@ def riem_hess_mult(
     p: np.ndarray,
     h: float = 1e-6,
     stats: Optional[TimeStats] = None,
+    mvstats: Optional[MatvecStats] = None,
 ) -> np.ndarray:
     with timed(stats, "riem_hess_mult"):
         p = tangent_proj(p, v, Q)
@@ -394,8 +544,8 @@ def riem_hess_mult(
         vm = retract_feasible(v - h * p, Q)
         if vp is None or vm is None:
             return np.zeros_like(v)
-        gp = riem_grad(M, vp, Q, win, n, stats=stats)
-        gm = riem_grad(M, vm, Q, win, n, stats=stats)
+        gp = riem_grad(M, vp, Q, win, n, stats=stats, mvstats=mvstats)
+        gm = riem_grad(M, vm, Q, win, n, stats=stats, mvstats=mvstats)
         return (gp - gm) / (2.0 * h)
 
 
@@ -444,7 +594,7 @@ def armijo_ascent_step(
             ls_steps = j + 1
             vt = retract_feasible(v + alpha * eta, Q)
             if vt is not None:
-                ft, gradEt, _, _ = entropy_logscore_grad(M, vt, win, n, stats=opts.time_stats)
+                ft, gradEt, _, _ = entropy_logscore_grad(M, vt, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                 rhs = f + opts.line_search_c1 * alpha * slope
                 if ft >= rhs:
                     accepted = True
@@ -479,7 +629,7 @@ def tr_steihaug_step(
             return eta, 0.0, hit_boundary
 
         for _ in range(opts.cg_maxit):
-            Hp = -riem_hess_mult(M, v, Q, win, n, p, stats=opts.time_stats)
+            Hp = -riem_hess_mult(M, v, Q, win, n, p, stats=opts.time_stats, mvstats=opts.matvec_stats)
             pHp = float(p @ Hp)
 
             if pHp <= 0:
@@ -507,7 +657,7 @@ def tr_steihaug_step(
             p = -r_next + beta * p
             r = r_next
 
-        Heta = riem_hess_mult(M, v, Q, win, n, eta, stats=opts.time_stats)
+        Heta = riem_hess_mult(M, v, Q, win, n, eta, stats=opts.time_stats, mvstats=opts.matvec_stats)
         pred = float(g @ eta + 0.5 * eta @ Heta)
         return eta, pred, hit_boundary
 
@@ -528,7 +678,7 @@ def truncated_newton_direction(
         p = r.copy()
 
         for _ in range(opts.cg_maxit):
-            Hp = riem_hess_mult(M, v, Q, win, n, p, stats=opts.time_stats) + lam * p
+            Hp = riem_hess_mult(M, v, Q, win, n, p, stats=opts.time_stats, mvstats=opts.matvec_stats) + lam * p
             pHp = float(p @ Hp)
             if abs(pHp) <= 1e-20:
                 break
@@ -562,7 +712,7 @@ def estimate_negative_curvature_direction(
             if nz <= 1e-14:
                 continue
             z /= nz
-            Hz = riem_hess_mult(M, v, Q, win, n, z, stats=opts.time_stats)
+            Hz = riem_hess_mult(M, v, Q, win, n, z, stats=opts.time_stats, mvstats=opts.matvec_stats)
             curv = float(z @ Hz)
             if curv < best_curv:
                 best_curv = curv
@@ -580,7 +730,7 @@ def try_negative_curvature_escape(
     rng: np.random.Generator,
 ):
     with timed(opts.time_stats, "try_negative_curvature_escape"):
-        f0, _, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats)
+        f0, _, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
         z, curv = estimate_negative_curvature_direction(M, v, Q, win, n, opts, rng)
         if z is None or curv >= opts.negcurv_tol:
             return False, v, f0, {"curv": curv, "reason": "no_negative_curvature"}
@@ -594,7 +744,7 @@ def try_negative_curvature_escape(
                 vt = retract_feasible(v + sign * s * z, Q)
                 if vt is None:
                     continue
-                ft, _, _, _ = entropy_logscore_grad(M, vt, win, n, stats=opts.time_stats)
+                ft, _, _, _ = entropy_logscore_grad(M, vt, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                 if ft > best_f:
                     best_f = ft
                     best_v = vt
@@ -721,7 +871,7 @@ def optimize_on_feasible_sphere(M, v0, Q, win, n, opts: EntropyOptions, rng):
         if v is None:
             v = feasible_random(M.shape[1], Q, rng)
 
-        logf, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats)
+        logf, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
         g = tangent_proj(gradE, v, Q)
 
         solver = opts.solver
@@ -752,7 +902,7 @@ def optimize_on_feasible_sphere(M, v0, Q, win, n, opts: EntropyOptions, rng):
                             prog.update(logf, f_new, v, v_new, np.nan)
                             v = v_new
                             logf = f_new
-                            _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats)
+                            _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                             g = tangent_proj(gradE, v, Q)
                             p_prev = None
                             g_prev = None
@@ -815,7 +965,7 @@ def optimize_on_feasible_sphere(M, v0, Q, win, n, opts: EntropyOptions, rng):
                         logf = f_trial
                         prog.update(f_old, logf, v_old, v, np.nan)
 
-                        _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats)
+                        _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                         g = tangent_proj(gradE, v, Q)
 
                         svec = tangent_proj(v - v_old, v, Q)
@@ -896,7 +1046,7 @@ def optimize_on_feasible_sphere(M, v0, Q, win, n, opts: EntropyOptions, rng):
                             prog.update(logf, f_new, v, v_new, np.nan)
                             v = v_new
                             logf = f_new
-                            _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats)
+                            _, gradE, _, _ = entropy_logscore_grad(M, v, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                             g = tangent_proj(gradE, v, Q)
                         else:
                             stop.reason = "newton_no_progress"
@@ -1109,7 +1259,7 @@ def entropy_iter_basis_manifold(M, r, win, n, V_init=None, opts=None, rng=None):
                 for j, v0 in enumerate(starts):
                     with timed(opts.time_stats, "entropy_iter_basis_manifold.restart"):
                         v_loc, _, stop, prog = optimize_on_feasible_sphere(M, v0, Q, win, n, opts, rng)
-                        logf_chk, _, y2_chk, H_chk = entropy_logscore_grad(M, v_loc, win, n, stats=opts.time_stats)
+                        logf_chk, _, y2_chk, H_chk = entropy_logscore_grad(M, v_loc, win, n, stats=opts.time_stats, mvstats=opts.matvec_stats)
                         if opts.verbose:
                             out = {"restart": j}
                             out.update(stop.as_dict())
@@ -1160,7 +1310,13 @@ def batched_retract_feasible(V: np.ndarray, Q: np.ndarray, eps: float = 1e-14):
     return Vn, valid, norms
 
 
-def entropy_logscore_grad_batched(M: np.ndarray, V: np.ndarray, win: int, n: int):
+def entropy_logscore_grad_batched(
+    M: np.ndarray,
+    V: np.ndarray,
+    win: int,
+    n: int,
+    mvstats: Optional[MatvecStats] = None,
+):
     """
     Batched version of entropy_logscore_grad for V with columns as restart vectors.
 
@@ -1176,7 +1332,7 @@ def entropy_logscore_grad_batched(M: np.ndarray, V: np.ndarray, win: int, n: int
     """
     c = target_c_from_win_n(win, n)
 
-    Y = M @ V                              # (m, R)
+    Y = matvec(M, V, mvstats)             # (m, R)
     y2_sq = np.sum(Y * Y, axis=0)
     y2_sq = np.maximum(y2_sq, 1e-30)
     y2 = np.sqrt(y2_sq)
@@ -1187,8 +1343,8 @@ def entropy_logscore_grad_batched(M: np.ndarray, V: np.ndarray, win: int, n: int
 
     logf = (1.0 - c) * np.log(y2) + c * np.log(y4)
 
-    g2 = (M.T @ Y) / y2_sq[None, :]
-    g4 = (M.T @ (Y**3)) / y4_4[None, :]
+    g2 = rmatvec(M, Y, mvstats) / y2_sq[None, :]
+    g4 = rmatvec(M, Y**3, mvstats) / y4_4[None, :]
     grad = (1.0 - c) * g2 + c * g4
 
     H2 = -(np.log(y4_4) - 2.0 * np.log(y2_sq))
@@ -1288,7 +1444,7 @@ def entropy_iter_basis_basic(
 
                 # initialize scores/progress
                 with timed(stats, "entropy_iter_basis_basic.init_eval"):
-                    logf, gradE, y2, H2 = entropy_logscore_grad_batched(M, V, win, n)
+                    logf, gradE, y2, H2 = entropy_logscore_grad_batched(M, V, win, n, mvstats=stats.matvec_stats if stats is not None and hasattr(stats, "matvec_stats") else None)
 
                 for j in range(num_restarts):
                     prog_list[j].init_score(float(logf[j]))
@@ -1369,7 +1525,8 @@ def entropy_iter_basis_basic(
 
                             with timed(stats, "entropy_iter_basis_basic.line_search_eval"):
                                 logf_trial, gradE_trial, y2_trial, H2_trial = entropy_logscore_grad_batched(
-                                    M, V_trial[:, eval_mask], win, n
+                                    M, V_trial[:, eval_mask], win, n,
+                                    mvstats=stats.matvec_stats if stats is not None and hasattr(stats, "matvec_stats") else None
                                 )
 
                             rhs = logf[eval_mask] + 1e-4 * alpha[eval_mask] * np.sum(G[:, eval_mask] * G[:, eval_mask], axis=0)
@@ -1783,7 +1940,7 @@ def entropy_continuation_basis(M, r, win, n, V_init=None, opts=None, rng=None):
                 c_cur = 0.0
 
                 if opts.verbose:
-                    print(f"k={k} spectral-start score(c=0)={entropy_score_fast_c(M, v_cur, 0.0, stats=opts.time_stats):.12e}")
+                    print(f"k={k} spectral-start score(c=0)={entropy_score_fast_c(M, v_cur, 0.0, stats=opts.time_stats, mvstats=opts.matvec_stats):.12e}")
 
                 for t in range(1, len(c_grid)):
                     with timed(opts.time_stats, "entropy_continuation_basis.stage"):
@@ -1878,8 +2035,11 @@ def run_streaming_experiment(
     cont_opts=None,
     entropy_opts=None,
     seed=0,
+    matvec_trials=50,
+    baseline_iters=50,
 ):
     global_stats = TimeStats()
+    global_stats.matvec_stats = MatvecStats()
 
     with timed(global_stats, "run_streaming_experiment.total"):
         rng = np.random.default_rng(seed)
@@ -1891,6 +2051,8 @@ def run_streaming_experiment(
 
         cont_opts.time_stats = global_stats
         entropy_opts.time_stats = global_stats
+        cont_opts.matvec_stats = global_stats.matvec_stats
+        entropy_opts.matvec_stats = global_stats.matvec_stats
 
         num_svals = len(sigma_vals)
         alignment_results = np.zeros((num_svals, num_exper))
@@ -1898,6 +2060,10 @@ def run_streaming_experiment(
         Delta_results = np.zeros((num_svals, num_exper))
         DeltaComp_results = np.zeros((num_svals, num_exper))
         low_sval_indicator = np.zeros((num_svals, num_exper))
+        baseline_times = np.zeros((num_svals, num_exper))
+        baseline_sigma = np.zeros((num_svals, num_exper))
+        predicted_matvec_times = np.zeros((num_svals, num_exper))
+        raw_pair_means = np.zeros((num_svals, num_exper))
 
         for i, sigma1 in enumerate(sigma_vals):
             with timed(global_stats, "run_streaming_experiment.per_sigma"):
@@ -1931,6 +2097,9 @@ def run_streaming_experiment(
                                     B_top = S_r @ V_r.T
                                     M = np.vstack([B_top, A_block])
 
+                                raw_pair_info = avg_matvec_pair_time(M, trials=matvec_trials, seed=seed + e)
+                                baseline_info = plain_power_iteration(M, iters=baseline_iters, seed=seed + e)
+
                                 if mode == "EntropyScore":
                                     rr = min(r, M.shape[1])
                                     V_init = None if V_r is None else V_r
@@ -1962,7 +2131,7 @@ def run_streaming_experiment(
                                     v_ = Vh.T
                                     e1_proj = v_ @ (v_.T @ V[:, 0])
                                     e1_proj = e1_proj / safe_norm(e1_proj)
-                                    score_e1_proj = entropy_score_fast(M, e1_proj, win, n, stats=global_stats)
+                                    score_e1_proj = entropy_score_fast(M, e1_proj, win, n, stats=global_stats, mvstats=global_stats.matvec_stats)
 
                                     print(f"rows {start_row + 1}:{end_row}")
                                     print("score of v1 projection onto window space:", score_e1_proj)
@@ -1974,7 +2143,23 @@ def run_streaming_experiment(
                                     print(f"should be: {e1_proj[0]:.5f}")
 
                                     block_dt = time.perf_counter() - block_t0
+                                    optimizer_pairs = global_stats.matvec_stats.matvec_pairs
+                                    predicted_time_from_matvecs = optimizer_pairs * raw_pair_info["mean"]
+                                    baseline_times[i, e] = baseline_info["wall_time"]
+                                    baseline_sigma[i, e] = baseline_info["sigma_est"]
+                                    predicted_matvec_times[i, e] = predicted_time_from_matvecs
+                                    raw_pair_means[i, e] = raw_pair_info["mean"]
+
                                     print(f"block optimizer wall time: {block_dt:.6f}s")
+                                    print("raw_matvec_pair_time:", raw_pair_info)
+                                    print("plain_power_iteration:", {
+                                        "iters": baseline_info["iters"],
+                                        "sigma_est": baseline_info["sigma_est"],
+                                        "wall_time": baseline_info["wall_time"],
+                                        **baseline_info["matvec_stats"].as_dict(),
+                                    })
+                                    print("optimizer_matvec_counts:", global_stats.matvec_stats.as_dict())
+                                    print("predicted_time_from_matvecs:", predicted_time_from_matvecs)
                                     print("\nTiming diagnostics so far:")
                                     print(global_stats.report(sort_by="time"))
                                     break
@@ -2021,7 +2206,12 @@ def run_streaming_experiment(
             "relerr_sval_results": relerr_sval_results,
             "Delta_results": Delta_results,
             "DeltaComp_results": DeltaComp_results,
+            "baseline_times": baseline_times,
+            "baseline_sigma": baseline_sigma,
+            "predicted_matvec_times": predicted_matvec_times,
+            "raw_pair_means": raw_pair_means,
             "time_stats": global_stats,
+            "matvec_stats": global_stats.matvec_stats,
         }
 
 
@@ -2035,6 +2225,8 @@ if __name__ == "__main__":
     parser.add_argument("--r", type=int, default=1)
     parser.add_argument("--win", type=int, default=1000)
     parser.add_argument("--sigma1", type=float, default=0.991)
+    parser.add_argument("--matvec-trials", type=int, default=50)
+    parser.add_argument("--baseline-iters", type=int, default=50)
 
     args = parser.parse_args()
 
@@ -2079,6 +2271,8 @@ if __name__ == "__main__":
         cont_opts=cont_opts,
         entropy_opts=entropy_opts,
         seed=0,
+        matvec_trials=args.matvec_trials,
+        baseline_iters=args.baseline_iters,
     )
 
     print("\nSummary:")
@@ -2091,6 +2285,10 @@ if __name__ == "__main__":
                 "mean_relerr_sval": float(out["mean_relerr_sval"][i]),
                 "std_relerr_sval": float(out["std_relerr_sval"][i]),
                 "low_sval_count": int(out["low_sval_count"][i]),
+                "raw_pair_mean": float(out["raw_pair_means"][i, 0]),
+                "baseline_time": float(out["baseline_times"][i, 0]),
+                "baseline_sigma": float(out["baseline_sigma"][i, 0]),
+                "predicted_matvec_time": float(out["predicted_matvec_times"][i, 0]),
             }
         )
 
