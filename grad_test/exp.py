@@ -1974,51 +1974,75 @@ def entropy_continuation_basis(M, r, win, n, V_init=None, opts=None, rng=None):
 # Synthetic experiment
 # ============================================================
 
-def build_ground_truth(n=1024, r_sig=1, V_type="id", sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99):
-    if n % 2 != 0:
-        raise ValueError("Hadamard construction requires n to be even.")
+def build_ground_truth(
+    n=1024,
+    r_sig=1,
+    V_type="id",
+    sigma1=0.991,
+    alpha_sig=0.003,
+    alpha_tail=0.0145,
+    tail_scale=0.99,
+    stats: Optional[TimeStats] = None,
+    return_dense_S: bool = False,
+):
+    with timed(stats, "build_ground_truth.total"):
+        if n % 2 != 0:
+            raise ValueError("Hadamard construction requires n to be even.")
 
-    k = n
-    U0 = np.zeros((n, n), dtype=float)
+        k = n
 
-    H = hadamard(n).astype(float)
-    U0[:, :r_sig] = H[:, :r_sig] / math.sqrt(n)
+        with timed(stats, "build_ground_truth.zeros"):
+            U0 = np.zeros((n, n), dtype=float)
 
-    a_tail = math.sqrt(1.0 - r_sig / n)
-    b_tail = 1.0 / math.sqrt(n)
-    for j in range(r_sig, n):
-        col = np.zeros(n, dtype=float)
-        idx_large = j - r_sig
-        if idx_large <= n - r_sig - 1:
-            col[idx_large] = a_tail
+        with timed(stats, "build_ground_truth.hadamard"):
+            H = hadamard(n).astype(float)
+        U0[:, :r_sig] = H[:, :r_sig] / math.sqrt(n)
+
+        a_tail = math.sqrt(1.0 - r_sig / n)
+        b_tail = 1.0 / math.sqrt(n)
+        with timed(stats, "build_ground_truth.tail_fill"):
+            for j in range(r_sig, n):
+                col = np.zeros(n, dtype=float)
+                idx_large = j - r_sig
+                if idx_large <= n - r_sig - 1:
+                    col[idx_large] = a_tail
+                else:
+                    raise ValueError("Tail index out of range.")
+                col[n - r_sig:] = b_tail
+                U0[:, j] = col
+
+        with timed(stats, "build_ground_truth.qr"):
+            Qtmp, _ = qr(U0, mode="economic")
+        for j in range(r_sig):
+            if float(Qtmp[:, j] @ U0[:, j]) < 0:
+                Qtmp[:, j] *= -1.0
+        U = Qtmp[:, :k]
+
+        if V_type == "id":
+            with timed(stats, "build_ground_truth.V_id"):
+                V = np.eye(n, k)
+        elif V_type == "U":
+            with timed(stats, "build_ground_truth.V_U"):
+                V = U.copy()
+        elif V_type == "rand":
+            with timed(stats, "build_ground_truth.V_rand"):
+                Vrand, _ = qr(np.random.default_rng(0).standard_normal((n, k)), mode="economic")
+                V = Vrand
         else:
-            raise ValueError("Tail index out of range.")
-        col[n - r_sig:] = b_tail
-        U0[:, j] = col
+            raise ValueError('Unknown V_type. Use "id", "U", or "rand".')
 
-    Qtmp, _ = qr(U0, mode="economic")
-    for j in range(r_sig):
-        if float(Qtmp[:, j] @ U0[:, j]) < 0:
-            Qtmp[:, j] *= -1.0
-    U = Qtmp[:, :k]
+        with timed(stats, "build_ground_truth.spectrum"):
+            sig_block = sigma1 * (np.arange(1, r_sig + 1, dtype=float) ** (-alpha_sig))
+            tail_block = tail_scale * (np.arange(1, (k - r_sig) + 1, dtype=float) ** (-alpha_tail))
+            svec = np.concatenate([sig_block, tail_block])
+            svec[0] = sigma1
 
-    if V_type == "id":
-        V = np.eye(n, k)
-    elif V_type == "U":
-        V = U.copy()
-    elif V_type == "rand":
-        Vrand, _ = qr(np.random.default_rng(0).standard_normal((n, k)), mode="economic")
-        V = Vrand
-    else:
-        raise ValueError('Unknown V_type. Use "id", "U", or "rand".')
+        S = None
+        if return_dense_S:
+            with timed(stats, "build_ground_truth.diag_S"):
+                S = np.diag(svec)
 
-    sig_block = sigma1 * (np.arange(1, r_sig + 1, dtype=float) ** (-alpha_sig))
-    tail_block = tail_scale * (np.arange(1, (k - r_sig) + 1, dtype=float) ** (-alpha_tail))
-    svec = np.concatenate([sig_block, tail_block])
-    svec[0] = sigma1
-    S = np.diag(svec)
-
-    return U, S, V, svec
+        return U, S, V, svec
 
 
 def run_streaming_experiment(
@@ -2067,7 +2091,11 @@ def run_streaming_experiment(
 
         for i, sigma1 in enumerate(sigma_vals):
             with timed(global_stats, "run_streaming_experiment.per_sigma"):
-                U, S, V, svec = build_ground_truth(n=n, r_sig=r_sig, V_type=V_type, sigma1=sigma1)
+                with timed(global_stats, "run_streaming_experiment.build_ground_truth"):
+                    U, S, V, svec = build_ground_truth(
+                        n=n, r_sig=r_sig, V_type=V_type, sigma1=sigma1,
+                        stats=global_stats, return_dense_S=False
+                    )
 
                 k = n
                 E_opt = float(np.sum(svec[r:]**2)) if r < k else 0.0
@@ -2077,8 +2105,13 @@ def run_streaming_experiment(
                 for e in range(num_exper):
                     with timed(global_stats, "run_streaming_experiment.per_experiment"):
                         p = rng.permutation(n)
-                        A = U @ S @ V.T
-                        A = A[p, :]
+                        with timed(global_stats, "run_streaming_experiment.form_A"):
+                            if V_type == "id":
+                                A = (U * svec[None, :])
+                            else:
+                                A = (U * svec[None, :]) @ V.T
+                        with timed(global_stats, "run_streaming_experiment.permute_A"):
+                            A = A[p, :]
 
                         mA = A.shape[0]
                         S_r = None
