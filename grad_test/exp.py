@@ -113,60 +113,6 @@ class MatvecStats:
         }
 
 
-@dataclass
-class EvalStats:
-    forward_only_calls: int = 0
-    grad_calls: int = 0
-    forward_only_rhs_total: int = 0
-    grad_rhs_total: int = 0
-    line_search_trial_calls: int = 0
-    line_search_trial_rhs_total: int = 0
-    line_search_accept_cols: int = 0
-    line_search_reject_cols: int = 0
-    line_search_invalid_cols: int = 0
-
-    def add_forward_only(self, rhs: int):
-        self.forward_only_calls += 1
-        self.forward_only_rhs_total += int(rhs)
-
-    def add_grad(self, rhs: int):
-        self.grad_calls += 1
-        self.grad_rhs_total += int(rhs)
-
-    def add_line_search_trial(self, rhs: int):
-        self.line_search_trial_calls += 1
-        self.line_search_trial_rhs_total += int(rhs)
-
-    def add_line_search_accept(self, cols: int):
-        self.line_search_accept_cols += int(cols)
-
-    def add_line_search_reject(self, cols: int):
-        self.line_search_reject_cols += int(cols)
-
-    def add_line_search_invalid(self, cols: int):
-        self.line_search_invalid_cols += int(cols)
-
-    def as_dict(self) -> Dict[str, float]:
-        return {
-            "forward_only_calls": self.forward_only_calls,
-            "gradient_calls": self.grad_calls,
-            "avg_forward_only_batch_size": (
-                self.forward_only_rhs_total / self.forward_only_calls if self.forward_only_calls > 0 else 0.0
-            ),
-            "avg_gradient_batch_size": (
-                self.grad_rhs_total / self.grad_calls if self.grad_calls > 0 else 0.0
-            ),
-            "line_search_trial_calls": self.line_search_trial_calls,
-            "avg_line_search_trial_batch_size": (
-                self.line_search_trial_rhs_total / self.line_search_trial_calls
-                if self.line_search_trial_calls > 0 else 0.0
-            ),
-            "line_search_accept_cols": self.line_search_accept_cols,
-            "line_search_reject_cols": self.line_search_reject_cols,
-            "line_search_invalid_cols": self.line_search_invalid_cols,
-        }
-
-
 def _num_rhs(x: np.ndarray) -> int:
     return 1 if x.ndim == 1 else int(x.shape[1])
 
@@ -1342,115 +1288,165 @@ def entropy_iter_basis_manifold(M, r, win, n, V_init=None, opts=None, rng=None):
 # Simpler multi-restart projected ascent ("basic" variant)
 # ============================================================
 
-def batched_retract_feasible(
-    V: np.ndarray,
-    Q: np.ndarray,
-    eps: float = 1e-14,
+def make_basic_restart_seeds(M, Q, k, V_init, num_restarts, rng, stats: Optional[TimeStats] = None):
+    with timed(stats, "entropy_iter_basis_basic.build_restarts"):
+        d = M.shape[1]
+        starts = []
+
+        with timed(stats, "entropy_iter_basis_basic.svd"):
+            _, _, Vh = svd(M, full_matrices=False)
+        Vsvd = Vh.T
+        num_top = min(4, Vsvd.shape[1])
+        alpha_grid = [0.98, 0.9, 0.75, 0.5, 0.25, 0.0]
+
+        for restart in range(num_restarts):
+            v_prev = None
+            if V_init is not None and V_init.shape[1] >= k:
+                v_prev = V_init[:, k - 1]
+
+            restart_type = (restart % 5) + 1
+            restart_block = restart // 5
+
+            if restart_type == 1:
+                if v_prev is not None:
+                    xi = project_feasible(rng.standard_normal(d), Q)
+                    nxi = norm(xi)
+                    if nxi > 1e-14:
+                        xi /= nxi
+                    alpha = alpha_grid[restart_block % len(alpha_grid)]
+                    v0 = alpha * v_prev + math.sqrt(max(0.0, 1.0 - alpha**2)) * xi
+                else:
+                    v0 = Vsvd[:, 0]
+            elif restart_type == 2:
+                j = restart_block % num_top
+                v0 = Vsvd[:, j]
+            elif restart_type == 3:
+                j1 = restart_block % num_top
+                j2 = (restart_block + 1) % num_top
+                alpha = alpha_grid[restart_block % len(alpha_grid)]
+                v0 = alpha * Vsvd[:, j1] + math.sqrt(max(0.0, 1.0 - alpha**2)) * Vsvd[:, j2]
+            elif restart_type == 4:
+                j = restart_block % num_top
+                v0 = Vsvd[:, j] + 1e-2 * rng.standard_normal(d)
+            else:
+                v0 = rng.standard_normal(d)
+
+            v = retract_feasible(v0, Q)
+            if v is None:
+                v = feasible_random(d, Q, rng)
+            starts.append(v)
+
+        return starts
+
+
+def basic_projected_ascent_single(
+    M,
+    v0,
+    Q,
+    win,
+    n,
+    maxit=200,
+    tol=1e-8,
+    progress_f_tol=1e-12,
+    progress_step_tol=1e-10,
     stats: Optional[TimeStats] = None,
-    key_prefix: str = "batched_retract_feasible",
 ):
-    """
-    Project columns of V to feasible space (orthogonal to Q) and normalize.
-    Returns:
-        Vn: normalized feasible columns where possible
-        valid: boolean mask of columns with norm > eps
-        norms: column norms after projection
-    """
-    with timed(stats, f"{key_prefix}.projection"):
-        if Q.size != 0:
-            Vp = V - Q @ (Q.T @ V)
-        else:
-            Vp = V.copy()
+    v = retract_feasible(v0, Q)
+    if v is None:
+        raise RuntimeError("Initial vector is infeasible in basic_projected_ascent_single.")
 
-    with timed(stats, f"{key_prefix}.norms"):
-        norms = np.linalg.norm(Vp, axis=0)
-        valid = norms > eps
-
-    with timed(stats, f"{key_prefix}.normalize"):
-        Vn = Vp.copy()
-        if np.any(valid):
-            Vn[:, valid] /= norms[valid][None, :]
-    return Vn, valid, norms
-
-
-def entropy_logscore_batched(
-    M: np.ndarray,
-    V: np.ndarray,
-    win: int,
-    n: int,
-    stats: Optional[TimeStats] = None,
-    mvstats: Optional[MatvecStats] = None,
-    eval_stats: Optional[EvalStats] = None,
-):
-    c = target_c_from_win_n(win, n)
-    rhs = int(V.shape[1]) if V.ndim == 2 else 1
-    if eval_stats is not None:
-        eval_stats.add_forward_only(rhs)
-
-    with timed(stats, "entropy_logscore_batched.forward_matvec"):
-        Y = matvec(M, V, mvstats)
-
-    with timed(stats, "entropy_logscore_batched.norm2_reduction"):
-        y2_sq = np.sum(Y * Y, axis=0)
-        y2_sq = np.maximum(y2_sq, 1e-30)
-        y2 = np.sqrt(y2_sq)
-
-    with timed(stats, "entropy_logscore_batched.elementwise_cubic"):
-        Y3 = Y**3
-
-    with timed(stats, "entropy_logscore_batched.norm4_reduction"):
-        y4_4 = np.sum(Y * Y3, axis=0)
-        y4_4 = np.maximum(y4_4, 1e-30)
-        y4 = y4_4 ** 0.25
-
-    with timed(stats, "entropy_logscore_batched.combine"):
-        logf = (1.0 - c) * np.log(y2) + c * np.log(y4)
-        H2 = -(np.log(y4_4) - 2.0 * np.log(y2_sq))
-
-    return logf, y2, H2, Y, Y3, y2_sq, y4_4
-
-
-def entropy_logscore_grad_batched(
-    M: np.ndarray,
-    V: np.ndarray,
-    win: int,
-    n: int,
-    stats: Optional[TimeStats] = None,
-    mvstats: Optional[MatvecStats] = None,
-    eval_stats: Optional[EvalStats] = None,
-):
-    """
-    Batched version of entropy_logscore_grad for V with columns as restart vectors.
-
-    Inputs:
-        M: shape (m, d)
-        V: shape (d, R)
-
-    Returns:
-        logf: shape (R,)
-        grad: shape (d, R)
-        y2: shape (R,)
-        H2: shape (R,)
-    """
-    rhs = int(V.shape[1]) if V.ndim == 2 else 1
-    if eval_stats is not None:
-        eval_stats.add_grad(rhs)
-
-    logf, y2, H2, Y, Y3, y2_sq, y4_4 = entropy_logscore_batched(
-        M, V, win, n, stats=stats, mvstats=mvstats, eval_stats=None
+    logf, gradE, y2, H2 = entropy_logscore_grad(
+        M, v, win, n, stats=stats
     )
-    c = target_c_from_win_n(win, n)
+    prog = ProgressDiagnostics()
+    prog.init_score(float(logf))
+    stop = StopDiagnostics(
+        reason="not_started",
+        grad_tol=tol,
+        step_tol=progress_step_tol,
+        solver="basic_serial",
+    )
 
-    with timed(stats, "entropy_logscore_grad_batched.transpose_matvec_y"):
-        g2_num = rmatvec(M, Y, mvstats)
-    with timed(stats, "entropy_logscore_grad_batched.transpose_matvec_y3"):
-        g4_num = rmatvec(M, Y3, mvstats)
-    with timed(stats, "entropy_logscore_grad_batched.combine"):
-        g2 = g2_num / y2_sq[None, :]
-        g4 = g4_num / y4_4[None, :]
-        grad = (1.0 - c) * g2 + c * g4
+    for it in range(maxit):
+        with timed(stats, "entropy_iter_basis_basic.iter"):
+            g = tangent_proj(gradE, v, Q)
+            gnorm = float(norm(g))
+            if gnorm <= tol:
+                stop.reason = "grad_tol"
+                stop.iters = it + 1
+                stop.grad_norm = gnorm
+                stop.accepted = True
+                return v, float(logf), float(y2), float(H2), stop, prog
 
-    return logf, grad, y2, H2
+            accepted = False
+            alpha = 1.0
+            f_old = float(logf)
+            v_old = v.copy()
+            ls_steps = 0
+            used_alpha = np.nan
+            armijo_margin = np.nan
+
+            for ls_it in range(20):
+                ls_steps = ls_it + 1
+                vt = retract_feasible(v + alpha * g, Q)
+                if vt is not None:
+                    with timed(stats, "entropy_iter_basis_basic.line_search_eval"):
+                        logf_trial, _, _, _ = entropy_logscore_grad(M, vt, win, n, stats=stats)
+                    rhs = f_old + 1e-4 * alpha * float(g @ g)
+                    if float(logf_trial) >= rhs:
+                        accepted = True
+                        v = vt
+                        used_alpha = alpha
+                        armijo_margin = float(logf_trial) - rhs
+                        break
+                alpha *= 0.5
+
+            stop.line_search_steps = ls_steps
+            stop.line_search_alpha = used_alpha
+
+            if not accepted:
+                prog.no_update()
+                stop.reason = "line_search_failed"
+                stop.iters = it + 1
+                stop.grad_norm = gnorm
+                stop.accepted = False
+                return v_old, f_old, float(y2), float(H2), stop, prog
+
+            logf, gradE, y2, H2 = entropy_logscore_grad(M, v, win, n, stats=stats)
+            prog.update(f_old, float(logf), v_old, v, armijo_margin)
+
+            stop_f, stop_step, f_change, f_threshold = progress_stop_check(
+                f_old,
+                float(logf),
+                float(prog.last_step_norm),
+                progress_f_tol,
+                progress_step_tol,
+            )
+            if stop_f:
+                stop.reason = "progress_f_tol"
+                stop.iters = it + 1
+                stop.grad_norm = float(norm(tangent_proj(gradE, v, Q)))
+                stop.step_norm = float(prog.last_step_norm)
+                stop.f_change = float(f_change)
+                stop.f_threshold = float(f_threshold)
+                stop.accepted = True
+                return v, float(logf), float(y2), float(H2), stop, prog
+            if stop_step:
+                stop.reason = "progress_step_tol"
+                stop.iters = it + 1
+                stop.grad_norm = float(norm(tangent_proj(gradE, v, Q)))
+                stop.step_norm = float(prog.last_step_norm)
+                stop.f_change = float(f_change)
+                stop.f_threshold = float(f_threshold)
+                stop.accepted = True
+                return v, float(logf), float(y2), float(H2), stop, prog
+
+    stop.reason = "maxit"
+    stop.iters = maxit
+    stop.grad_norm = float(norm(tangent_proj(gradE, v, Q)))
+    stop.accepted = False
+    return v, float(logf), float(y2), float(H2), stop, prog
+
 
 
 def entropy_iter_basis_basic(
@@ -1479,312 +1475,57 @@ def entropy_iter_basis_basic(
         score_out = -np.inf * np.ones(r)
         Q = np.zeros((d, 0))
 
-        with timed(stats, "entropy_iter_basis_basic.svd"):
-            _, _, Vh = svd(M, full_matrices=False)
-        Vsvd = Vh.T
-        num_top = min(4, Vsvd.shape[1])
-        alpha_grid = [0.98, 0.9, 0.75, 0.5, 0.25, 0.0]
-
         for k in range(1, r + 1):
             with timed(stats, f"entropy_iter_basis_basic.vector_{k}"):
-                # ------------------------------------------------------------
-                # Build initial restart matrix V0 with columns as restarts
-                # ------------------------------------------------------------
-                V0 = np.zeros((d, num_restarts))
-                stop_list = []
-                prog_list = []
+                starts = make_basic_restart_seeds(M, Q, k, V_init, num_restarts, rng, stats=stats)
+                best_logf = -np.inf
+                best_v = None
+                best_y2 = -np.inf
+                best_H = -np.inf
 
-                for restart in range(num_restarts):
-                    stop = StopDiagnostics(
-                        reason="not_started",
-                        grad_tol=tol,
-                        step_tol=progress_step_tol,
-                        solver="basic_batched",
-                    )
-                    prog = ProgressDiagnostics()
+                for j, v0 in enumerate(starts):
+                    with timed(stats, "entropy_iter_basis_basic.restart"):
+                        v_loc, logf_loc, y2_loc, H_loc, stop, prog = basic_projected_ascent_single(
+                            M,
+                            v0,
+                            Q,
+                            win,
+                            n,
+                            maxit=maxit,
+                            tol=tol,
+                            progress_f_tol=progress_f_tol,
+                            progress_step_tol=progress_step_tol,
+                            stats=stats,
+                        )
 
-                    v_prev = None
-                    if V_init is not None and V_init.shape[1] >= k:
-                        v_prev = V_init[:, k - 1]
-
-                    restart_type = (restart % 5) + 1
-                    restart_block = restart // 5
-
-                    if restart_type == 1:
-                        if v_prev is not None:
-                            xi = project_feasible(rng.standard_normal(d), Q)
-                            nxi = norm(xi)
-                            if nxi > 1e-14:
-                                xi /= nxi
-                            alpha = alpha_grid[restart_block % len(alpha_grid)]
-                            v0 = alpha * v_prev + math.sqrt(max(0.0, 1.0 - alpha**2)) * xi
-                        else:
-                            v0 = Vsvd[:, 0]
-                    elif restart_type == 2:
-                        j = restart_block % num_top
-                        v0 = Vsvd[:, j]
-                    elif restart_type == 3:
-                        j1 = restart_block % num_top
-                        j2 = (restart_block + 1) % num_top
-                        alpha = alpha_grid[restart_block % len(alpha_grid)]
-                        v0 = alpha * Vsvd[:, j1] + math.sqrt(max(0.0, 1.0 - alpha**2)) * Vsvd[:, j2]
-                    elif restart_type == 4:
-                        j = restart_block % num_top
-                        v0 = Vsvd[:, j] + 1e-2 * rng.standard_normal(d)
-                    else:
-                        v0 = rng.standard_normal(d)
-
-                    v = retract_feasible(v0, Q)
-                    if v is None:
-                        v = feasible_random(d, Q, rng)
-
-                    V0[:, restart] = v
-                    stop_list.append(stop)
-                    prog_list.append(prog)
-
-                V = V0.copy()
-
-                # initialize scores/progress
-                with timed(stats, "entropy_iter_basis_basic.init_eval"):
-                    logf, gradE, y2, H2 = entropy_logscore_grad_batched(
-                        M, V, win, n,
-                        stats=stats,
-                        mvstats=stats.matvec_stats if stats is not None and hasattr(stats, "matvec_stats") else None,
-                        eval_stats=stats.eval_stats if stats is not None and hasattr(stats, "eval_stats") else None,
-                    )
-
-                for j in range(num_restarts):
-                    prog_list[j].init_score(float(logf[j]))
-
-                active = np.ones(num_restarts, dtype=bool)
-
-                # ------------------------------------------------------------
-                # Lockstep batched optimization over restarts
-                # ------------------------------------------------------------
-                for it in range(maxit):
-                    if not np.any(active):
-                        break
-
-                    with timed(stats, "entropy_iter_basis_basic.iter"):
-                        # Batched tangent projection
-                        G = gradE.copy()
-
-                        if Q.size != 0:
-                            G = G - Q @ (Q.T @ G)
-
-                        vg_dot = np.sum(V * G, axis=0)
-                        G = G - V * vg_dot[None, :]
-
-                        gnorms = np.linalg.norm(G, axis=0)
-
-                        # Gradient-based stopping
-                        grad_done = active & (gnorms <= tol)
-                        for j in np.where(grad_done)[0]:
-                            stop_list[j].reason = "grad_tol"
-                            stop_list[j].iters = it + 1
-                            stop_list[j].grad_norm = float(gnorms[j])
-                            stop_list[j].accepted = True
-                        active[grad_done] = False
-
-                        if not np.any(active):
-                            break
-
-                        # Prepare masked backtracking search
-                        search_mask = active.copy()
-                        alpha = np.ones(num_restarts)
-                        accepted = np.zeros(num_restarts, dtype=bool)
-
-                        V_old = V.copy()
-                        logf_old = logf.copy()
-
-                        accepted_alpha = np.full(num_restarts, np.nan)
-                        accepted_armijo_margin = np.full(num_restarts, np.nan)
-                        ls_steps = np.zeros(num_restarts, dtype=int)
-
-                        V_new = V.copy()
-                        logf_new = logf.copy()
-                        gradE_new = gradE.copy()
-                        y2_new = y2.copy()
-                        H2_new = H2.copy()
-
-                        for ls_it in range(20):
-                            if not np.any(search_mask):
-                                break
-
-                            ls_steps[search_mask] = ls_it + 1
-
-                            V_trial = V.copy()
-                            V_trial[:, search_mask] = (
-                                V[:, search_mask] + G[:, search_mask] * alpha[search_mask][None, :]
-                            )
-
-                            V_trial, valid, _ = batched_retract_feasible(
-                                V_trial, Q, stats=stats, key_prefix="entropy_iter_basis_basic.retraction"
-                            )
-
-                            # any invalid active columns keep shrinking
-                            invalid_cols = np.zeros(num_restarts, dtype=bool)
-                            invalid_cols[search_mask] = ~valid[search_mask]
-                            if stats is not None and hasattr(stats, "eval_stats"):
-                                stats.eval_stats.add_line_search_invalid(int(np.count_nonzero(invalid_cols)))
-                            search_mask[invalid_cols] = True
-                            alpha[invalid_cols] *= 0.5
-
-                            eval_mask = search_mask & valid
-                            if not np.any(eval_mask):
-                                continue
-
-                            if stats is not None and hasattr(stats, "eval_stats"):
-                                stats.eval_stats.add_line_search_trial(int(np.count_nonzero(eval_mask)))
-
-                            with timed(stats, "entropy_iter_basis_basic.line_search_eval"):
-                                logf_trial, y2_trial, H2_trial, _, _, _, _ = entropy_logscore_batched(
-                                    M, V_trial[:, eval_mask], win, n,
-                                    stats=stats,
-                                    mvstats=stats.matvec_stats if stats is not None and hasattr(stats, "matvec_stats") else None,
-                                    eval_stats=stats.eval_stats if stats is not None and hasattr(stats, "eval_stats") else None,
-                                )
-
-                            rhs = logf[eval_mask] + 1e-4 * alpha[eval_mask] * np.sum(G[:, eval_mask] * G[:, eval_mask], axis=0)
-                            good = logf_trial >= rhs
-
-                            idx_eval = np.where(eval_mask)[0]
-                            idx_good = idx_eval[good]
-                            idx_bad = idx_eval[~good]
-
-                            if stats is not None and hasattr(stats, "eval_stats"):
-                                stats.eval_stats.add_line_search_accept(len(idx_good))
-                                stats.eval_stats.add_line_search_reject(len(idx_bad))
-
-                            if len(idx_good) > 0:
-                                accepted[idx_good] = True
-                                accepted_alpha[idx_good] = alpha[idx_good]
-                                accepted_armijo_margin[idx_good] = logf_trial[good] - rhs[good]
-
-                                V_new[:, idx_good] = V_trial[:, idx_good]
-                                logf_new[idx_good] = logf_trial[good]
-                                y2_new[idx_good] = y2_trial[good]
-                                H2_new[idx_good] = H2_trial[good]
-
-                            if len(idx_bad) > 0:
-                                alpha[idx_bad] *= 0.5
-
-                            search_mask[idx_good] = False
-
-                        # handle line-search failures
-                        failed = active & (~accepted)
-                        for j in np.where(failed)[0]:
-                            prog_list[j].no_update()
-                            stop_list[j].reason = "line_search_failed"
-                            stop_list[j].iters = it + 1
-                            stop_list[j].grad_norm = float(gnorms[j])
-                            stop_list[j].accepted = False
-                            stop_list[j].line_search_steps = int(ls_steps[j])
-                        active[failed] = False
-
-                        # commit accepted updates and progress checks
-                        good_updates = active & accepted
-                        if np.any(good_updates):
-                            for j in np.where(good_updates)[0]:
-                                prog_list[j].update(
-                                    float(logf_old[j]),
-                                    float(logf_new[j]),
-                                    V_old[:, j],
-                                    V_new[:, j],
-                                    float(accepted_armijo_margin[j]),
-                                )
-
-                                stop_list[j].line_search_alpha = float(accepted_alpha[j])
-                                stop_list[j].line_search_steps = int(ls_steps[j])
-
-                                stop_f, stop_step, f_change, f_threshold = progress_stop_check(
-                                    float(logf_old[j]),
-                                    float(logf_new[j]),
-                                    float(prog_list[j].last_step_norm),
-                                    progress_f_tol,
-                                    progress_step_tol,
-                                )
-
-                                if stop_f:
-                                    stop_list[j].reason = "progress_f_tol"
-                                    stop_list[j].iters = it + 1
-                                    stop_list[j].grad_norm = float(gnorms[j])
-                                    stop_list[j].step_norm = float(prog_list[j].last_step_norm)
-                                    stop_list[j].f_change = float(f_change)
-                                    stop_list[j].f_threshold = float(f_threshold)
-                                    stop_list[j].accepted = True
-                                    active[j] = False
-                                elif stop_step:
-                                    stop_list[j].reason = "progress_step_tol"
-                                    stop_list[j].iters = it + 1
-                                    stop_list[j].grad_norm = float(gnorms[j])
-                                    stop_list[j].step_norm = float(prog_list[j].last_step_norm)
-                                    stop_list[j].f_change = float(f_change)
-                                    stop_list[j].f_threshold = float(f_threshold)
-                                    stop_list[j].accepted = True
-                                    active[j] = False
-
-                        if np.any(good_updates):
-                            good_idx = np.where(good_updates)[0]
-                            with timed(stats, "entropy_iter_basis_basic.accepted_grad_eval"):
-                                logf_acc, gradE_acc, y2_acc, H2_acc = entropy_logscore_grad_batched(
-                                    M, V_new[:, good_idx], win, n,
-                                    stats=stats,
-                                    mvstats=stats.matvec_stats if stats is not None and hasattr(stats, "matvec_stats") else None,
-                                    eval_stats=stats.eval_stats if stats is not None and hasattr(stats, "eval_stats") else None,
-                                )
-                            logf_new[good_idx] = logf_acc
-                            gradE_new[:, good_idx] = gradE_acc
-                            y2_new[good_idx] = y2_acc
-                            H2_new[good_idx] = H2_acc
-
-                        # update batched state
-                        V = V_new
-                        logf = logf_new
-                        gradE = gradE_new
-                        y2 = y2_new
-                        H2 = H2_new
-
-                # mark remaining as maxit
-                for j in range(num_restarts):
-                    if stop_list[j].reason in ("unknown", "not_started"):
-                        stop_list[j].reason = "maxit"
-                        stop_list[j].iters = maxit
-                        # recompute tangent grad norm from current batch state
-                        gcol = gradE[:, j].copy()
-                        if Q.size != 0:
-                            gcol = gcol - Q @ (Q.T @ gcol)
-                        gcol = gcol - V[:, j] * float(V[:, j] @ gcol)
-                        stop_list[j].grad_norm = float(norm(gcol))
-                        stop_list[j].accepted = False
-
-                # ------------------------------------------------------------
-                # pick best restart
-                # ------------------------------------------------------------
-                scores = np.exp(logf)
-                best_j = int(np.argmax(scores))
-
-                if verbose:
-                    for j in range(num_restarts):
+                    if verbose:
                         out_diag = {"restart": j}
-                        out_diag.update(stop_list[j].as_dict())
-                        out_diag.update(prog_list[j].as_dict())
-                        out_diag["final_grad_norm"] = float(stop_list[j].grad_norm)
+                        out_diag.update(stop.as_dict())
+                        out_diag.update(prog.as_dict())
+                        out_diag["final_grad_norm"] = float(stop.grad_norm)
                         out_diag["grad_tol"] = float(tol)
-                        out_diag["accepted_alpha"] = None if not np.isfinite(stop_list[j].line_search_alpha) else float(stop_list[j].line_search_alpha)
-                        out_diag["final_logscore"] = float(logf[j])
+                        out_diag["accepted_alpha"] = None if not np.isfinite(stop.line_search_alpha) else float(stop.line_search_alpha)
+                        out_diag["final_logscore"] = float(logf_loc)
                         print(out_diag)
 
-                best_v = V[:, best_j].copy()
-                best_s = float(y2[best_j])
-                best_H = float(H2[best_j])
-                best_score = float(scores[best_j])
+                    if logf_loc > best_logf:
+                        best_logf = logf_loc
+                        best_v = v_loc.copy()
+                        best_y2 = float(y2_loc)
+                        best_H = float(H_loc)
+
+                if best_v is None:
+                    best_v = feasible_random(d, Q, rng)
+                    best_logf, _, best_y2, best_H = entropy_logscore_grad(M, best_v, win, n, stats=stats)
+                    best_logf = float(best_logf)
+                    best_y2 = float(best_y2)
+                    best_H = float(best_H)
 
                 Q = np.column_stack([Q, best_v])
                 V_out[:, k - 1] = best_v
-                s_out[k - 1] = best_s
+                s_out[k - 1] = best_y2
                 H_out[k - 1] = best_H
-                score_out[k - 1] = best_score
+                score_out[k - 1] = math.exp(best_logf)
 
         return V_out, s_out, H_out, score_out
 
@@ -2173,7 +1914,6 @@ def run_streaming_experiment(
 ):
     global_stats = TimeStats()
     global_stats.matvec_stats = MatvecStats()
-    global_stats.eval_stats = EvalStats()
 
     with timed(global_stats, "run_streaming_experiment.total"):
         rng = np.random.default_rng(seed)
@@ -2346,7 +2086,6 @@ def run_streaming_experiment(
             "raw_pair_means": raw_pair_means,
             "time_stats": global_stats,
             "matvec_stats": global_stats.matvec_stats,
-            "eval_stats": global_stats.eval_stats,
         }
 
 
