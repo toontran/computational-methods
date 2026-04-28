@@ -77,6 +77,20 @@ under summary/ and runs through the steps below.
                   variant that clears T3 but trails value-only online by
                   0.3+ on cos1² has not closed the real gap.
 
+                  REGIME NOTE (2026-04-28, under §1ter of
+                  score_design_overview.txt). The strict 3-matrix T3 bar
+                  (static-cex, mixed-tail-sharp, diffuse-diffuse) and the
+                  operational §6 table both sit in the HIGH-sample-
+                  entropy regime — the score family's home turf where it
+                  must be competent on its own merits. The LOW-sample-
+                  entropy regime (residual-spiky-shocks, risk-residual-
+                  panel) is conceded to iSVD/SVD by the complementarity
+                  plan and is NOT in the ship-criterion: variants are
+                  expected to be competitive there but not to beat iSVD.
+                  Acceptance criteria that reference iSVD on the low-
+                  entropy regime should be rewritten as stretch goals
+                  (see FAM-02 below).
+
                   CAUTION (2026-04-28): the original `future_hmean_online`
                   numbers in summary/bench_matrix_sweep/synthesis.txt
                   are ORACLE-AWARE — its candidate pool contains
@@ -175,6 +189,14 @@ Status key:
                --rsk-variant S6_OP into a distinct output filename
                pattern (e.g. {matrix}_S6_OP_win64.json), then write
                synthesis_S6_OP.md following the AB-01 template.
+               (2026-04-28, 2nd attempt.) Stopped mid-run. Added the
+               driver script summary/score_family_aggregator_ablation/
+               aggregate_S6_OP.py (kept) and started 2 S6_OP runs
+               (mixed-tail-balanced, mixed-tail-sharp); both .log
+               files are 0-byte (killed before any output). Empty logs
+               can be deleted on the next attempt. The driver script
+               aggregate_S6_OP.py is a useful starting point for
+               whoever finishes this — read it before re-running.
 
 
 --- INFRASTRUCTURE (toolkit gaps) ---
@@ -205,12 +227,31 @@ Status key:
 [INFRA-02] Stiefel FD gradient check
   Priority:    P1
   Effort:      M
-  Status:      blocked (depends on INFRA-01)
+  Status:      open (unblocked — INFRA-01 done b6f136a)
   Depends on:  INFRA-01
   Resolves:    toolkit §8 (d)
   Acceptance:  Column-wise FD with tangent-space projection; rel<1e-7
                on float64 for a known-correct trace form (sanity).
   Notes:       Unblocks FAM-01 / FAM-03 grad correctness.
+               (2026-04-28) Attempted in this session, stopped mid-run.
+               Got stuck investigating rel_err "marginally over 1e-9"
+               on the sanity trace-form harness. No code was written
+               to disk. Hypotheses for the next attempt:
+                 (i)  Stiefel projection G_T = G - V·sym(V^T G) at
+                      single precision in the projection arithmetic
+                      can leak ~eps_mach into the tangent residual;
+                      promote that step to float64 explicitly and
+                      retry.
+                 (ii) Default ε=1e-5 is too large for trace forms with
+                      ‖G‖ of order m·n; try ε ∈ {1e-4, 1e-6} and pick
+                      the trough of the U-shaped error curve.
+                 (iii) Use Kahan/compensated summation on trace inner
+                      products if the matrix dimension is large.
+               If after those tweaks rel_err sits at 1-3e-9 on the
+               trace sanity but ≪1e-7 on actual S6/S6_GM grads, the
+               sanity test is the more stringent one (no division by
+               u_X²); relax the trace-sanity bar to <1e-8 and treat
+               the HM3/GM3 acceptance as the real bar.
 
 [INFRA-03] Rank-r row-cheat baseline
   Priority:    P1
@@ -236,12 +277,23 @@ Status key:
 [INFRA-04] Optimizer trajectory tracker
   Priority:    P2
   Effort:      M
-  Status:      blocked (most useful for Stiefel)
+  Status:      open (unblocked — INFRA-01 done b6f136a)
   Depends on:  INFRA-01
   Resolves:    toolkit §8 (b)
   Acceptance:  Per-iter log of score, principal-angles to oracle, and
                step direction; CSV per (matrix, block, variant).
   Notes:       Diagnoses drift on flat plateaus during FAM-01.
+               (2026-04-28) Attempted in this session, stopped mid-run.
+               Reportedly had a 30-iter single-cell prototype working
+               in the agent's worktree but nothing committed to the
+               main checkout — start fresh next attempt. Spec
+               unchanged: tracked_ascend(value_grad_fn, V0, oracle_V,
+               ...) with hooks emitting CSV rows per iteration.
+               Reuse `subspace_metrics.principal_angles` for the cos²
+               column. The synthesis should distinguish "lock-on then
+               drift" (saddle-following) from "never lock-on" (random
+               walk on level set) on mixed-tail-sharp / diffuse-
+               diffuse — these have different fixes.
 
 [INFRA-05] Plateau-width quantifier
   Priority:    P1
@@ -401,22 +453,60 @@ Status key:
                oracle-aware advantage that online enjoyed.
 
 [FAM-02] Row-concentration guard family
-  Priority:    P0
+  Priority:    P1 (was P0; demoted 2026-04-28 under §1ter framing —
+               see Notes)
   Effort:      M (~1 day per variant)
   Status:      partial-D0 (2026-04-28; spec/T1/T2 done; T3 4/8 matrices;
                synthesis pending)
   Depends on:  —
-  Resolves:    Q3 (F1); targets residual-spiky-shocks /
-               risk-residual-panel regime
-  Acceptance:  T2 oracle ranking unchanged vs S6; T3 cos1² on
-               residual-spiky-shocks ≥ iSVD (0.637) and tail-dominant
-               numbers no worse than S6. Ship best variant; kill if
-               none beats iSVD on spiky-residual.
+  Resolves:    Q3 (F1); REFRAMED — primary target is the HIGH-sample-
+               entropy regime as a within-window bias term on top of
+               HM3, with spiky-residual as a bonus, NOT the other way
+               around.
+  Acceptance:  (REFRAMED 2026-04-28 under §1ter bias framing.) T2
+               oracle ranking unchanged vs S6; T3 cos1² on the §6
+               HIGH-sample-entropy matrices (mixed-tail-*,
+               diffuse-diffuse, static-cex, etf-basket-basis) at least
+               as good as S6 on every matrix, AND strictly better on
+               at least one of the matrices where S6 currently fails
+               (diffuse-diffuse 0.005, mixed-tail-sharp 0.013,
+               mixed-tail-balanced 0.0004). Beating iSVD on residual-
+               spiky-shocks / risk-residual-panel is a STRETCH GOAL,
+               not the ship-criterion — that regime is conceded to
+               iSVD/SVD by the complementarity plan. Ship best variant
+               if it improves any high-entropy matrix without
+               regressing others; kill if it produces no improvement
+               on the high-entropy regime regardless of spiky-residual
+               outcome.
   Notes:       Folder: summary/score_family_row_concentration_guard/.
                Variants: D0 S6 · relH1 multiplicative,
                          D1 S6 with leverage-weighted u_X (overlaps Q4),
                          D2 S6 with soft sigmoid gate on u_sk (F2 spec).
                INDEPENDENT of FAM-01 — can run in parallel.
+               (2026-04-28 demotion P0 → P1.) Originally promoted P0
+               because spiky-residual was treated as a regime the family
+               must close. Under §1ter's bias framing, spiky-residual is
+               iSVD's territory by design; the complementarity plan does
+               not require the family to win there. relH1's REAL value
+               is as the WITHIN-WINDOW STABILITY CHECK on the high-
+               entropy proxy — i.e. a tail-conspiracy guard. The
+               proxy "spread on visible sample → spread on population"
+               can be fooled by a few rare large-norm rows that align
+               with v constructively in the current window; HM3 catches
+               the between-window cut of that pathology (conspiracy
+               doesn't replicate from A_cur to A_fut), relH1 catches
+               the within-window cut (a single row supplies most of
+               ‖A_X v‖²). Both axes are needed on heavy-tailed matrices
+               where conspiracies can persist across windows by chance.
+               Demoted to P1 (not P0) because (i) the high-entropy
+               failure on mixed-tail-sharp / diffuse-diffuse is also
+               plateau-drift dominated (FAM-01's territory), not purely
+               bias-stability dominated; (ii) D0 work is already partial
+               and the existing T3 matrices include diffuse-diffuse and
+               mixed-tail-* — finishing D0 directly tests the within-
+               window stability hypothesis on the high-entropy regime.
+               Keep D0 closure as an immediate todo; defer D1/D2 unless
+               D0 surprises.
                PARTIAL D0 2026-04-28 (agent ran out of usage budget):
                - Family folder populated: 00_known_vs_unknown.md,
                  01_family_design.md, 02_gradient_theory.md, baseline/.
@@ -438,6 +528,14 @@ Status key:
                `--rsk-variant D0`, then write variants/D0/synthesis.md
                and 03_cross_variant_synthesis.md (D1 / D2 still
                spec-only — out of scope for D0 closure).
+               (2026-04-28, 2nd attempt under reframed acceptance.)
+               Stopped mid-run; added 0 new bench JSONs. Empty .log
+               placeholders for etf-basket-basis, mixed-tail-soft,
+               residual-spiky-shocks, risk-residual-panel are leftover
+               from the killed runs and can be deleted on the next
+               attempt without harm. Apply the REFRAMED acceptance
+               from above (high-entropy regime focus; spiky-residual
+               stretch-only) when writing synthesis.md.
 
 [FAM-03] Subspace-trace family
   Priority:    P2
@@ -492,25 +590,52 @@ Status key:
 Not part of the backlog itself; a snapshot read on what to pull next.
 The backlog is the source of truth and changes as items close.
 
-  Now (parallel):
-    AB-01            (P0, S, unblocked)  →  decides aggregator for FAM-01/03
-    FAM-02 D0        (P0, M, unblocked)  →  spiky-residual regime, independent
-    INFRA-01,03,05   (P1, S, unblocked)  →  unblock FAM-01
+(Reordered 2026-04-28 under §1ter of score_design_overview.txt — the
+priority is now "high-sample-entropy regime first." Low-entropy /
+spiky-residual work is conceded to iSVD by the complementarity plan
+and is downstream.)
 
-  Next (after AB-01 lands and infra ready):
-    INFRA-02         (P1, M, blocked-until-INFRA-01)
-    FAM-01 B0        (P1, L, blocked-until-INFRA-01,02,03)
-    FAM-03 E0        (P2, L, blocked-until-INFRA-01,02) — parallel to FAM-01
+  Now (parallel; all unblocked, all targeting the high-entropy regime):
+    INFRA-02         (P1, M, blocked-until-INFRA-01 ✓)  →  unblock FAM-01
+    INFRA-04         (P2, M, blocked-until-INFRA-01 ✓)  →  unblock FAM-01
+                                                          drift diagnosis
+    FAM-02 D0 close  (P1, S, partial)                  →  finish 4 missing
+                                                          T3 matrices,
+                                                          write synthesis;
+                                                          tests within-
+                                                          window bias on
+                                                          high-entropy
+                                                          regime
+    AB-02 finish     (P2, S, partial)                  →  T3 + synthesis
+                                                          for op-norm
+                                                          weighting
 
-  Conditional on FAM-01 B0 closing ≥50% of S6→(value-only online) gap:
+  Next (FAM-01 — the structural fix for the high-entropy regime):
+    FAM-01 B0        (P1, L, blocked-until-INFRA-02)   →  rank-r lift,
+                                                          THE high-entropy
+                                                          fix for plateau
+                                                          drift on
+                                                          mixed-tail-sharp
+                                                          / diffuse-diffuse
+    FAM-03 E0        (P2, L, blocked-until-INFRA-02)   →  parallel to
+                                                          FAM-01
+
+  Conditional on FAM-01 B0 closing ≥50% of S6→(value-only online) gap
+  on the high-entropy §6 matrices:
     FAM-04, FAM-05   (P2/P3)
   Conditional on FAM-01 failing plateau-shrinkage hypothesis:
     Promote FAM-03 to P1; deprioritize remaining FAM-01 variants.
 
   (2026-04-28) "online" everywhere in this section now means the
-  value-only rerun from INFRA-10. The original oracle-aware online
-  numbers (summary/bench_matrix_sweep/synthesis.txt) are a CEILING
-  reference, not the operational target — see §4 CAUTION.
+  value-only rerun from INFRA-10 — see §4 CAUTION. AB-01 (HM-vs-GM)
+  is DONE/KILLED — keep HM3.
+
+  What is NOT in this sequencing list (deliberately): any work whose
+  primary acceptance is "beat iSVD on residual-spiky-shocks /
+  risk-residual-panel". Under §1ter's bias framing that is iSVD's
+  regime by design; the score family should be competitive there but
+  not required to win. Pull such work in only after the high-entropy
+  regime is solved, and only as a stretch goal.
 
 
 6. Family handoff checklist
