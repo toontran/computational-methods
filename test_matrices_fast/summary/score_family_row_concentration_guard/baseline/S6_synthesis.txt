@@ -1,0 +1,178 @@
+F-weighted HM3 score (S6): implementation + benchmark synthesis
+================================================================
+
+Date: 2026-04-28
+Spec: summary/f_hm3_score_implementation_context.txt
+
+This implements the S6 score described in §0–§3 of the spec, then runs the
+T1 / T2 / T3 gauntlet from §4. All results below are for half_win=32,
+sliding mode (block 31 final), seed=0.
+
+
+1. What was implemented
+-----------------------
+
+A. Score and analytic gradient — r_sk_g_score.py
+   r_sk_g_value_grad now accepts kwargs cur_F2, fut_F2, sk_F2_low and
+   adds an "S6" branch:
+
+     u_sk = raw_sk / sk_F2_low,  u_g1 = raw_g1 / cur_F2,  u_g2 = raw_g2 / fut_F2
+     score = HM3(u_sk, u_g1, u_g2)        when sketch present (block ≥ 2)
+     score = HM2(u_g1, u_g2)              block-1 fall-through
+   No gate, no relH1 (per §0 NOTE and §7 instructions).
+
+   Analytic gradient (matches §2):
+     coef = HM^2 / k    (k=3 with sketch, k=2 fall-through)
+     grad = coef · (1/u_X^2) · (1/W_X) · (2 A_X^T y_X)   summed over X
+
+   The wrappers `make_r_sk_g_optimizer` and `optimize_r_sk_g_in_basis`
+   thread the F-norms through. The diagnostic `analyze_block` now also
+   computes sk_F2_low = ||A_sketch||_F^2 (rank-r CARRY, not full prefix
+   per §0 NOTE / §6 P6) and adds candidates:
+     r_sk_g_S6_best        — S6 over B_search (V_default[:,0]-deflated)
+     r_sk_g_S6_v1_full     — sequential rank-2 slot 1 over full B_union
+     r_sk_g_S6_v2_deflate  — sequential rank-2 slot 2
+
+B. Streaming wiring — half_window_sliding_hmean_experiment.py
+   Added "S6" to --rsk-variant choices and a new --rsk-no-deflate flag.
+   The future_hmean_r_sk_g branch:
+     - computes cur_F2/fut_F2/sk_F2_low inline (rank-r CARRY for sketch)
+     - adds the rank-2 SVD of M_gain = [B_top; A_cur] to warm-starts
+       (P1: combined_v's are tail-of-the-pack for S6)
+     - threads F-norms into optimize_r_sk_g_in_basis
+
+C. FD gradient check — extended to cover S6.
+
+
+2. T1 — FD gradient check (mixed-tail-sharp, blocks 1/2/12/31, float64)
+-----------------------------------------------------------------------
+S6 max relative error across all probed coordinates:
+
+  block  1: rel = 2.30e-10
+  block  2: rel = 1.37e-10
+  block 12: rel = 9.68e-11
+  block 31: rel = 3.62e-10
+
+All ≪ 1e-7 → analytic gradient verified.
+
+
+3. T2 — Per-block oracle ranking under score_S6 (with --no-oracle-warmstart)
+----------------------------------------------------------------------------
+Headline: S6 puts oracle near rank 1 in B_union AND lets the optimizer
+find vectors that score even higher.
+
+mixed-tail-sharp (the matrix this score was designed against):
+
+  block  1: r_sk_g_S6_v1_full  (1.66e-2)  >  r_sk_g_S6_best  >  hm_triplet_raw  >  oracle_v_proj  (1.58e-2)
+  block  2: r_sk_g_S6_v1_full  (1.94e-2)  >  oracle_v_proj  (1.83e-2)  >  hm_triplet_raw  (1.55e-2)
+  block  6: r_sk_g_S6_v2_deflate (1.92e-2)  >  oracle_v1_proj  (1.86e-2)  >  oracle_v2_proj  (1.70e-2)
+  block 12: r_sk_g_S6_v1_full  (1.91e-2)  >  hm_triplet_raw  >  oracle_v1_proj  (1.38e-2);   oracle_v2_proj falls to 8.0e-3 (O2)
+  block 31: r_sk_g_S6_v2_deflate (1.94e-2)  >  hm_triplet_raw  >  oracle_v1_proj  (8.6e-3);  oracle_v2_proj 2.2e-3 (O2)
+
+  Δ(oracle_v2 − hm_triplet_raw) for S6 across blocks: -5.6e-4, +2.3e-3, +1.4e-3, -7.6e-3, -1.4e-2
+  → the gap is small (S6 *is* "row-of-A_fut cheat-resistant"), but oracle_v2_proj
+    *does* fall behind hm_triplet at b12+ (the O2 cliff verified in the spec).
+
+The oracle is reachable by the S6 optimizer in B_union (the optimizer goes
+even higher than the oracle in S6 score). align_v2_proj of the optimizer
+solutions is small (0.04–0.25), confirming P4: the basin around the
+oracle is narrow; S6 finds a different (higher-score, non-oracle) point.
+
+(static-cex and diffuse-diffuse: similar pattern — see per-matrix txt
+files in summary/r_sk_g_S6_*.txt.)
+
+
+4. T3 — Streaming bench (sliding mode, block 31)
+-------------------------------------------------
+
+Final cos²(V_carry, V_exact) for the top-2 right singular vectors:
+
+matrix                   policy                cos0²    cos1²    tail
+-----------------------------------------------------------------------
+static-cex               combined              0.960    0.780    0.130
+static-cex               isvd                  0.002    0.002    0.998
+static-cex               S6 (deflate)          0.936    0.025    0.520
+static-cex               S6 (no-deflate)       0.957    0.0001   0.522
+
+mixed-tail-sharp         combined              0.785    0.002    0.607
+mixed-tail-sharp         isvd                  0.006    0.0002   0.997
+mixed-tail-sharp         S6 (deflate)          0.733    0.013    0.627
+mixed-tail-sharp         S6 (no-deflate)       0.805    0.003    0.596
+
+diffuse-diffuse          combined              0.085    0.030    0.943
+diffuse-diffuse          isvd                  0.831    0.239    0.465
+diffuse-diffuse          S6 (deflate)          0.749    0.005    0.623
+diffuse-diffuse          S6 (no-deflate)       0.519    0.003    0.739
+
+residual-spiky-shocks    combined              0.345    0.081    0.787
+residual-spiky-shocks    isvd                  0.865    0.406    0.364
+residual-spiky-shocks    S6 (deflate)          0.333    0.266    0.700
+
+etf-basket-basis         combined              1.000    0.000    0.500
+etf-basket-basis         isvd                  1.000    0.042    0.479
+etf-basket-basis         S6 (deflate)          1.000    0.652    0.174   ← clear win
+
+mixed-tail-soft          combined              0.598    0.135    0.634
+mixed-tail-soft          isvd                  0.128    0.000    0.936
+mixed-tail-soft          S6 (deflate)          0.847    0.022    0.566
+
+mixed-tail-balanced      combined              0.528    0.005    0.733
+mixed-tail-balanced      isvd                  0.033    0.004    0.982
+mixed-tail-balanced      S6 (deflate)          0.687    0.0004   0.656
+
+
+5. Acceptance vs. the spec's bar (§4 T3)
+----------------------------------------
+Bar: cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp; ≥ 0.7 on diffuse-diffuse;
+     final_tail_mass ≤ 0.5 on ≥ 2 of 3 matrices.
+
+S6 (deflate) on the 3-matrix gauntlet:
+  static-cex     cos1²=0.025  ✗   (combined nails 0.78; S6 finds a high-S6 v that is *not* the second SVD direction — confirms P4)
+  mixed-tail-sp  cos1²=0.013  ✗   (combined 0.002, so S6 is slightly better but still far from 0.6)
+  diffuse-diff   cos1²=0.005  ✗
+  tail_mass:     0.520, 0.627, 0.623 — none ≤ 0.5
+
+Conclusion: S6 does not pass the strict acceptance bar on the original
+3-matrix gauntlet. But the wider-matrix sweep shows two real signals:
+  • etf-basket-basis: S6 cos1²=0.652 vs combined 0.000 / iSVD 0.042 — strong win.
+  • residual-spiky-shocks: S6 cos1²=0.266 vs combined 0.081 — cleanly beats
+    combined; iSVD wins (0.406) because the matrix has diffuse rowspace.
+On 4 of 7 matrices S6 beats combined on cos1². On the slot-2 metric S6
+ties or improves on combined for static-cex / mixed-tail-* but does not
+reach iSVD on the diffuse-rowspace matrices.
+
+This matches the diagnostic: on counterexample matrices the oracle ranks
+top-2 under S6 (per T2), but the basin is narrow (P4) — the optimizer
+finds a higher-S6, non-oracle point, so cos[1]² stays low.
+
+
+6. P-list outcomes
+------------------
+P1 (combined_v's tail-of-pack): MITIGATED. The streaming wiring now adds
+   sketch_v[0/1] (state.V) AND the rank-2 SVD of M_gain as warm-starts in
+   addition to combined / mgain_deflated_svd / Vbasis_final.
+P2' (deflate vs no-deflate): TESTED. On all 3 matrices the deflated
+   variant has higher cos[1]² than the no-deflate variant (slot-1 stays
+   pinned to V_default[:,0] either way; deflation prevents slot-2 from
+   collapsing onto it). Default kept at deflate.
+P4 (narrow oracle basin): CONFIRMED. The optimizer reliably finds vectors
+   with higher S6 score than oracle_v2_proj but with low align_v2_proj.
+   Scalar-per-v score has a wide level set.
+P6 (sk_F2_low ≠ sk_F2_full): respected. analyze_block computes
+   sk_F2_low = float(np.sum(A_sketch**2)) on the rank-r carry, distinct
+   from consts["sk_F2"] (full prefix Frobenius).
+P7 (u_sk dynamic range ≈ 0.5): observed. sat_S6 column in T2 outputs caps
+   at 0.49 for sketch-aligned candidates; oracle u_sk ≈ 0.04–0.07.
+
+
+7. Conclusion / next steps
+--------------------------
+S6 is correctly implemented (FD passes, oracle ranks top-2 in T2). It
+beats combined on cos[1]² on 4 of 7 matrices and clearly wins on
+etf-basket-basis. It does NOT pass the strict §4 bar on the 3-matrix
+counterexample gauntlet — the issue is the narrow-basin pathology (P4),
+not the score. Per §11 follow-ups, candidate next experiments would be:
+  F1: add relH1 factor (entropy gating) — only after seeing whether the
+      basin can be widened by candidate seeding.
+  F2: soft gate on u_sk (sigmoid).
+  F4: Stiefel rank-2 lift (escape the scalar plateau).

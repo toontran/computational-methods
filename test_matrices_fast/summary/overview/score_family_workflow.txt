@@ -150,7 +150,7 @@ Status key:
 [AB-02] F-norm vs operator-norm weighting ablation
   Priority:    P2
   Effort:      S
-  Status:      open
+  Status:      partial (2026-04-28; T1+T2 done, T3 + synthesis pending)
   Depends on:  —
   Resolves:    §2bis (b.i)
   Acceptance:  Same harness as AB-01. Compare S6_HM3 with u_X =
@@ -158,6 +158,23 @@ Status key:
                if it improves heavy-tailed matrices (static-cex)
                without regressing diffuse.
   Notes:       Cheap silent-assumption test; not yet promoted to a Q.
+               PARTIAL 2026-04-28 (agent ran out of usage budget):
+               - S6_OP variant added to r_sk_g_score.py (score + grad).
+               - T1 grad-check PASS at float64 (rel ≤ 3.2e-10), see
+                 summary/score_family_aggregator_ablation/
+                 S6_OP_T1_gradient_check.log.
+               - T2 per-block done on the 3-matrix probe set ×
+                 5 blocks; outputs in summary/score_family_aggregator
+                 _ablation/S6_OP_T2{,.csv,.json,_<matrix>.txt}. T2
+                 columns sat_OP / score_OP populated.
+               - T3 NOT RUN: no S6_OP-specific bench JSONs; the
+                 mixed-tail-*_win64.json files in the folder belong
+                 to AB-01's S6_GM run.
+               - Synthesis NOT WRITTEN.
+               To finish: rerun the 7-matrix sweep with
+               --rsk-variant S6_OP into a distinct output filename
+               pattern (e.g. {matrix}_S6_OP_win64.json), then write
+               synthesis_S6_OP.md following the AB-01 template.
 
 
 --- INFRASTRUCTURE (toolkit gaps) ---
@@ -386,7 +403,8 @@ Status key:
 [FAM-02] Row-concentration guard family
   Priority:    P0
   Effort:      M (~1 day per variant)
-  Status:      open
+  Status:      partial-D0 (2026-04-28; spec/T1/T2 done; T3 4/8 matrices;
+               synthesis pending)
   Depends on:  —
   Resolves:    Q3 (F1); targets residual-spiky-shocks /
                risk-residual-panel regime
@@ -399,6 +417,27 @@ Status key:
                          D1 S6 with leverage-weighted u_X (overlaps Q4),
                          D2 S6 with soft sigmoid gate on u_sk (F2 spec).
                INDEPENDENT of FAM-01 — can run in parallel.
+               PARTIAL D0 2026-04-28 (agent ran out of usage budget):
+               - Family folder populated: 00_known_vs_unknown.md,
+                 01_family_design.md, 02_gradient_theory.md, baseline/.
+               - D0 spec at variants/D0/spec.md; D0 variant added to
+                 r_sk_g_score.py with analytic grad (visible as `D0`
+                 in --rsk-variant choices).
+               - T1 grad-check PASS in variants/D0/diagnostics/
+                 T1_grad_check.txt (rel ≤ 4e-10).
+               - T2 per-block done on 3-matrix probe set in
+                 variants/D0/diagnostics/T2_per_block{,.csv,.json,
+                 _<matrix>.txt}.
+               - T3 PARTIAL (4 of 7 matrices): diffuse-diffuse,
+                 mixed-tail-balanced, mixed-tail-sharp, static-cex
+                 have full {.json,.csv,.txt,.log}; etf-basket-basis,
+                 mixed-tail-soft, residual-spiky-shocks,
+                 risk-residual-panel have only .log (incomplete runs).
+               - synthesis.md NOT WRITTEN.
+               To finish: rerun the 4 missing T3 matrices with
+               `--rsk-variant D0`, then write variants/D0/synthesis.md
+               and 03_cross_variant_synthesis.md (D1 / D2 still
+               spec-only — out of scope for D0 closure).
 
 [FAM-03] Subspace-trace family
   Priority:    P2

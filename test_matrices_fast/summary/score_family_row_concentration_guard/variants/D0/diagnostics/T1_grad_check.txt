@@ -1,0 +1,66 @@
+matrix=mixed-tail-sharp
+  block  1 S1: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S2: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S3: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S4: score= 2.061966e-02  max|g-fd|=3.273e-12  rel=2.449e-10
+  block  1 S5: score= 2.061966e-02  max|g-fd|=3.273e-12  rel=2.449e-10
+  block  1 S6: score= 9.109163e-04  max|g-fd|=1.177e-13  rel=1.847e-10
+  block  1 S6_GM: score= 9.136871e-04  max|g-fd|=1.236e-13  rel=1.960e-10
+  block  1 D0: score= 7.813106e-04  max|g-fd|=1.435e-13  rel=2.835e-10
+  block  2 S1: score=-9.635655e-01  max|g-fd|=1.281e-10  rel=4.616e-09
+  block  2 S2: score= 9.479987e-07  max|g-fd|=1.174e-14  rel=3.382e-09
+  block  2 S3: score= 1.766993e-02  max|g-fd|=4.510e-12  rel=3.154e-10
+  block  2 S4: score= 2.803398e-02  max|g-fd|=3.755e-12  rel=1.767e-10
+  block  2 S5: score= 1.964364e-05  max|g-fd|=3.950e-12  rel=9.620e-09
+  block  2 S6: score= 1.186562e-03  max|g-fd|=1.885e-13  rel=2.217e-10
+  block  2 S6_GM: score= 1.372486e-03  max|g-fd|=1.547e-13  rel=1.524e-10
+  block  2 D0: score= 9.401815e-04  max|g-fd|=1.759e-13  rel=2.397e-10
+  block 12 S1: score=-9.623945e-01  max|g-fd|=1.395e-10  rel=6.064e-09
+  block 12 S2: score= 3.428383e-07  max|g-fd|=8.114e-15  rel=5.829e-09
+  block 12 S3: score= 2.771260e-02  max|g-fd|=8.641e-12  rel=5.562e-10
+  block 12 S4: score= 4.044161e-02  max|g-fd|=7.873e-12  rel=3.249e-10
+  block 12 S5: score= 9.050128e-05  max|g-fd|=1.067e-12  rel=8.443e-10
+  block 12 S6: score= 1.294151e-03  max|g-fd|=2.042e-13  rel=2.518e-10
+  block 12 S6_GM: score= 1.314898e-03  max|g-fd|=2.468e-13  rel=2.651e-10
+  block 12 D0: score= 1.144451e-03  max|g-fd|=3.193e-13  rel=4.262e-10
+  block 31 S1: score=-9.762197e-01  max|g-fd|=1.085e-10  rel=4.865e-09
+  block 31 S2: score= 2.647150e-07  max|g-fd|=6.133e-15  rel=3.843e-09
+  block 31 S3: score= 1.193774e-02  max|g-fd|=2.264e-12  rel=1.559e-10
+  block 31 S4: score= 1.844076e-02  max|g-fd|=5.597e-12  rel=4.336e-10
+  block 31 S5: score= 8.761850e-04  max|g-fd|=2.031e-13  rel=7.716e-11
+  block 31 S6: score= 7.612569e-04  max|g-fd|=6.417e-14  rel=1.328e-10
+  block 31 S6_GM: score= 8.797513e-04  max|g-fd|=9.917e-14  rel=1.309e-10
+  block 31 D0: score= 6.067898e-04  max|g-fd|=1.002e-13  rel=2.097e-10
+matrix=diffuse-diffuse
+  block  1 S1: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S2: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S3: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S4: score= 1.671378e-02  max|g-fd|=4.765e-12  rel=4.273e-10
+  block  1 S5: score= 1.671378e-02  max|g-fd|=4.765e-12  rel=4.273e-10
+  block  1 S6: score= 8.609754e-04  max|g-fd|=1.894e-13  rel=3.572e-10
+  block  1 S6_GM: score= 9.673355e-04  max|g-fd|=1.098e-13  rel=3.095e-10
+  block  1 D0: score= 6.325589e-04  max|g-fd|=2.311e-13  rel=5.475e-10
+  block  2 S1: score=-9.687144e-01  max|g-fd|=1.381e-10  rel=9.811e-09
+  block  2 S2: score= 2.612114e-10  max|g-fd|=2.861e-16  rel=6.121e-08
+  block  2 S3: score= 3.101100e-02  max|g-fd|=5.700e-12  rel=3.907e-10
+  block  2 S4: score= 3.781669e-02  max|g-fd|=6.638e-12  rel=4.017e-10
+  block  2 S5: score= 4.265763e-05  max|g-fd|=1.462e-12  rel=2.130e-09
+  block  2 S6: score= 1.270613e-04  max|g-fd|=6.441e-14  rel=6.024e-11
+  block  2 S6_GM: score= 4.075066e-04  max|g-fd|=1.259e-13  rel=1.088e-10
+  block  2 D0: score= 1.045962e-04  max|g-fd|=6.161e-14  rel=7.074e-11
+  block 12 S1: score=-9.728407e-01  max|g-fd|=1.079e-10  rel=7.823e-09
+  block 12 S2: score= 2.073921e-08  max|g-fd|=1.818e-15  rel=8.892e-09
+  block 12 S3: score= 2.445658e-02  max|g-fd|=3.433e-12  rel=4.033e-10
+  block 12 S4: score= 3.110667e-02  max|g-fd|=6.340e-12  rel=5.111e-10
+  block 12 S5: score= 4.334775e-05  max|g-fd|=2.778e-10  rel=3.514e-07
+  block 12 S6: score= 6.940384e-04  max|g-fd|=1.710e-13  rel=9.606e-11
+  block 12 S6_GM: score= 7.437769e-04  max|g-fd|=1.518e-13  rel=1.223e-10
+  block 12 D0: score= 5.749401e-04  max|g-fd|=2.131e-13  rel=1.406e-10
+  block 31 S1: score=-9.794918e-01  max|g-fd|=1.189e-10  rel=8.332e-09
+  block 31 S2: score= 2.623105e-08  max|g-fd|=1.715e-15  rel=8.844e-09
+  block 31 S3: score= 1.698866e-02  max|g-fd|=3.604e-12  rel=2.899e-10
+  block 31 S4: score= 2.265105e-02  max|g-fd|=4.764e-12  rel=3.428e-10
+  block 31 S5: score= 3.476680e-04  max|g-fd|=8.282e-13  rel=4.297e-10
+  block 31 S6: score= 6.379801e-04  max|g-fd|=7.710e-14  rel=7.855e-11
+  block 31 S6_GM: score= 6.442764e-04  max|g-fd|=7.800e-14  rel=8.430e-11
+  block 31 D0: score= 5.370225e-04  max|g-fd|=1.316e-13  rel=1.576e-10

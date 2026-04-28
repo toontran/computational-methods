@@ -1,0 +1,5 @@
+start Tue Apr 28 12:48:26 AM EDT 2026 — D0 streaming bench, 8 matrices
+done static-cex (00:49:56)
+done mixed-tail-balanced (00:50:04)
+done diffuse-diffuse (00:50:08)
+done mixed-tail-sharp (00:50:08)
