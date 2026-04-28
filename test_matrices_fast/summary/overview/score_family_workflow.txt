@@ -308,7 +308,7 @@ Status key:
 [INFRA-10] Value-only online baseline
   Priority:    P0
   Effort:      S (~30 min bench)
-  Status:      in-progress (2026-04-28)
+  Status:      done (2026-04-28)
   Depends on:  —
   Resolves:    Discovered flaw 2026-04-28 — operational bar invalidation
   Acceptance:  Strip `q2_vs_q1oracle` from
@@ -336,6 +336,26 @@ Status key:
                land, propagate into the §6 table of
                score_design_overview.txt and §7 of diagnostic_toolkit.
                txt, then re-evaluate AB-01 / unblock FAM-01-3-4-5.
+               DONE 2026-04-28: code change at
+               half_window_sliding_hmean_experiment.py:31-33,512-514
+               (pool split into VALUE_ONLY/ORACLE_AWARE; default flipped
+               to VALUE_ONLY; --online-include-oracle CLI flag restores
+               prior behavior). 8-matrix bench at half_win=32 written
+               to summary/bench_matrix_sweep_value_only_online/
+               {matrix}_win64.{json,csv,txt,log} + synthesis.txt.
+               Headline: oracle leak Δcos1² = +0.77 on mixed-tail-
+               balanced, +0.48 on diffuse-diffuse, +0.05 on residual-
+               spiky-shocks; ≤±0.03 elsewhere. cos0² also leaked
+               (+0.22-0.54 on tail-dominant). Reframed S6 vs value-only
+               online: S6 WINS cos1² on mixed-tail-sharp (+0.063),
+               mixed-tail-soft (+0.156), diffuse-diffuse (+0.081); ties
+               on residual-spiky-shocks (-0.008) and risk-residual-panel
+               (-0.004). Surviving real gaps: etf-basket-basis (-0.16)
+               and the static-cex regime where combined dominates
+               regardless. The "S6 trails online by 0.5-0.85" framing
+               in the prior overview was substantially the oracle leak.
+               §6 table of score_design_overview.txt should be
+               re-propagated; FAM-01 acceptance is now reachable.
 
 
 --- NEW FAMILIES ---

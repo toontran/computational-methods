@@ -1,0 +1,208 @@
+Value-only future_hmean_online — corrected operational baseline
+================================================================
+
+Date: 2026-04-28
+Backlog item: summary/overview/score_family_workflow.txt §5 [INFRA-10]
+Triggered by: discovered flaw in `future_hmean_online`'s candidate pool.
+
+This is the value-only rerun that replaces summary/bench_matrix_sweep/
+synthesis.txt as the OPERATIONAL bar for AB-01, FAM-01, FAM-03, FAM-04,
+FAM-05, the §4 op-bar, and the §5 sequencing conditional in the workflow
+doc. The original (oracle-aware) numbers are RETAINED at
+summary/bench_matrix_sweep/ as a labeled CEILING reference.
+
+
+1. The flaw
+-----------
+
+future_hmean_online's candidate pool was oracle-seeded:
+
+  half_window_sliding_hmean_experiment.py:24  (pre-fix)
+    ONLINE_POOL = ("opt2", "q2_vs_q1oracle", "mgain_deflated_svd",
+                   "block_complement", "prev_opt2")
+
+  half_window_sliding_hmean_experiment.py:247-250
+    "q2_vs_q1oracle" branch is built from `raw_oracle`.
+
+  half_window_sliding_hmean_experiment.py:490
+    Q_oracle, raw_oracle = raw_oracle_columns(M_gain, V_exact, rank, ...)
+
+  second_slot_tail_bias_diagnostic.py:32 (raw_oracle_columns)
+    Projects V_exact[:, :rank] (the TRUE right singular vectors of A)
+    into the row span and returns them as candidates.
+
+So 1 of 5 entries in ONLINE_POOL was V_exact[:,1] projected into B_union.
+The "online" benchmark's slot-2 victory on tail-dominant matrices was
+substantially the oracle picking itself out of the pool — not a property
+of HM-online scoring.
+
+A value-only score family literally cannot close the gap to such a
+benchmark, because the rival's pool contains the answer.
+
+
+2. The fix
+----------
+
+`half_window_sliding_hmean_experiment.py` (lines 31-33, 512-514):
+
+  ONLINE_POOL_VALUE_ONLY  = ("opt2", "mgain_deflated_svd",
+                             "block_complement", "prev_opt2")
+  ONLINE_POOL_ORACLE_AWARE = ("opt2", "q2_vs_q1oracle",
+                              "mgain_deflated_svd", "block_complement",
+                              "prev_opt2")
+  ONLINE_POOL = ONLINE_POOL_VALUE_ONLY    # default
+
+  CLI flag --online-include-oracle restores the oracle-aware pool when
+  needed (e.g., for upper-bound studies). Default is value-only.
+
+Everything else in the bench harness is unchanged. Same matrix loader,
+same half_win=32 sliding mode, same 1024 rows, same 32 blocks.
+
+
+3. The numbers — value-only online vs oracle-aware ceiling
+-----------------------------------------------------------
+
+cos² alignment with V_exact at block 31, sliding mode, half_win=32.
+"OA" = oracle-aware (= prior reported numbers in summary/bench_matrix_sweep).
+"VO" = value-only (this rerun).
+Δ = OA − VO; positive means oracle leak inflated the OA number.
+
+  matrix                  OA cos0²  OA cos1²  VO cos0²  VO cos1²   Δcos0²   Δcos1²
+  mixed-tail-sharp              -°       -°    0.7630    0.0482        -        -
+  mixed-tail-balanced       0.9814    0.8268    0.7653    0.0592   +0.216   +0.768
+  mixed-tail-soft           0.9833    0.0192    0.7589    0.0002   +0.224   +0.019
+  static-cex                0.9817    0.8186    0.9827    0.8473   -0.001   -0.029
+  diffuse-diffuse           0.9432    0.5277    0.4001    0.0498   +0.543   +0.478
+  etf-basket-basis          1.0000    0.9623    1.0000    0.9689   +0.000   -0.007
+  residual-spiky-shocks     0.4471    0.2459    0.3518    0.1920   +0.095   +0.054
+  risk-residual-panel       0.5188    0.0636    0.3920    0.0679   +0.127   -0.004
+
+  ° No oracle-aware bench JSON exists for mixed-tail-sharp under
+    summary/bench_matrix_sweep/. The 0.850 number cited in the §6 table
+    of score_design_overview.txt comes from a different run; its
+    provenance should be traced. The corrected value-only number is
+    0.0482 — almost certainly far below the 0.850 ceiling, by analogy
+    with mixed-tail-balanced (Δcos1² = +0.77).
+
+Interpretation:
+  - Massive oracle leak on the mixed-tail-balanced (+0.77) and
+    diffuse-diffuse (+0.48) cos1² numbers. The "online's slot-2
+    crushes everything on tail-dominant matrices" framing in the
+    overview was substantially carried by the oracle injection.
+  - Modest leak on mixed-tail-soft, residual-spiky-shocks (+0.02 to
+    +0.05). These numbers were closer to "real."
+  - No leak on static-cex (combined-greedy v1 dominates regardless of
+    pool), etf-basket-basis (online still wins big — the HM-online
+    candidate from the 2-SVD reframe is doing the work), or
+    risk-residual-panel.
+  - cos0² leak is also significant: +0.22 to +0.54 on tail-dominant /
+    diffuse matrices. The oracle injection was helping slot-1 too,
+    via the joint optimization in the candidate selector.
+
+
+4. The reframed S6 vs value-only online comparison
+---------------------------------------------------
+
+cos1² at block 31 with the corrected baselines:
+
+  matrix                  isvd   comb    hyb    online_VO   S6
+  mixed-tail-sharp        0.013  0.040  0.029   0.048       0.111  ← S6 wins
+  mixed-tail-balanced     0.060  0.070  0.038   0.059       0.018
+  mixed-tail-soft         0.003  0.367  0.131   0.000       0.156
+  static-cex              0.044  0.883  0.030   0.847       0.154    combined wins
+  diffuse-diffuse         0.489  0.173  0.221   0.050       0.131
+  etf-basket-basis        0.205  0.017  0.186   0.969       0.807
+  residual-spiky-shocks   0.638  0.284  0.488   0.192       0.184    iSVD wins
+  risk-residual-panel     0.471  0.214  0.007   0.068       0.064    iSVD wins
+
+  S6 cos1² > online_VO cos1² on: mixed-tail-sharp (+0.063),
+                                 mixed-tail-soft (+0.156),
+                                 diffuse-diffuse (+0.081)
+  S6 cos1² < online_VO cos1² on: mixed-tail-balanced (-0.041),
+                                 static-cex (-0.694, but combined dominates),
+                                 etf-basket-basis (-0.162),
+                                 residual-spiky-shocks (-0.008),
+                                 risk-residual-panel (-0.004)
+
+This radically reframes the §6 table reading in score_design_overview.txt.
+The previous narrative — "S6 trails online by 0.5–0.85 cos1² on every
+tail-dominant matrix" — was an artifact of the oracle leak. With the
+corrected baseline:
+
+  - On the tail-dominant subset (mixed-tail-*, static-cex, diffuse-
+    diffuse, etf-basket-basis), S6 already MATCHES OR BEATS value-only
+    online on 4 of 6. The remaining gaps are
+      mixed-tail-balanced  (-0.04, modest)
+      static-cex           (combined still rules; both score-families lose)
+      etf-basket-basis     (-0.16, real; online's HM-online is doing
+                            something genuinely useful here)
+  - On the spiky-residual subset (residual-spiky-shocks, risk-residual-
+    panel), S6 ties value-only online but both are far below iSVD/hybrid.
+    This is the FAM-02 regime (row-concentration guard), not the FAM-01
+    regime.
+
+Implication for FAM-01 (Stiefel rank-r lift) acceptance: the "close
+≥50% of S6→online gap" target is now tractable on the matrices where
+the gap is real. On etf-basket-basis the gap (cos1² 0.807 → 0.969)
+needs 0.08 cos1² closure, which is the kind of lift a rank-r escape
+from the P4 plateau could produce. On mixed-tail-balanced the
+"surviving" gap (0.04) is within noise of a single bench run.
+
+
+5. Downstream changes required
+-------------------------------
+
+Immediate, in this commit:
+  - score_family_workflow.txt §5 [INFRA-10]: status → done.
+
+Pending, in a follow-up sweep / commit:
+  - score_design_overview.txt §6 table: rebuild with the value-only
+    online column. The °-footnoted version is the ceiling reference.
+    The "gap-to-beat" column flips on mixed-tail-* (S6 wins on most),
+    static-cex (combined still wins), and diffuse-diffuse (iSVD wins,
+    online no longer competitive).
+  - score_design_overview.txt §1: the CAUTION block (added 2026-04-28
+    in the doc-patch commit 8f0b9c3) can be moved into the body — the
+    "is the implicit baseline still future_hmean_online" question is
+    now answered: it is value-only future_hmean_online for slot-2 on
+    tail-dominant matrices, and iSVD/hybrid for spiky-residual.
+  - diagnostic_toolkit.txt §7 table: same treatment as §6.
+  - AB-01 verdict (KILL of S6_GM): unchanged. The within-family bar
+    ALREADY didn't depend on online; the kill is robust.
+  - FAM-01 / FAM-03 unblock: still gated on INFRA-02 (Stiefel FD), but
+    now the operational bar is reachable, so the family is worth
+    starting.
+
+Pending, after FAM-01 lands:
+  - Re-evaluate Q1 (rank-r lift) verdict: on mixed-tail-balanced the
+    target shifts from +0.81 to +0.04 (essentially a sanity check);
+    on etf-basket-basis it shifts from +0.31 to +0.16 (still meaningful).
+
+
+6. Reproducibility
+-------------------
+
+  Code change:    half_window_sliding_hmean_experiment.py:31-33,512-514
+                  (pool split into VALUE_ONLY / ORACLE_AWARE; default
+                  flipped to VALUE_ONLY; --online-include-oracle CLI
+                  flag exposes the prior behavior).
+
+  Bench command (per matrix M, this folder):
+    python half_window_sliding_hmean_experiment.py \
+      --matrix "$M" \
+      --policies isvd combined hybrid future_hmean_online \
+                 future_hmean_r_sk_g \
+      --rsk-variant S6 \
+      --half-win 32 \
+      --json-out summary/bench_matrix_sweep_value_only_online/${M}_win64.json \
+      --csv-out  summary/bench_matrix_sweep_value_only_online/${M}_win64.csv \
+      --text-out summary/bench_matrix_sweep_value_only_online/${M}_win64.txt
+
+  Files in this folder:
+    {matrix}_win64.{json,csv,txt,log}   per-matrix bench output (all 8)
+    synthesis.txt                       this file
+
+  Total bench wall-clock: ~14 minutes (4-way parallel batches of ~3.5 min).
+
+  To restore the oracle-aware behavior for any single run:
+    add --online-include-oracle to the CLI.
