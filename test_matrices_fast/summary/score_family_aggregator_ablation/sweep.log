@@ -1,0 +1,9 @@
+start Tue Apr 28 12:31:49 AM EDT 2026 — 7 matrices in parallel
+done static-cex (00:34:38)
+done etf-basket-basis (00:34:53)
+done residual-spiky-shocks (00:35:00)
+done mixed-tail-sharp (00:35:04)
+done diffuse-diffuse (00:35:18)
+done mixed-tail-balanced (00:35:31)
+done mixed-tail-soft (00:35:46)
+all done. total elapsed 237s

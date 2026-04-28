@@ -1,0 +1,9 @@
+Half-window HM experiment
+=========================
+
+mode=split_probe policy=combined half_win=32 steps=16 mean_align=0.532586 mean_relerr_sval=0.05917024 mean_cos2=0.176888 final_cos=[0.987904 0.326138] final_exact_cos=[0.538016 0.062916] final_car_exact_cos=[0.533901 0.066151] final_oracle_proj_norm=[0.535580 0.205171] final_tail_mass=0.853290 labels={"opt2": 16}
+mode=sliding policy=combined half_win=32 steps=31 mean_align=0.175313 mean_relerr_sval=0.03902845 mean_cos2=0.359807 final_cos=[0.998493 0.345149] final_exact_cos=[0.726843 0.069815] final_car_exact_cos=[0.726968 0.069770] final_oracle_proj_norm=[0.258561 0.710296] final_tail_mass=0.733413 labels={"opt2": 31}
+mode=split_probe policy=isvd half_win=32 steps=16 mean_align=0.064030 mean_relerr_sval=0.03267200 mean_cos2=0.189171 final_cos=[0.465576 0.226907] final_exact_cos=[0.104513 0.041943] final_car_exact_cos=[0.104513 0.041943] final_oracle_proj_norm=[0.201595 0.210100] final_tail_mass=0.993659 labels={"isvd": 16}
+mode=sliding policy=isvd half_win=32 steps=31 mean_align=0.096808 mean_relerr_sval=0.01804869 mean_cos2=0.188878 final_cos=[0.715411 0.282938] final_exact_cos=[0.181610 0.059629] final_car_exact_cos=[0.181610 0.059629] final_oracle_proj_norm=[0.217936 0.247770] final_tail_mass=0.981731 labels={"isvd": 31}
+mode=split_probe policy=future_hmean_r_sk_g half_win=32 steps=16 mean_align=0.263898 mean_relerr_sval=0.06893365 mean_cos2=0.167503 final_cos=[0.868417 0.268917] final_exact_cos=[0.286948 0.046878] final_car_exact_cos=[0.286581 0.071882] final_oracle_proj_norm=[0.313231 0.238196] final_tail_mass=0.957732 labels={"rsk_g_best": 16}
+mode=sliding policy=future_hmean_r_sk_g half_win=32 steps=31 mean_align=0.067636 mean_relerr_sval=0.03533326 mean_cos2=0.243123 final_cos=[0.999692 0.293073] final_exact_cos=[0.774029 0.068897] final_car_exact_cos=[0.774062 0.067630] final_oracle_proj_norm=[0.193119 0.774293] final_tail_mass=0.698066 labels={"rsk_g_best": 31}

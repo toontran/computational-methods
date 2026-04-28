@@ -1,0 +1,9 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:869: RuntimeWarning: Mean of empty slice
+  "rows": rows,
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.254956 mean_relerr_sval=0.06237749
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.039926 mean_relerr_sval=0.02078387
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.057094 mean_relerr_sval=0.02471121
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.046047 mean_relerr_sval=0.01353295
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.093788 mean_relerr_sval=0.06615730
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.837110 mean_relerr_sval=0.02516828
+wrote_json=summary/score_family_aggregator_ablation/mixed-tail-sharp_win64.json wrote_csv=summary/score_family_aggregator_ablation/mixed-tail-sharp_win64.csv wrote_text=summary/score_family_aggregator_ablation/mixed-tail-sharp_win64.txt elapsed=193.679

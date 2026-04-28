@@ -1,0 +1,25 @@
+AB-01 HM-vs-GM aggregator ablation — side-by-side cos² (sliding, half_win=32, block 31)
+==============================================================================================================
+matrix                   S6_HM3 cos0/cos1/tail        S6_GM  cos0/cos1/tail        online cos0/cos1       iSVD cos0/cos1        
+--------------------------------------------------------------------------------------------------------------
+static-cex               0.9673 0.1572 0.5198         0.9667 0.1769 0.5171         0.9817 0.8186          0.0448 0.0442         
+mixed-tail-sharp         0.8564 0.1118 0.6270         0.8379 0.0996 0.6440         0.9830 0.8500          0.0785 0.0128         
+mixed-tail-balanced      0.8290 0.0195 0.6562         0.7740 0.0689 0.6981         0.9814 0.8268          0.1816 0.0596         
+mixed-tail-soft          0.9204 0.1467 0.5657         0.8977 0.0980 0.5923         0.9833 0.0192          0.3585 0.0025         
+diffuse-diffuse          0.8655 0.0705 0.6230         0.4877 0.1739 0.8660         0.9432 0.5277          0.9114 0.4892         
+etf-basket-basis         1.0000 0.8073 0.1741         1.0000 0.7890 0.1888         1.0000 0.9623          1.0000 0.2051         
+residual-spiky-shocks    0.5774 0.5159 0.7002         0.8159 0.2392 0.6385         0.4471 0.2459          0.9298 0.6375         
+==============================================================================================================
+
+Ship/kill rule: ship iff GM closes >=50% of the S6->online cos1² gap on ANY tail-dominant matrix.
+VERDICT: KILL
+  No tail-dominant matrix where GM closes >=50% of the S6->online gap.
+
+Per-matrix cos1² deltas (GM − S6_HM3):
+  static-cex               S6=0.1572  GM=0.1769  Δ=++0.0197
+  mixed-tail-sharp         S6=0.1118  GM=0.0996  Δ=-0.0122
+  mixed-tail-balanced      S6=0.0195  GM=0.0689  Δ=++0.0494
+  mixed-tail-soft          S6=0.1467  GM=0.0980  Δ=-0.0487
+  diffuse-diffuse          S6=0.0705  GM=0.1739  Δ=++0.1034
+  etf-basket-basis         S6=0.8073  GM=0.7890  Δ=-0.0183
+  residual-spiky-shocks    S6=0.5159  GM=0.2392  Δ=-0.2767

@@ -1,0 +1,99 @@
+matrix=mixed-tail-sharp
+  block  1 S1: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S2: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S3: score= 2.404010e-02  max|g-fd|=3.567e-12  rel=2.120e-10
+  block  1 S4: score= 2.061966e-02  max|g-fd|=3.273e-12  rel=2.449e-10
+  block  1 S5: score= 2.061966e-02  max|g-fd|=3.273e-12  rel=2.449e-10
+  block  1 S6: score= 9.109163e-04  max|g-fd|=1.177e-13  rel=1.847e-10
+  block  1 S6_GM: score= 9.136871e-04  max|g-fd|=1.236e-13  rel=1.960e-10
+  block  1 D0: score= 7.813106e-04  max|g-fd|=1.435e-13  rel=2.835e-10
+  block  2 S1: score=-9.747952e-01  max|g-fd|=1.009e-10  rel=4.799e-09
+  block  2 S2: score= 1.063533e-08  max|g-fd|=1.664e-15  rel=1.962e-08
+  block  2 S3: score= 2.320407e-02  max|g-fd|=2.865e-12  rel=1.954e-10
+  block  2 S4: score= 2.803586e-02  max|g-fd|=6.266e-12  rel=2.948e-10
+  block  2 S5: score= 2.775289e-05  max|g-fd|=5.656e-12  rel=1.049e-08
+  block  2 S6: score= 5.750978e-04  max|g-fd|=1.007e-13  rel=7.586e-11
+  block  2 S6_GM: score= 6.493412e-04  max|g-fd|=1.042e-13  rel=1.049e-10
+  block  2 D0: score= 4.556833e-04  max|g-fd|=1.169e-13  rel=1.034e-10
+  block 12 S1: score=-9.681460e-01  max|g-fd|=1.329e-10  rel=6.036e-09
+  block 12 S2: score= 6.171511e-09  max|g-fd|=1.285e-15  rel=1.456e-08
+  block 12 S3: score= 3.052496e-02  max|g-fd|=8.443e-12  rel=5.279e-10
+  block 12 S4: score= 4.044339e-02  max|g-fd|=9.219e-12  rel=3.804e-10
+  block 12 S5: score= 1.137927e-04  max|g-fd|=5.514e-13  rel=3.389e-10
+  block 12 S6: score= 4.802242e-04  max|g-fd|=1.158e-13  rel=4.673e-11
+  block 12 S6_GM: score= 6.726729e-04  max|g-fd|=1.147e-13  rel=6.782e-11
+  block 12 D0: score= 4.246746e-04  max|g-fd|=9.506e-14  rel=4.251e-11
+  block 31 S1: score=-9.753688e-01  max|g-fd|=1.012e-10  rel=4.758e-09
+  block 31 S2: score= 3.223750e-07  max|g-fd|=5.087e-15  rel=3.931e-09
+  block 31 S3: score= 1.143246e-02  max|g-fd|=2.332e-12  rel=2.397e-10
+  block 31 S4: score= 1.844070e-02  max|g-fd|=3.861e-12  rel=2.991e-10
+  block 31 S5: score= 8.555008e-04  max|g-fd|=2.316e-13  rel=8.534e-11
+  block 31 S6: score= 7.731106e-04  max|g-fd|=8.872e-14  rel=1.558e-10
+  block 31 S6_GM: score= 9.146693e-04  max|g-fd|=9.571e-14  rel=1.455e-10
+  block 31 D0: score= 6.162383e-04  max|g-fd|=1.075e-13  rel=2.521e-10
+matrix=static-cex
+  block  1 S1: score= 2.976255e-02  max|g-fd|=6.229e-12  rel=3.645e-10
+  block  1 S2: score= 2.976255e-02  max|g-fd|=6.229e-12  rel=3.645e-10
+  block  1 S3: score= 2.976255e-02  max|g-fd|=6.229e-12  rel=3.645e-10
+  block  1 S4: score= 2.303300e-02  max|g-fd|=6.306e-12  rel=5.241e-10
+  block  1 S5: score= 2.303300e-02  max|g-fd|=6.306e-12  rel=5.241e-10
+  block  1 S6: score= 1.130608e-03  max|g-fd|=1.858e-13  rel=2.863e-10
+  block  1 S6_GM: score= 1.162472e-03  max|g-fd|=1.365e-13  rel=2.073e-10
+  block  1 D0: score= 8.749686e-04  max|g-fd|=3.116e-13  rel=6.819e-10
+  block  2 S1: score=-9.663782e-01  max|g-fd|=1.741e-10  rel=6.983e-09
+  block  2 S2: score= 5.517180e-09  max|g-fd|=1.375e-15  rel=1.831e-08
+  block  2 S3: score= 3.239403e-02  max|g-fd|=7.261e-12  rel=2.754e-10
+  block  2 S4: score= 3.672791e-02  max|g-fd|=6.761e-12  rel=2.685e-10
+  block  2 S5: score= 3.567990e-05  max|g-fd|=1.197e-12  rel=1.991e-09
+  block  2 S6: score= 4.601266e-04  max|g-fd|=2.071e-13  rel=8.805e-11
+  block  2 S6_GM: score= 6.841001e-04  max|g-fd|=1.372e-13  rel=8.825e-11
+  block  2 D0: score= 3.491029e-04  max|g-fd|=1.528e-13  rel=8.682e-11
+  block 12 S1: score=-9.752077e-01  max|g-fd|=9.428e-11  rel=7.605e-09
+  block 12 S2: score= 5.099409e-10  max|g-fd|=3.235e-16  rel=4.164e-08
+  block 12 S3: score= 2.436286e-02  max|g-fd|=4.752e-12  rel=3.682e-10
+  block 12 S4: score= 2.882530e-02  max|g-fd|=7.501e-12  rel=3.717e-10
+  block 12 S5: score= 3.757825e-04  max|g-fd|=1.550e-13  rel=7.260e-11
+  block 12 S6: score= 1.811326e-04  max|g-fd|=9.542e-14  rel=7.827e-11
+  block 12 S6_GM: score= 3.954692e-04  max|g-fd|=5.118e-14  rel=5.568e-11
+  block 12 D0: score= 1.437922e-04  max|g-fd|=6.318e-14  rel=6.536e-11
+  block 31 S1: score=-9.681223e-01  max|g-fd|=6.992e-11  rel=4.479e-09
+  block 31 S2: score= 2.905991e-08  max|g-fd|=2.650e-15  rel=1.030e-08
+  block 31 S3: score= 2.906699e-02  max|g-fd|=3.094e-12  rel=2.995e-10
+  block 31 S4: score= 3.455900e-02  max|g-fd|=6.247e-12  rel=3.604e-10
+  block 31 S5: score= 1.078883e-03  max|g-fd|=3.562e-13  rel=8.657e-11
+  block 31 S6: score= 7.261592e-04  max|g-fd|=1.622e-13  rel=8.785e-11
+  block 31 S6_GM: score= 8.156139e-04  max|g-fd|=1.475e-13  rel=1.198e-10
+  block 31 D0: score= 5.677786e-04  max|g-fd|=1.443e-13  rel=1.039e-10
+matrix=diffuse-diffuse
+  block  1 S1: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S2: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S3: score= 2.274912e-02  max|g-fd|=3.258e-12  rel=2.325e-10
+  block  1 S4: score= 1.671378e-02  max|g-fd|=4.765e-12  rel=4.273e-10
+  block  1 S5: score= 1.671378e-02  max|g-fd|=4.765e-12  rel=4.273e-10
+  block  1 S6: score= 8.609754e-04  max|g-fd|=1.894e-13  rel=3.572e-10
+  block  1 S6_GM: score= 9.673355e-04  max|g-fd|=1.098e-13  rel=3.095e-10
+  block  1 D0: score= 6.325589e-04  max|g-fd|=2.311e-13  rel=5.475e-10
+  block  2 S1: score=-9.679869e-01  max|g-fd|=9.187e-11  rel=7.650e-09
+  block  2 S2: score= 6.453642e-09  max|g-fd|=1.256e-15  rel=1.877e-08
+  block  2 S3: score= 3.065026e-02  max|g-fd|=4.752e-12  rel=2.949e-10
+  block  2 S4: score= 3.781648e-02  max|g-fd|=9.933e-12  rel=6.011e-10
+  block  2 S5: score= 3.161042e-05  max|g-fd|=1.515e-12  rel=2.035e-09
+  block  2 S6: score= 4.906497e-04  max|g-fd|=1.250e-13  rel=6.781e-11
+  block  2 S6_GM: score= 6.950898e-04  max|g-fd|=9.148e-14  rel=7.744e-11
+  block  2 D0: score= 4.039000e-04  max|g-fd|=8.261e-14  rel=5.467e-11
+  block 12 S1: score=-9.728792e-01  max|g-fd|=1.607e-10  rel=1.100e-08
+  block 12 S2: score= 1.986479e-08  max|g-fd|=2.300e-15  rel=1.629e-08
+  block 12 S3: score= 2.447537e-02  max|g-fd|=3.911e-12  rel=4.087e-10
+  block 12 S4: score= 3.110668e-02  max|g-fd|=5.596e-12  rel=4.510e-10
+  block 12 S5: score= 1.110625e-04  max|g-fd|=4.469e-13  rel=4.754e-10
+  block 12 S6: score= 6.839268e-04  max|g-fd|=1.516e-13  rel=1.210e-10
+  block 12 S6_GM: score= 7.368293e-04  max|g-fd|=1.428e-13  rel=1.655e-10
+  block 12 D0: score= 5.665636e-04  max|g-fd|=2.134e-13  rel=2.104e-10
+  block 31 S1: score=-9.793711e-01  max|g-fd|=1.421e-10  rel=1.102e-08
+  block 31 S2: score= 2.893094e-08  max|g-fd|=2.031e-15  rel=1.135e-08
+  block 31 S3: score= 1.691393e-02  max|g-fd|=3.646e-12  rel=3.333e-10
+  block 31 S4: score= 2.265104e-02  max|g-fd|=6.485e-12  rel=4.666e-10
+  block 31 S5: score= 6.544698e-04  max|g-fd|=1.594e-13  rel=6.345e-11
+  block 31 S6: score= 6.489498e-04  max|g-fd|=7.015e-14  rel=9.326e-11
+  block 31 S6_GM: score= 6.541470e-04  max|g-fd|=7.134e-14  rel=1.015e-10
+  block 31 D0: score= 5.462563e-04  max|g-fd|=1.542e-13  rel=2.326e-10

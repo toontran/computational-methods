@@ -466,12 +466,14 @@ Q7. HM vs GM aggregator ablation (NEW, from §2bis (a.i)).
     of work given the existing harness. Cheap, informative, and
     currently absent — should run BEFORE adding more epicycles to S6.
     [RESOLVED 2026-04-28 — REFUTED. See summary/score_family_aggregator_ablation/synthesis.md.
-     T1 PASS (rel_err ≤ 3.1e-10). T3 closes 0% of the S6→online gap on
-     every tail-dominant matrix; on residual-spiky-shocks GM regresses
-     cos1² by 0.28 (HM3 0.516 → GM3 0.239). The "smoother landscape"
-     prediction is not borne out: GM wins by ~0.02–0.10 on 3 of 6 tail-
-     dominant matrices and loses by similar magnitudes on the other 3.
-     Recommendation: keep HM3 for FAM-01 / FAM-03 inheritance.]
+     T1 PASS (rel_err ≤ 3.1e-10). T3 (within-family acceptance bar):
+     GM beats HM by ≥0.05 cos1² on diffuse-diffuse (+0.10) and mixed-
+     tail-balanced (+0.05) but with cos0² regressions of −0.38 and
+     −0.06 (slot-1 lock destroyed). On residual-spiky-shocks GM
+     regresses cos1² by −0.28. Net: not a free improvement on any
+     matrix; "smoother landscape" prediction not borne out (bimodal,
+     not uniform improvement). Recommendation: keep HM3 for FAM-01 /
+     FAM-03 inheritance.]
 
 PRIORITY ORDER (latest revision; supersedes the order in
 score_ideas_growing_sketch.txt §9):

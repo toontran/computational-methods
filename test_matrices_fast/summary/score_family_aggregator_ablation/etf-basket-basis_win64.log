@@ -1,0 +1,9 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:869: RuntimeWarning: Mean of empty slice
+  "rows": rows,
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999503 mean_relerr_sval=0.29204477
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999982 mean_relerr_sval=0.01456512
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.999516 mean_relerr_sval=0.29221964
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999974 mean_relerr_sval=0.01474201
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.999710 mean_relerr_sval=0.29199859
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.999992 mean_relerr_sval=0.01452483
+wrote_json=summary/score_family_aggregator_ablation/etf-basket-basis_win64.json wrote_csv=summary/score_family_aggregator_ablation/etf-basket-basis_win64.csv wrote_text=summary/score_family_aggregator_ablation/etf-basket-basis_win64.txt elapsed=183.427
