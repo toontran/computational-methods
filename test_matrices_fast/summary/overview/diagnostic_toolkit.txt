@@ -1,0 +1,490 @@
+Diagnostic toolkit for streaming-SVD score design
+==================================================
+
+Date: 2026-04-28
+Companion to: summary/overview/score_design_overview.txt
+
+This is the catalog of debugging / diagnostic tools we use when iterating
+on the slot-2 (slot-r) score. Each tool is listed with WHAT it answers,
+WHEN to reach for it, and the typical output location.
+
+
+1. Per-block diagnostics (snapshots at b1, b2, b6, b12, b31)
+-------------------------------------------------------------
+
+These run the streaming algorithm forward to the chosen blocks and dump
+all candidates × all variants × all metrics for those blocks. They are
+the SINGLE most useful family of tools when designing a new score.
+
+  r_sk_g_score.py [--no-oracle-warmstart]
+    What: Full table of S1..S6 scores + raw norms + relH1 + alignment
+          + state_align for every candidate at the chosen block.
+          Also runs the rank-2 sequential optimizer for each variant.
+    When: Always run this first when adding a new variant. Confirms
+          oracle ranks well in T2 before committing to a streaming bench.
+    Out:  summary/r_sk_g_*.csv|json|<matrix>.txt
+    Key columns: r_sk, raw_g1, raw_g2, hm3, score_S?, sat_S?,
+                 align_v?_proj, pa1_o2, state_align, relH1.
+    Acceptance row at the end of each block:
+      "Δ(oracle_v2 − hm_triplet_raw): S?=±..." — does the score outrank
+      the row-of-A_fut cheat?
+    Per-block subspace alignment table:
+      "subspace alignment (cos² principal angles vs oracle 2-frame)" —
+      one row per rank-2 candidate frame (combined, sketch, mgain_svd,
+      r_sk_g_S4/5/6/6_GM, r_sk_g_S5_sketch_init) reporting the two
+      principal-angle cos² of [v1, v2] vs [oracle_v1_proj,
+      oracle_v2_proj], plus their mean. Slot-assignment-invariant view
+      of "how much of the oracle 2-plane does this frame recover?",
+      complementing the per-slot align_v?_proj columns.
+      Backed by `principal_angles(V_opt, V_oracle)` in
+      test_matrices_fast/subspace_metrics.py (INFRA-01 — see
+      score_family_workflow.txt §5). Wired in two places: (i) per-row
+      `pa1_o2` column = cos² of v vs the oracle 2-plane (the single
+      principal angle for the 1D-vs-2D case; equals
+      align_v1_proj + align_v2_proj for orthonormal oracle frame), and
+      (ii) the per-block frame table above. For r=1 the metric reduces
+      to the existing pairwise cos²; for rank-r frames it is the
+      foundation that FAM-01 / FAM-03 / INFRA-02 / INFRA-04 will build
+      on. Smoke run: summary/infra_subspace_alignment/smoke.txt.
+
+  frob_hm3_score_diagnostic.py
+    What: Focused F-HM3 ranking in the user's "F2/raw_X" display form.
+    When: Designing a new F-weighted variant, want a clean ranked table.
+    Out:  summary/frob_hm3_score_*.txt
+
+  frob_norm_diagnostic.py
+    What: Raw-norm dump (no scoring). Shows ‖A_X v‖² per candidate.
+    When: Sanity check on whether a variant's denominator is well-scaled.
+
+  compare_combined_vs_s6_b1b2.py
+    What: Two-block focused view of the F2/raw quantities + relH1 for
+          combined_v1/v2, oracle_v1/v2_proj, S6_v1_full / S6_v2_deflate.
+    When: Block-level component breakdown for a small set of candidates.
+
+  compare_oracle_alignment_b1b2.py
+    What: 2x2 cos² table: {combined_v1/v2, S6_v1/v2} vs {oracle_v1/v2_proj}.
+    When: Is the optimizer slot-aligning with the oracle pair, or is it
+          finding off-axis high-score points (the plateau pathology)?
+
+  combined_objective_sketch_bias_probe.py
+    What: Per-block decomposition for the ORIGINAL combined score
+          (score_variant="combined" in cex_restricted_space_probe.py):
+          gain_sketch = ‖A_sketch v‖², gain_block = ‖A_cur v‖²,
+          sketch_frac, phi, state_align, score_total, plus the 4-cell
+          cross-alignment {combined_v1, combined_v2} × {oracle_v1_proj,
+          oracle_v2_proj}. Symmetric Δscore decomposition into via_gain
+          and via_phi terms (§6c-style time-series across blocks).
+          Also runs basis_selection="joint" on the same snapshots as a
+          companion candidate panel (joint_v1, joint_v2) so greedy-vs-
+          joint can be A/B'd at fixed score.
+    When: Whenever the question is "why does the original combined
+          baseline fail slot-2?" or "would joint optimization at the
+          same r help?" Use as the canonical reference probe BEFORE
+          designing a new score variant — establishes the failure
+          mechanism the new score must address.
+    Out:  summary/combined_obj_sketch_bias_<matrix>.{csv,txt}
+          summary/combined_obj_sketch_bias_<matrix>_landscape.txt
+          summary/combined_obj_sketch_bias_synthesis.txt
+    Verified findings on mixed-tail-sharp at b1/b2/b6/b12/b31:
+      - phi at b1 is the entire slot-2 score discriminator (M1).
+      - state_align(combined_v_2) → 0.989 at b31 (M2).
+      - joint Stiefel-2 ≡ greedy at b31 (R1, REFUTES "joint fixes it").
+
+
+2. Gradient sanity
+------------------
+
+  r_sk_g_score.py --gradient-check
+    What: Finite-difference vs analytic gradient at random v + at a
+          carry-aligned v (for variants with gates that clip random v's).
+    When: Always before T3. Catches sign errors and scale errors before
+          burning a streaming bench.
+    Acceptance: rel_err < 1e-7 at float64. S6 is smooth on the sphere,
+                so a random v probe is sufficient. S5 needs a carry-
+                aligned probe because random v's lie in the score=0 zone.
+
+
+3. Streaming bench (the ground truth)
+--------------------------------------
+
+  half_window_sliding_hmean_experiment.py --policies ... --rsk-variant ...
+    What: Runs the actual streaming algorithm to block 31 and reports
+          final cos²(V_carry, V_exact) for the top-r right SVs, plus
+          tail_mass = 1 - sum_k cos²[k] across rank.
+    When: After T1 (gradient) and T2 (per-block ranking) pass.
+    Out:  summary/bench_matrix_sweep_*/M_win64.{json,csv,txt,log}
+    Policies of interest (--policies):
+      isvd                    pure streaming SVD of M_gain (latency baseline)
+      combined                combined-greedy v1 + opt2
+      hybrid                  combined-greedy v1 + deflated-SVD v2
+      future_hmean_online     greedy v1 + HM-online scored v2 (PRODUCTION
+                              baseline — strongest on tail-dominant
+                              matrices; see summary/bench_matrix_sweep/
+                              synthesis.txt for the 17-matrix sweep)
+      future_hmean_r_sk_g     score-design family (S1..S6 via --rsk-variant)
+    Two acceptance bars to keep in mind:
+      (i)  Strict 3-matrix bar (per spec §4): cos[1]² ≥ 0.6 on static-cex
+           AND mixed-tail-sharp; ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5
+           on at least 2 of 3 matrices. This is the MINIMUM bar.
+      (ii) Operational bar — match-or-beat future_hmean_online on the
+           §6 table of score_design_overview.txt. The strict 3-matrix bar
+           is comfortably cleared by online on (i)'s static-cex and
+           mixed-tail-sharp slot-2 (0.819 / 0.850), so a new variant that
+           clears (i) but still trails online by 0.3+ has not closed the
+           real gap. Run the full 17-matrix sweep (the same harness as
+           bench_matrix_sweep) when a variant clears (i), to size the
+           gap to online matrix-by-matrix.
+
+
+4. Optimizer-landscape probes
+------------------------------
+
+  future_hmean_local_max_landscape.py
+    What: Score vs distance from oracle along radial slices.
+    When: Debugging "is the oracle a local max?"
+
+  future_hmean_local_optimum_probe.py
+    What: Random-restart climb from many sphere starts; logs landing points.
+    When: Debugging "does the optimizer reliably find the same basin?"
+
+  plateau_width_probe.py    (INFRA-05; new 2026-04-28)
+    What: Sample N=200 random Stiefel frames V on St(d, r) inside
+          {V : score(V) ≥ τ · score(V_opt)} (default τ=0.95) and report
+          principal-angles to the projected oracle frame. Per-matrix CSV
+          + cross-matrix boxplot.
+    When: Quantify whether the score's high-score level set is a narrow
+          basin around oracle (cos² near 1, tight) or a wide-but-multi-
+          modal shell displaced from oracle (cos² spread / near 0).
+          Direct measurement of the §3 plateau hypothesis from
+          score_design_overview.txt — the answer to Q2.
+    How:  Default samples within union rowspan B_union for tractable
+          acceptance; rejection sampling with MCMC fallback if rate <1%.
+    Out:  summary/infra_plateau_width/{matrix}_b{block}_{variant}_r{rank}.csv
+          summary/infra_plateau_width/summary_plot.png
+          summary/infra_plateau_width/synthesis.md
+          summary/infra_plateau_width/summary.json
+    Verified findings (S6, r=1, N=200, τ=0.95):
+      - All three canonical matrices have a "wide-but-multimodal-and-
+        displaced" basin: in-sublevel sample min_cos² clusters at 0–0.1,
+        far from oracle.
+      - mixed-tail-sharp at b31: opt min_cos² = 0.000 (the catastrophic
+        plateau-drift signature).
+      - Acceptance rates 2.84–6.74% — pure rejection sufficed.
+    Pre-req for FAM-01 plateau-shrinkage hypothesis: re-run with --rank>1
+    after the lift to verify the high-score level set narrows.
+
+  future_hmean_optimizer_diagnostic.py
+    What: The underlying sphere-ascent optimizer. Used as the engine by
+          all the variants via __globals__["future_hmean_value_grad"]
+          monkey-patching. Reading this is sometimes necessary when an
+          optimizer call returns None.
+
+  Deflation-complement landscape probe
+    What: At a chosen block, fix the slot-1 winner v_1, then evaluate
+          the score along a panel of unit directions in the deflation
+          complement (orthogonal to v_1): the optimizer's slot-2 pick,
+          oracle_v_j_proj_⊥ for each j, retained singular vectors_⊥,
+          and a few random in-span directions. Decompose into gain/phi.
+    When: To distinguish "phi explicitly avoids oracle" (M1 mechanism)
+          from "rank-r carry pins slot-2" (M2 mechanism) and from
+          "score-max is at the oracle but optimizer drifted off"
+          (a plateau-drift mechanism, see §3 of overview).
+    How:  Currently implemented inline in
+          combined_objective_sketch_bias_probe.py::slot2_landscape_block1.
+          For other blocks / other score variants, copy and adapt — the
+          template is small (~50 lines).
+    Generalizes to rank r: replace "deflation complement of v_1" with
+          "deflation complement of {v_1,…,v_{k-1}}" and probe slot k
+          for each k = 2..r. Especially useful for slot r since that's
+          where M2 bites hardest (smallest residual signal).
+
+
+5. Reference candidates ALWAYS produced per-block
+--------------------------------------------------
+
+The per-block diagnostic computes these for every block; they form the
+reference frame for ANY new score:
+
+  combined_v1, combined_v2          V_default[:, 0..1] from combined-step
+  sketch_v1, sketch_v2              state.V columns (the carry directions)
+  mgain_svd_v1, mgain_svd_v2        top-2 right SVs of [B_top; A_cur]
+  hm_triplet_raw_best               row-of-A_fut cheat baseline
+  oracle_v1_proj, oracle_v2_proj    V_exact[:, 0..1] projected into B_union
+  c_evi_v1, c_evi_v2                c-weighted HM-evi optimizer
+  r_sk_g_S?_best                    each variant's optimizer
+  r_sk_g_S?_v1_full, _v2_deflate    each variant's sequential rank-2
+
+The two ABSOLUTE references:
+  oracle_v_proj  is the BEST v in B_union pointed at the true SV. No
+                 value-only score can score-rank it above hm_triplet_raw
+                 if A_fut has a single dominant row.
+  hm_triplet_raw_best  is the worst-case "row cheat" baseline. If the
+                       new score puts hm_triplet above oracle_v_proj on
+                       any block, the score is exploitable.
+
+
+6. Three diagnostic invariants per row
+---------------------------------------
+
+  align_v?_proj   cos²(v, oracle_v?_proj) — does v point at the oracle?
+  state_align     ‖V_state^T v‖² — how much of v lies in the carry direction?
+  Δ(oracle_v2 − hm_triplet_raw) per variant — exploitability check.
+
+state_align is particularly useful: combined typically has it 0.5–1.0 on
+mid-late blocks (combined sits in span(state.V)); oracle has it lower
+because v_exact is partly in the part NOT in the carry.
+
+
+6b. Per-candidate component breakdown (the FIRST thing to look at)
+-------------------------------------------------------------------
+
+When a candidate ranks unexpectedly low/high under a new score, decompose
+the score into its u-components per candidate before doing anything else:
+
+  cand            u_sk (or F2/raw_sk)   u_g1 (F2/raw_g1)   u_g2 (F2/raw_g2)   score
+  oracle_v2_proj  0.282                 0.0072             0.0072             0.0106
+  c_evi_v1        0.170                 0.0107             0.0108             0.0156
+  combined_v2     0.440                 0.0034             6.7e-7             2.0e-6
+
+Reading: oracle_v2 has the second-highest u_sk but its u_g1/u_g2 are
+half of c_evi's → HM3 gets dragged down by the smallest term → c_evi
+beats oracle on score despite worse sketch alignment. This is the
+"smallest-link" diagnosis.
+
+Display convention: the user-facing form is F2/raw_X (= 1/u_X), large
+when v captures little energy in matrix X. The two views are dual; pick
+the one that highlights the dragging term most clearly.
+
+Sort-by-score table convention: print candidates in DESCENDING score
+order, with rank in the leftmost column. Where the oracle / c_evi land
+in the order is the first thing to read.
+
+frob_hm3_score_diagnostic.py emits exactly this layout for S6.
+
+
+6c. Cross-candidate component table (when designing a new u_sk)
+----------------------------------------------------------------
+
+Pin the candidate panel (sketch_v1, mgain_svd_v1, oracle_v_proj,
+c_evi_v1, combined_v1) and walk the BLOCK axis. For each fixed candidate,
+plot how (u_sk, u_g1, u_g2) evolves over blocks 1, 2, 6, 12, 31. This
+reveals when each component "kicks in" and how matrix hardness modulates
+its growth — exactly what carry-confidence variants (Family B in the
+score-ideas spec) want to encode.
+
+Not yet wrapped in a script; produce ad-hoc from frob_norm_diagnostic.py
+output.
+
+
+7. Counterexample matrix suite
+-------------------------------
+
+Each matrix stresses a different failure mode. A new variant has to be
+tested across the suite, not just on one matrix. Numbers below are
+final cos1² (slot-2) at half_win=32, sliding mode, block 31, from
+summary/bench_matrix_sweep/synthesis.txt (online, isvd, hybrid,
+combined) and summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt (S6).
+"online" = future_hmean_online = current production baseline.
+
+  matrix                  combined  hybrid  isvd   online  S6     gap-to-beat
+  ---------------------------------------------------------------------------
+  static-cex              0.913     —       0.044  0.819   0.025  online
+  mixed-tail-sharp        0.027     0.030   0.013  0.850   0.013  online
+  mixed-tail-balanced     0.044     —       0.060  0.827   0.0004 online
+  mixed-tail-soft         —         0.123   0.003  0.019   0.022  combined/hybrid
+  diffuse-diffuse         —         —       0.489  0.528   0.005  online ≈ iSVD
+  etf-basket-basis        0.000     —       0.205  0.962   0.652  online
+  residual-spiky-shocks   —         0.570   0.637  0.246   0.266  iSVD/hybrid
+  risk-residual-panel     —         0.085   0.471  0.064   —      iSVD/hybrid
+
+Per-matrix failure modes and what each tests:
+
+  static-cex                The structured-counterexample matrix.
+                            Combined nails it (cos1²=0.913). iSVD fails
+                            (carry latches onto the wrong direction).
+                            Online matches combined (0.819). S6 fails
+                            (0.025 — finds a high-S6 v that is *not* the
+                            second SVD direction; P4 plateau drift).
+                            Tests "does the new score preserve combined's
+                            counterexample handling?"
+
+  mixed-tail-sharp          Combined fails slot-2 (0.027) due to
+                            mechanisms M1 (phi de-rewards concentrated
+                            oracle responses) and M2 (rank-r carry pins
+                            slot-2 to span(V_state)) — see §1bis of
+                            score_design_overview.txt. iSVD ignores
+                            slot-2 entirely. Online clears it (0.850).
+                            S6 still fails (0.013) — narrow basin.
+                            Tests "does the new score escape the wide
+                            HM3 plateau and beat online's slot-2?"
+
+  diffuse-diffuse           iSVD wins on slot-2 (0.489). Combined fails
+                            entirely (cos0² = 0.085) because it is
+                            *blind to A_fut*: combined maximizes
+                            ‖Bv‖² + ‖A_cur v‖² so its slot-1 is top SV
+                            of A_cur, which is a LOCAL noise direction
+                            on diffuse rowspace; the population top SV
+                            (oracle) is the v that is balanced across
+                            A_cur AND A_fut. This is mechanism M3 —
+                            the original motivation for adding A_fut to
+                            the future_hmean / r_sk_g family. iSVD wins
+                            because its carry update integrates across
+                            blocks. Online ties iSVD (0.528 vs 0.489).
+                            S6 fails (0.005) — same plateau drift.
+                            Tests "does the new score recover the iSVD
+                            regime when the rowspace is uniform?"
+
+  residual-spiky-shocks     iSVD/hybrid win (0.637/0.570). Online
+                            underperforms (0.246) because HM-online
+                            misreads the spike as low-entropy noise.
+                            S6 slightly above online (0.266) but still
+                            far from iSVD. Tests spiky-row sensitivity;
+                            this is where a row-concentration guard
+                            (relH1 / F1) is the natural fix per the
+                            multi-matrix synthesis.
+
+  risk-residual-panel       Same regime as residual-spiky-shocks. iSVD
+                            wins (0.471). Online fails (0.064).
+
+  etf-basket-basis          Online wins decisively (0.962). S6 second
+                            (0.652 — the strong score-design signal).
+                            Combined fails on slot-2 (0.000); tests
+                            "where does the F-weighted balance pay off
+                            relative to combined's local-A_cur fit?"
+
+  mixed-tail-soft           Hybrid edges out (0.123). Tests soft-tail
+                            behavior; less stress than -sharp.
+
+  mixed-tail-balanced       Online wins (0.827). Tests balanced-tail
+                            regime; combined's slot-2 fails as in
+                            -sharp.
+
+Two distinct regimes for the score-design line:
+  - Tail-dominant (mixed-tail-*, static-cex, etf-basket-basis,
+    diffuse-diffuse): online is the SOTA baseline. S6 must close the
+    gap. The 4 tail-dominant matrices in the §6 table of
+    score_design_overview.txt are the operational target.
+  - Spiky-residual (residual-spiky-shocks, risk-residual-panel):
+    iSVD/hybrid still win; online itself underperforms here. S6 is
+    *competitive* with online but not iSVD. F1 (relH1 / row-
+    concentration guard) is the open lever.
+
+Bench output: summary/bench_matrix_sweep_*/M_win64.{json,csv,txt,log}
+17-matrix sweep: summary/bench_matrix_sweep/synthesis.txt
+S6 7-matrix sweep: summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt
+
+
+8. What the toolkit DOESN'T have yet
+-------------------------------------
+
+The gaps to fill, especially relevant when generalizing to rank-r:
+
+(a) Subspace-level alignment metric. Currently we have pairwise cos² with
+    each oracle column. For rank-r we need principal angles between
+    span(V_opt) and span(V_oracle).
+
+(b) Optimizer trajectory tracker. We log final positions, not paths.
+    For Stiefel ascent on a flat-plateau score we'll want score and
+    principal-angles every iteration to see drift.
+
+(c) Plateau-width quantifier. "Sample N random points on the sphere
+    within score_S6 ≥ τ · score_S6(opt) and plot align distribution"
+    would tell us whether mixed-tail-sharp's basin is "narrow" or
+    "wide-but-multimodal". Currently we infer plateau from individual
+    runs.
+
+(d) Stiefel FD gradient check. The current --gradient-check is single-v
+    only. Rank-r will need column-wise FD with tangent-space projection.
+
+(e) Rank-r row-cheat baseline. hm_triplet_raw_best is slot-2 only. The
+    rank-r row-cheat ("top-r rows of A_fut") doesn't exist as a candidate
+    yet — needed to keep the exploitability check meaningful at r > 2.
+
+(f) Hyperparameter sweep harness. We hand-pick alpha/beta/gamma per
+    variant; no automated grid search across the matrix suite.
+
+(g) Carry-trajectory probe. For each matrix in the suite, dump per-block
+    s_top, sk_F2_low, spectral_concentration (s_1²/Σs_i²), and carry
+    drift (‖V_t V_t^T − V_{t−1} V_{t−1}^T‖_F). Directly informs
+    Family-B confidence multipliers (Q5 in score_design_overview.txt).
+    Empirics so far (mixed-tail-sharp): s_top 0.91→0.99, sk_F2_low 1.66→
+    1.93 (bounded — rank-r truncation absorbs only top-r structure).
+    Diffuse vs counterexample matrices should show different growth
+    profiles; quantify before picking the multiplier shape.
+
+    SHIPPED 2026-04-28 as INFRA-06:
+      script: carry_trajectory_probe.py
+      out:    summary/infra_carry_trajectory/
+              {matrix}_win64.csv (8 matrices) + trajectories.png + synthesis.md
+      method: iSVD per-block update (carry trajectory is invariant to
+              slot-2 score), make_state path, half_win=32, rank=2, n=1024.
+      Empirics across the §6 suite (final-block s_top / sk_F2_low /
+      spec_conc / typical drift):
+        mixed-tail-sharp     0.978 / 1.90 / 0.50 / 0.18 + spikes 1.4
+        mixed-tail-balanced  0.973 / 1.87 / 0.50 / 0.27 + spikes 1.3
+        mixed-tail-soft      0.972 / 1.87 / 0.50 / 0.34 (no spikes)
+        static-cex           0.990 / 1.94 / 0.51 / 0.005 + 3 spikes ≈1.4–2.0
+        diffuse-diffuse      0.982 / 1.91 / 0.50 / decays 1.3 → 0.34
+        etf-basket-basis     28.07 / 976  / 0.81 / decays 0.25 → 0.015
+        residual-spiky      1.017 / 1.94 / 0.53 / steady ≈0.4 (never decays)
+        risk-residual-panel  1.24  / 3.03 / 0.51 / 0.21 + occasional 0.5–0.65
+      Three regimes (see synthesis for FAM-04 multiplier shape per regime):
+        R1 fast-maturing rank-1 (etf-basket-basis) → s_top² multiplier
+        R2 barely-settling, persistent drift (diffuse, spiky, soft) →
+           1/(1+λ·drift) down-weight (drift never decays for spiky → u_sk
+           stays low forever — matches iSVD/hybrid winning that regime)
+        R3 latching with sharp jumps (static-cex, mixed-tail-sharp/-bal) →
+           instantaneous-drift multiplier (gates jump-blocks specifically)
+      Spectral_concentration is the regime selector: ≈0.5 (rank-2 floor) on
+      R2/R3, climbs to 0.81 on R1 → can gate which multiplier family to use.
+
+(h) Component time-series. For fixed candidates (oracle_v_proj,
+    c_evi_v1, sketch_v1) plot (u_sk, u_g1, u_g2) per block per matrix.
+    Reveals when each component crosses the noise floor and how the
+    crossing time depends on matrix hardness. Should show: u_sk for
+    sketch_v1 climbs fastest on low-rank-effective matrices, slowest
+    on diffuse-diffuse.
+
+(i) Subspace-level row-cheat baseline. Currently hm_triplet_raw_best
+    only knows about a single dominant row. The rank-r analogue needs
+    "top-r rows of A_fut" as a frame baseline so the exploitability
+    invariant (Δ(oracle − cheat) > 0) survives the rank-r lift.
+
+(j) Slot-r-specific stress. M1 (phi penalty on concentrated responses)
+    and M2 (rank-r carry pins slot to span(V_state)) both predict the
+    failure scales with slot index k under greedy deflation: slot 1
+    wins on dominant signal; slot r has the most-deflated complement
+    AND the most-concentrated remaining oracle, so phi penalty is
+    maximal AND state-align constraint is tightest. The deflation-
+    complement landscape probe should be run at slot k = 2..r and
+    plotted as "phi drop vs k" — predicted shape: monotonically widening
+    gap between phi(combined_v_k) and phi(oracle_v_k_proj_⊥). If this
+    plot shows the gap is flat in k, M1 is not the dominant mechanism
+    at higher rank and the priority ordering in §7 of the overview
+    needs revisiting.
+
+
+9. Recommended workflow for a new score variant
+------------------------------------------------
+
+  Step 1: Implement value-and-grad in r_sk_g_score.py:r_sk_g_value_grad.
+          Add to gradient_check loop.
+  Step 2: Run --gradient-check on 2 matrices × 4 blocks, float64.
+          Acceptance: rel < 1e-7 everywhere.
+  Step 3: Wire into analyze_block (per-block diagnostic). Run T2 on
+          static-cex / mixed-tail-sharp / diffuse-diffuse, blocks
+          1/2/6/12/31, with --no-oracle-warmstart.
+  Step 4: Inspect: Δ(oracle_v2 − hm_triplet_raw), align_v?_proj of the
+          optimizer's best, oracle's rank under score_new in each block.
+          STOP if oracle is below hm_triplet on any block.
+  Step 5: Wire into half_window_sliding_hmean_experiment.py streaming
+          policy (the future_hmean_r_sk_g branch). Add the new variant
+          to --rsk-variant choices.
+  Step 6: Run T3 streaming bench on the 7-matrix suite, half_win=32.
+          Compare cos1², tail_mass against combined / iSVD baselines.
+  Step 7: Write a synthesis.txt mirroring
+          summary/bench_matrix_sweep_r_sk_g_S5_sketchinit/synthesis.txt.
+          Decide: ship, iterate, or kill.
+
+Roughly 30 minutes wall-clock for steps 1–6 once the score and grad are
+written down (most of it is parallelized streaming bench).

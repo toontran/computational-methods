@@ -1,0 +1,382 @@
+Score-family workflow
+======================
+
+Date: 2026-04-28
+Companion to: score_design_overview.txt, diagnostic_toolkit.txt
+
+A "family" = one structural hypothesis about the slot-2/slot-r score
+(e.g. rank-r lift, carry-confidence multiplier, soft gate). Variants
+inside a family tune that hypothesis. Each family gets its own folder
+under summary/ and runs through the steps below.
+
+
+1. Folder layout
+----------------
+
+  summary/score_family_<name>/
+    00_known_vs_unknown.md          # 1-pager: settled / open / toolkit gaps
+    01_family_design.md             # the family + variant table
+    02_gradient_theory.md           # shared ascent / Stiefel infra
+    baseline/                       # frozen reference outputs (S6 etc.)
+    variants/<variant_name>/
+      spec.md                       # exact score, hyperparams, prediction
+      diagnostics/                  # T1 grad-check, T2 per-block
+      bench/                        # T3 streaming bench
+      synthesis.md                  # ship / iterate / kill
+    03_cross_variant_synthesis.md   # written after the round closes
+
+
+2. Step order (per family)
+---------------------------
+
+  (1) Current understandings — pin in 00_known_vs_unknown.md from the two
+      overview files. Don't re-dump; reference and summarize.
+  (2) Lack of understandings — list with the diagnostic that would resolve
+      each (Q1..Q6 in score_design_overview.txt §7, gaps a..j in
+      diagnostic_toolkit.txt §8).
+  (3) New family idea — one structural hypothesis. Write 01_family_design.md
+      with the variant table BEFORE coding.
+  (4) Variants within the family — adjustments to the hypothesis. Each gets
+      a spec.md with exact score + prediction.
+  (5) Gradient ascent theory — shared infrastructure in 02_gradient_theory.md
+      (tangent projection, retraction, FD check). Build ONCE, variants plug in.
+  (6) Implement scores — per variant, on top of the shared infra.
+  (7) Benchmarks and component diagnostics — T1 (grad), T2 (per-block),
+      T3 (streaming). Diff against baseline/ to "notice changes."
+  (8) Further understandings — write 03_cross_variant_synthesis.md and
+      update score_design_overview.txt §7 with Q-resolved/refuted pointers.
+
+
+3. Discipline rules
+-------------------
+
+  - Snapshot a frozen baseline into baseline/ before launching variants.
+    Otherwise "notice changes" has no reference.
+  - Build the gradient infra once, before parallel variant work.
+    Otherwise each variant re-derives subtly-different grads.
+  - Parallel agents on variants only if specs are frozen and independent.
+    Centralize the proposal step; parallelize implementation.
+  - Each variant ends with a kill/ship/iterate decision in its synthesis.md.
+    No open-ended variants left dangling.
+  - When the family closes, append a one-liner to score_design_overview.txt
+    §7 marking the Q resolved/refuted, with a pointer to the family folder.
+    Otherwise the overview drifts from the actual state of the world.
+
+
+4. Acceptance bar (inherits from diagnostic_toolkit.txt)
+---------------------------------------------------------
+
+  T1 grad-check:  rel_err < 1e-7 at float64
+  T2 per-block:   oracle ranks above hm_triplet_raw on every probed block
+  T3 streaming:   cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp;
+                  ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5 on ≥2 of 3
+  Operational:    match-or-beat future_hmean_online on the §6 table of
+                  score_design_overview.txt (the strict T3 bar above is
+                  the MINIMUM; online clears it comfortably on the
+                  3-matrix gauntlet). A variant that clears T3 but
+                  trails online by 0.3+ on cos1² has not closed the
+                  real gap.
+
+
+5. Backlog (snapshot 2026-04-28)
+---------------------------------
+
+Each item has: priority (P0–P3), effort (S/M/L), status (open / blocked /
+in-progress / done / killed), depends-on (other backlog ids), resolves
+(Q-numbers from score_design_overview.txt §7 / silent assumptions from
+§2bis / toolkit §8 gaps), acceptance (the kill/ship criterion). Pick the
+highest-priority unblocked item. Multiple agents can pull in parallel
+when items have no dependency overlap.
+
+Priority key:
+  P0  do now — high value, unblocked, cheap or in critical path
+  P1  next  — high value but blocked OR medium cost
+  P2  later — moderate value or supporting item
+  P3  parking lot — low yield given current evidence; revisit on signal
+
+Status key:
+  open         — ready to pick up
+  blocked      — waiting on dependency
+  in-progress  — assigned/being worked
+  done         — closed; pointer in Notes
+  killed       — closed without shipping; failure mechanism in Notes
+
+
+--- AGGREGATOR ABLATIONS (in-family) ---
+
+[AB-01] HM-vs-GM aggregator ablation
+  Priority:    P0
+  Effort:      S (~30 min)
+  Status:      open
+  Depends on:  —
+  Resolves:    Q7, §2bis (a.i)
+  Acceptance:  T1 rel<1e-7 for GM3 grad; T2 oracle ≥ hm_triplet on
+               every probed block; T3 cos1² compared to S6_HM3 on §6
+               table. Ship if GM closes ≥50% of S6→online gap on any
+               tail-dominant matrix; kill otherwise but record numbers.
+  Notes:       In-family — extend bench_matrix_sweep_r_sk_g_S6/
+               synthesis.txt with S6_GM section. Outcome decides which
+               aggregator FAM-01/FAM-03 inherit at rank-r.
+
+[AB-02] F-norm vs operator-norm weighting ablation
+  Priority:    P2
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    §2bis (b.i)
+  Acceptance:  Same harness as AB-01. Compare S6_HM3 with u_X =
+               raw_X/σ_max(A_X)² on §6 table. Decide on op-norm only
+               if it improves heavy-tailed matrices (static-cex)
+               without regressing diffuse.
+  Notes:       Cheap silent-assumption test; not yet promoted to a Q.
+
+
+--- INFRASTRUCTURE (toolkit gaps) ---
+
+[INFRA-01] Subspace alignment metric (principal angles)
+  Priority:    P1
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    toolkit §8 (a)
+  Acceptance:  Function(V_opt, V_oracle) → array of r principal angles
+               (cos² and radian). Wired into T2 alongside pairwise
+               align_v?_proj. Documented in toolkit §1.
+  Notes:       Prereq for any FAM-01 / FAM-03 work. Trivial via SVD of
+               V_opt^T V_oracle.
+               DONE 2026-04-28: utility lives at
+               test_matrices_fast/subspace_metrics.py (principal_angles,
+               principal_angles_pair; self-test via
+               `python -m subspace_metrics`). Wired into r_sk_g_score.py
+               T2 as per-row `pa1_o2` column AND per-block "subspace
+               alignment" table over all rank-2 candidate frames
+               (combined, sketch, mgain_svd, r_sk_g_S4/5/6/6_GM,
+               r_sk_g_S5_sketch_init). Smoke output:
+               summary/infra_subspace_alignment/smoke.txt (mixed-tail-
+               sharp b6). Toolkit §1 updated. Unblocks INFRA-02,
+               INFRA-04, FAM-01, FAM-03.
+
+[INFRA-02] Stiefel FD gradient check
+  Priority:    P1
+  Effort:      M
+  Status:      blocked (depends on INFRA-01)
+  Depends on:  INFRA-01
+  Resolves:    toolkit §8 (d)
+  Acceptance:  Column-wise FD with tangent-space projection; rel<1e-7
+               on float64 for a known-correct trace form (sanity).
+  Notes:       Unblocks FAM-01 / FAM-03 grad correctness.
+
+[INFRA-03] Rank-r row-cheat baseline
+  Priority:    P1
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    toolkit §8 (e), (i)
+  Acceptance:  "top-r rows of A_fut" candidate produced per-block,
+               wired into T2 ranking. T2 STOP rule generalizes to
+               "score(V_oracle) ≥ score(V_rowcheat) on every block".
+  Notes:       Without this, the exploitability check breaks at r>1.
+
+[INFRA-04] Optimizer trajectory tracker
+  Priority:    P2
+  Effort:      M
+  Status:      blocked (most useful for Stiefel)
+  Depends on:  INFRA-01
+  Resolves:    toolkit §8 (b)
+  Acceptance:  Per-iter log of score, principal-angles to oracle, and
+               step direction; CSV per (matrix, block, variant).
+  Notes:       Diagnoses drift on flat plateaus during FAM-01.
+
+[INFRA-05] Plateau-width quantifier
+  Priority:    P1
+  Effort:      M
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    Q2, toolkit §8 (c)
+  Acceptance:  Sample N=200 random V's on Stiefel(d, r) within
+               score ≥ τ·score(V_opt); plot principal-angles to oracle.
+               Report mean/percentile angles per matrix.
+  Notes:       Quantifies whether the rank-r lift actually shrinks the
+               plateau — IF FAM-01 fails on T3, this tells us why.
+               Done: plateau_width_probe.py (test_matrices_fast/).
+               Outputs in summary/infra_plateau_width/. Synthesis at
+               summary/infra_plateau_width/synthesis.md. Verdict on
+               static-cex / mixed-tail-sharp / diffuse-diffuse at
+               b6/12/31 (S6, r=1, τ=0.95, N=200): basin is "wide-but-
+               multimodal-and-displaced", not narrow-around-oracle.
+               Sample min_cos² clusters at 0–0.1 across all matrices;
+               mixed-tail-sharp opt lands at min_cos²=0.000 at b31
+               (catastrophic plateau drift). Acceptance rates 2.84–
+               6.74% — pure rejection sufficed; MCMC fallback wired but
+               unused. Establishes the r=1 baseline that FAM-01's
+               plateau-shrinkage hypothesis must beat.
+
+[INFRA-06] Carry-trajectory probe
+  Priority:    P2
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    toolkit §8 (g)
+  Acceptance:  Per-block dump of s_top, sk_F2_low, spectral_concentration
+               (s_1²/Σs_i²), carry-drift ‖V_t V_t^T − V_{t-1} V_{t-1}^T‖_F
+               per matrix in the suite. CSV + summary plot.
+  Notes:       Informs FAM-04 (carry-confidence multiplier shape).
+               Run BEFORE FAM-04 picks a multiplier.
+               DONE: probe at carry_trajectory_probe.py; outputs in
+               summary/infra_carry_trajectory/ (CSV per matrix, win64,
+               trajectories.png, synthesis.md). Three regimes identified:
+               R1 fast-maturing carry (etf-basket-basis) → s_top² multiplier;
+               R2 barely-settling (diffuse, spiky-shocks) → drift-based
+               down-weight; R3 latching (static-cex, mixed-tail-*) →
+               instantaneous-drift multiplier. See synthesis for the
+               hybrid form recommended for FAM-04 first variant.
+
+[INFRA-07] Component time-series
+  Priority:    P2
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    toolkit §8 (h)
+  Acceptance:  For fixed candidates (oracle_v_proj, c_evi_v1, sketch_v1),
+               plot (u_sk, u_g1, u_g2) per block per matrix.
+  Notes:       Reveals when each component crosses the noise floor.
+
+[INFRA-08] Hyperparameter sweep harness
+  Priority:    P3
+  Effort:      M
+  Status:      open
+  Depends on:  —
+  Resolves:    toolkit §8 (f)
+  Acceptance:  Grid-search wrapper over alpha/beta/gamma per variant
+               across the matrix suite; CSV summary.
+  Notes:       Currently hand-picking. Not blocking any current item.
+
+[INFRA-09] Slot-r-specific stress probe
+  Priority:    P3
+  Effort:      M
+  Status:      blocked (rank-r only)
+  Depends on:  FAM-01 (or any rank-r work)
+  Resolves:    toolkit §8 (j)
+  Acceptance:  Run deflation-complement landscape probe at slot k=2..r;
+               plot phi-drop and state-align constraint vs k.
+  Notes:       Tests whether M1/M2 mechanisms scale with slot index.
+
+
+--- NEW FAMILIES ---
+
+[FAM-01] Stiefel rank-r lift family
+  Priority:    P1
+  Effort:      L (3–5 days infra + 1–2 days per variant)
+  Status:      blocked (depends on infra)
+  Depends on:  INFRA-01, INFRA-02, INFRA-03; baseline snapshot
+  Resolves:    Q1 + Q2; absorbs Q5 (FAM-04 as subfamily)
+  Acceptance:  Plateau-width (INFRA-05) shrinks with r on mixed-tail-
+               sharp; T3 cos1² closes ≥50% of S6→online gap on the §6
+               table. Ship the best variant; kill the family if the
+               lift produces no plateau improvement.
+  Notes:       Folder: summary/score_family_stiefel_rank_r/.
+               Variants: B0 HM3-rank-r (or GM3 if AB-01 wins),
+                         B1 HM3-rank-r + carry-confidence (= FAM-04),
+                         B2 trace-form rank-r (= FAM-03 E0 wired in).
+               If FAM-01 fails, pivot to FAM-03 as the structural fix.
+
+[FAM-02] Row-concentration guard family
+  Priority:    P0
+  Effort:      M (~1 day per variant)
+  Status:      open
+  Depends on:  —
+  Resolves:    Q3 (F1); targets residual-spiky-shocks /
+               risk-residual-panel regime
+  Acceptance:  T2 oracle ranking unchanged vs S6; T3 cos1² on
+               residual-spiky-shocks ≥ iSVD (0.637) and tail-dominant
+               numbers no worse than S6. Ship best variant; kill if
+               none beats iSVD on spiky-residual.
+  Notes:       Folder: summary/score_family_row_concentration_guard/.
+               Variants: D0 S6 · relH1 multiplicative,
+                         D1 S6 with leverage-weighted u_X (overlaps Q4),
+                         D2 S6 with soft sigmoid gate on u_sk (F2 spec).
+               INDEPENDENT of FAM-01 — can run in parallel.
+
+[FAM-03] Subspace-trace family
+  Priority:    P2
+  Effort:      L (uses FAM-01 infra)
+  Status:      blocked (depends on infra)
+  Depends on:  INFRA-01, INFRA-02
+  Resolves:    Tests §2bis "HM-family hypothesis itself" critique
+  Acceptance:  T1 grad correct; T2 oracle ranks above row-cheat at
+               rank-r; T3 cos1² beats FAM-01 B0 on at least 2 of the
+               §6 tail-dominant matrices. Ship if so; otherwise the
+               HM aggregator is validated.
+  Notes:       Folder: summary/score_family_subspace_trace/.
+               Variants: E0 sum-of-trace (no per-v aggregator),
+                         E1 HM-of-traces, E2 min-of-traces (smoothed).
+               Run E0 in parallel with FAM-01 B0 once infra is built.
+
+[FAM-04] Carry-confidence multipliers (subfamily of FAM-01)
+  Priority:    P2
+  Effort:      M
+  Status:      blocked (depends on FAM-01 + INFRA-06)
+  Depends on:  FAM-01, INFRA-06
+  Resolves:    Q5, §2bis (a.ii)
+  Acceptance:  Beats FAM-01 B0 on ≥1 tail-dominant matrix without
+               regressing others.
+  Notes:       Multiplier candidates: s_top², spectral concentration,
+               carry-drift. Pick shape AFTER INFRA-06 reveals
+               trajectories per matrix family.
+
+[FAM-05] Rank-aware threshold
+  Priority:    P3
+  Effort:      M
+  Status:      blocked (rank-r only)
+  Depends on:  FAM-01
+  Resolves:    Q6
+  Acceptance:  Beats FAM-01 B0 on the §6 table.
+  Notes:       u_sk = max(r·raw_sk/sk_F2_low − 1, 0). Sharper than S5
+               per-row gate; meaningful only at rank-r.
+
+[FAM-06] Per-row leverage / c-weighting
+  Priority:    P3
+  Effort:      M
+  Status:      open
+  Depends on:  —
+  Resolves:    Q4, §2bis (b.ii)
+  Acceptance:  Beats S6 on §6 table OR demonstrates equivalence-up-to-
+               scale claim from §7 Q4.
+  Notes:       Could be merged into FAM-02 D1 if scope stays narrow.
+
+
+--- CURRENT SEQUENCING RECOMMENDATION ---
+
+Not part of the backlog itself; a snapshot read on what to pull next.
+The backlog is the source of truth and changes as items close.
+
+  Now (parallel):
+    AB-01            (P0, S, unblocked)  →  decides aggregator for FAM-01/03
+    FAM-02 D0        (P0, M, unblocked)  →  spiky-residual regime, independent
+    INFRA-01,03,05   (P1, S, unblocked)  →  unblock FAM-01
+
+  Next (after AB-01 lands and infra ready):
+    INFRA-02         (P1, M, blocked-until-INFRA-01)
+    FAM-01 B0        (P1, L, blocked-until-INFRA-01,02,03)
+    FAM-03 E0        (P2, L, blocked-until-INFRA-01,02) — parallel to FAM-01
+
+  Conditional on FAM-01 B0 closing ≥50% of S6→online gap:
+    FAM-04, FAM-05   (P2/P3)
+  Conditional on FAM-01 failing plateau-shrinkage hypothesis:
+    Promote FAM-03 to P1; deprioritize remaining FAM-01 variants.
+
+
+6. Family handoff checklist
+----------------------------
+
+When a family closes (kill OR ship):
+  - 03_cross_variant_synthesis.md written, includes T1/T2/T3 numbers
+    diff'd against baseline/.
+  - score_design_overview.txt §7 updated: mark each Q resolved /
+    refuted / iterated, with a pointer to the family folder.
+  - diagnostic_toolkit.txt §8 updated: any new infra built (subspace
+    metric, Stiefel FD, etc.) becomes a permanent toolkit entry.
+  - If the family killed a hypothesis (e.g. "rank-r lift doesn't shrink
+    plateau"), add a §1bis-style entry to score_design_overview.txt
+    documenting the verified failure mechanism so the next family
+    doesn't re-do the same probe.
