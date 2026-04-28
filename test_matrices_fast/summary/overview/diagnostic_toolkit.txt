@@ -217,7 +217,8 @@ reference frame for ANY new score:
   combined_v1, combined_v2          V_default[:, 0..1] from combined-step
   sketch_v1, sketch_v2              state.V columns (the carry directions)
   mgain_svd_v1, mgain_svd_v2        top-2 right SVs of [B_top; A_cur]
-  hm_triplet_raw_best               row-of-A_fut cheat baseline
+  hm_triplet_raw_best               row-of-A_fut cheat baseline (slot-2)
+  rowcheat_v1, rowcheat_v2          rank-r row-cheat columns (INFRA-03)
   oracle_v1_proj, oracle_v2_proj    V_exact[:, 0..1] projected into B_union
   c_evi_v1, c_evi_v2                c-weighted HM-evi optimizer
   r_sk_g_S?_best                    each variant's optimizer
@@ -230,6 +231,29 @@ The two ABSOLUTE references:
   hm_triplet_raw_best  is the worst-case "row cheat" baseline. If the
                        new score puts hm_triplet above oracle_v_proj on
                        any block, the score is exploitable.
+
+Rank-r row-cheat baseline (INFRA-03; built per-block at any r > 1):
+  rowcheat_v1, rowcheat_v2  Per-vector columns of the orthonormalized
+                            top-r-rows-of-A_fut frame, exposed in the
+                            candidate panel so the per-block table shows
+                            their per-direction shares.
+  V_rowcheat_frame          top_r_rows_frame(A_fut, r) from
+                            row_cheat_baseline.py: pick the r rows of A_fut
+                            with the largest squared norm, stack as columns,
+                            QR-orthonormalize. At r=1 reduces to the
+                            direction of the row with maximum norm.
+  V_oracle_frame_proj       oracle_frame_proj(V_exact, B_union, r): top-r
+                            oracle right singular vectors projected into
+                            B_union column-wise, then QR'd.
+  Frame-level scorer        frame_score_S6(...) and frame_score_S6_GM(...)
+                            (HM3 / GM3 over u_X_F = ||A_X V||_F²/||A_X||_F²).
+  Acceptance line printed by write_text:
+    Δ(oracle_frame − rowcheat_frame) [rank_r=...,oracle_r=...]:
+        frame_S6=±...  frame_S6_GM=±...
+  T2 STOP rule (rank-r generalization of the slot-2 row-cheat invariant):
+    score(V_oracle_frame) ≥ score(V_rowcheat_frame) on every probed block.
+  When this fails on any block, the rank-r-lifted score is row-exploitable
+  and must be killed before T3.
 
 
 6. Three diagnostic invariants per row
@@ -281,8 +305,9 @@ reveals when each component "kicks in" and how matrix hardness modulates
 its growth — exactly what carry-confidence variants (Family B in the
 score-ideas spec) want to encode.
 
-Not yet wrapped in a script; produce ad-hoc from frob_norm_diagnostic.py
-output.
+Wrapped in component_time_series_probe.py (INFRA-07, 2026-04-28).
+Outputs: summary/infra_component_time_series/{matrix}_components.csv|png
+and synthesis.md. Run with default args from test_matrices_fast/.
 
 
 7. Counterexample matrix suite
@@ -414,9 +439,13 @@ The gaps to fill, especially relevant when generalizing to rank-r:
 (d) Stiefel FD gradient check. The current --gradient-check is single-v
     only. Rank-r will need column-wise FD with tangent-space projection.
 
-(e) Rank-r row-cheat baseline. hm_triplet_raw_best is slot-2 only. The
-    rank-r row-cheat ("top-r rows of A_fut") doesn't exist as a candidate
-    yet — needed to keep the exploitability check meaningful at r > 2.
+(e) Rank-r row-cheat baseline. CLOSED 2026-04-28 (INFRA-03) by
+    row_cheat_baseline.py + the wire-up in r_sk_g_score.py /
+    frob_hm3_score_diagnostic.py — see §5 entry "Rank-r row-cheat baseline"
+    above. top_r_rows_frame(A_fut, r) builds the orthonormalized n×r frame
+    and frame_score_S6(...) / frame_score_S6_GM(...) score it; analyze_block
+    emits both rowcheat_v1/rowcheat_v2 per-vector candidates and the
+    Δ(oracle_frame − rowcheat_frame) acceptance line per block.
 
 (f) Hyperparameter sweep harness. We hand-pick alpha/beta/gamma per
     variant; no automated grid search across the matrix suite.
@@ -456,17 +485,25 @@ The gaps to fill, especially relevant when generalizing to rank-r:
       Spectral_concentration is the regime selector: ≈0.5 (rank-2 floor) on
       R2/R3, climbs to 0.81 on R1 → can gate which multiplier family to use.
 
-(h) Component time-series. For fixed candidates (oracle_v_proj,
-    c_evi_v1, sketch_v1) plot (u_sk, u_g1, u_g2) per block per matrix.
-    Reveals when each component crosses the noise floor and how the
-    crossing time depends on matrix hardness. Should show: u_sk for
-    sketch_v1 climbs fastest on low-rank-effective matrices, slowest
-    on diffuse-diffuse.
+(h) Component time-series. CLOSED 2026-04-28 (INFRA-07) by
+    component_time_series_probe.py. Walks blocks 1, 2, 6, 12, 31 for each
+    §6 matrix and records (u_sk, u_g1, u_g2) per fixed candidate
+    (oracle_v_proj, c_evi_v1, sketch_v1, combined_v1, mgain_svd_v1).
+    Outputs: summary/infra_component_time_series/{matrix}_components.csv|png
+    plus synthesis.md. Empirical finding (synthesis.md): on rank-2,
+    u_sk(sketch_v1) sits at the equipartition floor (~0.50) on 7 of 8
+    matrices — etf-basket-basis is the outlier (0.82). The diagnostic
+    delta is u_sk(sketch_v1) − u_sk(oracle_v_proj): small on
+    etf-basket-basis (carry tracks oracle), large on mixed-tail-{sharp,
+    balanced} (M2 signature — carry has pinned away from the oracle).
 
-(i) Subspace-level row-cheat baseline. Currently hm_triplet_raw_best
-    only knows about a single dominant row. The rank-r analogue needs
-    "top-r rows of A_fut" as a frame baseline so the exploitability
-    invariant (Δ(oracle − cheat) > 0) survives the rank-r lift.
+(i) Subspace-level row-cheat baseline. CLOSED 2026-04-28 (INFRA-03) by
+    row_cheat_baseline.py: top_r_rows_frame(A_fut, r) builds the
+    orthonormalized n×r frame, frame_score_S6(...) / frame_score_S6_GM(...)
+    score it under the rank-r HM3 / GM3 lifts, and the per-block diagnostic
+    (r_sk_g_score.py / frob_hm3_score_diagnostic.py) prints
+    Δ(oracle_frame − rowcheat_frame) per block. See §5 entry above and
+    summary/infra_rank_r_row_cheat/smoke.txt.
 
 (j) Slot-r-specific stress. M1 (phi penalty on concentrated responses)
     and M2 (rank-r carry pins slot to span(V_state)) both predict the

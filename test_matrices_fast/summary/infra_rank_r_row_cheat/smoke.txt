@@ -1,0 +1,143 @@
+INFRA-03 — Rank-r row-cheat baseline — smoke run
+==================================================
+
+Date:   2026-04-28
+Code:   test_matrices_fast/row_cheat_baseline.py
+        test_matrices_fast/r_sk_g_score.py        (analyze_block / write_text wire-up)
+        test_matrices_fast/frob_hm3_score_diagnostic.py  (block_report wire-up)
+Outputs:
+        smoke_r_sk_g_mixed-tail-sharp.txt    (r=2, block 12)
+        smoke_r_sk_g_r3_mixed-tail-sharp.txt (r=3, block 12)
+        smoke_frob_hm3.txt                    (r=2, block 12, frob_hm3 panel)
+
+
+Acceptance line per backlog INFRA-03
+------------------------------------
+
+  * "top-r rows of A_fut" candidate produced per-block, wired into T2 ranking
+    -> rowcheat_v1, rowcheat_v2 appear as per-vector entries in the
+       per-block candidate table emitted by both r_sk_g_score.py and
+       frob_hm3_score_diagnostic.py.
+
+  * T2 STOP rule generalizes to "score(V_oracle) >= score(V_rowcheat) on
+    every block"
+    -> r_sk_g_score.write_text now emits, after the existing slot-2
+       Δ(oracle_v2 − hm_triplet_raw) line:
+
+         Δ(oracle_frame − rowcheat_frame) [rank_r=...,oracle_r=...]:
+             frame_S6=±...  frame_S6_GM=±...
+           rowcheat_frame: S6=...  S6_GM=...  u_sk=...  u_g1=...  u_g2=...
+           oracle_frame:   S6=...  S6_GM=...  u_sk=...  u_g1=...  u_g2=...
+
+       and frob_hm3_score_diagnostic prints an analogous rank-r block.
+
+  * Smoke-run output on >=1 matrix x 1 block x r=2 (and r=3)
+    -> mixed-tail-sharp at b12, r=2 and r=3. Both produce non-trivial,
+       finite frame scores; oracle frame outscores rowcheat frame on both
+       lifts (Δ > 0). Acceptance invariant holds at rank 2 and rank 3 on
+       this probed cell.
+
+
+Smoke command (r=2)
+-------------------
+
+  cd test_matrices_fast
+  python r_sk_g_score.py --matrices mixed-tail-sharp --blocks 12 \
+         --no-oracle-warmstart --rank 2 \
+         --out-prefix summary/infra_rank_r_row_cheat/smoke_r_sk_g
+
+Smoke command (r=3)
+-------------------
+
+  python r_sk_g_score.py --matrices mixed-tail-sharp --blocks 12 \
+         --no-oracle-warmstart --rank 3 \
+         --out-prefix summary/infra_rank_r_row_cheat/smoke_r_sk_g_r3
+
+Smoke command (frob_hm3, r=2)
+-----------------------------
+
+  python frob_hm3_score_diagnostic.py --matrices mixed-tail-sharp \
+         --blocks 12 --rank 2 \
+         --out summary/infra_rank_r_row_cheat/smoke_frob_hm3.txt
+
+
+Selected smoke output (mixed-tail-sharp, b12, r=2)
+---------------------------------------------------
+
+Per-vector candidate table (excerpt, scores in S6 column for context):
+
+  label                       r_sk   raw_g1   raw_g2  ... score_S6     align_v1_proj align_v2_proj
+  hm_triplet_raw_best        0.663   0.281    0.289   ... 1.5622e-02   0.5124        0.0107
+  rowcheat_v1                1.000   0.000    0.884   ... 2.9864e-06   0.0127        0.0042
+  rowcheat_v2                1.000   0.000    0.879   ... 2.9864e-06   0.0128        0.0043
+  oracle_v1_proj             0.853   0.360    0.360   ... 1.8618e-02   1.0000        0.0489
+  oracle_v2_proj             0.247   0.120    0.120   ... 6.7471e-03   0.0489        1.0000
+
+Slot-2 acceptance line (existing, unchanged):
+
+  Δ(oracle_v2 − hm_triplet_raw): S1=+2.13e-01  S2=+3.55e-02  S3=-6.19e-02
+                                  S4=-2.07e-01 S5=+0.00e+00  S6=-8.87e-03
+                                  S6_GM=-7.12e-03 D0=-8.87e-03 S6_OP=-1.38e-01
+
+Rank-r acceptance line (NEW — INFRA-03):
+
+  Δ(oracle_frame − rowcheat_frame) [rank_r=2,oracle_r=2]:
+       frame_S6=+2.7740e-02  frame_S6_GM=+5.2839e-02
+     rowcheat_frame: S6=5.88e-06  S6_GM=1.06e-04
+                     u_sk=6.33e-06 u_g1=2.84e-06 u_g2=6.63e-02
+     oracle_frame:   S6=2.77e-02  S6_GM=5.29e-02
+                     u_sk=4.15e-01 u_g1=1.91e-02 u_g2=1.87e-02
+
+  Subspace-alignment row added to the existing INFRA-01 panel:
+       rowcheat                   0.0274   0.0083   0.0179
+  (cos² principal angles vs oracle 2-frame; mean ≈ 0.018 — the row-cheat
+  frame is essentially orthogonal to the oracle frame, as expected.)
+
+
+r=3 sanity check (mixed-tail-sharp, b12, r=3)
+----------------------------------------------
+
+  Δ(oracle_frame − rowcheat_frame) [rank_r=3,oracle_r=3]:
+       frame_S6=+4.7308e-02  frame_S6_GM=+6.9637e-02
+     rowcheat_frame: S6=7.33e-06  S6_GM=1.38e-04
+                     u_sk=7.25e-06 u_g1=3.68e-06 u_g2=9.90e-02
+     oracle_frame:   S6=4.73e-02  S6_GM=6.98e-02
+                     u_sk=3.07e-01 u_g1=3.28e-02 u_g2=3.37e-02
+
+
+Reading
+-------
+
+* The per-vector rowcheat columns (rowcheat_v1, rowcheat_v2) reproduce
+  the slot-2 row-cheat pathology (raw_g2 ≈ 0.88 dominates HM3) but at
+  the rank-r lift their FRAME-level F-weighted HM3 collapses because the
+  frame is not aligned with A_sketch (u_sk ≈ 6e-6) or A_cur (u_g1 ≈ 3e-6).
+  HM3's "smallest argument dominates" property kills the row-cheat frame.
+
+* The oracle frame outscores the rowcheat frame on both the HM3 (S6) and
+  GM3 (S6_GM) lifts, at r=2 AND r=3, on mixed-tail-sharp at b12.
+
+* This is the expected outcome: the rank-r lifts of S6 / S6_GM are
+  invariant under right multiplication by O ∈ O(r), so the "row-cheat"
+  pathology does NOT trivially survive the lift the way it does at slot-2.
+  The smoke run does NOT prove the lift survives on every block / matrix
+  — it just confirms the harness produces a meaningful rank-r exploitability
+  invariant. Use this on the full §6 matrix sweep when picking up FAM-01.
+
+
+Files exercised
+---------------
+
+  test_matrices_fast/row_cheat_baseline.py              NEW
+  test_matrices_fast/r_sk_g_score.py                    EDITED (import +
+                                                         analyze_block +
+                                                         write_text +
+                                                         subspace_align panel)
+  test_matrices_fast/frob_hm3_score_diagnostic.py       EDITED (import +
+                                                         collect_candidates +
+                                                         block_report)
+  test_matrices_fast/summary/overview/diagnostic_toolkit.txt  EDITED
+                                                         (§5 description +
+                                                          §8(e)/(i) closed)
+  test_matrices_fast/summary/overview/score_family_workflow.txt EDITED
+                                                         (§5 [INFRA-03] done)

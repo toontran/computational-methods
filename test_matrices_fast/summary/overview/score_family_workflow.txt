@@ -120,7 +120,7 @@ Status key:
 [AB-01] HM-vs-GM aggregator ablation
   Priority:    P0
   Effort:      S (~30 min)
-  Status:      in-progress (2026-04-28)
+  Status:      done / KILLED (2026-04-28)
   Depends on:  —
   Resolves:    Q7, §2bis (a.i)
   Acceptance:  T1 rel<1e-7 for GM3 grad; T2 oracle ≥ hm_triplet on
@@ -137,6 +137,15 @@ Status key:
                online's pool is oracle-aware (see INFRA-10 / §4
                CAUTION). Aggregator ablations are intra-family choices
                and don't need an online-relative bar.
+               (2026-04-28) DONE/KILLED — see
+               summary/score_family_aggregator_ablation/synthesis.md.
+               T1 PASS (rel ≤ 3.1e-10). T3: GM beats HM by ≥0.05 cos1²
+               on diffuse-diffuse (+0.10) and mixed-tail-balanced
+               (+0.05) but with cos0² regressions of −0.38 and −0.06
+               (slot-1 lock destroyed). On 5 of 7 matrices GM either
+               loses cos1² or regresses cos0²/other matrices.
+               residual-spiky-shocks regresses cos1² by −0.28.
+               Recommendation: FAM-01/03 inherit HM3.
 
 [AB-02] F-norm vs operator-norm weighting ablation
   Priority:    P2
@@ -189,13 +198,23 @@ Status key:
 [INFRA-03] Rank-r row-cheat baseline
   Priority:    P1
   Effort:      S
-  Status:      open
+  Status:      done (2026-04-28)
   Depends on:  —
   Resolves:    toolkit §8 (e), (i)
   Acceptance:  "top-r rows of A_fut" candidate produced per-block,
                wired into T2 ranking. T2 STOP rule generalizes to
                "score(V_oracle) ≥ score(V_rowcheat) on every block".
   Notes:       Without this, the exploitability check breaks at r>1.
+               DONE 2026-04-28: helper at
+               test_matrices_fast/row_cheat_baseline.py
+               (top_r_rows_frame, frame_score_S6, frame_score_S6_GM,
+               oracle_frame_proj). Per-vector rowcheat_v1/rowcheat_v2 land
+               in the candidate panel of r_sk_g_score.py and
+               frob_hm3_score_diagnostic.py; frame-level acceptance line
+               "Δ(oracle_frame − rowcheat_frame) [rank_r=...,oracle_r=...]:
+               frame_S6=±... frame_S6_GM=±..." is emitted by both
+               diagnostics. Smoke run on mixed-tail-sharp b12 at r=2 and
+               r=3 in summary/infra_rank_r_row_cheat/smoke.txt.
 
 [INFRA-04] Optimizer trajectory tracker
   Priority:    P2
@@ -254,12 +273,17 @@ Status key:
 [INFRA-07] Component time-series
   Priority:    P2
   Effort:      S
-  Status:      open
+  Status:      done (2026-04-28)
   Depends on:  —
   Resolves:    toolkit §8 (h)
   Acceptance:  For fixed candidates (oracle_v_proj, c_evi_v1, sketch_v1),
                plot (u_sk, u_g1, u_g2) per block per matrix.
   Notes:       Reveals when each component crosses the noise floor.
+               Done — script: component_time_series_probe.py;
+               outputs: summary/infra_component_time_series/
+               ({matrix}_components.csv|png + synthesis.md). Panel
+               extended to combined_v1 + mgain_svd_v1 per acceptance.
+               Closes toolkit §6c gap and §8(h).
 
 [INFRA-08] Hyperparameter sweep harness
   Priority:    P3

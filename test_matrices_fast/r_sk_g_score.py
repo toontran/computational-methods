@@ -101,6 +101,12 @@ from hmean_evidence_score import (
     per_block_constants,
     stream_to_block,
 )
+from row_cheat_baseline import (
+    frame_score_S6 as _frame_score_S6,
+    frame_score_S6_GM as _frame_score_S6_GM,
+    oracle_frame_proj as _oracle_frame_proj,
+    top_r_rows_frame as _top_r_rows_frame,
+)
 from second_slot_tail_bias_diagnostic import make_state, raw_oracle_columns
 from subspace_metrics import principal_angles
 
@@ -901,6 +907,30 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
     else:
         v2_D0 = None
 
+    # S6_OP sequential rank-2 over B_union (weighting ablation, AB-02).
+    rsk_S6OP_v1 = optimize_r_sk_g_in_basis(
+        A_cur, A_fut, A_sketch_for, c_sk,
+        B_union, starts_full,
+        np.random.default_rng(args.seed + 63000 + block_id),
+        args.union_maxit, args.union_tol, args.union_random_starts,
+        variant="S6_OP", alpha=alpha, beta=beta, gamma=gamma, V_state=V_state,
+        cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low,
+    )
+    v1_S6OP = None if rsk_S6OP_v1 is None else rsk_S6OP_v1["vec"]
+    if v1_S6OP is not None:
+        B_def_S6OP = orth_basis_against(B_union, v1_S6OP)
+        rsk_S6OP_v2 = optimize_r_sk_g_in_basis(
+            A_cur, A_fut, A_sketch_for, c_sk,
+            B_def_S6OP, starts_full,
+            np.random.default_rng(args.seed + 64000 + block_id),
+            args.union_maxit, args.union_tol, args.union_random_starts,
+            variant="S6_OP", alpha=alpha, beta=beta, gamma=gamma, V_state=V_state,
+            cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low,
+        )
+        v2_S6OP = None if rsk_S6OP_v2 is None else rsk_S6OP_v2["vec"]
+    else:
+        v2_S6OP = None
+
     # S5 sketch-init: warm-start ONLY from carried state.V columns (no random
     # restarts). Tests whether the carry direction's basin reaches a useful
     # local max under S5.
@@ -943,6 +973,17 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
         mgain_svd_v1 = None
         mgain_svd_v2 = None
 
+    # Rank-r row-cheat frame (INFRA-03): top-r rows of A_fut by squared norm,
+    # stacked as columns and orthonormalized via QR. Generalization of the
+    # slot-2 hm_triplet_raw_best lower bound for value-only score
+    # exploitability. Per-vector columns are also injected into the candidate
+    # panel so the per-block table reflects the per-direction shares; the
+    # frame-level score is computed below alongside the oracle-frame score.
+    V_rowcheat_frame = _top_r_rows_frame(A_fut, rank)
+    rowcheat_v1 = V_rowcheat_frame[:, 0] if V_rowcheat_frame is not None and V_rowcheat_frame.shape[1] >= 1 else None
+    rowcheat_v2 = V_rowcheat_frame[:, 1] if V_rowcheat_frame is not None and V_rowcheat_frame.shape[1] >= 2 else None
+    V_oracle_frame_proj = _oracle_frame_proj(V_exact, B_union, rank)
+
     candidates = {
         "combined_v1": V_default[:, 0],
         "combined_v2": V_default[:, 1],
@@ -951,6 +992,8 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
         "mgain_svd_v1": mgain_svd_v1,
         "mgain_svd_v2": mgain_svd_v2,
         "hm_triplet_raw_best": None if triplet_raw is None else triplet_raw["vec"],
+        "rowcheat_v1": rowcheat_v1,
+        "rowcheat_v2": rowcheat_v2,
         "r_sk_g_S1_best": None if rsk_best["S1"] is None else rsk_best["S1"]["vec"],
         "r_sk_g_S2_best": None if rsk_best["S2"] is None else rsk_best["S2"]["vec"],
         "r_sk_g_S3_best": None if rsk_best["S3"] is None else rsk_best["S3"]["vec"],
@@ -971,6 +1014,9 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
         "r_sk_g_D0_best": None if rsk_best["D0"] is None else rsk_best["D0"]["vec"],
         "r_sk_g_D0_v1_full": v1_D0,
         "r_sk_g_D0_v2_deflate": v2_D0,
+        "r_sk_g_S6_OP_best": None if rsk_best["S6_OP"] is None else rsk_best["S6_OP"]["vec"],
+        "r_sk_g_S6_OP_v1_full": v1_S6OP,
+        "r_sk_g_S6_OP_v2_deflate": v2_S6OP,
         "oracle_v1_proj": oracle_v1_proj,
         "oracle_v2_proj": oracle_v2_proj,
     }
@@ -986,13 +1032,15 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
         info = _scores_for(v, A_sketch_for, A_cur, A_fut, c_sk,
                            alpha, beta, gamma, V_state,
                            c_g1, c_g2, w_evi_fixed, w_evi_c,
-                           cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low)
+                           cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low,
+                           cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low)
         if info is None:
             continue
         v = info["v"]
         s1 = info["S1"]; s2 = info["S2"]; s3 = info["S3"]; s4 = info["S4"]; s5 = info["S5"]; s6 = info["S6"]
         s6gm = info["S6_GM"]
         sd0 = info["D0"]
+        s6op = info["S6_OP"]
         from hmean_evidence_score import entropy_relH1_value_grad as _entropy_value_grad
         relH1, _ = _entropy_value_grad(A_cur, v)
         comb = combined_score(M_gain, A_cur, v, A.shape[0], state, old_row_memory)
@@ -1041,6 +1089,8 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
             "sat_S6_GM": s6gm[6],
             "score_D0": sd0[0],
             "sat_D0": sd0[6],
+            "score_S6_OP": s6op[0],
+            "sat_S6_OP": s6op[6],
             "score_evi_fixed": info["score_evi_fixed"],
             "score_evi_c": info["score_evi_c"],
             "combined_score": comb,
@@ -1070,6 +1120,8 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
             "r_sk_g_S6": (v1_S6, v2_S6),
             "r_sk_g_S6_GM": (v1_S6GM, v2_S6GM),
             "r_sk_g_D0": (v1_D0, v2_D0),
+            "r_sk_g_S6_OP": (v1_S6OP, v2_S6OP),
+            "rowcheat":   (rowcheat_v1, rowcheat_v2),
         }
         for name, (a, b) in frames.items():
             if a is None or b is None:
@@ -1079,15 +1131,40 @@ def analyze_block(args, matrix, A, V_exact, snap, block_id):
             if cos2.size == 2:
                 subspace_align[name] = (float(cos2[0]), float(cos2[1]))
 
+    # Rank-r row-cheat exploitability check (INFRA-03). Score the row-cheat
+    # frame and the projected oracle frame under the rank-r lifts of S6 and
+    # S6_GM and record both. The acceptance criterion (printed by write_text)
+    # is score(V_oracle_frame) >= score(V_rowcheat_frame). When this fails on
+    # any block, the score is row-exploitable at rank r.
+    rowcheat_summary = {}
+    if V_rowcheat_frame is not None:
+        rowcheat_summary["frame_S6"] = _frame_score_S6(
+            A_sketch_for, A_cur, A_fut, sk_F2_low, cur_F2, fut_F2, V_rowcheat_frame
+        )
+        rowcheat_summary["frame_S6_GM"] = _frame_score_S6_GM(
+            A_sketch_for, A_cur, A_fut, sk_F2_low, cur_F2, fut_F2, V_rowcheat_frame
+        )
+        rowcheat_summary["rowcheat_dim"] = int(V_rowcheat_frame.shape[1])
+    if V_oracle_frame_proj is not None:
+        rowcheat_summary["frame_S6_oracle"] = _frame_score_S6(
+            A_sketch_for, A_cur, A_fut, sk_F2_low, cur_F2, fut_F2, V_oracle_frame_proj
+        )
+        rowcheat_summary["frame_S6_GM_oracle"] = _frame_score_S6_GM(
+            A_sketch_for, A_cur, A_fut, sk_F2_low, cur_F2, fut_F2, V_oracle_frame_proj
+        )
+        rowcheat_summary["oracle_dim"] = int(V_oracle_frame_proj.shape[1])
+
     info = {
         "matrix": matrix, "block_id": block_id, "half_win": half_win, "rank": rank,
         "N_sk": consts["N_sk"], "sk_F2": consts["sk_F2"], "sk_F2_low": sk_F2_low,
         "cur_F2": cur_F2, "fut_F2": fut_F2,
+        "cur_op2": cur_op2, "fut_op2": fut_op2, "sk_op2_low": sk_op2_low,
         "c_sk": c_sk, "c_g1": c_g1, "c_g2": c_g2,
         "alpha": alpha, "beta": beta, "gamma": gamma,
         "union_dim": int(B_union.shape[1]),
         "state_rank": int(V_state.shape[1]) if V_state is not None else 0,
         "subspace_align": subspace_align,
+        "rowcheat_frame": rowcheat_summary,
     }
     return info, rows
 
@@ -1117,6 +1194,20 @@ def gradient_check(A, V_exact, args, matrix, block_id):
     sk_F2_low = (
         float(np.sum(np.asarray(A_sketch, dtype=np.float64) ** 2)) if A_sketch is not None else 0.0
     )
+    # Op-norm-squared per-block constants for S6_OP (AB-02). Cached.
+    cur_op2 = float(np.linalg.svd(np.asarray(A_cur, dtype=np.float64), compute_uv=False)[0] ** 2) \
+        if A_cur.size else 0.0
+    fut_op2 = float(np.linalg.svd(np.asarray(A_fut, dtype=np.float64), compute_uv=False)[0] ** 2) \
+        if A_fut.size else 0.0
+    if A_sketch is not None:
+        st = snap.get("state")
+        if st is not None and st.get("s") is not None and np.asarray(st["s"]).size:
+            sk_op2_low = float(np.asarray(st["s"], dtype=np.float64)[0] ** 2)
+        else:
+            sk_op2_low = float(np.linalg.svd(np.asarray(A_sketch, dtype=np.float64),
+                                             compute_uv=False)[0] ** 2)
+    else:
+        sk_op2_low = 0.0
 
     rng = np.random.default_rng(0)
     n = A.shape[1]
@@ -1134,11 +1225,12 @@ def gradient_check(A, V_exact, args, matrix, block_id):
     sample = rng.choice(n, size=20, replace=False)
     h = 1e-6
     rel_errs = {}
-    for variant in ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0"):
+    for variant in ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP"):
         kwargs = dict(variant=variant, alpha=float(args.alpha),
                       beta=float(args.beta), gamma=float(args.gamma),
                       V_state=V_state,
-                      cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low)
+                      cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low,
+                      cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low)
         v_use = v_S5 if variant == "S5" else v
         score0, grad, *_ = r_sk_g_value_grad(A_sketch, A_cur, A_fut, c_sk, v_use, **kwargs)
         fd = np.zeros(len(sample))
@@ -1198,8 +1290,8 @@ def write_text(path, infos, rows):
                     f"alpha={info['alpha']:.3f}  beta={info['beta']:.3f}  gamma={info['gamma']:.3f}\n")
             f.write(
                 f"  {'label':<24} {'r_sk':>7} {'raw_g1':>8} {'raw_g2':>8} {'hm_g':>8} {'hm3':>8} {'hm3_usr':>8} "
-                f"{'sat_S1':>8} {'sat_S2':>8} {'sat_S3':>8} {'sat_S6':>8} {'sat_GM':>8} {'sat_D0':>8} "
-                f"{'score_S1':>10} {'score_S2':>10} {'score_S3':>10} {'score_S4':>10} {'score_S5':>10} {'score_S6':>10} {'score_GM':>10} {'score_D0':>10} "
+                f"{'sat_S1':>8} {'sat_S2':>8} {'sat_S3':>8} {'sat_S6':>8} {'sat_GM':>8} {'sat_D0':>8} {'sat_OP':>8} "
+                f"{'score_S1':>10} {'score_S2':>10} {'score_S3':>10} {'score_S4':>10} {'score_S5':>10} {'score_S6':>10} {'score_GM':>10} {'score_D0':>10} {'score_OP':>10} "
                 f"{'sc_evi(F)':>10} {'sc_evi(c)':>10} "
                 f"{'comb':>9} {'align_v1':>9} {'align_v2':>9} {'al_v1pr':>9} {'al_v2pr':>9} {'pa1_o2':>9} {'st_align':>9}\n"
             )
@@ -1207,8 +1299,8 @@ def write_text(path, infos, rows):
                 f.write(
                     f"  {r['label']:<24} "
                     f"{r['r_sk']:>7.3f} {r['raw_g1']:>8.4f} {r['raw_g2']:>8.4f} {r['hm_g']:>8.4f} {r['hm3']:>8.4f} {r['hm3_user']:>8.4f} "
-                    f"{r['sat_S1']:>8.4f} {r['sat_S2']:>8.4f} {r['sat_S3']:>8.4f} {r['sat_S6']:>8.4f} {r['sat_S6_GM']:>8.4f} {r['sat_D0']:>8.4f} "
-                    f"{r['score_S1']:>10.4e} {r['score_S2']:>10.4e} {r['score_S3']:>10.4e} {r['score_S4']:>10.4e} {r['score_S5']:>10.4e} {r['score_S6']:>10.4e} {r['score_S6_GM']:>10.4e} {r['score_D0']:>10.4e} "
+                    f"{r['sat_S1']:>8.4f} {r['sat_S2']:>8.4f} {r['sat_S3']:>8.4f} {r['sat_S6']:>8.4f} {r['sat_S6_GM']:>8.4f} {r['sat_D0']:>8.4f} {r['sat_S6_OP']:>8.4f} "
+                    f"{r['score_S1']:>10.4e} {r['score_S2']:>10.4e} {r['score_S3']:>10.4e} {r['score_S4']:>10.4e} {r['score_S5']:>10.4e} {r['score_S6']:>10.4e} {r['score_S6_GM']:>10.4e} {r['score_D0']:>10.4e} {r['score_S6_OP']:>10.4e} "
                     f"{r['score_evi_fixed']:>10.4e} {r['score_evi_c']:>10.4e} "
                     f"{r['combined_score']:>9.4f} {r['align_v1']:>9.4f} {r['align_v2']:>9.4f} "
                     f"{r['align_v1_proj']:>9.4f} {r['align_v2_proj']:>9.4f} {r['pa1_o2']:>9.4f} "
@@ -1219,13 +1311,13 @@ def write_text(path, infos, rows):
             oracle = picks.get("oracle_v2_proj")
             hmraw = picks.get("hm_triplet_raw_best")
             if oracle is not None and hmraw is not None:
-                _vlist = ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0")
+                _vlist = ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP")
                 deltas = {v: oracle[f"score_{v}"] - hmraw[f"score_{v}"] for v in _vlist}
                 f.write(f"  Δ(oracle_v2 − hm_triplet_raw): "
                         f"S1={deltas['S1']:+.4e}  S2={deltas['S2']:+.4e}  "
                         f"S3={deltas['S3']:+.4e}  S4={deltas['S4']:+.4e}  S5={deltas['S5']:+.4e}  "
                         f"S6={deltas['S6']:+.4e}  S6_GM={deltas['S6_GM']:+.4e}  "
-                        f"D0={deltas['D0']:+.4e}\n")
+                        f"D0={deltas['D0']:+.4e}  S6_OP={deltas['S6_OP']:+.4e}\n")
             # Per-block subspace alignment (INFRA-01): principal-angle cos²
             # of each rank-2 candidate frame [v1, v2] vs the oracle frame
             # [oracle_v1_proj, oracle_v2_proj]. cos2[0] = closest principal
@@ -1238,6 +1330,39 @@ def write_text(path, infos, rows):
                 f.write(f"    {'frame':<24} {'cos2_a':>8} {'cos2_b':>8} {'mean':>8}\n")
                 for name, (c0, c1) in sub.items():
                     f.write(f"    {name:<24} {c0:>8.4f} {c1:>8.4f} {(c0 + c1) / 2.0:>8.4f}\n")
+            # Rank-r exploitability check (INFRA-03): T2 STOP rule generalizes
+            # to "score(V_oracle_frame) ≥ score(V_rowcheat_frame)" using the
+            # rank-r lift of S6 / S6_GM (§5 of score_design_overview.txt).
+            # rank_r = number of orthonormal columns surviving QR on the
+            # top-r rows of A_fut.
+            rcf = info.get("rowcheat_frame") or {}
+            if rcf and "frame_S6_oracle" in rcf and "frame_S6" in rcf:
+                rd = rcf.get("rowcheat_dim", "?")
+                od = rcf.get("oracle_dim", "?")
+                d_S6 = rcf["frame_S6_oracle"]["score"] - rcf["frame_S6"]["score"]
+                d_GM = (
+                    rcf["frame_S6_GM_oracle"]["score"]
+                    - rcf["frame_S6_GM"]["score"]
+                )
+                f.write(
+                    f"  Δ(oracle_frame − rowcheat_frame) [rank_r="
+                    f"{rd},oracle_r={od}]: "
+                    f"frame_S6={d_S6:+.4e}  frame_S6_GM={d_GM:+.4e}\n"
+                )
+                f.write(
+                    f"    rowcheat_frame: S6={rcf['frame_S6']['score']:.4e}  "
+                    f"S6_GM={rcf['frame_S6_GM']['score']:.4e}  "
+                    f"u_sk={rcf['frame_S6']['u_sk']:.4e}  "
+                    f"u_g1={rcf['frame_S6']['u_g1']:.4e}  "
+                    f"u_g2={rcf['frame_S6']['u_g2']:.4e}\n"
+                )
+                f.write(
+                    f"    oracle_frame:   S6={rcf['frame_S6_oracle']['score']:.4e}  "
+                    f"S6_GM={rcf['frame_S6_GM_oracle']['score']:.4e}  "
+                    f"u_sk={rcf['frame_S6_oracle']['u_sk']:.4e}  "
+                    f"u_g1={rcf['frame_S6_oracle']['u_g1']:.4e}  "
+                    f"u_g2={rcf['frame_S6_oracle']['u_g2']:.4e}\n"
+                )
             f.write("\n")
 
 
@@ -1248,7 +1373,7 @@ def parse_args():
                    help="If given, run multiple matrices.")
     p.add_argument("--out-prefix", default="summary/r_sk_g_score")
     p.add_argument("--blocks", nargs="+", type=int, default=[2, 6, 12, 31])
-    p.add_argument("--variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0"), default="S6",
+    p.add_argument("--variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP"), default="S6",
                    help="Variant to use when wiring streaming. Diagnostic always reports all variants.")
     p.add_argument("--alpha", type=float, default=1.0)
     p.add_argument("--beta", type=float, default=2.0)
