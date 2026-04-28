@@ -387,11 +387,13 @@ The gaps to fill, especially relevant when generalizing to rank-r:
     For Stiefel ascent on a flat-plateau score we'll want score and
     principal-angles every iteration to see drift.
 
-(c) Plateau-width quantifier. "Sample N random points on the sphere
-    within score_S6 ≥ τ · score_S6(opt) and plot align distribution"
-    would tell us whether mixed-tail-sharp's basin is "narrow" or
-    "wide-but-multimodal". Currently we infer plateau from individual
-    runs.
+(c) Plateau-width quantifier. CLOSED 2026-04-28 (INFRA-05) by
+    plateau_width_probe.py — see §4 entry above and
+    summary/infra_plateau_width/synthesis.md. Verdict: basin on the
+    canonical 3-matrix probe set is "wide-but-multimodal-and-displaced"
+    at r=1; mixed-tail-sharp opt min_cos² = 0.000 at b31. The probe
+    becomes the FAM-01 baseline: re-run with --rank>1 after the lift
+    to verify plateau shrinks.
 
 (d) Stiefel FD gradient check. The current --gradient-check is single-v
     only. Rank-r will need column-wise FD with tangent-space projection.
