@@ -70,12 +70,25 @@ under summary/ and runs through the steps below.
   T2 per-block:   oracle ranks above hm_triplet_raw on every probed block
   T3 streaming:   cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp;
                   ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5 on ≥2 of 3
-  Operational:    match-or-beat future_hmean_online on the §6 table of
-                  score_design_overview.txt (the strict T3 bar above is
-                  the MINIMUM; online clears it comfortably on the
-                  3-matrix gauntlet). A variant that clears T3 but
-                  trails online by 0.3+ on cos1² has not closed the
-                  real gap.
+  Operational:    match-or-beat future_hmean_online (VALUE-ONLY rerun;
+                  see INFRA-10) on the §6 table of score_design_overview.
+                  txt (the strict T3 bar above is the MINIMUM; online
+                  clears it comfortably on the 3-matrix gauntlet). A
+                  variant that clears T3 but trails value-only online by
+                  0.3+ on cos1² has not closed the real gap.
+
+                  CAUTION (2026-04-28): the original `future_hmean_online`
+                  numbers in summary/bench_matrix_sweep/synthesis.txt
+                  are ORACLE-AWARE — its candidate pool contains
+                  `q2_vs_q1oracle` built from V_exact[:,1] (see
+                  half_window_sliding_hmean_experiment.py:24,247-250,490
+                  and second_slot_tail_bias_diagnostic.py:32). Treat
+                  those numbers as a CEILING, not as the operational
+                  bar. The corrected value-only numbers live at
+                  summary/bench_matrix_sweep_value_only_online/ once
+                  INFRA-10 lands; until then, acceptance criteria
+                  referencing "online" should be interpreted against
+                  the value-only rerun, not the oracle-aware ceiling.
 
 
 5. Backlog (snapshot 2026-04-28)
@@ -107,16 +120,23 @@ Status key:
 [AB-01] HM-vs-GM aggregator ablation
   Priority:    P0
   Effort:      S (~30 min)
-  Status:      open
+  Status:      in-progress (2026-04-28)
   Depends on:  —
   Resolves:    Q7, §2bis (a.i)
   Acceptance:  T1 rel<1e-7 for GM3 grad; T2 oracle ≥ hm_triplet on
                every probed block; T3 cos1² compared to S6_HM3 on §6
-               table. Ship if GM closes ≥50% of S6→online gap on any
-               tail-dominant matrix; kill otherwise but record numbers.
+               table. Ship if GM beats HM on any tail-dominant matrix
+               in §6 by ≥0.05 cos1² without regressing others; kill
+               otherwise but record numbers.
   Notes:       In-family — extend bench_matrix_sweep_r_sk_g_S6/
                synthesis.txt with S6_GM section. Outcome decides which
                aggregator FAM-01/FAM-03 inherit at rank-r.
+               (2026-04-28) Acceptance RELAXED to within-family bar —
+               the prior "≥50% of S6→online gap" formulation depended
+               on `future_hmean_online` as an operational target, but
+               online's pool is oracle-aware (see INFRA-10 / §4
+               CAUTION). Aggregator ablations are intra-family choices
+               and don't need an online-relative bar.
 
 [AB-02] F-norm vs operator-norm weighting ablation
   Priority:    P2
@@ -261,6 +281,38 @@ Status key:
                plot phi-drop and state-align constraint vs k.
   Notes:       Tests whether M1/M2 mechanisms scale with slot index.
 
+[INFRA-10] Value-only online baseline
+  Priority:    P0
+  Effort:      S (~30 min bench)
+  Status:      in-progress (2026-04-28)
+  Depends on:  —
+  Resolves:    Discovered flaw 2026-04-28 — operational bar invalidation
+  Acceptance:  Strip `q2_vs_q1oracle` from
+               half_window_sliding_hmean_experiment.py:24 ONLINE_POOL
+               (or expose as a `--online-include-oracle` flag, default
+               False). Rerun the 7-matrix sweep at half_win=32. Output
+               to summary/bench_matrix_sweep_value_only_online/ with
+               the same file layout as bench_matrix_sweep_r_sk_g_S6/.
+               synthesis.txt MUST include a side-by-side cos1² table:
+               matrix | online (oracle-aware) | online (value-only) | Δ
+               for the §6 matrices, so the size of the oracle leak is
+               quantified.
+  Notes:       The flaw: future_hmean_online's pool includes
+               `q2_vs_q1oracle`, built from V_exact[:,1] projected into
+               the row span via `raw_oracle_columns`
+               (second_slot_tail_bias_diagnostic.py:32). 1 of 5 pool
+               entries is the answer. Reported online numbers are an
+               oracle-aware UPPER BOUND, not a value-only policy.
+               Acceptance criteria across the backlog (AB-01, FAM-01,
+               FAM-03, FAM-04, FAM-05, §4 op-bar, §5 conditional)
+               formerly compared to those numbers; all are patched
+               2026-04-28 to reference the value-only rerun. KEEP the
+               oracle-aware numbers under summary/bench_matrix_sweep/
+               as a labeled CEILING reference. Once value-only numbers
+               land, propagate into the §6 table of
+               score_design_overview.txt and §7 of diagnostic_toolkit.
+               txt, then re-evaluate AB-01 / unblock FAM-01-3-4-5.
+
 
 --- NEW FAMILIES ---
 
@@ -268,17 +320,24 @@ Status key:
   Priority:    P1
   Effort:      L (3–5 days infra + 1–2 days per variant)
   Status:      blocked (depends on infra)
-  Depends on:  INFRA-01, INFRA-02, INFRA-03; baseline snapshot
+  Depends on:  INFRA-01, INFRA-02, INFRA-03, INFRA-10; baseline snapshot
   Resolves:    Q1 + Q2; absorbs Q5 (FAM-04 as subfamily)
   Acceptance:  Plateau-width (INFRA-05) shrinks with r on mixed-tail-
-               sharp; T3 cos1² closes ≥50% of S6→online gap on the §6
-               table. Ship the best variant; kill the family if the
-               lift produces no plateau improvement.
+               sharp; T3 cos1² closes ≥50% of S6→(value-only online)
+               gap on the §6 table. Ship the best variant; kill the
+               family if the lift produces no plateau improvement.
   Notes:       Folder: summary/score_family_stiefel_rank_r/.
                Variants: B0 HM3-rank-r (or GM3 if AB-01 wins),
                          B1 HM3-rank-r + carry-confidence (= FAM-04),
                          B2 trace-form rank-r (= FAM-03 E0 wired in).
                If FAM-01 fails, pivot to FAM-03 as the structural fix.
+               (2026-04-28) The "online" bar was tightened to refer to
+               the value-only rerun (INFRA-10), not the original
+               oracle-aware numbers. The plateau-shrinkage hypothesis
+               is the true ship-criterion; the online comparison
+               quantifies how much of the residual gap remains
+               explainable by score-design choices vs. by the
+               oracle-aware advantage that online enjoyed.
 
 [FAM-02] Row-concentration guard family
   Priority:    P0
@@ -301,7 +360,7 @@ Status key:
   Priority:    P2
   Effort:      L (uses FAM-01 infra)
   Status:      blocked (depends on infra)
-  Depends on:  INFRA-01, INFRA-02
+  Depends on:  INFRA-01, INFRA-02, INFRA-10
   Resolves:    Tests §2bis "HM-family hypothesis itself" critique
   Acceptance:  T1 grad correct; T2 oracle ranks above row-cheat at
                rank-r; T3 cos1² beats FAM-01 B0 on at least 2 of the
@@ -360,10 +419,15 @@ The backlog is the source of truth and changes as items close.
     FAM-01 B0        (P1, L, blocked-until-INFRA-01,02,03)
     FAM-03 E0        (P2, L, blocked-until-INFRA-01,02) — parallel to FAM-01
 
-  Conditional on FAM-01 B0 closing ≥50% of S6→online gap:
+  Conditional on FAM-01 B0 closing ≥50% of S6→(value-only online) gap:
     FAM-04, FAM-05   (P2/P3)
   Conditional on FAM-01 failing plateau-shrinkage hypothesis:
     Promote FAM-03 to P1; deprioritize remaining FAM-01 variants.
+
+  (2026-04-28) "online" everywhere in this section now means the
+  value-only rerun from INFRA-10. The original oracle-aware online
+  numbers (summary/bench_matrix_sweep/synthesis.txt) are a CEILING
+  reference, not the operational target — see §4 CAUTION.
 
 
 6. Family handoff checklist

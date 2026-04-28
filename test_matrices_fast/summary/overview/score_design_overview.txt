@@ -1,0 +1,520 @@
+Score-design overview: streaming-SVD slot-2 (and rank-r) decision
+==================================================================
+
+Date: 2026-04-28
+Audience: someone picking up the score-design line of work and wanting the
+high-level picture before diving into f_hm3_score_implementation_context.txt
+or hm_score_new_variant_test_context.txt.
+
+
+1. What we're doing
+-------------------
+
+At each block in the streaming SVD we maintain a rank-r approximation of A's
+leading right singular vectors. Per block we have:
+
+  A_sketch = state.s · state.V^T     rank-r CARRY of A_seen (prefix)
+  A_cur                               half-window of new rows
+  A_fut                               peek half-window after that
+
+The streaming bench commits a rank-r subspace each block; we measure terminal
+cos²(V_carry, V_exact) at block 31 (final_exact_cos in the JSON output).
+
+Slot-1 is essentially solved by combined-step: V_default[:, 0] is the leading
+SV of M_gain = [B_top; A_cur] and is well-determined. The hard part is
+slot-2 (and the rank-r extension to slot-3..r). The whole design effort is
+about a value-only score(v) that, when maximized over the union span, picks
+a good slot-2 vector.
+
+Constraints on the score:
+  - value-only computable (no V_exact)
+  - not over-fit to A_cur (else slot-2 = A_cur top SV which double-covers slot-1)
+  - not over-fit to A_fut (else "row-of-A_fut cheat" — doesn't generalize)
+  - aware of the carry (else we discard past info)
+  - ideally robust to spiky responses (a single row dominating ‖A_cur v‖²)
+
+We've iterated S1 → S2 → S3 → S4 → S5 → S6 (current). Each variant is a
+hypothesis about how to balance these forces. S6 is the current best on
+clean-rowspace matrices but has known gaps (P4 plateau, no relH1 guard).
+
+The implicit baseline to beat is NOT `combined`, it is `future_hmean_online`
+— the production policy from summary/bench_matrix_sweep/synthesis.txt
+(2026-04-23). Online uses a different mechanism (rank-2 SVD reframe over an
+online candidate pool with HM-online scoring) and on the 17-matrix sweep at
+half_win=32 it dominates the 6 tail-dominant matrices, ties on the 9 well-
+conditioned ones, and underperforms on 2 spiky-residual ones. On the tail-
+dominant matrices the gap S6 must close is large — see §6 for side-by-side.
+The S6/r_sk_g line is the *score-design* alternative to online: a value-only,
+analytically-differentiable, rank-r-liftable score, in contrast to online's
+candidate-pool reframe. Whether the score-design path can match or beat
+online on its strong matrices is the open question driving this line.
+
+CAUTION (2026-04-28): the originally reported `future_hmean_online` numbers
+in summary/bench_matrix_sweep/synthesis.txt are ORACLE-AWARE — its
+candidate pool includes `q2_vs_q1oracle` built from V_exact[:,1] projected
+into the row span (half_window_sliding_hmean_experiment.py:24,247-250,490
+and second_slot_tail_bias_diagnostic.py:32). One of five pool entries is
+the answer. Treat those numbers as a CEILING reference, not as the
+operational target a value-only family must match. The corrected
+value-only rerun lives at summary/bench_matrix_sweep_value_only_online/
+(see workflow §5 [INFRA-10]); the §6 table below is being repropagated
+once those numbers land. Until then, every "online" comparison in this
+document refers to the ORACLE-AWARE ceiling and overstates the true gap.
+
+
+1bis. The original combined-score baseline — verified failure mechanisms
+------------------------------------------------------------------------
+
+(Added 2026-04-27. Source: combined_obj_sketch_bias_synthesis.txt and
+combined_objective_sketch_bias_probe.py.)
+
+The S1..S6 family is the *replacement* for the original combined score
+  score_w(v) = (‖Bv‖² + ‖A_w v‖²) · phi_w(v)
+from reports/approximation/new_approx_combined.txt. Direct probing on
+mixed-tail-sharp pins WHY combined's slot-2 fails, in two distinct
+mechanisms. Useful as established context when motivating S6's choices.
+
+(M1) phi explicitly de-rewards oracle-aligned slot-2 directions.
+     Block-1 landscape in the deflation complement of combined_v_1, with
+     gain_tot essentially flat (0.819–0.833) across all directions:
+       direction              phi     score   align_o2
+       combined_v_2          5.66    4.68    0.016
+       oracle_v_2_proj_⊥     3.70    3.08    0.749
+       random_0..4         3.0–3.9  2.5–3.2   < 0.04
+     The entire score gap is phi. phi rewards entropic spread; V_exact[:,1]
+     produces a CONCENTRATED response and therefore loses on phi.
+     This persists at b1 with NO sketch, so it's not a sketch-reliance bug.
+
+(M2) Once B exists, the rank-r carry pins slot 2 to span(V_state).
+     state_align(combined_v_2) grows to 0.989 at b31; oracle_v_2_proj's
+     state_align is 0.103. ‖Bv‖² only sees span(V_state); once
+     sk_F2/cur_F2 ≈ 30 (b31), gain2 dominates and the score's
+     complement-of-v_1 max is just the second retained singular vector.
+
+(R1) Joint Stiefel-2 with the SAME combined score does NOT fix it.
+     basis_selection="joint" at r=2 produces essentially identical V to
+     greedy at b6/b12/b31 (state_align(joint_v_2)=0.989, identical
+     alignments). At b1 it nudges algn_o2 to 0.247 but at lower score —
+     it's a different stationary point, not a higher max.
+     ⇒ The slot-2 failure is intrinsic to the SCORE on Stiefel(d, r),
+     not to greedy deflation.
+
+(M3) Combined is BLIND TO A_fut → over-fits to A_cur's local rowspace.
+     This is the failure mechanism on diffuse-diffuse (and the original
+     motivation for the future_hmean / S1..S6 family). Combined maximizes
+     ‖Bv‖² + ‖A_cur v‖² with NO A_fut term, so at b1 (no carry yet) its
+     slot-1 v is the top SV of A_cur — a single half-window's specific
+     draw. On diffuse-diffuse the population rowspace is uniform, so
+     A_cur's top SV is a noise-corrupted LOCAL direction, not the
+     population top SV. The population top SV is the v that maximizes
+     gain across BOTH halves, which is what HM2(u_g1, u_g2) recovers.
+
+     Verified empirics (overview §6 b1 numbers, diffuse-diffuse):
+       S6_v1 ≈ oracle_v1 cos² = 0.999 (HM2 on b1 = popSV optimizer)
+       S6_v2 ≈ oracle_v2 cos² = 0.982
+       Combined v1, v2 < 0.05 against either oracle column
+     Streaming-bench (final cos1² on diffuse-diffuse, S6 synthesis §4):
+       combined 0.030, iSVD 0.239, S6 0.005, online 0.528 (oracle-aware°).
+     iSVD wins because its streaming SVD update integrates information
+     across blocks, recovering the population direction. Combined has
+     no such integrator and never sees A_fut.
+     ° online numbers here are the oracle-aware ceiling (see §1
+       CAUTION); value-only online from INFRA-10 will replace once
+       it lands.
+
+     Distinct from M1/M2: M1/M2 are slot-2 mechanisms on a matrix where
+     combined's slot-1 *succeeds* (mixed-tail-sharp slot-1 cos0² = 0.785
+     in the S6 bench). M3 is a slot-1 mechanism on a matrix where the
+     rowspace is uniform (diffuse-diffuse slot-1 cos0² = 0.085).
+
+Together M1, M2, M3 cover the three combined-baseline failure modes that
+the score-design line was launched to address:
+  - M3 (blind to A_fut)            → motivates including A_fut in score
+                                     ⇒ the future_hmean family exists
+  - M1 (phi penalty on concentrated)→ motivates removing entropic gating
+                                     ⇒ HM-style balance instead of phi
+  - M2 (carry pins slot-r)          → motivates rank-aware u_sk weighting
+                                     ⇒ rank-r CARRY (sk_F2_low), Family-B
+                                       carry-confidence multipliers,
+                                       rank-r Stiefel lift
+This is the design arc that lands at S6 = HM3(u_sk, u_g1, u_g2) per §2.
+
+Read §3 and §5 of this document with R1 in mind: "lifting to Stiefel
+rank-r" means "go to higher r AND change the score to a Grassmannian-
+invariant frame form". Joint optimization at the same r with the same
+per-vector score is *not* the lift, and is verified not to help.
+
+Implications consistent with §2's S6 design moves:
+  - S6's HM3 BALANCE ENFORCER (§2a) targets a related-but-distinct
+    pathology: combined's v has raw_g2 ≈ 0 (no future-window content)
+    because combined doesn't see A_fut. M1/M2 explain WHY combined's v
+    points where it does inside the past windows.
+  - S6's removal of phi-style entropic gating (§2d removes S5's hard
+    gate; the original combined uses phi multiplicatively) is the
+    natural M1 fix — replacing the entropy-reward with HM3 balance
+    means concentrated responses are no longer penalized.
+  - S6's rank-r CARRY (§2c) addresses M2 partially by anchoring u_sk
+    to a stationary scaling, but the rank-r carry STILL has rank-r
+    information loss. Family-B carry-confidence multipliers (§7 Q5)
+    and the rank-r Grassmannian lift (§5) are the structural fix.
+
+
+2. Design intuitions for S6 (F-weighted HM3)
+--------------------------------------------
+
+  score(v) = HM3(u_sk, u_g1, u_g2)        sketch present
+  score(v) = HM2(u_g1, u_g2)              block-1 fall-through
+
+  u_sk = ‖A_sketch v‖² / sk_F2_low       sk_F2_low = ‖A_sketch‖_F² (rank-r CARRY)
+  u_g1 = ‖A_cur v‖²    / cur_F2          cur_F2    = ‖A_cur‖_F²
+  u_g2 = ‖A_fut v‖²    / fut_F2          fut_F2    = ‖A_fut‖_F²
+
+Four design moves, each addressing a specific pathology:
+
+(a) Harmonic mean as the BALANCE ENFORCER.
+    HM3 is dominated by its smallest argument. To score high under HM3, v
+    must keep ALL THREE u's bounded away from zero. This is exactly why
+    combined fails: combined's v's have raw_g2 ≈ 1e-6 (essentially
+    orthogonal to A_fut), so u_g2 ≈ 4e-8 and HM3 ≈ 1e-7. HM3 turns
+    "balance" from a soft preference into a hard constraint.
+
+(b) Frobenius weighting as the UNIT-FIXER.
+    Raw responses ‖A_X v‖² live on incompatible scales (carry small,
+    cur/fut ~26 in our setup, full-prefix sketches grow with block).
+    Dividing by ‖A_X‖_F² puts every term on a [0, ~1] scale tied to the
+    *fraction of available energy* v captures. Now HM3's three arguments
+    are directly comparable.
+
+(c) Rank-r CARRY (sk_F2_low), not full-prefix Frobenius (sk_F2_full).
+    sk_F2_full grows linearly with block_id, so u_sk would shrink linearly
+    — score becomes block-id sensitive in a perverse way. sk_F2_low is
+    roughly stationary across blocks because the carry singular values
+    track the matrix's true top-r. This makes u_sk ∈ [0, ~0.5] tightly,
+    which is critical for rank-r generalization (the scaling stays sane
+    as r grows).
+
+(d) Smooth on the sphere wherever u's > 0 — no gate, no relH1.
+    S5's hard gate (raw_sk > T → score, else 0) created a discontinuity
+    that excluded the oracle from the reachable set on some blocks (P4 in
+    the prior context). S6 removes the gate to make the oracle reachable
+    everywhere it has positive responses. Cost: no protection against
+    spiky responses (the row-of-A_fut cheat) — diagnostic confirms S6
+    picks low-relH1 v's on mixed-tail-sharp. This is parked as F1, not
+    fixed.
+
+
+2bis. Design choice justifications and open gaps
+-------------------------------------------------
+
+(Added 2026-04-28.) §2 lists four design moves. Each is locally
+justified by a verified pathology, but the family-level choice (scalar-
+per-v HM-form on F-weighted u's, equal weights) is not defended against
+alternatives. The picture below tiers the moves and flags the silent
+assumptions that the next iteration should test.
+
+Well-justified (verified pathology + no plausible alternative):
+
+  (c) Rank-r CARRY (sk_F2_low) over full-prefix sk_F2_full.
+      sk_F2_full grows linearly with block_id → u_sk shrinks linearly →
+      score becomes block-id-sensitive. sk_F2_low is stationary because
+      it tracks the matrix's true top-r. Verified as P6 in the S6
+      synthesis. No reasonable alternative.
+
+  (d) Smooth on the sphere — no gate.
+      S5's hard gate excluded the oracle from the reachable set on some
+      blocks (P4 in the S5 context). Removing the gate fixes oracle-
+      reachability everywhere u's > 0. Cost (no row-cheat protection on
+      mixed-tail-sharp) acknowledged and parked as F1 / Q3.
+
+Partially justified (right direction; alternatives within the direction
+not compared):
+
+  (a) Harmonic mean as the BALANCE ENFORCER.
+      Justified OVER additive forms: HM's "smallest argument dominates"
+      property is what fixes M1 (phi penalty) and M3 (combined blind to
+      A_fut). But two sub-choices are silent:
+        (a.i)  HM vs GM. Both go to zero when any argument is zero;
+               HM is more aggressive at penalizing imbalance, GM is
+               smoother. No ablation. GM = (u_sk · u_g1 · u_g2)^(1/3)
+               also has clean log-additive gradient and may be a
+               better optimization landscape (worth a single T2/T3
+               run).
+        (a.ii) Equal weights across u_sk, u_g1, u_g2. Why not weighted
+               HM that down-weights u_sk early (carry immature) and
+               up-weights it late (carry confident)? This is Q5
+               (carry-confidence multipliers) — DEFERRED, not refuted.
+      HM also creates the P4 plateau as a side effect: a 3-arg balance
+      form has a wide high-score level set on the union span. §2 frames
+      HM as a clean win; in fact §3's plateau IS the cost of (a). The
+      score-ranking problem (oracle ranks high in T2) is solved at the
+      cost of the optimization-landscape problem (T3 drift). This
+      tension should be visible in §2.
+
+  (b) Frobenius weighting as the UNIT-FIXER.
+      Unit-incompatibility is real (raw norms span 3 orders of
+      magnitude). F-weighting puts all u's on [0, ~1] tied to "fraction
+      of available energy" — that's the right shape. But:
+        (b.i)  F-norm vs operator norm. Op-norm weighting gives tighter
+               [0,1] and may behave better on heavy-tailed spectra (e.g.
+               static-cex). Not measured.
+        (b.ii) F-norm vs per-row leverage weighting (Q4). §7 calls Q4
+               "probably equivalent up to scale" but no comparison run.
+
+Not justified, just inherited:
+
+  - Block-1 fall-through to HM2 (overview §4 calls it "natural" and
+    shows post-hoc equivalence to c-weighted HM-evi). Why HM2 instead
+    of HM3 with a sensible u_sk prior (e.g. average of u_g1, u_g2)?
+    Not derived; works empirically.
+  - The HM-family hypothesis itself. §3 ("any scalar-per-v score has
+    codim-1 level set") is a structural critique of the WHOLE family,
+    not just S6. A rank-r Grassmannian-invariant score (§5) may not
+    need an HM aggregator at all — trace forms are subspace functions
+    by construction. The §5 lift uses HM3 by inheritance; whether HM3
+    is the right aggregator at rank-r is open and tied to (a.i)/(a.ii).
+
+Implications for the priority order in §7:
+  - Q1 (rank-r lift) is robust to (a.i)/(a.ii)/(b.i)/(b.ii) only if the
+    lift's plateau-shrinkage hypothesis holds. If it doesn't, the
+    open ablations in (a.i), (a.ii), (b.i) become urgent.
+  - Q5 (carry-confidence) IS (a.ii) under another name. Re-reading §7
+    Q5 with this in mind: the question is not "should we add a
+    multiplier?" but "is equal weighting the silent default we never
+    questioned?" — the multiplier is one form of the answer.
+  - HM-vs-GM ablation (a.i) is not in the §7 Q-list and probably
+    should be; ~30 minutes of work given the existing harness.
+
+
+3. The plateau is the deep problem
+-----------------------------------
+
+Any scalar-per-v score on the union sphere has a level set of codimension
+1. With dim(B_union) ~64 that's a 62-dim plateau. The oracle sits on (or
+near) the high-score level set but isn't *pinned* to it — the optimizer
+routinely finds higher-score, non-oracle points.
+
+Empirics (T2 on mixed-tail-sharp, b6, b12, b31): the S6 optimizer's vector
+scores higher than oracle_v2_proj on score_S6 (Δ ≈ +1e-3 to +2e-2), but
+its align_v2_proj is 0.04–0.25 — i.e., the optimizer found a different
+high-score point.
+
+This is the dominant reason S6 underperforms on the streaming bench
+despite the score correctly ranking the oracle in T2. The fix isn't in
+the score — it's in lifting to Stiefel rank-r so the level set has lower
+dimension (see §5).
+
+
+4. The block-1 fall-through and why it's natural
+-------------------------------------------------
+
+At block 1 there's no sketch yet, so we can't compute u_sk. The natural
+fall-through is HM2(u_g1, u_g2). Up to a per-block constant (cur_F2 ≈
+fut_F2), this is identical to c-weighted HM-evi at block 1, which is why
+c_evi_v1 was the top of the rank table at block 1 in the diagnostic.
+This is a feature, not a bug — at b1 the only signal is split-sample
+balance between A_cur and A_fut, and HM2 is the right form for that.
+
+Explicit equivalence (why oracle_v_proj LOSES to c_evi_v1 at b1):
+  - At b1, c_sk = 0 → c-weighted HM-evi reduces to a 2-arg form over
+    (raw_g1, raw_g2) with weights (c_g1², c_g2²).
+  - c_g1 = half_win/cur_F2 ≈ c_g2 ≈ 1.21, so weighted HM ≈ unweighted
+    HM(raw_g1, raw_g2) up to a multiplicative constant.
+  - S6 at b1 reduces to HM(raw_g1/cur_F2, raw_g2/fut_F2). Since
+    cur_F2 ≈ fut_F2 ≈ 26.4 (rows are unit-energy on every matrix here),
+    that's the same objective as c-weighted HM-evi up to a per-block
+    rescale.
+  - c_evi_v1 is by construction the OPTIMIZER of that objective; the
+    projected oracle is the top SV of the FULL matrix A restricted to
+    rowspace(A_cur, A_fut), which is balanced (raw_g1 ≈ raw_g2) but not
+    energy-maximal locally. So c_evi_v1 ≥ oracle on score_S6 at b1.
+  - Empirically (mixed-tail-sharp b1):
+        c_evi_v1: u_g1=0.01612, u_g2=0.01664 → HM2 = 0.01638
+        oracle_v2_proj: u_g1=0.01578, u_g2=0.01583 → HM2 = 0.01580
+    The (u_g1+u_g2)/2 gap is ~4%, which is HM's gap exactly because
+    both candidates are already nearly balanced.
+
+
+5. Generalization to rank-r (the immediate next step)
+------------------------------------------------------
+
+The score generalizes naturally:
+  u_sk(V) = ‖A_sketch V‖_F² / ‖A_sketch‖_F²   for V ∈ St(n, r)
+  u_g1(V) = ‖A_cur V‖_F²    / ‖A_cur‖_F²
+  u_g2(V) = ‖A_fut V‖_F²    / ‖A_fut‖_F²
+
+  score(V) = HM3(u_sk, u_g1, u_g2)
+
+Now u_X(V) ∈ [0, r/r_max(A_X)]. Score is invariant under right
+multiplication by O ∈ O(r), i.e. it's a SUBSPACE function on the
+Grassmannian — which is exactly what we want.
+
+The hard parts of the lift:
+  (i)   Replace sphere-ascent with Stiefel-ascent. Tangent projection,
+        retraction (QR or polar), line search.
+  (ii)  Re-derive the gradient. Each column gets the same shape of grad
+        we already have, but now combined into a matrix-valued grad with
+        the Stiefel projection applied. FD check has to be lifted too.
+  (iii) Plateau detector becomes a SUBSPACE metric: principal angles
+        between span(V_opt) and span(V_oracle), not pairwise cos. The
+        "score(opt) > score(oracle) but cos² ≈ 0" detector → "score(opt)
+        > score(oracle) but max principal angle ≈ π/2".
+
+Why the rank-r lift may quietly fix mixed-tail-sharp: at rank-2 there's a
+single slot-2 degree of freedom on the sphere, and S6 has a flat HM3
+surface in mixed-tail-sharp's union span — the optimizer drifts. With
+r=3 or r=4 the plateau dimension shrinks and the optimum may pin closer
+to the oracle without any score-design changes. Worth checking BEFORE
+adding F1 (relH1) / F2 (soft gate) epicycles.
+
+
+6. What S6 looks like on the eight-cell oracle alignment table
+----------------------------------------------------------------
+
+cos²(candidate, oracle_v?_proj) for combined_v1/v2 and S6_v1_full /
+S6_v2_deflate, blocks 1 and 2, three matrices (see
+compare_oracle_alignment_b1b2.py output):
+
+  diffuse-diffuse b1: S6_v1 ≈ oracle_v1 (0.999), S6_v2 ≈ oracle_v2 (0.982).
+                       Combined < 0.05 everywhere. Lock-on.
+  diffuse-diffuse b2: S6_v2 ≈ oracle_v2 (0.79). S6_v1 lost (carry pulls
+                       it off oracle_v1 to 0.11).
+  static-cex     b1: combined_v2 ≈ oracle_v2 (0.44); S6_v2_deflate ≈ 0.37
+  static-cex     b2: combined trades slots (v1↔oracle_v2 at 0.36, v2↔
+                       oracle_v1 at 0.34). S6 lower on every cell.
+  mixed-tail-sh  b1: best alignment in any cell is 0.17 (S6_v1↔oracle_v2)
+  mixed-tail-sh  b2: best is combined_v1↔oracle_v2 at 0.19; S6 best 0.04.
+
+Pattern: S6 dominates on diffuse rowspace, ties on static, both fail on
+mixed-tail-sharp. Consistent with the streaming bench (T3) where S6 wins
+on etf-basket-basis (cos1²=0.65 vs combined 0.00) but does not pass the
+strict bar on the 3-matrix counterexample suite.
+
+This is the "plateau is wider on counterexample matrices" picture in
+empirical form. Mixed-tail-sharp's union span has flat HM3 ridges; the
+optimizer drifts off oracle.
+
+S6 vs online (T3 final cos1², cos0² in parens; sources: summary/
+bench_matrix_sweep_r_sk_g_S6/synthesis.txt and summary/bench_matrix_sweep/
+synthesis.txt):
+
+  matrix                  S6 cos1²   online cos1²°  S6 cos0²   online cos0²°
+  mixed-tail-sharp        0.013      0.850          0.733      0.983
+  mixed-tail-balanced     0.0004     0.827          0.687      0.981
+  mixed-tail-soft         0.022      0.019          0.847      0.983
+  static-cex              0.025      0.819          0.936      0.982
+  diffuse-diffuse         0.005      0.528          0.749      0.943
+  etf-basket-basis        0.652      0.962          1.000      1.000
+  residual-spiky-shocks   0.266      0.246          0.333      0.447
+
+  ° online numbers are the ORACLE-AWARE upper bound (pool contains
+    V_exact[:,1] via `q2_vs_q1oracle`). They overstate the gap a value-
+    only family must close. The value-only rerun (INFRA-10) replaces
+    these once it lands; expect the value-only online slot-2 numbers
+    to be lower, especially on mixed-tail-* / static-cex where the
+    oracle-projection is the highest-scoring pool entry.
+
+Reading: S6 only wins on residual-spiky-shocks slot-2 (0.266 vs 0.246) and
+ties on mixed-tail-soft slot-2. On every other tail-dominant matrix online
+is far ahead on cos1² (0.5–0.85 gap) — but see ° caveat: that gap is
+inflated by online's oracle leak. The cos0² gap is smaller (S6 within
+~0.05 on most clean-rowspace matrices) — the slot-1 score is solved; the
+gap is entirely in slot-2 and is exactly the P4 plateau-drift pathology.
+This is the operational definition of "S6 must close the gap to online":
+not the strict 3-matrix bar from the spec, but online's slot-2 numbers on
+the tail-dominant subset — to be re-read against the value-only rerun.
+
+
+7. Open questions worth running before more score epicycles
+------------------------------------------------------------
+
+Q1. Does the rank-r lift pin the optimum near the oracle without F1/F2?
+    Build the Stiefel-ascent variant first, run T3 with rank=3 or 4 on the
+    same 7-matrix suite, see whether mixed-tail-sharp's cos1² climbs.
+
+Q2. How wide is the plateau actually? Sample 200 random points on the
+    sphere within the score_S6 ≥ 0.95 · score_S6(opt) sublevel set and
+    plot align_v2_proj distribution. Will tell us whether "narrow basin"
+    is the right framing or whether the basin is wide but multimodal.
+
+Q3. relH1 added back at the END (multiplicative): does it tighten the
+    basin without re-introducing S5's clipping? F1 in the spec.
+
+Q4. Per-row/leverage-aware c-weighting instead of Frobenius F-weighting:
+    F3 in the spec. Probably equivalent up to scale.
+
+Q5. Carry-confidence multipliers (Family B in score_ideas_growing_sketch.txt).
+    Multiply u_sk by s_top², spectral concentration, or carry-drift signals
+    so sketch influence grows with carry maturity. NATURAL at rank-r:
+    s_top² → geomean(s_1, …, s_r); spectral concentration → s_r²/Σs_i²;
+    carry-drift → ‖V_t V_t^T − V_{t−1} V_{t−1}^T‖_F (principal-angle² form).
+    Defer until rank-r is in place — these are more meaningful as frame-
+    level multipliers than scalar.
+
+Q6. Rank-aware threshold (Family E). u_sk = max(r·raw_sk/sk_F2_low − 1, 0)
+    gates a candidate as "sketch-aligned" iff it captures more than the
+    average rank-r direction's energy. This becomes naturally meaningful
+    at rank-r (T_r = sk_F2_low/r is the average per-frame-direction
+    energy). Sharper than S5's per-row gate.
+
+Q7. HM vs GM aggregator ablation (NEW, from §2bis (a.i)).
+    The "balance enforcer" property is shared by HM and GM — both go to
+    zero when any u_X → 0 — but HM penalizes imbalance more aggressively.
+    GM has a clean log-additive gradient (∇log GM = (1/k) Σ ∇log u_X)
+    and may produce a smoother optimization landscape (narrower P4
+    plateau). Ablation: implement S6_GM = (u_sk · u_g1 · u_g2)^(1/3),
+    same FD/T2/T3 gauntlet, compare cos1² on the §6 table. ~30 minutes
+    of work given the existing harness. Cheap, informative, and
+    currently absent — should run BEFORE adding more epicycles to S6.
+    [RESOLVED 2026-04-28 — REFUTED. See summary/score_family_aggregator_ablation/synthesis.md.
+     T1 PASS (rel_err ≤ 3.1e-10). T3 closes 0% of the S6→online gap on
+     every tail-dominant matrix; on residual-spiky-shocks GM regresses
+     cos1² by 0.28 (HM3 0.516 → GM3 0.239). The "smoother landscape"
+     prediction is not borne out: GM wins by ~0.02–0.10 on 3 of 6 tail-
+     dominant matrices and loses by similar magnitudes on the other 3.
+     Recommendation: keep HM3 for FAM-01 / FAM-03 inheritance.]
+
+PRIORITY ORDER (latest revision; supersedes the order in
+score_ideas_growing_sketch.txt §9):
+  Q7 (HM-vs-GM ablation, ~30 min)  →  Q1 (rank-r lift)  →  Q2 (plateau-
+  width quantification)  →  Q3 (relH1 multiplicative)  →  Q5/Q6 (carry-
+  confidence + rank-aware)  →  Q4 (c-weighting variant).
+The rank-r lift goes first among the structural changes because the
+dominant failure mode (T3 streaming plateau drift on mixed-tail-sharp)
+is driven by the rank-1 score's wide level set; the within-rank-1
+epicycles only address symptoms of that. Q7 jumps to the front of the
+queue because it's cheap, informative, and tests a silent assumption
+(see §2bis (a.i)) — running it before Q1 could change which form is
+lifted to rank-r.
+
+Operational success criterion (Q0). The implicit goal across Q1..Q6 is to
+close the S6→online gap on the tail-dominant matrices in §6's table —
+specifically slot-2 cos1² on mixed-tail-sharp/-balanced, static-cex,
+diffuse-diffuse, and etf-basket-basis. The 3-matrix strict bar (cos[1]²
+≥ 0.6 on static-cex AND mixed-tail-sharp; ≥ 0.7 on diffuse-diffuse) is the
+*minimum*, but online clears it comfortably on those (0.819, 0.850, 0.528)
+on cos1² — diffuse-diffuse is online's only sub-bar slot-2 number, and
+that's where iSVD wins. So a value-only score family that cleanly beats
+combined but stays well below online has not really validated the design
+hypothesis. Q1..Q6 should each be evaluated on the §6 table, not just on
+the 3-matrix gauntlet.
+
+(2026-04-28 amendment.) "Online" in this Q0 statement now means the
+VALUE-ONLY rerun (INFRA-10), not the oracle-aware ceiling shown in the
+§6 table. The oracle-aware numbers above (0.819, 0.850, 0.528) include
+`q2_vs_q1oracle` = V_exact[:,1] in the pool — a value-only family
+literally cannot close that gap because the rival's pool contains the
+answer. Re-read Q0 as: close the S6→(value-only online) gap. The
+oracle-aware ceiling is informative as an upper bound but is NOT the
+ship-criterion.
+
+What online does NOT solve, and where score-design is still motivated:
+  - Spiky-residual matrices (residual-spiky-shocks: online cos1² = 0.246,
+    iSVD = 0.406; risk-residual-panel: online = 0.064, iSVD = 0.471).
+    Online's HM-online still misreads the spike. A row-concentration guard
+    (relH1 / F1 in the spec) is the proposed fix per the synthesis and is
+    Q3 in this priority list — natural fit.
+  - Principled differentiability and rank-r generalization. Online's
+    rank-2 SVD reframe is opaque from a score-landscape standpoint;
+    the r_sk_g family has a clean value-and-grad and a natural Stiefel
+    lift (§5). If S6+rank-r lift matches online, the score-design path
+    becomes the preferred production policy on theoretical grounds.

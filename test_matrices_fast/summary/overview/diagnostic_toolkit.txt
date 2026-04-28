@@ -117,23 +117,32 @@ the SINGLE most useful family of tools when designing a new score.
       isvd                    pure streaming SVD of M_gain (latency baseline)
       combined                combined-greedy v1 + opt2
       hybrid                  combined-greedy v1 + deflated-SVD v2
-      future_hmean_online     greedy v1 + HM-online scored v2 (PRODUCTION
-                              baseline — strongest on tail-dominant
-                              matrices; see summary/bench_matrix_sweep/
-                              synthesis.txt for the 17-matrix sweep)
+      future_hmean_online     greedy v1 + HM-online scored v2.
+                              ORACLE-AWARE benchmark — pool contains
+                              `q2_vs_q1oracle` built from V_exact[:,1]
+                              (half_window_sliding_hmean_experiment.py
+                              :24,247-250,490 and
+                              second_slot_tail_bias_diagnostic.py:32).
+                              Numbers in summary/bench_matrix_sweep/
+                              synthesis.txt are a CEILING reference.
+                              Value-only rerun (workflow §5 [INFRA-10])
+                              lives at
+                              summary/bench_matrix_sweep_value_only_online/.
       future_hmean_r_sk_g     score-design family (S1..S6 via --rsk-variant)
     Two acceptance bars to keep in mind:
       (i)  Strict 3-matrix bar (per spec §4): cos[1]² ≥ 0.6 on static-cex
            AND mixed-tail-sharp; ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5
            on at least 2 of 3 matrices. This is the MINIMUM bar.
-      (ii) Operational bar — match-or-beat future_hmean_online on the
-           §6 table of score_design_overview.txt. The strict 3-matrix bar
-           is comfortably cleared by online on (i)'s static-cex and
-           mixed-tail-sharp slot-2 (0.819 / 0.850), so a new variant that
-           clears (i) but still trails online by 0.3+ has not closed the
-           real gap. Run the full 17-matrix sweep (the same harness as
-           bench_matrix_sweep) when a variant clears (i), to size the
-           gap to online matrix-by-matrix.
+      (ii) Operational bar — match-or-beat future_hmean_online (VALUE-ONLY
+           rerun, INFRA-10) on the §6 table of score_design_overview.txt.
+           The strict 3-matrix bar is comfortably cleared by online (even
+           the value-only version, on the matrices we have evidence for),
+           so a new variant that clears (i) but still trails value-only
+           online by 0.3+ has not closed the real gap. Run the full
+           17-matrix sweep (the same harness as bench_matrix_sweep) when
+           a variant clears (i), to size the gap matrix-by-matrix. Use
+           the value-only online numbers; the oracle-aware ones overstate
+           the gap.
 
 
 4. Optimizer-landscape probes
@@ -282,12 +291,14 @@ output.
 Each matrix stresses a different failure mode. A new variant has to be
 tested across the suite, not just on one matrix. Numbers below are
 final cos1² (slot-2) at half_win=32, sliding mode, block 31, from
-summary/bench_matrix_sweep/synthesis.txt (online, isvd, hybrid,
+summary/bench_matrix_sweep/synthesis.txt (online°, isvd, hybrid,
 combined) and summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt (S6).
-"online" = future_hmean_online = current production baseline.
+"online" = future_hmean_online — ORACLE-AWARE benchmark (pool contains
+V_exact[:,1]); see §3 above and workflow §5 [INFRA-10] for the
+value-only rerun that replaces these numbers as the ship-criterion.
 
-  matrix                  combined  hybrid  isvd   online  S6     gap-to-beat
-  ---------------------------------------------------------------------------
+  matrix                  combined  hybrid  isvd   online° S6     gap-to-beat°
+  ----------------------------------------------------------------------------
   static-cex              0.913     —       0.044  0.819   0.025  online
   mixed-tail-sharp        0.027     0.030   0.013  0.850   0.013  online
   mixed-tail-balanced     0.044     —       0.060  0.827   0.0004 online
@@ -296,6 +307,11 @@ combined) and summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt (S6).
   etf-basket-basis        0.000     —       0.205  0.962   0.652  online
   residual-spiky-shocks   —         0.570   0.637  0.246   0.266  iSVD/hybrid
   risk-residual-panel     —         0.085   0.471  0.064   —      iSVD/hybrid
+
+  ° online is oracle-aware (CEILING). gap-to-beat references the
+    value-only rerun (INFRA-10) once it lands; until then the column
+    is provisionally labeled against the ceiling and overstates the
+    real gap.
 
 Per-matrix failure modes and what each tests:
 
