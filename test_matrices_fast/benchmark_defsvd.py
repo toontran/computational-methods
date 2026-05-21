@@ -198,6 +198,91 @@ def run_streaming(A, V_exact, sigma1, r, win, mode, deflate_window, l=1):
             )
             delta_sum_sq += delta_this_sq
 
+        elif mode == "DefSVD-VarShrink":
+            # Variance-driven gap reshaping (spec relaxation3_c7_recalibration_spec.md
+            # Part 2). SAME basis as iSVD (top-r right singular vectors of M_gain);
+            # only the carried magnitudes are reshaped by relative-score split
+            # variance via C7c shrinkage-to-mean. NOT budget-matched to FD.
+            #
+            # lambda is the single knob; lambda=0 reduces to iSVD honest magnitudes.
+            import os as _os
+            LAMBDA = float(_os.environ.get("VARSHRINK_LAMBDA", "1.0"))
+            M_SPLITS = 16
+            P_FRAC = 0.5
+
+            # Step 1: V_hat = top-r right singular vectors of M_gain (iSVD basis);
+            # honest magnitudes s_hat via projected_subspace_svd(M_gain, V_hat).
+            _, s_raw, Vh_raw = la.svd(M_gain, full_matrices=False, lapack_driver="gesdd")
+            rr = min(r, Vh_raw.shape[0])
+            V_hat_raw = Vh_raw.T[:, :rr]
+            V_hat, s_hat = projected_subspace_svd(M_gain, V_hat_raw)
+            s_hat = np.asarray(s_hat).reshape(-1)
+            rr = V_hat.shape[1]
+
+            if V_r is None or S_r is None or rr == 0:
+                # First block: no carry -> behave like iSVD honest magnitudes
+                # (no shrink possible: variance reference is undefined).
+                s_new = s_hat.copy()
+                state_new = _new_state(
+                    V_hat, s_new, V_r, S_r, end0, prev_sketch,
+                    extra={"varshrink_lambda": LAMBDA, "varshrink_first_block": True},
+                )
+            else:
+                # Step 2: relative-score split variance on retained dirs w_j=V_hat[:,j].
+                # B w_j uses the carry (prev_sketch = S_r @ V_r.T).
+                Bw2 = np.sum((prev_sketch @ V_hat) ** 2, axis=0)  # ||B w_j||^2, length rr
+                # Local RNG seeded deterministically per window; does NOT touch
+                # the global seed the benchmark sets.
+                rng = np.random.RandomState(1000003 * (start0 + 1) + 7)
+                nrows = A_block.shape[0]
+                r_samples = np.zeros((M_SPLITS, rr))
+                for m in range(M_SPLITS):
+                    mask = rng.rand(nrows) < P_FRAC
+                    A_sub = A_block[mask, :]
+                    if A_sub.shape[0] == 0:
+                        Aw2 = np.zeros(rr)
+                    else:
+                        Aw2 = np.sum((A_sub @ V_hat) ** 2, axis=0)  # ||A_{S_m} w_j||^2
+                    s_m = Bw2 + Aw2                       # s_j^(m), length rr
+                    tot = float(np.sum(s_m))
+                    if tot <= 0.0:
+                        r_samples[m, :] = 1.0 / rr
+                    else:
+                        r_samples[m, :] = s_m / tot       # relative r_j^(m)
+                r_bar = r_samples.mean(axis=0)            # MC mean over splits (diagnostic)
+                var_j = r_samples.var(axis=0)             # Var_m(r_j^(m)) (population var)
+
+                # Step 3: C7c shrinkage-to-mean. The CENTER being shrunk is the
+                # HONEST retained relative energy r_hat_j = s_hat_j^2 / sum s_hat^2
+                # (NOT the MC mean r_bar). This is the only reading consistent
+                # with the hard C7c invariant "lambda=0 ⇒ s~ = s_hat exactly"
+                # (spec property (i); Part 2 note (b)). The MC splits supply var_j,
+                # which sets the shrinkage strength rho; r_bar is kept only as a
+                # diagnostic. At lambda=0, rho=0 ⇒ r_tilde = r_hat ⇒ s~ = s_hat.
+                E_total_sq = float(np.sum(s_hat ** 2))    # retained energy (sum of squares)
+                r_hat = (s_hat ** 2) / E_total_sq if E_total_sq > 0 else np.full(rr, 1.0 / rr)
+                rho = np.minimum(1.0, LAMBDA * var_j)
+                r_tilde = (1.0 / rr) + (r_hat - 1.0 / rr) * (1.0 - rho)
+                r_tilde = np.maximum(r_tilde, 0.0)
+                rt_sum = float(np.sum(r_tilde))
+                if rt_sum <= 0.0:
+                    r_tilde = np.full(rr, 1.0 / rr)
+                else:
+                    r_tilde = r_tilde / rt_sum            # renormalize to sum 1
+                s_new2 = np.maximum(r_tilde * E_total_sq, 0.0)
+                s_new = np.sqrt(s_new2)
+
+                state_new = _new_state(
+                    V_hat, s_new, V_r, S_r, end0, prev_sketch,
+                    extra={
+                        "varshrink_lambda": LAMBDA,
+                        "var_j": var_j.tolist(),
+                        "r_bar": r_bar.tolist(),
+                        "rho": rho.tolist(),
+                        "r_tilde": r_tilde.tolist(),
+                    },
+                )
+
         elif mode == "DefSVD-OrthDef":
             # Same as DefSVD-carryonly but window is SVD'd in the subspace orthogonal to V_r before deflation.
             if V_r is None or S_r is None:
@@ -473,6 +558,7 @@ def main():
         ("defsvd-symm", "DefSVD", True),
         ("defsvd-carryonly", "DefSVD", False),
         ("defsvd-recal-carry", "DefSVD-RecalCarry", False),
+        ("defsvd-varshrink", "DefSVD-VarShrink", False),
         ("defsvd-orth", "DefSVD-OrthDef", True),
         ("defsvd-cum-orth", "DefSVD-CumOrthDef", True),
         ("defsvd-cum-orth-inflate", "DefSVD-CumOrthInflate", True),

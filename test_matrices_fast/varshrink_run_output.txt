@@ -1,0 +1,178 @@
+# DefSVD-VarShrink sweep  n=128 win=32 rank=2 seed=0 preset=fast
+# lambdas=[0.0, 0.5, 1.0, 2.0, 5.0]
+
+## Sanity: VARSHRINK_LAMBDA=0 vs isvd-ref
+  static-cex-noisy       l=1  align isvd=0.2266001443 vs=0.2266001443  |d|=4.17e-14   relerr isvd=1.741191e-03 vs=1.741191e-03 |d|=1.01e-15
+  static-cex-noisy       l=2  align isvd=0.1732968381 vs=0.1732968381  |d|=2.62e-14   relerr isvd=1.741191e-03 vs=1.741191e-03 |d|=1.01e-15
+  static-cex-gauss       l=1  align isvd=0.1813315755 vs=0.1813315755  |d|=2.63e-14   relerr isvd=1.766380e-03 vs=1.766380e-03 |d|=2.24e-16
+  static-cex-gauss       l=2  align isvd=0.2345966445 vs=0.2345966445  |d|=7.36e-15   relerr isvd=1.766380e-03 vs=1.766380e-03 |d|=2.24e-16
+  static-cex-exptail     l=1  align isvd=0.0618033591 vs=0.0618033591  |d|=5.53e-14   relerr isvd=1.203594e-03 vs=1.203594e-03 |d|=1.90e-15
+  static-cex-exptail     l=2  align isvd=0.0921700323 vs=0.0921700323  |d|=4.97e-15   relerr isvd=1.203594e-03 vs=1.203594e-03 |d|=1.90e-15
+  static-cex             l=1  align isvd=0.1493009800 vs=0.1493009800  |d|=8.08e-15   relerr isvd=1.420053e-03 vs=1.420053e-03 |d|=4.48e-16
+  static-cex             l=2  align isvd=0.1482349716 vs=0.1482349716  |d|=7.74e-15   relerr isvd=1.420053e-03 vs=1.420053e-03 |d|=4.48e-16
+  mixed-tail-sharp       l=1  align isvd=0.0741220311 vs=0.0741220311  |d|=4.30e-15   relerr isvd=1.222545e-03 vs=1.222545e-03 |d|=1.57e-15
+  mixed-tail-sharp       l=2  align isvd=0.1842731693 vs=0.1842731693  |d|=1.94e-16   relerr isvd=1.222545e-03 vs=1.222545e-03 |d|=1.57e-15
+  crowded-strategy       l=1  align isvd=0.9997906926 vs=0.9997906926  |d|=6.66e-16   relerr isvd=9.082723e-04 vs=9.082723e-04 |d|=1.19e-15
+  crowded-strategy       l=2  align isvd=0.9988427471 vs=0.9988427471  |d|=7.77e-16   relerr isvd=9.082723e-04 vs=9.082723e-04 |d|=1.19e-15
+  MAX |align diff| = 5.529e-14   MAX |relerr diff| = 1.905e-15
+
+## Runtime (mean over matrices, l=rank, seconds)
+  isvd-ref                           1.542 ms
+  fd-ref                             1.576 ms
+  defsvd-carryonly                   1.885 ms
+  defsvd-varshrink(lam=1,M=16)       3.895 ms
+
+## Alignment tables  (l=1)
+
+### static-cex-noisy  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.226600   1.7412e-03
+  fd-ref                         0.174672   7.6243e-01
+  defsvd-carryonly               0.174670   1.7526e-03
+  varshrink lam=0.0              0.226600   1.7412e-03
+  varshrink lam=0.5              0.228848   1.8827e-03
+  varshrink lam=1.0              0.231554   2.0305e-03
+  varshrink lam=2.0              0.239032   2.3446e-03
+  varshrink lam=5.0              0.325191   3.4156e-03
+
+### static-cex-gauss  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.181332   1.7664e-03
+  fd-ref                         0.158808   7.6048e-01
+  defsvd-carryonly               0.158807   1.7783e-03
+  varshrink lam=0.0              0.181332   1.7664e-03
+  varshrink lam=0.5              0.181820   1.9009e-03
+  varshrink lam=1.0              0.182395   2.0404e-03
+  varshrink lam=2.0              0.183908   2.3344e-03
+  varshrink lam=5.0              0.197456   3.3345e-03
+
+### static-cex-exptail  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.061803   1.2036e-03
+  fd-ref                         0.123290   8.9218e-01
+  defsvd-carryonly               0.123290   6.2337e-03
+  varshrink lam=0.0              0.061803   1.2036e-03
+  varshrink lam=0.5              0.061826   1.2109e-03
+  varshrink lam=1.0              0.061851   1.2183e-03
+  varshrink lam=2.0              0.061907   1.2337e-03
+  varshrink lam=5.0              0.062142   1.2840e-03
+
+### static-cex  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.149301   1.4201e-03
+  fd-ref                         0.265409   8.7367e-01
+  defsvd-carryonly               0.265410   3.3067e-02
+  varshrink lam=0.0              0.149301   1.4201e-03
+  varshrink lam=0.5              0.149600   1.5736e-03
+  varshrink lam=1.0              0.149919   1.7298e-03
+  varshrink lam=2.0              0.150624   2.0499e-03
+  varshrink lam=5.0              0.153514   3.0726e-03
+
+### mixed-tail-sharp  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.074122   1.2225e-03
+  fd-ref                         0.468311   8.6588e-01
+  defsvd-carryonly               0.467634   4.1162e-02
+  varshrink lam=0.0              0.074122   1.2225e-03
+  varshrink lam=0.5              0.074122   1.2226e-03
+  varshrink lam=1.0              0.074122   1.2227e-03
+  varshrink lam=2.0              0.074122   1.2228e-03
+  varshrink lam=5.0              0.074122   1.2232e-03
+
+### crowded-strategy  (l=1)
+  method                            align  relerr_sval
+  isvd-ref                       0.999791   9.0827e-04
+  fd-ref                         0.999819   2.6694e-01
+  defsvd-carryonly               0.999647   3.0505e-03
+  varshrink lam=0.0              0.999791   9.0827e-04
+  varshrink lam=0.5              0.999791   9.3699e-04
+  varshrink lam=1.0              0.999791   9.6571e-04
+  varshrink lam=2.0              0.999791   1.0231e-03
+  varshrink lam=5.0              0.999791   1.1952e-03
+
+## Alignment tables  (l=2)
+
+### static-cex-noisy  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.173297   1.7412e-03
+  fd-ref                         0.164629   7.6243e-01
+  defsvd-carryonly               0.164627   1.7526e-03
+  varshrink lam=0.0              0.173297   1.7412e-03
+  varshrink lam=0.5              0.174767   1.8827e-03
+  varshrink lam=1.0              0.176539   2.0305e-03
+  varshrink lam=2.0              0.181452   2.3446e-03
+  varshrink lam=5.0              0.239167   3.4156e-03
+
+### static-cex-gauss  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.234597   1.7664e-03
+  fd-ref                         0.120265   7.6048e-01
+  defsvd-carryonly               0.120264   1.7783e-03
+  varshrink lam=0.0              0.234597   1.7664e-03
+  varshrink lam=0.5              0.234653   1.9009e-03
+  varshrink lam=1.0              0.234702   2.0404e-03
+  varshrink lam=2.0              0.234768   2.3344e-03
+  varshrink lam=5.0              0.234324   3.3345e-03
+
+### static-cex-exptail  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.092170   1.2036e-03
+  fd-ref                         0.129287   8.9218e-01
+  defsvd-carryonly               0.129287   6.2337e-03
+  varshrink lam=0.0              0.092170   1.2036e-03
+  varshrink lam=0.5              0.092133   1.2109e-03
+  varshrink lam=1.0              0.092094   1.2183e-03
+  varshrink lam=2.0              0.092011   1.2337e-03
+  varshrink lam=5.0              0.091711   1.2840e-03
+
+### static-cex  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.148235   1.4201e-03
+  fd-ref                         0.253963   8.7367e-01
+  defsvd-carryonly               0.253962   3.3067e-02
+  varshrink lam=0.0              0.148235   1.4201e-03
+  varshrink lam=0.5              0.148274   1.5736e-03
+  varshrink lam=1.0              0.148315   1.7298e-03
+  varshrink lam=2.0              0.148407   2.0499e-03
+  varshrink lam=5.0              0.148794   3.0726e-03
+
+### mixed-tail-sharp  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.184273   1.2225e-03
+  fd-ref                         0.490992   8.6588e-01
+  defsvd-carryonly               0.490424   4.1162e-02
+  varshrink lam=0.0              0.184273   1.2225e-03
+  varshrink lam=0.5              0.184273   1.2226e-03
+  varshrink lam=1.0              0.184273   1.2227e-03
+  varshrink lam=2.0              0.184273   1.2228e-03
+  varshrink lam=5.0              0.184273   1.2232e-03
+
+### crowded-strategy  (l=2)
+  method                            align  relerr_sval
+  isvd-ref                       0.998843   9.0827e-04
+  fd-ref                         0.994485   2.6694e-01
+  defsvd-carryonly               0.976047   3.0505e-03
+  varshrink lam=0.0              0.998843   9.0827e-04
+  varshrink lam=0.5              0.998842   9.3699e-04
+  varshrink lam=1.0              0.998842   9.6571e-04
+  varshrink lam=2.0              0.998841   1.0231e-03
+  varshrink lam=5.0              0.998838   1.1952e-03
+
+## Discriminator summary (noisy / gauss / exptail): isvd vs best-lambda varshrink
+  l=1:
+    static-cex-noisy       isvd=0.226600  best_varshrink=0.325191 (lam=5.0)  -> VARSHRINK WINS
+    static-cex-gauss       isvd=0.181332  best_varshrink=0.197456 (lam=5.0)  -> VARSHRINK WINS
+    static-cex-exptail     isvd=0.061803  best_varshrink=0.062142 (lam=5.0)  -> VARSHRINK WINS
+  l=2:
+    static-cex-noisy       isvd=0.173297  best_varshrink=0.239167 (lam=5.0)  -> VARSHRINK WINS
+    static-cex-gauss       isvd=0.234597  best_varshrink=0.234768 (lam=2.0)  -> VARSHRINK WINS
+    static-cex-exptail     isvd=0.092170  best_varshrink=0.092170 (lam=0.0)  -> isvd wins/tie
+
+## Large-lambda -> equal-weight behavior (relerr_sval growth as lam grows, l=rank)
+  static-cex-noisy       relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [1.741e-03, 1.883e-03, 2.030e-03, 2.345e-03, 3.416e-03]
+  static-cex-gauss       relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [1.766e-03, 1.901e-03, 2.040e-03, 2.334e-03, 3.335e-03]
+  static-cex-exptail     relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [1.204e-03, 1.211e-03, 1.218e-03, 1.234e-03, 1.284e-03]
+  static-cex             relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [1.420e-03, 1.574e-03, 1.730e-03, 2.050e-03, 3.073e-03]
+  mixed-tail-sharp       relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [1.223e-03, 1.223e-03, 1.223e-03, 1.223e-03, 1.223e-03]
+  crowded-strategy       relerr@lam[[0.0, 0.5, 1.0, 2.0, 5.0]] = [9.083e-04, 9.370e-04, 9.657e-04, 1.023e-03, 1.195e-03]
+
