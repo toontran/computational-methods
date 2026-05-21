@@ -1,0 +1,383 @@
+HM-evidence score: context, definition, gradient, and implementation/run plan
+==============================================================================
+
+Date: 2026-04-27
+Audience: someone picking up the work to implement and benchmark the new policy.
+
+
+1. Why a new score
+------------------
+
+The existing `future_hmean_triplet_online` policy harmonic-means three "shares":
+
+    sk_share = ||A_sketch v||^2 / denom_sketch
+    g1_share = ||A_cur    v||^2 / denom_gain1
+    g2_share = ||A_fut    v||^2 / denom_gain2
+
+with denom_* set to the maximum value seen across the candidate pool of that
+block. Multiple diagnostic runs showed two structural defects on
+`mixed-tail-sharp` (and similarly on `residual-spiky-shocks`):
+
+  (a) `denom_gain2` is calibrated against streaming candidates that
+      deliberately starve future-block alignment (combined-style picks),
+      so it ends up tiny (~1e-5 to 1e-4). Any candidate with non-trivial
+      gain2 then has share >> 1 and gain2 effectively drops out of the
+      harmonic mean as a binding constraint.
+
+  (b) The naive row-count weight `(prior_seen, half_win, half_win)` over-
+      credits the rank-r sketch dramatically (e.g. 0.85 share at block 12
+      versus an actual evidence content closer to 2-30 random-row
+      equivalents on a typical direction). The harmonic mean then trusts
+      the sketch too much.
+
+Consequences observed in `summary/hmean_triplet_block_decomp_sharp_block*.txt`:
+the union-best HM-triplet pick wins on its own pool-normalized objective but
+loses to combined on combined_score, never approaches the projected oracle
+direction, and at later blocks drifts to a sketch-orphaned corner.
+
+The replacement objective should:
+  - Drop pool denominators (they are biased by the very candidate set they
+    were meant to score).
+  - Express the sketch's contribution as random-row equivalents against the
+    actual cumulative row evidence A_seen, not against the rank-r summary.
+  - Let the harmonic mean act as a true bottleneck penalty across three
+    evidence sources (sketch / current block / future block).
+
+These requirements yield the following score.
+
+
+2. Score definition
+-------------------
+
+For block k in the streaming run, with `half_win = N_block`:
+
+    sk_end       = (k - 1) * N_block         # rows already streamed
+    A_sk_full    = A[:sk_end]                # actual rows the sketch summarises
+    A_cur        = A[sk_end:sk_end + N_block]
+    A_fut        = A[sk_end + N_block:sk_end + 2*N_block]
+    A_sketch     = state["s"][:, None] * state["V"].T     # rank-r carried sketch
+
+    sk_F2        = ||A_sk_full||_F^2
+    cur_F2       = ||A_cur    ||_F^2
+    fut_F2       = ||A_fut    ||_F^2
+
+    c_sk         = sk_end / sk_F2            (= 1 / mean_row_F2_sk)
+    c_g1         = N_block / cur_F2          (= 1 / mean_row_F2_g1)
+    c_g2         = N_block / fut_F2          (= 1 / mean_row_F2_g2)
+
+For unit candidate v in R^n:
+
+    raw_sk(v)    = ||A_sketch v||^2          (RAW gain against the rank-r summary)
+    raw_g1(v)    = ||A_cur    v||^2
+    raw_g2(v)    = ||A_fut    v||^2
+
+    u_sk(v)      = c_sk * raw_sk(v)          # rows-worth of mean-row energy on v
+    u_g1(v)      = c_g1 * raw_g1(v)
+    u_g2(v)      = c_g2 * raw_g2(v)
+
+Weights chosen by "independent samples each source provides":
+
+    w_sk         = r       (= rank, normally 2)
+    w_g1         = N_block
+    w_g2         = N_block
+    W            = w_sk + w_g1 + w_g2
+
+The HM-evidence value:
+
+    HM_evi(v)    = W / ( w_sk/u_sk(v) + w_g1/u_g1(v) + w_g2/u_g2(v) )
+
+The full score retains the existing `relH1` (block-1 entropy) factor so the
+score remains continuous and matches the existing policies' stylistic shape:
+
+    score(v)     = HM_evi(v) * relH1(v)
+
+Block 1 special case: A_sketch is empty. Drop the sketch term entirely:
+
+    score(v)     = ((w_g1 + w_g2) / (w_g1/u_g1(v) + w_g2/u_g2(v))) * relH1(v)
+
+Numerical guards: clamp each u_k to a small floor (1e-30) before reciprocation
+to avoid div-by-zero when raw_k is exactly 0 (e.g. `combined_optimizer_v2`'s
+gain2 hits ~0). The HM term will then be ~0 and the gradient pushes off the
+wall; this matches what the harmonic mean is supposed to do.
+
+
+3. Gradient (gradient ascent on the unit sphere)
+------------------------------------------------
+
+All quantities below are functions of v in R^n. Maximise `score(v)` subject
+to ||v|| = 1.
+
+Per-source gradients:
+
+    d(raw_k)/dv  = 2 A_k^T A_k v
+    d(u_k)/dv    = c_k * d(raw_k)/dv = 2 c_k * A_k^T A_k v
+    d(1/u_k)/dv  = -d(u_k)/dv / u_k^2
+
+Denominator and HM_evi:
+
+    D(v)         = sum_k w_k / u_k(v)
+    HM_evi(v)    = W / D(v)
+
+    d D / dv     = sum_k -w_k * d(u_k)/dv / u_k^2
+                 = -2 * sum_k w_k * c_k * (A_k^T A_k v) / u_k^2
+
+    Substituting u_k = c_k * raw_k makes the c_k cancel inside one factor:
+
+    d D / dv     = -2 * sum_k (w_k / (c_k * raw_k^2)) * (A_k^T A_k v)
+                 = -2 * sum_k (w_k * ||A_k||_F^2 / (N_k * raw_k^2)) * (A_k^T A_k v)
+
+    d HM_evi / dv = -W * dD/dv / D^2
+                  = (W / D^2) * 2 * sum_k (w_k / (c_k * raw_k^2)) * A_k^T A_k v
+                  = (HM_evi^2 / W) * 2 * sum_k (w_k / (c_k * raw_k^2)) * A_k^T A_k v
+
+relH1 factor (entropy of A_cur v energies):
+
+    y            = A_cur v
+    e            = y * y                                  # entrywise
+    S            = sum(e)
+    p            = e / S
+    H            = -sum(p * log(p))                       # natural log
+    relH1        = H / log(N_block)
+    dH/de        = -(log(p) + H) / S
+    grad_H/dv    = A_cur^T (2 * y * dH/de)
+    d relH1/dv   = grad_H / log(N_block)
+
+Final score gradient (product rule):
+
+    d score / dv = relH1 * d HM_evi / dv  +  HM_evi * d relH1 / dv
+
+Sphere-projected gradient ascent step (same as `optimize_future_hmean_in_basis`):
+
+    given v on the unit sphere:
+        compute val, grad_v
+        grad_tan = grad_v - v * (v^T grad_v)
+        if ||grad_tan|| <= tol: stop
+        backtracking line search:
+            for alpha in {1, 0.5, 0.25, ...}:
+                v_try = (v + alpha * grad_tan) / ||v + alpha * grad_tan||
+                if val(v_try) >= val + 1e-4 * alpha * ||grad_tan||^2: accept
+
+When optimising in a precomputed basis B (e.g. `B_search` from the diagnostic),
+work in coordinates z = B^T v, ||z|| = 1, with grad_z = B^T grad_v. Same line
+search.
+
+Gradient verification: compare the analytic gradient against centered finite
+differences `(score(v + h e_i) - score(v - h e_i)) / (2h)` for h = 1e-6 at
+~20 sampled coordinates. Sample the SAME indices for both analytic readout
+and the finite-difference array (do not draw two independent index samples
+or the relative error will look like 1.0 spuriously).
+
+
+4. Implementation plan
+----------------------
+
+Suggested file: `hmean_evidence_score.py` (new), reusing scaffolding from:
+
+  - `future_hmean_optimizer_diagnostic.py`:
+      `optimize_future_hmean_in_basis(...)`     # generic in-basis optimizer
+      `orth_basis_against`, `rowspace_basis`    # build B_search
+      `combined_score`                           # for diagnostic comparison
+  - `hmean_combinations_optimizer_diagnostic.py`:
+      `optimize_combination_in_basis(...)`      # for triplet-norm baseline
+      `candidate_denoms`                         # for diagnostic comparison
+  - `half_window_sliding_hmean_experiment.py`:
+      `build_candidates`, `ONLINE_POOL`         # for triplet-norm baseline
+  - `second_slot_tail_bias_diagnostic.py`:
+      `make_state`, `raw_oracle_columns`         # state advancement & oracle proj
+
+Module layout:
+
+  hm_evi_value_grad(A_sketch, A_cur, A_fut, c_sk, c_g1, c_g2,
+                    w_sk, w_g1, w_g2, v) -> (score, grad, u_sk, u_g1, u_g2,
+                                              hm_evi, relH1)
+
+  optimize_hm_evi_in_basis(...) -- reuses optimize_future_hmean_in_basis by
+      monkey-patching `future_hmean_value_grad` with an adapter that calls
+      hm_evi_value_grad, exactly as `optimize_combination_in_basis` does.
+
+  per_block_constants(A, block_id, half_win) -> dict with N_sk, sk_F2,
+      cur_F2, fut_F2, c_sk, c_g1, c_g2, A_cur, A_fut.
+
+  stream_to_block(args, A, V_exact, work_dtype, rank, target_block,
+                  blocks_to_report) -> dict[block_id] -> snapshot containing
+      A_sketch, A_cur, A_fut, M_gain, state, old_row_memory, V_default, diag.
+      Mirrors the existing pipeline: `entropy_iter_basis_forget` with
+      `score_variant="combined"`, then `make_state` + `select_old_row_memory`.
+
+  analyze_block(args, matrix, A, V_exact, snap, block_id) builds:
+      - oracle_v1_proj, oracle_v2_proj on rowspan(A_sketch ∪ A_cur ∪ A_fut)
+      - Best HM-triplet (pool-normalised) via `optimize_combination_in_basis`
+      - Best HM-triplet RAW (denoms = 1) via the same optimizer
+      - Best HM-evidence via `optimize_hm_evi_in_basis`
+      Then for each candidate v reports
+        u_sk, u_g1, u_g2, hm_evi, relH1, score (HM_evi * relH1),
+        combined_score, align_v1 = (v . V_exact[:,0])^2,
+        align_v2 = (v . V_exact[:,1])^2.
+
+  gradient_check(A, V_exact, args, matrix, block_id) finite-differences the
+      score against the analytic gradient. SAMPLE THE SAME INDICES for FD and
+      analytic readout; expect rel_err <= 1e-8 in float64.
+
+  CLI arguments mirror `hmean_triplet_block2_decomposition.py`, adding
+  `--blocks 2 6 12`, `--matrices ...`, and `--gradient-check`.
+
+Starts list for the optimizer (same logic as the diagnostic):
+  V_default[:, 1], all online pool candidates, top columns of
+  diag["Vbasis_final"] (up to 8), random unit starts (union_random_starts =
+  default 24), AND oracle_v1_proj, oracle_v2_proj as warm starts. Random
+  restarts are critical: HM_evi is non-convex and the basin near the
+  projected oracle is small.
+
+
+5. Verification plan (mixed-tail-sharp)
+---------------------------------------
+
+  Step 1: gradient check.
+      python hmean_evidence_score.py --matrix mixed-tail-sharp --blocks 2 6 12 \
+          --gradient-check
+      Expect: max relative error <= 1e-8 in float64. Anything larger signals
+      a derivation bug -- recheck the c_k / raw_k^2 factor and the sign of dD/dv.
+
+  Step 2: per-block table.
+      python hmean_evidence_score.py --matrix mixed-tail-sharp --blocks 2 6 12 \
+          --out-prefix summary/hmean_evidence_score_sharp
+      Expect (anchor numbers from the previous diagnostic run):
+
+        block 2 :  score(oracle_v1_proj) ~ 0.40, score(oracle_v2_proj) ~ 0.41,
+                   score(hm_triplet_evidence_best) >= max(oracle scores) - epsilon
+                   (because the optimum is searched in the same union),
+                   score(combined_v2) ~ 3e-5, score(hm_triplet_norm) ~ 0.01.
+        block 6 :  oracles ~ 0.38, evidence_best ~ 0.38-0.39, combined ~ 3e-5.
+        block 12:  oracle_v1 ~ 0.37, oracle_v2 ~ 0.24, evidence_best ~ 0.37,
+                   raw HM ~ 0.32, combined ~ 5e-5.
+
+      Pass criterion: hm_triplet_evidence_best >= oracle_v?_proj on score at
+      every reported block, and combined / norm-HM are decisively worse
+      (score < 1e-2 at every block).
+
+  Step 3: alignment sanity.
+      For block 12 specifically, expect the hm_triplet_evidence_best vector to
+      have align_v1 + align_v2 near oracle_v1_proj's value (since both
+      effectively occupy the union's projected-oracle subspace). If
+      evidence_best lands in a sketch-rich corner instead (low align_v1 + v2),
+      that means the line-search is being pulled out of the oracle basin --
+      bump --union-random-starts to 48 and rerun.
+
+  Step 4: regression on residual-spiky-shocks.
+      python hmean_evidence_score.py --matrix residual-spiky-shocks \
+          --blocks 2 6 12 --out-prefix summary/hmean_evidence_score_spiky
+      Expect the same qualitative ordering. residual-spiky-shocks has spike
+      rows that may make the optimizer hesitate; `score_evidence_best` should
+      still beat `combined` and `norm-HM` decisively.
+
+  Common failure modes:
+    - rel error in gradient check ~1: usually a sign or factor mistake in
+      d HM_evi / dv. Re-derive starting from d (W/D)/dv = -W/D^2 * dD/dv.
+    - score == 0 for many candidates: u_k below the eps floor; either
+      the raw_k is genuinely zero (combined-v2's raw_g2 case) or A_sketch
+      is empty (block 1 path).
+    - evidence_best lands at the same point as combined-v2: the oracle_proj
+      warm starts were dropped because B_union was empty; verify
+      A_sketch.size > 0 condition before unioning.
+
+
+6. Multi-matrix benchmark plan
+------------------------------
+
+Matrix list (matches `hmean_combinations_optimizer_diagnostic.py` defaults):
+  mixed-tail-sharp, mixed-tail-balanced, mixed-tail-soft,
+  diffuse-diffuse, static-cex, etf-basket-basis,
+  residual-spiky-shocks, risk-residual-panel.
+
+Run command:
+
+  python hmean_evidence_score.py \
+      --matrices mixed-tail-sharp mixed-tail-balanced mixed-tail-soft \
+                 diffuse-diffuse static-cex etf-basket-basis \
+                 residual-spiky-shocks risk-residual-panel \
+      --blocks 2 6 12 \
+      --out-prefix summary/hmean_evidence_score_bench
+
+Per-matrix outputs:
+  summary/hmean_evidence_score_bench.csv
+  summary/hmean_evidence_score_bench.json
+  summary/hmean_evidence_score_bench_<matrix>.txt   one per matrix
+
+Synthesis to write at:
+  summary/hmean_evidence_score_synthesis.txt
+
+Sections to include in the synthesis (mirror
+`benchmark_online_vs_baselines_synthesis.txt`):
+  - Setup: same matrix generation params, half_win=32, rank=2, seed=0,
+    shuffle_rows true, row_shuffle_seed=0, dtype float32.
+  - Score definition + weights (copy from this document).
+  - Per-matrix table at blocks 2 / 6 / 12: for each candidate, columns
+    u_sk, u_g1, u_g2, HM_evi, relH1, score, combined, align_v1, align_v2.
+  - Wins per block: which candidate has the highest HM_evi*relH1 score.
+    Expected pattern: hm_triplet_evidence_best >= oracle_v?_proj in every
+    cell (because the optimizer searches the same union). If not, that's a
+    finding -- record which matrix breaks the pattern and post-mortem
+    (likely insufficient random restarts or a numerical floor issue).
+  - Combined-score side-by-side: report combined_score(evidence_best) vs
+    combined_score(combined_v2). Expect evidence_best's combined_score to be
+    LOWER than combined-v2's by a structural margin (~30-40% on
+    mixed-tail-sharp / -spiky), because evidence-balanced != combined-optimal.
+  - Alignment to oracle: for each matrix at block 12, expect
+    align_v1(evidence_best) + align_v2(evidence_best) >= the same sum for
+    combined-v2 (oracles are reachable in the union; combined refuses to
+    point there).
+
+Reporting style: keep it terse, bulleted, one paragraph per matrix at most.
+This is a comparison artifact, not a tutorial.
+
+
+7. Notes on what NOT to change
+------------------------------
+
+  - Do not modify `hmean_combinations_optimizer_diagnostic.py` or
+    `future_hmean_optimizer_diagnostic.py`. The new score is additive --
+    use the existing `optimize_future_hmean_in_basis` via the same
+    monkey-patch trick the existing diagnostics use.
+  - Do not touch the streaming carry rule. `score_variant="combined"`
+    inside `entropy_iter_basis_forget` advances the state for the next
+    block, exactly matching what the existing benchmarks compare against.
+  - Do not normalise raw_k by ANY pool-derived denominator. The whole
+    point of this score is that c_k uses ONLY per-block / per-cumulative
+    Frobenius norms of the actual matrix data, never the candidate pool.
+  - Do not weight the sketch by `prior_seen` (the naive row count) under
+    any circumstances. That reproduces the original pathology. Keep
+    w_sk = r.
+
+
+8. Open questions to flag in the synthesis
+------------------------------------------
+
+  - Should w_sk grow over blocks if the principal-cosines of state.V vs
+    V_exact[:, :r] grow? Currently fixed at r. A possible refinement:
+        w_sk = r * (||V_carried^T V_local||_F^2 / r)  in [0, r],
+    where V_local is V_default of the current block. This soft-gates the
+    sketch weight by cross-block agreement. Worth one ablation cell.
+  - relH1 is still computed on A_cur only. An alternative that mirrors the
+    "evidence" framing: replace relH1 by a relH defined over A_sketch ∪
+    A_cur (pooled energy), so retention rewards a more global flatness.
+    Note: changing this changes the gradient too.
+  - The score is currently maximised under hard sphere constraint with no
+    orthogonality to V_default[:, 0] beyond projecting B_search. If the
+    optimum is consistently almost-collinear with v1, switch to a Stiefel
+    rank-2 optimisation. Out of scope for the first benchmark.
+
+
+9. Provenance
+-------------
+
+This score and its derivation came out of the conversation thread
+documented in the diagnostic artifacts under
+`summary/hmean_triplet_block_decomp_sharp_block{2,3,6,12}.txt` and
+`summary/hmean_triplet_block_decomp_sharp_combined.json`. The pre-existing
+defects of the pool-normalised HM-triplet are recorded in
+`summary/hmean_combinations_optimizer_diagnostic.txt`. The "random-row-
+equivalents" reframing of `raw_sk(v)` is the bridge that links the
+empirical observation (sketch share ~ 0.08 for the projected oracle on
+block 2) to the algorithmic correction (drop pool denominators, weight
+the sketch by its rank, normalise raw responses by per-block mean-row
+energy).

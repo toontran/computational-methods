@@ -1,0 +1,135 @@
+Approximation note: online harmonic-mean combinations without phi
+=================================================================
+
+Purpose
+-------
+
+This note defines no-phi versions of the corrected online HM objectives.
+Here "phi" is the entropy-related multiplier used by the existing
+future_hmean_online family:
+
+  phi(v) = H1(v),
+
+the relative entropy of the current-window response.  The no-phi variants
+delete that multiplier and rank candidates by normalized gain balance only.
+
+Terms
+-----
+
+At online window w, for candidate second vector v:
+
+  s_raw(v)  = ||S_{w-1} v||_2^2
+  g1_raw(v) = ||A_w v||_2^2
+  g2_raw(v) = ||A_{w+1} v||_2^2.
+
+`S_{w-1}` is the carried compact sketch before the current window:
+
+  S_{w-1} = diag(state.s) state.V.T.
+
+For the first block, no prior sketch exists.  The scalar sketch share is
+set to 1 for unweighted HM variants, and the weighted HM gives the sketch
+term zero weight.
+
+Normalize over the finite candidate pool:
+
+  s(v)  = s_raw(v) / max_u s_raw(u), if a prior sketch exists; else 1
+  g1(v) = g1_raw(v) / max_u g1_raw(u)
+  g2(v) = g2_raw(v) / max_u g2_raw(u).
+
+Parenthesized block tuples mean vertical concatenation before the norm:
+
+  c1_raw(v) = ||[S_{w-1}; A_w] v||_2^2
+            = s_raw(v) + g1_raw(v)
+
+  c2_raw(v) = ||[S_{w-1}; A_{w+1}] v||_2^2
+            = s_raw(v) + g2_raw(v),
+
+with s_raw treated as 0 when no prior sketch exists.  Normalize:
+
+  c1(v) = c1_raw(v) / max_u c1_raw(u)
+  c2(v) = c2_raw(v) / max_u c2_raw(u).
+
+Objectives
+----------
+
+The baseline future no-phi objective is:
+
+  future_hmean_online_no_phi:
+    J(v) = HM(g1, g2).
+
+The sketch variants are:
+
+  future_hmean_triplet_online_no_phi:
+    J(v) = HM(s, g1, g2).
+
+  future_hmean_nested_online_no_phi:
+    J(v) = HM(c1, g2)
+         = HM(||[S_{w-1}; A_w]v||^2, ||A_{w+1}v||^2),
+    after candidate-pool normalization.
+
+  future_hmean_pairwise_online_no_phi:
+    J(v) = HM(c1, c2)
+         = HM(||[S_{w-1}; A_w]v||^2,
+              ||[S_{w-1}; A_{w+1}]v||^2),
+    after candidate-pool normalization.
+
+  future_hmean_weighted_online_no_phi:
+    J(v) = HM_alpha(s, g1, g2),
+    alpha = (rows seen before N_w, |N_w|, |N_{w+1}|).
+
+Gradient
+--------
+
+Removing phi removes all response-entropy derivative terms.  For a
+weighted harmonic mean
+
+  h(v) = A / R(v),
+  A = sum_i alpha_i,
+  R(v) = sum_i alpha_i / x_i(v),
+
+the gradient is
+
+  grad h = (A / R^2) * sum_i alpha_i grad x_i / x_i^2.
+
+For a normalized quadratic gain
+
+  x(v) = ||Bv||_2^2 / c,
+
+with candidate-pool normalizer c held fixed during a local smooth step,
+
+  grad x = 2 B.T B v / c.
+
+For concatenated terms:
+
+  grad c1 = 2 (S_{w-1}.T S_{w-1} + A_w.T A_w) v / c1_norm,
+  grad c2 = 2 (S_{w-1}.T S_{w-1} + A_{w+1}.T A_{w+1}) v / c2_norm.
+
+Binary HM composition uses:
+
+  HM(a,b) = 2ab/(a+b)
+  d HM/da = 2 b^2/(a+b)^2
+  d HM/db = 2 a^2/(a+b)^2.
+
+Expected behavior
+-----------------
+
+No-phi objectives should be more purely gain-seeking.  They may improve
+cases where the entropy multiplier suppresses useful concentrated signal,
+but they also lose the guard against candidates that win by a localized
+current-window spike.  The benchmark comparison should therefore be read
+against both:
+
+  - the original phi-weighted future_hmean_online, and
+  - the corrected sketch-HM variants with phi.
+
+Implementation
+--------------
+
+The no-phi score keys are computed in `score_half_candidates` in
+`half_window_sliding_hmean_experiment.py`.  The policy names are:
+
+  future_hmean_online_no_phi
+  future_hmean_triplet_online_no_phi
+  future_hmean_nested_online_no_phi
+  future_hmean_pairwise_online_no_phi
+  future_hmean_weighted_online_no_phi.

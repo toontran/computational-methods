@@ -1,0 +1,52 @@
+== diffuse-diffuse ==
+
+FD slot-1 (sketch_v1 = V_state[:,0]) and FD slot-2 (sketch_v2 = V_state[:,1])
+Outside-window direction (combined_v2 = V_default[:,1])
+
+                                       b 1   b 2   b 6   b12   b31
+[FD slot-1 = sketch_v1]
+  cos² vs oracle_v1_exact (population)   nan   0.004  0.003  0.015  0.014
+  cos² vs oracle_v1_proj  (in-window)    nan   0.047  0.043  0.097  0.101
+  cos² vs Acur_topSV_v1 (per-block)      nan   0.000  0.000  0.000  0.000
+  cos² vs Afut_topSV_v1 (next-window)    nan   0.000  0.000  0.000  0.000
+  cos² vs visible_topSV_v1 (cur+fut)     nan   0.000  0.000  0.000  0.000
+  cos² vs Acur_rowcheat_v1 (top row)     nan   0.000  0.000  0.000  0.000
+  relH1(visible)                         nan   0.854  0.774  0.849  0.900
+  eff_frac(visible)                      nan   0.546  0.391  0.534  0.661
+  top1_share(visible)                    nan   0.086  0.130  0.111  0.053
+
+[FD slot-2 = sketch_v2]
+  cos² vs oracle_v2_exact (population)   nan   0.014  0.017  0.003  0.029
+  cos² vs oracle_v2_proj  (in-window)    nan   0.164  0.181  0.016  0.060
+  cos² vs oracle_v1_proj (slot mix)      nan   0.079  0.021  0.427  0.385
+  cos² vs Acur_topSV_v2                  nan   0.000  0.000  0.000  0.000
+  cos² vs Afut_topSV_v2                  nan   0.000  0.000  0.000  0.000
+  cos² vs Acur_rowcheat_v2               nan   0.000  0.000  0.000  0.000
+  relH1(visible)                         nan   0.863  0.849  0.853  0.820
+  eff_frac(visible)                      nan   0.565  0.533  0.543  0.472
+  top1_share(visible)                    nan   0.075  0.068  0.072  0.116
+
+[OUTSIDE direction = combined_v2 = V_default[:,1]]
+  cos² vs V_state_frame (= state_align)  nan   0.523  0.813  0.882  0.953
+  cos² vs V_state_v1                     nan   0.055  0.023  0.106  0.002
+  cos² vs V_state_v2                     nan   0.468  0.790  0.776  0.951
+  cos² vs oracle_v2_exact (population)  0.000  0.023  0.032  0.032  0.022
+  cos² vs oracle_v2_proj  (in-window)   0.004  0.265  0.336  0.203  0.047
+  cos² vs oracle_v1_proj                0.018  0.134  0.044  0.300  0.432
+  cos² vs oracle_frame_proj             0.025  0.336  0.365  0.593  0.513
+  cos² vs Acur_topSV_v1                 0.018  0.003  0.039  0.003  0.002
+  cos² vs Afut_topSV_v1                 0.000  0.000  0.000  0.000  0.000
+  relH1(visible)                        0.823  0.817  0.811  0.818  0.773
+  eff_frac(visible)                     0.479  0.468  0.456  0.470  0.389
+  top1_share(visible)                   0.045  0.041  0.047  0.046  0.079
+
+[combined_v1 = V_default[:,0]  (M3: top SV of A_cur at b1; top SV of M_gain after)]
+  cos² vs Acur_topSV_v1                 0.384  0.001  0.008  0.000  0.016
+  cos² vs oracle_v1_exact (population)  0.009  0.003  0.006  0.049  0.014
+  cos² vs oracle_v1_proj  (in-window)   0.125  0.040  0.073  0.328  0.097
+  cos² vs V_state_frame                  nan   0.509  0.835  0.910  0.961
+
+[oracle reachability ||P_B_union V_exact[:,k]||² per slot]
+  oracle slot 1 reach                   0.073  0.084  0.079  0.151  0.140
+  oracle slot 2 reach                   0.073  0.088  0.094  0.158  0.480
+

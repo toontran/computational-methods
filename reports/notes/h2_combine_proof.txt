@@ -1,0 +1,186 @@
+
+\begin{lem}
+Let
+\begin{align}
+A
+:=
+\sum_{j=1}^r a_j^2s_j^2 + \sigma^2.
+\end{align}
+Assume the old and new blocks occupy disjoint coordinates, and define
+\begin{align}
+R_4
+&=
+a_\perp^4s_\perp^4e^{-H_\perp}
++
+R_4^{\mathrm{mix}},
+\\
+E_2
+&=
+a_\perp^2s_\perp^2
++
+E_2^{\mathrm{mix}},
+\end{align}
+where
+\begin{align}
+R_4^{\mathrm{mix}}
+&=
+\|y_{\mathrm{old}}\|_4^4
+-
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j}
+-
+a_\perp^4s_\perp^4e^{-H_\perp},
+\\
+E_2^{\mathrm{mix}}
+&=
+\|y_{\mathrm{old}}\|_2^2
+-
+\sum_{j=1}^r a_j^2s_j^2
+-
+a_\perp^2s_\perp^2.
+\end{align}
+Then
+\begin{align}
+\frac{\|N_wv\|_4^4}{\|N_wv\|_2^4}
+=
+\frac{
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j}
++
+\|A_{I_w}v\|_4^4
++
+R_4
+}{
+\left(
+\sum_{j=1}^r a_j^2s_j^2
++
+\|A_{I_w}v\|_2^2
++
+E_2
+\right)^2
+}.
+\end{align}
+Consequently, if
+\begin{align}
+|R_4| \ll A^2,
+\qquad
+|E_2| \ll A,
+\end{align}
+then
+\begin{align}
+H_2\left(\frac{N_wv}{\|N_wv\|_2}\right)
+=
+-\log\frac{Q_w(v)}{P_w(v)^2}
++
+\mathcal O\left(
+\frac{|R_4|}{A^2}
++
+\frac{|E_2|}{A}
++
+\frac{E_2^2}{A^2}
+\right).
+\end{align}
+\end{lem}
+
+\begin{proof}
+Since the old and new blocks are stacked, they occupy disjoint coordinates, so
+\begin{align}
+\|N_wv\|_4^4
+=
+\|y_{\mathrm{old}}\|_4^4 + \|y_{\mathrm{new}}\|_4^4
+=
+\|y_{\mathrm{old}}\|_4^4 + \sigma^4\|u_{\mathrm{new}}\|_4^4
+=
+\|y_{\mathrm{old}}\|_4^4 + \|A_{I_w}v\|_4^4.
+\end{align}
+By definition of $u_j$ and $H_j$,
+\begin{align}
+\|y_{\mathrm{old}}\|_4^4
+=
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j}
++
+a_\perp^4s_\perp^4e^{-H_\perp}
++
+R_4^{\mathrm{mix}},
+\end{align}
+which yields
+\begin{align}
+\|N_wv\|_4^4
+=
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j}
++
+\|A_{I_w}v\|_4^4
++
+R_4.
+\end{align}
+
+Likewise,
+\begin{align}
+\|N_wv\|_2^2
+=
+\|y_{\mathrm{old}}\|_2^2 + \|y_{\mathrm{new}}\|_2^2
+=
+\sum_{j=1}^r a_j^2s_j^2 + \sigma^2 + E_2
+=
+\sum_{j=1}^r a_j^2s_j^2 + \|A_{I_w}v\|_2^2 + E_2.
+\end{align}
+Therefore
+\begin{align}
+\frac{\|N_wv\|_4^4}{\|N_wv\|_2^4}
+=
+\frac{
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j}
++
+\|A_{I_w}v\|_4^4
++
+R_4
+}{
+\left(
+\sum_{j=1}^r a_j^2s_j^2
++
+\|A_{I_w}v\|_2^2
++
+E_2
+\right)^2
+}.
+\end{align}
+Now expand around
+\begin{align}
+Q_w(v)
+=
+\sum_{j=1}^r a_j^4s_j^4e^{-H_j} + \|A_{I_w}v\|_4^4,
+\qquad
+P_w(v)
+=
+\sum_{j=1}^r a_j^2s_j^2 + \|A_{I_w}v\|_2^2.
+\end{align}
+Since
+\begin{align}
+\frac{Q_w(v)+R_4}{(P_w(v)+E_2)^2}
+=
+\frac{Q_w(v)}{P_w(v)^2}
++
+\mathcal O\left(
+\frac{|R_4|}{A^2}
++
+\frac{|E_2|}{A}
++
+\frac{E_2^2}{A^2}
+\right),
+\end{align}
+taking $-\log$ gives the stated entropy approximation.
+\end{proof}
+
+The score approximation then follows in two steps. First, the lemma gives
+\begin{align}
+H_2\left(\frac{N_wv}{\|N_wv\|_2}\right) \approx \widehat H_{2,w}(v).
+\end{align}
+Second, the sketch is designed so that
+\begin{align}
+\|N_wv\|_2 \approx \|M_wv\|_2.
+\end{align}
+Substituting these two approximations into the exact score of $N_w$ gives
+\begin{align}
+\operatorname{score}_{N_w}(v)
+\approx
+\widehat{\operatorname{score}}_w(v).
+\end{align}
+This is the sense in which the later-window score is defined inductively from the summary statistics of the previous sketch together with the exact contribution of the new window.

@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:601: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.084844 mean_relerr_sval=0.05587390
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.873856 mean_relerr_sval=0.02060673
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.068843 mean_relerr_sval=0.02538313
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.042413 mean_relerr_sval=0.01378616
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.057094 mean_relerr_sval=0.02471121
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.046047 mean_relerr_sval=0.01353295
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.296043 mean_relerr_sval=0.04285702
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.849851 mean_relerr_sval=0.00475919
+wrote_json=summary/benchmark_online_vs_baselines_win64.json wrote_csv=summary/benchmark_online_vs_baselines_win64.csv wrote_text=summary/benchmark_online_vs_baselines_win64.txt elapsed=18.665

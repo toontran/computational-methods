@@ -1,0 +1,423 @@
+Let $\mathrm{row}(X)$ denote the number of rows of a matrix $X$. Let
+\begin{align}
+A \in \mathbb R^{m\times d}
+\end{align}
+be the full data matrix, let $A_w$ denote the current row-window, and let $B \in \mathbb R^{r\times d}$ denote the sketch carried from the previous windows. Write
+\begin{align}
+A_w &\in \mathbb R^{k\times d},
+\qquad
+k = \mathrm{row}(A_w),
+\qquad
+k>1,
+\\
+t_w &:= \text{(\# rows already seen up to and including the current window)},
+\qquad
+v \in \mathbb S^{d-1},
+\end{align}
+and write
+\begin{align}
+h_2\left(\frac{Xv}{\|Xv\|_2}\right)
+=
+-\log\left(\frac{\|Xv\|_4^4}{\|Xv\|_2^4}\right)
+\end{align}
+for any matrix $X$ with a nonzero response on $v$.
+We use the score
+\begin{align}
+\operatorname{score}_w(v)
+:=
+\|M_wv\|_2
+\left(\frac{t_w}{d}\right)^{-\frac{\widehat h_{2,w}(v)}{4\log t_w}},
+\end{align}
+where
+\begin{align}
+M_w
+:=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix},
+\end{align}
+and, when
+\begin{align}
+B=SV^\top,
+\qquad
+V=[v_1,\dots,v_r],
+\qquad
+S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+with carried entropy values $h_1,\dots,h_r$, the streamed entropy surrogate is
+\begin{align}
+e_w(v)
+&:=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2 + \|A_wv\|_2^2,
+\\
+q_w(v)
+&:=
+\sum_{j=1}^r s_j^4 e^{-h_j}(v_j^\top v)^4 + \|A_wv\|_4^4,
+\\
+\widehat h_{2,w}(v)
+&:=
+-\log\frac{q_w(v)}{e_w(v)^2}.
+\end{align}
+For the first window, where $B=0$ and $M_1=A_1$, this reduces to the exact entropy
+\begin{align}
+\widehat h_{2,1}(v)=h_2\left(\frac{A_1v}{\|A_1v\|_2}\right).
+\end{align}
+
+\paragraph{Algorithm overview.}
+The method processes the matrix one row-window at a time.
+
+For the first window, there is no previous sketch, so we set
+\begin{align}
+B=0,
+\qquad
+M_1 = A_1,
+\end{align}
+and define the first-window objective
+\begin{align}
+\operatorname{score}_1(v)
+:=
+\|A_1v\|_2
+\left(\frac{\mathrm{row}(A_1)}{d}\right)^{-\frac{h_2\left(\frac{A_1v}{\|A_1v\|_2}\right)}{4\log \mathrm{row}(A_1)}}.
+\end{align}
+The retained directions are computed sequentially by solving
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v = 0\ \forall i<j}
+\operatorname{score}_1(v).
+\end{align}
+After the selected directions are accepted, the sketch carried to the next window is simply
+\begin{align}
+V_1&=[v_1,\dots,v_r],
+\\
+h_j^{(1)}:=\widehat h_{2,1}(v_j),
+\qquad
+s_j^{(1)}:=\|M_1v_j\|_2 \ \ (j=1,\dots,r),
+\qquad
+h^{(1)}=(h_1^{(1)},\dots,h_r^{(1)}),
+\qquad
+S_1=\operatorname{diag}(s_1^{(1)},\dots,s_r^{(1)}),
+\qquad
+B_{\mathrm{next}} = S_1V_1^\top,
+\end{align}
+so that each accepted direction $v_j$ is carried together with its gain $s_j^{(1)}$ and entropy statistic $h_j^{(1)}$.
+
+For a later window $w$, the method receives the previous sketch
+\begin{align}
+V_{w-1}&=[v_1,\dots,v_r],
+\\
+S_{w-1}=\operatorname{diag}(s_1^{(w-1)},\dots,s_r^{(w-1)}),
+\qquad
+h^{(w-1)}=(h_1^{(w-1)},\dots,h_r^{(w-1)}),
+\qquad
+B = B^{(w-1)} = S_{w-1}V_{w-1}^\top
+\end{align}
+where
+\begin{align}
+s_j^{(w-1)}:=\|M_{w-1}v_j\|_2,
+\qquad
+h_j^{(w-1)}:=\widehat h_{2,w-1}(v_j),
+\qquad
+j=1,\dots,r.
+\end{align}
+The streamed operator $M_w$, the surrogate moments $e_w(v),q_w(v)$, and the objective $\widehat{\operatorname{score}}_w(v)$ are the quantities defined above from this carried sketch and the current block.
+The retained directions are computed sequentially from
+\begin{align}
+v_j^{(w)}
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ (v_i^{(w)})^\top v = 0\ \forall i<j}
+\widehat{\operatorname{score}}_w(v).
+\end{align}
+After solving for the updated directions, the next sketch is again the direct singular-factor summary
+\begin{align}
+V_w=[v_1^{(w)},\dots,v_r^{(w)}]
+\qquad
+s_j^{(w)}:=\|M_wv_j^{(w)}\|_2 \ \ (j=1,\dots,r),
+\qquad
+h_j^{(w)}:=\widehat h_{2,w}\!\left(v_j^{(w)}\right),
+\qquad
+S_w=\operatorname{diag}(s_1^{(w)},\dots,s_r^{(w)}),
+\qquad
+h^{(w)}=(h_1^{(w)},\dots,h_r^{(w)}),
+\qquad
+B^{(w)} = S_w V_w^\top,
+\end{align}
+Thus a middle window sees a compact summary of all previous windows through $S_wV_w^\top$, rather than raw past rows.
+
+\paragraph{Derivation of the score.}
+Let
+\begin{align}
+z = Xv
+\end{align}
+be a row-restricted response and let
+\begin{align}
+x = Av
+\end{align}
+be the response of the full matrix. We use the normalized-entropy heuristic
+\begin{align}
+\frac{h_2\left(\frac{x}{\|x\|_2}\right)}{\log d}
+\approx
+\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{\log \mathrm{row}(X)},
+\end{align}
+that is,
+\begin{align}
+h_2\left(\frac{x}{\|x\|_2}\right)
+\approx
+h_2\left(\frac{z}{\|z\|_2}\right)\frac{\log d}{\log \mathrm{row}(X)}.
+\end{align}
+Using
+\begin{align}
+h_2\left(\frac{y}{\|y\|_2}\right)
+=
+4\log\|y\|_2 - 4\log\|y\|_4,
+\end{align}
+and $\|z\|_4 \le \|x\|_4$ for a restriction $z$ of $x$, we obtain
+\begin{align}
+4\log\frac{\|z\|_2}{\|x\|_2}
+\le
+h_2\left(\frac{z}{\|z\|_2}\right)
+-
+h_2\left(\frac{x}{\|x\|_2}\right).
+\end{align}
+Substituting the heuristic entropy scaling gives
+\begin{align}
+\log\frac{\|z\|_2}{\|x\|_2}
+\lesssim
+-\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{4}\frac{\log(d/\mathrm{row}(X))}{\log \mathrm{row}(X)},
+\end{align}
+hence
+\begin{align}
+\frac{\|Xv\|_2}{\|Av\|_2}
+\lesssim
+\left(\frac{\mathrm{row}(X)}{d}\right)^{\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}{4\log \mathrm{row}(X)}}.
+\end{align}
+This motivates the reciprocal entropy factor
+\begin{align}
+\left(\frac{\mathrm{row}(X)}{d}\right)^{-\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}{4\log \mathrm{row}(X)}}.
+\end{align}
+Thus, for an exact window matrix $X$, we use
+\begin{align}
+\operatorname{score}_X(v)
+:=
+\|Xv\|_2
+\left(\frac{\mathrm{row}(X)}{d}\right)^{-\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}{4\log \mathrm{row}(X)}}.
+\end{align}
+
+\paragraph{First-window special case.}
+If there is no previous sketch, then $B=0$ and $M_1=A_1$, so the first-window score is the exact objective already introduced above.
+Using
+\begin{align}
+h_2\left(\frac{A_1v}{\|A_1v\|_2}\right)
+=
+4\log\|A_1v\|_2 - 4\log\|A_1v\|_4,
+\end{align}
+this becomes
+\begin{align}
+\operatorname{score}_1(v)
+=
+\|A_1v\|_2^{1-c_1}\|A_1v\|_4^{c_1},
+\qquad
+c_1 := \frac{\log(k/d)}{\log k}.
+\end{align}
+
+\paragraph{Inductive streamed form.}
+For later windows $w \ge 2$, use the carried sketch and entropy statistics already introduced above. Writing $a=V^\top v$ for the coefficients of $v$ in the stored basis, the previously defined moment surrogates become
+\begin{align}
+e_w(v)
+=
+\sum_{j=1}^r a_j^2 s_j^2 + \|A_wv\|_2^2,
+\qquad
+q_w(v)
+=
+\sum_{j=1}^r a_j^4 s_j^4 e^{-h_j} + \|A_wv\|_4^4.
+\end{align}
+Since $B=SV^\top$ and $M_w=\begin{pmatrix}B\\ A_w\end{pmatrix}$ by the earlier definitions, we have
+\begin{align}
+\|M_wv\|_2^2 = \|Bv\|_2^2 + \|A_wv\|_2^2 = e_w(v).
+\end{align}
+Hence the inductive score is exactly the previously defined $\widehat{\operatorname{score}}_w(v)$.
+
+\paragraph{Simplified log form.}
+Let
+\begin{align}
+\gamma_w := \frac{\log(t_w/d)}{2\log t_w}.
+\end{align}
+Then
+\begin{align}
+\log \widehat{\operatorname{score}}_w(v)
+=
+\frac12\log\|M_wv\|_2^2
++
+\gamma_w \log q_w(v)
+- 2\gamma_w \log e_w(v).
+\end{align}
+Since $\|M_wv\|_2^2 = e_w(v)$, this can be written equivalently as
+\begin{align}
+f_w(v)
+:=
+\log \widehat{\operatorname{score}}_w(v)
+=
+\frac12\log e_w(v) + \gamma_w \log q_w(v) - 2\gamma_w \log e_w(v)
+\end{align}
+or
+\begin{align}
+f_w(v)
+=
+\frac{1-c_w}{2}\log e_w(v) + \frac{c_w}{4}\log q_w(v),
+\qquad
+c_w := \frac{2\log(t_w/d)}{\log t_w}.
+\end{align}
+This is exactly the same interpolation between quadratic energy and fourth-moment concentration as in the first window, but now with the old moments represented by the carried sketch.
+
+\paragraph{Exact gradient.}
+For the first window,
+\begin{align}
+\nabla f_1(v)
+=
+\left(1-c_1\right)\frac{A_1^\top A_1v}{\|A_1v\|_2^2}
++
+c_1 A_1^\top\left(\frac{(A_1v)^{\odot 3}}{\|A_1v\|_4^4}\right).
+\end{align}
+
+For later windows, differentiate the streamed quantities:
+\begin{align}
+\nabla e_w(v)
+&=
+2V\bigl((s^{\odot 2})\odot a\bigr) + 2A_w^\top A_wv,
+\\
+\nabla q_w(v)
+&=
+4V\bigl((s^{\odot 4}\odot e^{-h})\odot a^{\odot 3}\bigr)
++
+4A_w^\top\bigl((A_wv)^{\odot 3}\bigr).
+\end{align}
+Therefore
+\begin{align}
+\nabla f_w(v)
+=
+\frac12\frac{\nabla \|M_wv\|_2^2}{\|M_wv\|_2^2}
++
+\gamma_w \frac{\nabla q_w(v)}{q_w(v)}
+- 2\gamma_w \frac{\nabla e_w(v)}{e_w(v)}.
+\end{align}
+Using $\nabla \|M_wv\|_2^2 = 2M_w^\top M_wv$, this is
+\begin{align}
+\nabla f_w(v)
+=
+\frac{M_w^\top M_wv}{\|M_wv\|_2^2}
++
+\gamma_w \frac{\nabla q_w(v)}{q_w(v)}
+- 2\gamma_w \frac{\nabla e_w(v)}{e_w(v)}.
+\end{align}
+This is the full streamed EntropyScore gradient used by the implementation.
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+q_j := s_j^4 e^{-h_j},
+\end{align}
+then
+\begin{align}
+q_w(v)
+=
+\sum_{j=1}^r q_j (v_j^\top v)^4 + \|A_wv\|_4^4.
+\end{align}
+So the carried state needed by the next window is naturally
+\begin{align}
+(V, s, h)
+\qquad\text{or equivalently}\qquad
+(V, s^2, q),
+\end{align}
+with
+\begin{align}
+q = s^{\odot 4}\odot e^{-h}.
+\end{align}
+This is exactly the low-rank moment summary used in the streamed objective.
+
+\paragraph{Optimization problem.}
+To extract a direction, solve
+\begin{align}
+\max_{v \in \mathbb S^{d-1},\ Q^\top v = 0}\widehat{\operatorname{score}}_w(v),
+\end{align}
+where the columns of $Q$ are the previously accepted directions.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the streamed score and project it onto the feasible tangent space:
+\begin{align}
+g_{\mathrm{tan}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla f_w(v).
+\end{align}
+Then take
+\begin{align}
+\widetilde v^{+} = v + \eta\, g_{\mathrm{tan}}(v),
+\qquad
+v^{+} = \frac{(I-QQ^\top)\widetilde v^{+}}{\|(I-QQ^\top)\widetilde v^{+}\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on the true streamed objective.
+
+\paragraph{Basis-expansion interpretation.}
+The expansion variant does not optimize only inside one fixed reduced space. It begins with a seed right subspace and checks whether the full gradient is sufficiently represented there.
+
+If $V_{\mathrm{basis}}$ is the current reduced basis and $g_{\mathrm{full}}$ is the full-space gradient at the current candidate, the residual direction is
+\begin{align}
+r
+:=
+g_{\mathrm{full}} - V_{\mathrm{basis}}V_{\mathrm{basis}}^\top g_{\mathrm{full}}.
+\end{align}
+When the ratio
+\begin{align}
+\frac{\|r\|_2}{\|g_{\mathrm{full}}\|_2}
+\end{align}
+is too large, the basis is enlarged by this missing component and, optionally, by additional Krylov directions generated from
+\begin{align}
+(M_w^\top M_w)^t r.
+\end{align}
+Thus the basis is expanded exactly when the current reduced space fails to capture the true score gradient well enough.
+
+\paragraph{Why this is the sketch carried into the next window.}
+After the window solve, the method carries forward the singular-factor sketch
+\begin{align}
+B_{\mathrm{next}} := SV^\top,
+\end{align}
+where $V$ collects the accepted right directions and $S=\operatorname{diag}(s_1,\dots,s_r)$ with $s_j=\|Mv_j\|_2$ for the corresponding carried operator $M$.
+
+This is the justified object to pass forward for several reasons.
+
+First, the next-window objective needs the old information through the quadratic term
+\begin{align}
+\|B_{\mathrm{next}}v\|_2^2
+=
+\|SV^\top v\|_2^2
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2,
+\end{align}
+which is exactly the carried second-moment contribution appearing in $e_w(v)$.
+
+Second, together with the stored entropy statistics $h_j$, the same sketch determines the old fourth-moment term
+\begin{align}
+\sum_{j=1}^r s_j^4 e^{-h_j}(v_j^\top v)^4
+=
+\sum_{j=1}^r q_j (v_j^\top v)^4,
+\end{align}
+which is the carried part of $q_w(v)$.
+
+Third, unlike the forget variant, the expansion method is intentionally modeling both old quadratic energy and old fourth-moment concentration. Therefore the natural next-window summary is the direct spectral sketch together with its per-direction entropy statistic, not a left-projected operator replacement.
+
+Fourth, this carry is consistent with the streamed operator
+\begin{align}
+M_{w+1}
+=
+\begin{pmatrix}
+B_{\mathrm{next}}\\
+A_{w+1}
+\end{pmatrix},
+\end{align}
+used by the next window. The old block enters exactly through the compact low-rank operator $SV^\top$, while the new block contributes its fresh exact moments.
+
+Therefore the correct sketch to pass forward for \texttt{entropyscore\_expansion} is the direct singular-factor summary
+\begin{align}
+B_{\mathrm{next}} = SV^\top,
+\end{align}
+along with the entropy carry variables $h=(h_1,\dots,h_r)$ and $q=s^{\odot 4}\odot e^{-h}$.

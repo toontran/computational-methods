@@ -1,0 +1,132 @@
+trajectory_summary matrix=mixed-tail-sharp mode=normal mean_align=0.045486 elapsed=31.535
+  b01 cos=0.635624 0.257128 tail_mass=0.990438 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.847241 0.274549 tail_mass=0.979274 survive_subspace=0.708592 survive_v2=0.022141 prev2_score_ratio=0.797293
+  b03 cos=0.745334 0.267513 tail_mass=0.976612 survive_subspace=0.814834 survive_v2=0.814741 prev2_score_ratio=0.820774
+  b05 cos=0.892557 0.328340 tail_mass=0.955384 survive_subspace=0.886635 survive_v2=0.886624 prev2_score_ratio=0.854846
+  b08 cos=0.983776 0.092806 tail_mass=0.922711 survive_subspace=0.933067 survive_v2=0.927770 prev2_score_ratio=0.888422
+  b12 cos=0.991471 0.091020 tail_mass=0.866225 survive_subspace=0.949933 survive_v2=0.949787 prev2_score_ratio=0.914175
+  b16 cos=0.999533 0.295327 tail_mass=0.799135 survive_subspace=0.959564 survive_v2=0.958855 prev2_score_ratio=0.941426
+  b24 cos=0.999857 0.492475 tail_mass=0.670896 survive_subspace=0.970770 survive_v2=0.970770 prev2_score_ratio=0.973976
+  b32 cos=0.999936 0.167467 tail_mass=0.561206 survive_subspace=0.993838 survive_v2=0.992592 prev2_score_ratio=0.998780
+  final cos=0.999936 0.167467 tail_mass=0.561206
+trajectory_summary matrix=mixed-tail-sharp mode=force-b1 mean_align=0.026017 elapsed=32.508
+  b01 cos=1.000000 1.000000 tail_mass=0.963088 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.894781 0.556387 tail_mass=0.957916 survive_subspace=0.686567 survive_v2=0.000305 prev2_score_ratio=0.737787
+  b03 cos=0.793900 0.471931 tail_mass=0.961261 survive_subspace=0.815852 survive_v2=0.815823 prev2_score_ratio=0.822501
+  b05 cos=0.966667 0.608922 tail_mass=0.928191 survive_subspace=0.886302 survive_v2=0.885177 prev2_score_ratio=0.854489
+  b08 cos=0.998892 0.600606 tail_mass=0.885852 survive_subspace=0.924326 survive_v2=0.924182 prev2_score_ratio=0.885132
+  b12 cos=0.999702 0.674466 tail_mass=0.818019 survive_subspace=0.930857 survive_v2=0.930828 prev2_score_ratio=0.907243
+  b16 cos=0.999892 0.754207 tail_mass=0.746599 survive_subspace=0.946238 survive_v2=0.946238 prev2_score_ratio=0.938554
+  b24 cos=0.999945 0.906856 tail_mass=0.578040 survive_subspace=0.967678 survive_v2=0.967670 prev2_score_ratio=0.971933
+  b32 cos=0.999968 0.056239 tail_mass=0.536511 survive_subspace=0.993976 survive_v2=0.993972 prev2_score_ratio=0.998789
+  final cos=0.999968 0.056239 tail_mass=0.536511
+trajectory_summary matrix=mixed-tail-sharp mode=force-b1b2 mean_align=0.967036 elapsed=31.701
+  b01 cos=1.000000 1.000000 tail_mass=0.963088 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=1.000000 1.000000 tail_mass=0.926570 survive_subspace=0.691740 survive_v2=0.691740 prev2_score_ratio=0.745639
+  b03 cos=0.848880 0.679430 tail_mass=0.933209 survive_subspace=0.823933 survive_v2=0.114965 prev2_score_ratio=0.816241
+  b05 cos=0.996610 0.764344 tail_mass=0.911784 survive_subspace=0.889241 survive_v2=0.889239 prev2_score_ratio=0.846588
+  b08 cos=0.980279 0.668933 tail_mass=0.877094 survive_subspace=0.929017 survive_v2=0.928540 prev2_score_ratio=0.888180
+  b12 cos=0.999687 0.641703 tail_mass=0.816602 survive_subspace=0.948150 survive_v2=0.948150 prev2_score_ratio=0.912151
+  b16 cos=0.999891 0.693118 tail_mass=0.746127 survive_subspace=0.959647 survive_v2=0.959647 prev2_score_ratio=0.941900
+  b24 cos=0.999939 0.785791 tail_mass=0.619447 survive_subspace=0.970933 survive_v2=0.970929 prev2_score_ratio=0.972479
+  b32 cos=0.999924 0.155109 tail_mass=0.531968 survive_subspace=0.993831 survive_v2=0.993797 prev2_score_ratio=0.998751
+  final cos=0.999924 0.155109 tail_mass=0.531968
+trajectory_summary matrix=mixed-tail-sharp mode=force-second-b1 mean_align=0.026787 elapsed=31.828
+  b01 cos=1.000000 0.261441 tail_mass=0.979286 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.879827 0.283982 tail_mass=0.969815 survive_subspace=0.709602 survive_v2=0.020966 prev2_score_ratio=0.798819
+  b03 cos=0.693476 0.040888 tail_mass=0.977394 survive_subspace=0.809819 survive_v2=0.809812 prev2_score_ratio=0.820040
+  b05 cos=0.905790 0.159437 tail_mass=0.956259 survive_subspace=0.883932 survive_v2=0.883819 prev2_score_ratio=0.851264
+  b08 cos=0.974281 0.046949 tail_mass=0.918744 survive_subspace=0.924453 survive_v2=0.923931 prev2_score_ratio=0.888656
+  b12 cos=0.999162 0.114225 tail_mass=0.853907 survive_subspace=0.932853 survive_v2=0.932804 prev2_score_ratio=0.904707
+  b16 cos=0.999517 0.169898 tail_mass=0.788346 survive_subspace=0.953059 survive_v2=0.953053 prev2_score_ratio=0.935106
+  b24 cos=0.999882 0.023382 tail_mass=0.670033 survive_subspace=0.857864 survive_v2=0.857858 prev2_score_ratio=0.985765
+  b32 cos=0.999888 0.103950 tail_mass=0.555335 survive_subspace=0.994054 survive_v2=0.993005 prev2_score_ratio=0.998873
+  final cos=0.999888 0.103950 tail_mass=0.555335
+trajectory_summary matrix=diffuse-diffuse mode=normal mean_align=0.900378 elapsed=37.073
+  b01 cos=0.632433 0.203908 tail_mass=0.990222 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.582518 0.080917 tail_mass=0.990672 survive_subspace=0.707691 survive_v2=0.707691 prev2_score_ratio=0.793557
+  b03 cos=0.658891 0.224963 tail_mass=0.986723 survive_subspace=0.822936 survive_v2=0.822935 prev2_score_ratio=0.827726
+  b05 cos=0.748655 0.141791 tail_mass=0.981560 survive_subspace=0.880203 survive_v2=0.880203 prev2_score_ratio=0.843428
+  b08 cos=0.906036 0.172744 tail_mass=0.958832 survive_subspace=0.923652 survive_v2=0.923632 prev2_score_ratio=0.879163
+  b12 cos=0.994234 0.001419 tail_mass=0.900283 survive_subspace=0.930864 survive_v2=0.930764 prev2_score_ratio=0.911498
+  b16 cos=0.996962 0.185869 tail_mass=0.836067 survive_subspace=0.950572 survive_v2=0.950548 prev2_score_ratio=0.933381
+  b24 cos=0.999528 0.192728 tail_mass=0.711330 survive_subspace=0.969360 survive_v2=0.969330 prev2_score_ratio=0.969374
+  b32 cos=0.999759 0.186017 tail_mass=0.593975 survive_subspace=0.928507 survive_v2=0.928465 prev2_score_ratio=0.994271
+  final cos=0.999759 0.186017 tail_mass=0.593975
+trajectory_summary matrix=diffuse-diffuse mode=force-b1 mean_align=0.991745 elapsed=36.541
+  b01 cos=1.000000 1.000000 tail_mass=0.963132 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.947808 0.810113 tail_mass=0.942320 survive_subspace=0.686876 survive_v2=0.686873 prev2_score_ratio=0.731367
+  b03 cos=0.983627 0.854493 tail_mass=0.918342 survive_subspace=0.811357 survive_v2=0.811323 prev2_score_ratio=0.819500
+  b05 cos=0.999444 0.695335 tail_mass=0.894533 survive_subspace=0.880656 survive_v2=0.880654 prev2_score_ratio=0.845911
+  b08 cos=0.999764 0.840502 tail_mass=0.841740 survive_subspace=0.929847 survive_v2=0.929845 prev2_score_ratio=0.885410
+  b12 cos=0.999897 0.899666 tail_mass=0.753667 survive_subspace=0.951948 survive_v2=0.951947 prev2_score_ratio=0.917990
+  b16 cos=0.999967 0.976454 tail_mass=0.649746 survive_subspace=0.962137 survive_v2=0.962133 prev2_score_ratio=0.938779
+  b24 cos=0.999983 0.997580 tail_mass=0.414196 survive_subspace=0.975109 survive_v2=0.975107 prev2_score_ratio=0.971231
+  b32 cos=0.999989 0.999468 tail_mass=0.182056 survive_subspace=0.978571 survive_v2=0.978388 prev2_score_ratio=0.995546
+  final cos=0.999989 0.999468 tail_mass=0.182056
+trajectory_summary matrix=diffuse-diffuse mode=force-b1b2 mean_align=0.996661 elapsed=33.291
+  b01 cos=1.000000 1.000000 tail_mass=0.963132 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=1.000000 1.000000 tail_mass=0.926728 survive_subspace=0.692375 survive_v2=0.692375 prev2_score_ratio=0.744316
+  b03 cos=0.999984 0.615459 tail_mass=0.923865 survive_subspace=0.819833 survive_v2=0.819804 prev2_score_ratio=0.818174
+  b05 cos=0.999918 0.910357 tail_mass=0.880147 survive_subspace=0.888523 survive_v2=0.888519 prev2_score_ratio=0.848498
+  b08 cos=0.999968 0.948607 tail_mass=0.810684 survive_subspace=0.922449 survive_v2=0.922436 prev2_score_ratio=0.880690
+  b12 cos=0.999982 0.991972 tail_mass=0.698550 survive_subspace=0.949853 survive_v2=0.949849 prev2_score_ratio=0.908741
+  b16 cos=0.999994 0.998813 tail_mass=0.569023 survive_subspace=0.960696 survive_v2=0.960665 prev2_score_ratio=0.937786
+  b24 cos=0.999977 0.999622 tail_mass=0.323832 survive_subspace=0.976522 survive_v2=0.976522 prev2_score_ratio=0.970978
+  b32 cos=0.999995 0.999782 tail_mass=0.096417 survive_subspace=0.981969 survive_v2=0.981337 prev2_score_ratio=0.995422
+  final cos=0.999995 0.999782 tail_mass=0.096417
+trajectory_summary matrix=diffuse-diffuse mode=force-second-b1 mean_align=0.707408 elapsed=33.735
+  b01 cos=1.000000 0.162062 tail_mass=0.980015 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.757286 0.032372 tail_mass=0.978416 survive_subspace=0.704049 survive_v2=0.022712 prev2_score_ratio=0.778740
+  b03 cos=0.958511 0.006444 tail_mass=0.962433 survive_subspace=0.817052 survive_v2=0.817045 prev2_score_ratio=0.820262
+  b05 cos=0.994532 0.367592 tail_mass=0.930483 survive_subspace=0.889995 survive_v2=0.889990 prev2_score_ratio=0.855254
+  b08 cos=0.998852 0.543263 tail_mass=0.878415 survive_subspace=0.920583 survive_v2=0.920572 prev2_score_ratio=0.892025
+  b12 cos=0.999857 0.759057 tail_mass=0.801462 survive_subspace=0.942519 survive_v2=0.942493 prev2_score_ratio=0.913888
+  b16 cos=0.999930 0.913516 tail_mass=0.720193 survive_subspace=0.957636 survive_v2=0.957636 prev2_score_ratio=0.938512
+  b24 cos=0.999966 0.989421 tail_mass=0.510167 survive_subspace=0.972137 survive_v2=0.972136 prev2_score_ratio=0.971046
+  b32 cos=0.999974 0.998759 tail_mass=0.273291 survive_subspace=0.966142 survive_v2=0.966003 prev2_score_ratio=0.994531
+  final cos=0.999974 0.998759 tail_mass=0.273291
+trajectory_summary matrix=static-cex mode=normal mean_align=0.988981 elapsed=32.032
+  b01 cos=0.999932 0.703855 tail_mass=0.972025 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.971892 0.571903 tail_mass=0.955890 survive_subspace=0.708370 survive_v2=0.708369 prev2_score_ratio=0.795930
+  b03 cos=0.999783 0.916457 tail_mass=0.923882 survive_subspace=0.809862 survive_v2=0.809861 prev2_score_ratio=0.816676
+  b05 cos=0.999901 0.984070 tail_mass=0.866792 survive_subspace=0.886271 survive_v2=0.886268 prev2_score_ratio=0.851651
+  b08 cos=0.999879 0.996614 tail_mass=0.774014 survive_subspace=0.933086 survive_v2=0.933035 prev2_score_ratio=0.884906
+  b12 cos=0.999855 0.998835 tail_mass=0.641683 survive_subspace=0.953382 survive_v2=0.953167 prev2_score_ratio=0.913407
+  b16 cos=0.999878 0.999258 tail_mass=0.513877 survive_subspace=0.966304 survive_v2=0.966299 prev2_score_ratio=0.937048
+  b24 cos=0.999906 0.999794 tail_mass=0.273046 survive_subspace=0.978251 survive_v2=0.978249 prev2_score_ratio=0.971522
+  b32 cos=0.999999 0.999976 tail_mass=0.050119 survive_subspace=0.984847 survive_v2=0.984596 prev2_score_ratio=0.995838
+  final cos=0.999999 0.999976 tail_mass=0.050119
+trajectory_summary matrix=static-cex mode=force-b1 mean_align=0.989474 elapsed=28.917
+  b01 cos=1.000000 1.000000 tail_mass=0.963059 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.950403 0.646787 tail_mass=0.951505 survive_subspace=0.696226 survive_v2=0.696226 prev2_score_ratio=0.761357
+  b03 cos=0.980403 0.826131 tail_mass=0.928232 survive_subspace=0.812841 survive_v2=0.812831 prev2_score_ratio=0.817320
+  b05 cos=0.999759 0.987180 tail_mass=0.866427 survive_subspace=0.887859 survive_v2=0.887786 prev2_score_ratio=0.850306
+  b08 cos=0.999826 0.914466 tail_mass=0.801592 survive_subspace=0.925229 survive_v2=0.925197 prev2_score_ratio=0.883573
+  b12 cos=0.999892 0.997211 tail_mass=0.668790 survive_subspace=0.954814 survive_v2=0.954589 prev2_score_ratio=0.910931
+  b16 cos=0.999956 0.999272 tail_mass=0.537465 survive_subspace=0.965093 survive_v2=0.965080 prev2_score_ratio=0.936898
+  b24 cos=0.999978 0.999888 tail_mass=0.296021 survive_subspace=0.977500 survive_v2=0.977493 prev2_score_ratio=0.971717
+  b32 cos=0.999999 0.999915 tail_mass=0.071166 survive_subspace=0.983379 survive_v2=0.983361 prev2_score_ratio=0.995723
+  final cos=0.999999 0.999915 tail_mass=0.071166
+trajectory_summary matrix=static-cex mode=force-b1b2 mean_align=0.980263 elapsed=31.680
+  b01 cos=1.000000 1.000000 tail_mass=0.963059 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=1.000000 1.000000 tail_mass=0.926375 survive_subspace=0.695711 survive_v2=0.695711 prev2_score_ratio=0.757308
+  b03 cos=0.918900 0.915489 tail_mass=0.907742 survive_subspace=0.816306 survive_v2=0.816297 prev2_score_ratio=0.816270
+  b05 cos=0.985250 0.942753 tail_mass=0.859061 survive_subspace=0.893168 survive_v2=0.024898 prev2_score_ratio=0.850769
+  b08 cos=0.999639 0.998952 tail_mass=0.760864 survive_subspace=0.935070 survive_v2=0.935035 prev2_score_ratio=0.886221
+  b12 cos=0.999706 0.999115 tail_mass=0.631570 survive_subspace=0.954941 survive_v2=0.954825 prev2_score_ratio=0.914264
+  b16 cos=0.999783 0.999368 tail_mass=0.504372 survive_subspace=0.967170 survive_v2=0.967169 prev2_score_ratio=0.937075
+  b24 cos=0.999874 0.999750 tail_mass=0.265084 survive_subspace=0.978802 survive_v2=0.978784 prev2_score_ratio=0.971844
+  b32 cos=0.999996 0.999995 tail_mass=0.043400 survive_subspace=0.985803 survive_v2=0.984907 prev2_score_ratio=0.995896
+  final cos=0.999996 0.999995 tail_mass=0.043400
+trajectory_summary matrix=static-cex mode=force-second-b1 mean_align=0.980447 elapsed=31.893
+  b01 cos=1.000000 0.999923 tail_mass=0.963062 survive_subspace=nan survive_v2=nan prev2_score_ratio=nan
+  b02 cos=0.907608 0.877760 tail_mass=0.941274 survive_subspace=0.696838 survive_v2=0.696837 prev2_score_ratio=0.757968
+  b03 cos=0.956632 0.930464 tail_mass=0.915530 survive_subspace=0.818421 survive_v2=0.818393 prev2_score_ratio=0.817652
+  b05 cos=0.999457 0.997307 tail_mass=0.854705 survive_subspace=0.891134 survive_v2=0.891133 prev2_score_ratio=0.851048
+  b08 cos=0.999572 0.999405 tail_mass=0.756945 survive_subspace=0.934707 survive_v2=0.934555 prev2_score_ratio=0.886262
+  b12 cos=0.999697 0.999202 tail_mass=0.624137 survive_subspace=0.955096 survive_v2=0.954932 prev2_score_ratio=0.914273
+  b16 cos=0.999836 0.999532 tail_mass=0.498194 survive_subspace=0.967766 survive_v2=0.967762 prev2_score_ratio=0.937601
+  b24 cos=0.999917 0.999800 tail_mass=0.258956 survive_subspace=0.979018 survive_v2=0.978748 prev2_score_ratio=0.972236
+  b32 cos=0.999998 0.999995 tail_mass=0.037184 survive_subspace=0.985843 survive_v2=0.985421 prev2_score_ratio=0.995870
+  final cos=0.999998 0.999995 tail_mass=0.037184

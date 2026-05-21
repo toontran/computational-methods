@@ -1,0 +1,84 @@
+matrix=mixed-tail-sharp
+  method=combined combined_rank=2
+  final mean_align=0.045486
+  final opt1_vs_oracle1=0.157328
+  final opt2_vs_oracle2=0.033704
+  final subspace_cos2=0.167467
+  mean opt2_vs_oracle2 b>=3=0.079397
+  mean prev_opt2_tail_cos b>=3=0.879650
+  mean prev_opt2_score_ratio b>=3=0.937254
+  mean opt2 actual/zero b>=3=18.782300
+  mean margin opt2-orthogonalized-oracle2: actualB=0.205273 zeroB=-0.734593
+  story_holds_by_threshold=True
+  control_converges_by_threshold=False
+
+matrix=diffuse-diffuse
+  method=combined combined_rank=2
+  final mean_align=0.900378
+  final opt1_vs_oracle1=0.999757
+  final opt2_vs_oracle2=0.186016
+  final subspace_cos2=0.186017
+  mean opt2_vs_oracle2 b>=3=0.129897
+  mean prev_opt2_tail_cos b>=3=0.915061
+  mean prev_opt2_score_ratio b>=3=0.932197
+  mean opt2 actual/zero b>=3=11.484777
+  mean margin opt2-orthogonalized-oracle2: actualB=0.118990 zeroB=-0.972094
+  story_holds_by_threshold=True
+  control_converges_by_threshold=False
+
+matrix=static-cex
+  method=combined combined_rank=2
+  final mean_align=0.988981
+  final opt1_vs_oracle1=0.999128
+  final opt2_vs_oracle2=0.999105
+  final subspace_cos2=0.999976
+  mean opt2_vs_oracle2 b>=3=0.988967
+  mean prev_opt2_tail_cos b>=3=0.914841
+  mean prev_opt2_score_ratio b>=3=0.933513
+  mean opt2 actual/zero b>=3=15.439331
+  mean margin opt2-orthogonalized-oracle2: actualB=0.015396 zeroB=-0.066944
+  story_holds_by_threshold=False
+  control_converges_by_threshold=True
+
+matrix=mixed-tail-sharp
+  method=hybrid combined_rank=1
+  final mean_align=0.048752
+  final opt1_vs_oracle1=0.185553
+  final opt2_vs_oracle2=0.300907
+  final subspace_cos2=0.244707
+  mean opt2_vs_oracle2 b>=3=0.158456
+  mean prev_opt2_tail_cos b>=3=0.892378
+  mean prev_opt2_score_ratio b>=3=0.996287
+  mean opt2 actual/zero b>=3=59.002215
+  mean margin opt2-orthogonalized-oracle2: actualB=-0.225205 zeroB=-1.001613
+  story_holds_by_threshold=False
+  control_converges_by_threshold=False
+
+matrix=diffuse-diffuse
+  method=hybrid combined_rank=1
+  final mean_align=0.858483
+  final opt1_vs_oracle1=0.984970
+  final opt2_vs_oracle2=0.431853
+  final subspace_cos2=0.442648
+  mean opt2_vs_oracle2 b>=3=0.296319
+  mean prev_opt2_tail_cos b>=3=0.928184
+  mean prev_opt2_score_ratio b>=3=0.958470
+  mean opt2 actual/zero b>=3=16.796591
+  mean margin opt2-orthogonalized-oracle2: actualB=0.086661 zeroB=-0.890759
+  story_holds_by_threshold=True
+  control_converges_by_threshold=False
+
+matrix=static-cex
+  method=hybrid combined_rank=1
+  final mean_align=0.980623
+  final opt1_vs_oracle1=0.053042
+  final opt2_vs_oracle2=0.007987
+  final subspace_cos2=0.159654
+  mean opt2_vs_oracle2 b>=3=0.158021
+  mean prev_opt2_tail_cos b>=3=0.940310
+  mean prev_opt2_score_ratio b>=3=0.997869
+  mean opt2 actual/zero b>=3=8452.879034
+  mean margin opt2-orthogonalized-oracle2: actualB=-0.224717 zeroB=-1.121987
+  story_holds_by_threshold=False
+  control_converges_by_threshold=False
+

@@ -1,0 +1,196 @@
+Doubled half-window HM experiment synthesis
+==========================================
+
+Date: 2026-04-23
+
+
+Question
+--------
+Does doubling the window size rescue the half-window harmonic-mean objective on
+`mixed-tail-sharp`, and how does it compare to `obj_future_hmean` from the
+oracle-free full benchmark?
+
+
+Setup
+-----
+Same script as before (`half_window_sliding_hmean_experiment.py`) on
+`mixed-tail-sharp`, n=1024, rank=2, but with
+
+  --half-win 32   (was 16)
+
+So each half is 32 rows and each pair spans 64 rows (was 32). Split-probe gives
+16 pair steps; sliding gives 31 steps (advance = 32 rows). Optimizer defaults
+from the script (q0=8, qmax=48, maxit=120, expansion_maxit=8,
+post_expansion_maxit=80, num_restarts=8).
+
+
+Artifacts
+---------
+- `summary/half_window_sliding_hmean_experiment_win64.json`
+- `summary/half_window_sliding_hmean_experiment_win64.csv`
+- `summary/half_window_sliding_hmean_experiment_win64.txt`
+
+
+Per-run summary (half_win=32, pair=64 rows)
+-------------------------------------------
+Labels are summarized as
+
+  q2-like     = q2_vs_q1oracle + q2_raw_projected
+  mgain-like  = mgain_deflated_svd + half2_complement
+  opt2-like   = opt2 + opt2_outside
+
+                                         steps  q2  mgain  opt2  exact_cos1  exact_cos2  rel_err_sval
+split_probe  combined                      16    0     0    16     0.3285      0.0408      0.0715
+sliding      combined                      31    0     0    31     0.5012      0.1265      0.0571
+split_probe  half_hmean                    16    5    11     0     0.2130      0.0260      0.0429
+sliding      half_hmean                    31    0    28     3     0.5166      0.0284      0.0261
+split_probe  half_hmean_guard              16    6    10     0     0.2573      0.0565      0.0439
+sliding      half_hmean_guard              31   21    10     0     0.4990      0.0879      0.0422
+
+`exact_cos*` columns are the time-average of principal cosines between the
+selected 2D subspace and V_exact[:,:2].
+
+
+Reference: original half_win=16 (pair=32 rows)
+----------------------------------------------
+                                         steps  q2  mgain  opt2  exact_cos1  exact_cos2
+split_probe  combined                      32    0     0    32     0.2425      0.1308
+sliding      combined                      63    0     0    63     0.5777      0.2007
+split_probe  half_hmean                    32   25     6     1     0.3954      0.0389
+sliding      half_hmean                    63   12    45     6     0.3972      0.0656
+split_probe  half_hmean_guard              32    0    32     0     0.1728      0.0369
+sliding      half_hmean_guard              63    0    55     8     0.5789      0.0295
+
+(Note: these are the main JSON's numbers; the old synthesis used the `plain`
+rerun for split_probe half_hmean, which in that run was 32/32 mgain_deflated_svd.
+The two runs differ because the script is stochastic at the optimizer level; we
+compare the newer main JSONs here for consistency.)
+
+
+What doubling the window changes
+--------------------------------
+1. `combined` baseline is unchanged: 100% opt2-like at both window sizes. The
+   half-to-half signal is not used, so window size only affects the underlying
+   optimizer's input block and the subspace quality.
+
+2. `half_hmean` (plain) sliding still fails: 28/31 mgain-like (was 45/63 at
+   win=32). Rate is essentially unchanged: ~90% mgain-like before, ~90% after.
+   Plain half-HM keeps picking the local SVD complement even with a larger pair
+   window.
+
+3. `half_hmean_guard` sliding is the one place window-doubling clearly helps:
+
+     win=32 sliding guard:  mgain 55/63, q2 0/63       (87.3% mgain)
+     win=64 sliding guard:  mgain 10/31, q2 21/31      (32.3% mgain, 67.7% q2)
+
+   Doubling the window flips the guarded variant from "always complement" to
+   "mostly q2-like". The second-half complement guard finally discriminates
+   once the second half is wide enough (32 rows) for the complement direction
+   to lose its second-half gain over a realistic support window.
+
+4. `half_hmean_guard` split-probe is similar at both window sizes: 10-11 of 16
+   mgain-like. So the improvement from window-doubling is specific to the
+   sliding mode; split-probe still collapses.
+
+5. Subspace recovery (mean_exact_cos1 and mean_exact_cos2):
+
+   - best v1 recovery at win=64 is sliding half_hmean = 0.5166,
+     sliding combined = 0.5012, sliding half_hmean_guard = 0.4990
+   - best v2 recovery at win=64 is sliding half_hmean_guard = 0.0879
+     (vs 0.0295 at win=32, a 3x improvement but still small)
+   - rel_err_sval remains in the 0.02-0.07 range; no regime change.
+
+
+Comparison to obj_future_hmean (oracle-free full benchmark)
+-----------------------------------------------------------
+From `objective_design_oracle_free_full_benchmark_synthesis.txt`, for
+`mixed-tail-sharp` with block size 32, rank 2, H=2 future blocks:
+
+  obj_future_hmean:
+      valid_decisions        31 / 32
+      q2_vs_q1oracle wins    30
+      block_svd wins          0
+      opt2 wins               1
+      oracle90                30 / 31
+      oracle99                30 / 31
+      mean_winner_oracle_mass 0.970097
+
+The best doubled-window variant on `mixed-tail-sharp` is sliding
+`half_hmean_guard`:
+
+  q2-like wins               21 / 31   (67.7%)
+  mgain-like wins            10 / 31   (32.3%)
+  opt2-like wins              0 / 31
+  mean_exact_cos2            0.0879
+  mean_exact_cos1            0.4990
+
+So even with doubled window:
+
+- future_hmean picks q2-like 30/31 (96.8%); sliding guard at win=64 picks
+  q2-like 21/31 (67.7%). Gap ~30 pp.
+- future_hmean never picks block_svd (0/31); sliding guard at win=64 still
+  picks mgain-like 10/31.
+- mean oracle-mass-of-winner is not computed identically for the half-window
+  experiment, but mean_exact_cos2 = 0.0879 is far from what a near-oracle
+  winner should look like. obj_future_hmean's 0.970 mean oracle-mass implies
+  the chosen v2 is almost entirely inside V_exact[:,:2].
+
+Qualitative gap: doubling the window moves half-HM from "useless" to "useful
+but clearly weaker than future_hmean". The immediate-next-half signal is still
+too local and too short-horizon to match the multi-block future signal that
+makes future_hmean work on this matrix.
+
+
+Interpretation
+--------------
+1. The original negative finding holds in structure: the half-to-half
+   harmonic mean is a weaker proxy than future_hmean for the `mixed-tail-sharp`
+   signal, because the useful repeated-support signal lives over multiple
+   future blocks, not over the adjacent 16-32 rows.
+
+2. Window size is the main knob. Doubling it (32 -> 64 row pair) is enough to
+   restore the second-half complement guard from "degenerate" to "mostly
+   correct" in sliding mode. This is consistent with the interpretation in the
+   old synthesis: the complement wins because the adjacent half is too narrow
+   to express useful repeated structure; a wider half lets diffuse oracle
+   support outrun the local complement on the second half.
+
+3. Plain `half_hmean` (no guard) does not benefit from window doubling. The
+   gain-only harmonic mean still rewards any direction that has first-half
+   gain and any second-half gain, and the local complement meets that bar at
+   both window sizes.
+
+4. Split-probe does not benefit either, because its pair count halves with
+   window size (32 -> 16) and the candidates still exhibit the same
+   first-half / second-half gain ratio in each pair.
+
+
+Bottom line
+-----------
+Doubling the window gives a partial rescue only for sliding
+`half_hmean_guard` on `mixed-tail-sharp`:
+
+  21/31 q2-like wins (was 0/63), mean_exact_cos2 0.088 (was 0.030)
+
+It does not close the gap to `obj_future_hmean`, which hits 30/31 q2-like wins
+and mean oracle-mass 0.970 for the same matrix.
+
+So the conclusion from the earlier experiment remains: adjacent-half HM is a
+weaker online proxy than multi-block future_hmean. Widening the half-window
+helps the guarded variant, but not enough to supplant the future signal.
+
+
+Practical next steps
+--------------------
+If a half-window HM is still the intended direction, two things are worth
+trying before giving up:
+
+- widen further (e.g. half_win = 64 or 128) and see whether guarded sliding
+  half-HM approaches future_hmean quality on `mixed-tail-sharp`;
+- extend "second half" to a multi-block forward reservoir (e.g. next two or
+  three half-windows concatenated) -- this is effectively an online
+  approximation of the future_hmean signal and should close the gap.
+
+If the goal is simply a conservative online objective, the full benchmark
+already concludes that `obj_complement_penalty` is the best single online
+choice; the half-window HM path does not dominate it here.

@@ -1,8 +1,12 @@
-Score-family workflow
-======================
+Score-family workflow and backlog
+=================================
 
 Date: 2026-04-28
 Companion to: score_design_overview.txt, diagnostic_toolkit.txt
+
+This file owns both the score-family workflow and the active backlog. The
+backlog starts in §5; completed items must still propagate their conclusions
+back to the overview and toolkit.
 
 A "family" = one structural hypothesis about the slot-2/slot-r score
 (e.g. rank-r lift, carry-confidence multiplier, soft gate). Variants
@@ -61,15 +65,105 @@ under summary/ and runs through the steps below.
   - When the family closes, append a one-liner to score_design_overview.txt
     §7 marking the Q resolved/refuted, with a pointer to the family folder.
     Otherwise the overview drifts from the actual state of the world.
+  - Any backlog item that resolves, refutes, or creates a fundamental
+    open question must propagate that change to the overview docs and
+    backlog before it is marked done. The backlog is not just a work
+    queue; it is the synchronization point for the story.
+  - (2026-04-28) Every new score-design proposal must declare which
+    hypothesis it addresses (H1 argmax-shift, H2 landscape-discontinuity,
+    H3 slot-1-collapse — see score_design_overview.txt §1quinquies)
+    AND state the expected sign of the oracle-vs-winner gap in its
+    spec.md BEFORE coding. If the variant ships, the closure must
+    report the OBSERVED gap and confirm or refute the expectation.
+  - (2026-04-28) "Oracle balance" is not a valid success signal. Audit
+    metrics like DIAG-04b ratio_max are descriptive measurements only;
+    they cannot be used to decide ship/kill on their own. The Tier-A
+    canonical screens (§4) are the decision metrics.
+
+
+3b. Cross-document propagation policy
+--------------------------------------
+
+This applies to EVERY backlog item: families, ablations, infrastructure,
+diagnostics, and theory/modeling tasks. If the item changes the current
+understanding, its closure must update the main documents in the same
+patch / handoff.
+
+Required propagation:
+
+  - score_design_overview.txt
+      Update the main story when the item changes an assumption, theory
+      status, regime classification, failure mechanism, or open Q. If a
+      Q is answered, mark it resolved / refuted / iterated with a pointer
+      to the evidence. If a new fundamental Q appears, add it to §7.
+
+  - diagnostic_toolkit.txt
+      Register any new diagnostic, invariant, measurement, output folder,
+      or known toolkit gap. If a diagnostic closes a gap, mark that gap
+      closed and point to the script / synthesis.
+
+  - score_family_workflow.txt
+      Update item status, priority, dependencies, acceptance criteria,
+      notes, and the current sequencing recommendation. If the item
+      invalidates another backlog item's acceptance criterion, rewrite
+      that criterion immediately rather than leaving a stale target.
+
+Specific triggers:
+
+  - answers a Q              → mark the Q resolved/refuted/iterated and
+                               cite the synthesis or output path.
+  - creates a fundamental Q  → add the Q to the overview and add or
+                               modify backlog work to answer it.
+  - invalidates a criterion  → rewrite the affected acceptance criteria.
+  - changes priority/order   → update the sequencing section.
+  - adds a diagnostic        → register it in the toolkit.
+  - kills a hypothesis       → document the verified failure mechanism so
+                               future work does not repeat the same test.
+
+Done means code/bench/synthesis plus propagation. An item with stale
+overview, toolkit, or backlog references is not done.
 
 
 4. Acceptance bar (inherits from diagnostic_toolkit.txt)
 ---------------------------------------------------------
 
-  T1 grad-check:  rel_err < 1e-7 at float64
-  T2 per-block:   oracle ranks above hm_triplet_raw on every probed block
-  T3 streaming:   cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp;
-                  ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5 on ≥2 of 3
+OVERRIDING PRINCIPLE (2026-04-28, score_design_overview.txt §1quinquies):
+"oracle balance" is no longer a decision metric. The acceptance bar is
+"oracle identifiability" — does the score's argmax coincide with the
+oracle? The Tier-A screens below are mandatory; T1/T2/T3/Operational
+are still required but are NOT alone sufficient.
+
+  Tier-A — oracle identifiability (mandatory; new 2026-04-28):
+    S-1 vector-level oracle-vs-winner gap:
+        Δ_score(winner − oracle_v2_proj) ≤ S6_baseline_Δ + tolerance
+        on every §6 matrix at b31. If S6 satisfies this and the new
+        variant does not, the variant has moved the argmax off the
+        oracle and is REJECTED before any T3 work.
+        Tool: `probe_e2_landscape.py`.
+    S-2 frame-level oracle-vs-winner gap (FAM-01-DIAG):
+        Score(Z_oracle) ≥ Score(Z_winner) on Stiefel(d, r) for
+        rank-r ship candidates. The definitive screen.
+        Tool: FAM-01-DIAG (under construction).
+    S-3 row-cheat dominance:
+        Score(Z_oracle) ≥ Score(Z_rowcheat) at b31 on every §6 matrix.
+        Already part of the per-block diagnostic.
+    S-4 force-oracle ceiling probes:
+        Run `--force-oracle-v2` and `--force-oracle-frame` to
+        characterize the cos² ceiling and isolate reachability vs
+        streaming-state divergence.
+        Tool: `half_window_sliding_hmean_experiment.py` flags;
+        `run_bench_sweep_force_oracle{,_frame}.sh`.
+    S-5 anchor sensitivity:
+        Run rank-1 slot-2 optimization in B_def(oracle_v1_proj) AND
+        in B_def(slot-1 winner). If one recovers the oracle and the
+        other doesn't, the failure is greedy-anchoring. If neither
+        does, the evidence model is insufficient.
+
+  Tier-B — Tx legacy (still required, but only after Tier-A passes):
+    T1 grad-check:  rel_err < 1e-7 at float64
+    T2 per-block:   oracle ranks above hm_triplet_raw on every probed block
+    T3 streaming:   cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp;
+                    ≥ 0.7 on diffuse-diffuse; tail_mass ≤ 0.5 on ≥2 of 3
   Operational:    match-or-beat future_hmean_online (VALUE-ONLY rerun;
                   see INFRA-10) on the §6 table of score_design_overview.
                   txt (the strict T3 bar above is the MINIMUM; online
@@ -83,26 +177,30 @@ under summary/ and runs through the steps below.
                   operational §6 table both sit in the HIGH-sample-
                   entropy regime — the score family's home turf where it
                   must be competent on its own merits. The LOW-sample-
-                  entropy regime (residual-spiky-shocks, risk-residual-
-                  panel) is conceded to iSVD/SVD by the complementarity
-                  plan and is NOT in the ship-criterion: variants are
-                  expected to be competitive there but not to beat iSVD.
-                  Acceptance criteria that reference iSVD on the low-
-                  entropy regime should be rewritten as stretch goals
-                  (see FAM-02 below).
+                  entropy regime (risk-residual-panel) is conceded to
+                  iSVD/SVD by the complementarity plan and is NOT in the
+                  ship-criterion: variants are expected to be competitive
+                  there but not to beat iSVD. DIAG-01 corrected
+                  residual-spiky-shocks to BOUNDARY because oracle slot-1
+                  is low-support while oracle slot-2 is moderate-support;
+                  use it as a mixed-case audit point, not a primary ship
+                  criterion. Acceptance criteria that reference iSVD on
+                  the low-entropy regime should be rewritten as stretch
+                  goals (see FAM-02 below).
 
-                  CAUTION (2026-04-28): the original `future_hmean_online`
-                  numbers in summary/bench_matrix_sweep/synthesis.txt
-                  are ORACLE-AWARE — its candidate pool contains
-                  `q2_vs_q1oracle` built from V_exact[:,1] (see
-                  half_window_sliding_hmean_experiment.py:24,247-250,490
-                  and second_slot_tail_bias_diagnostic.py:32). Treat
-                  those numbers as a CEILING, not as the operational
-                  bar. The corrected value-only numbers live at
-                  summary/bench_matrix_sweep_value_only_online/ once
-                  INFRA-10 lands; until then, acceptance criteria
-                  referencing "online" should be interpreted against
-                  the value-only rerun, not the oracle-aware ceiling.
+                  NOTE (2026-04-28, FB-001 propagation): the operational
+                  "online" baseline is `future_hmean_online` evaluated
+                  with the value-only candidate pool. Numbers and
+                  artifact paths live at
+                  summary/bench_matrix_sweep_value_only_online/
+                  (synthesis.txt; INFRA-10). The original oracle-aware
+                  pool (adds `q2_vs_q1oracle` = V_exact[:,1] projected
+                  into the row span; --online-include-oracle restores
+                  it) and its numbers in
+                  summary/bench_matrix_sweep/synthesis.txt are retained
+                  as a labeled CEILING reference only — never a ship
+                  target. Acceptance criteria referencing "online"
+                  resolve to the value-only baseline.
 
 
 5. Backlog (snapshot 2026-04-28)
@@ -126,7 +224,271 @@ Status key:
   blocked      — waiting on dependency
   in-progress  — assigned/being worked
   done         — closed; pointer in Notes
+  partial      — partial-pass; a subset of the §6 suite is still a
+                 live ship candidate, the rest is killed/redirected.
+                 Use when an item passes some matrices and fails
+                 others; Notes must list the per-matrix verdict.
   killed       — closed without shipping; failure mechanism in Notes
+
+Closure / kill principle (revised 2026-04-28 after FAM-01-DIAG re-read):
+  Any S-2 rank-r ship gate uses the TWO-PART rule defined in
+  score_design_overview.txt §1quinquies — alignment (operational) +
+  Δ_score (diagnostic). Do NOT close an item as `killed` when the
+  score's argmax is operationally aligned with the oracle subspace
+  (pa_cos²[0] ≥ 0.9 and min pa_cos² ≥ τ_align): that's
+  PASS-with-overshoot, ship-eligible. Do NOT close as `done` when
+  Δ_score ≤ 0 but pa_cos² is poor: that's a score that "matches
+  oracle in value" while pointing at the wrong subspace (artifact of
+  the score, not evidence). Verdict labels in Notes must use the
+  canonical S-2 set:
+    PASS-aligned, PASS-with-overshoot, FAIL-slot-r-only, FAIL-subspace.
+  Items with mixed verdicts close as `partial` with the per-matrix
+  table in Notes.
+
+
+--- ADVISOR FEEDBACK BACKLOG (from simulated_advisors, 2026-04-28) ---
+
+[FB-001] Propagate value-only online as the operational baseline
+  Priority:    P0
+  Effort:      S/M
+  Status:      done (2026-04-28)
+  Depends on:  INFRA-10 output exists; needs propagation
+  Resolves:    Fatal feedback from evidence + decision advisors; Q0 ship
+               criterion drift
+  Acceptance:  score_design_overview.txt §6 and Q0 use value-only online
+               numbers and artifact paths for operational comparisons.
+               Oracle-aware `future_hmean_online` numbers remain only as
+               a labeled CEILING. No acceptance criterion uses the
+               oracle-seeded pool.
+  Notes:       Done — score_design_overview.txt §1 / §6 / Q0 rewritten
+               around online_VO from
+               summary/bench_matrix_sweep_value_only_online/synthesis.txt;
+               oracle-aware retained as labeled CEILING column with
+               artifact pointer to summary/bench_matrix_sweep/. The
+               untraced mixed-tail-sharp 0.850 figure has been demoted
+               to historical context (FB-002 still owns the run-
+               provenance synchronization for the wider table).
+               diagnostic_toolkit.txt §3/§7 updated in lockstep. See
+               summary/feedback/evidence_audit_rigor.md (Fatal #1),
+               decision_review_next_steps.md (Fatal #1).
+
+[FB-002] Synchronize §6 run provenance before judging gaps
+  Priority:    P1
+  Effort:      M
+  Status:      done (2026-04-28)
+  Depends on:  FB-001
+  Resolves:    Major evidence-rigor finding: stale/mixed S6, online,
+               GM/D0, and AB-03 run numbers
+  Acceptance:  §6 has one synchronized comparison table with matrix,
+               seed, half-window, rank, code path, run date, and artifact
+               path for each method. The mixed-tail-sharp online=0.850
+               ceiling is either traced to the same harness/settings or
+               demoted to historical context.
+  Notes:       Done — score_design_overview.txt §6 now uses one
+               canonical operational table sourced from the 2026-04-28
+               value-only sweep under
+               summary/bench_matrix_sweep_value_only_online/, with
+               per-method matrix / seed / half-window / rank / code
+               path / run date / artifact path. diagnostic_toolkit.txt
+               §7 points to that table and keeps only a compact cos1²
+               view. The mixed-tail-sharp online=0.850 value was not
+               traceable to the canonical harness/settings and remains
+               demoted to historical context, not evidence. §6 also
+               warns that T2 per-block score-ranking diagnostics must
+               not be compared directly to T3 streaming policy gaps
+               unless harness, candidate pool, seed, half-window, rank,
+               and block all match.
+
+[FB-003] Scope the "slot-1 is solved" claim
+  Priority:    P1
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  FB-001/FB-002 helpful but not required
+  Resolves:    Major evidence + logic + scientific feedback on slot-1 /
+               frame-anchor overclaim
+  Acceptance:  score_design_overview.txt no longer makes a global
+               "slot-1 solved" claim. It distinguishes local combined-
+               step slot-1 behavior from terminal streaming slot-1
+               recovery, and cites force-oracle-v2/frame evidence where
+               V_default[:,0] is load-bearing.
+  Notes:       Done — score_design_overview.txt §1 now scopes slot-1 to
+               local combined-step V_default[:,0] and explicitly cites
+               AB-03 force-oracle-v2/frame evidence: forcing only
+               oracle_v2 captures about 1.00/2.00 on six of seven §6
+               matrices, while forcing the full oracle frame recovers
+               about 1.95/2.00. §1quinquies H3 now says the E2 local
+               sketch_v1-gradient-collapse hypothesis is refuted only in
+               that narrow sense, not that terminal slot-1 recovery is
+               globally solved.
+
+[FB-004] Treat FAM-01-DIAG as the rank-r kill/continue gate
+  Priority:    P0
+  Effort:      M
+  Status:      done (2026-04-28)
+  Depends on:  INFRA-02 done; existing FAM-01-DIAG scaffold
+  Resolves:    Major scientific/methodology/decision feedback that
+               rank-r lift is under-justified without frame-level
+               oracle-vs-winner evidence
+  Acceptance:  FAM-01-DIAG reports Z_oracle, Z_winner, and Z_rowcheat
+               frame scores on the §6 high-entropy matrices across
+               selected early/mid/late blocks. FAM-01 production/T3 work
+               proceeds only on matrices with PASS-aligned /
+               PASS-with-overshoot / FAIL-slot-r-only verdicts under
+               the two-part S-2 rule; FAIL-subspace matrices redirect
+               to evidence features (FAM-07/FAM-08/FAM-09).
+  Notes:       Done — `probe_frame_oracle_gap.py` ships with T1 grad
+               check and analytic Stiefel(d,2) ascent; canonical and
+               required-ablation results landed in
+               summary/infra_frame_oracle_gap/ and
+               summary/infra_frame_oracle_gap_ablations/.
+               Verdict labels updated 2026-04-28 evening to use the
+               two-part rule (alignment + Δ_score, see
+               score_design_overview.txt §1quinquies and the legend
+               closure principle above). Outcome: FAM-01 B0 is
+               `partial` not `killed` — 5 matrices are T3 candidates,
+               2 (diffuse-diffuse, static-cex) are FAIL-subspace and
+               redirect to evidence augmentation.
+
+[FB-005] Fix rank-r math in score_design_overview.txt §5
+  Priority:    P1
+  Effort:      S
+  Status:      done 2026-04-28
+  Depends on:  —
+  Resolves:    Major math feedback
+  Acceptance:  score_design_overview.txt §5 states the correct formal
+               bound `0 <= u_X(V) <= 1`; labels the `r/rank(A_X)` scale
+               as an equal-spectrum/random-subspace heuristic; and uses
+               `St(d,r)` for rank-r frames.
+  Notes:       See summary/feedback/math_audit_correctness.md.
+
+[FB-006] Rewrite plateau/rank-r dimension motivation
+  Priority:    P1
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    Major logic + math feedback on unsupported plateau
+               dimension claims
+  Acceptance:  The overview presents plateau drift as an empirical
+               high-score non-oracle phenomenon, not a consequence of
+               codim-1 level sets alone. Rank-r lift is motivated by
+               subspace-target scoring and greedy-anchor tests, not by a
+               generic "plateau dimension shrinks" claim. Formal scalar
+               limitations remain Q12 / TH-03.
+  Notes:       Done — score_design_overview.txt §1ter / §1quater / §2bis /
+               §3 / §5 / §7 rewritten; diagnostic_toolkit.txt and FAM-01 /
+               INFRA-05 backlog wording aligned.
+
+[FB-007] Bridge DOC A's `A_w` model to DOC B's split-window model
+  Priority:    P1
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    Major comprehension feedback
+  Acceptance:  Add a short mapping near the start of
+               score_design_overview.txt: DOC A's `A_w` is split into
+               `A_cur` and `A_fut` in the bench; original combined uses
+               `B` and `A_cur`; S1..S6 add split-sample evidence. State
+               whether `A_fut` is operational lookahead or diagnostic-only.
+
+[FB-008] Normalize sketch notation across DOC A and DOC B
+  Priority:    P1
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    Major comprehension/implementation feedback
+  Acceptance:  score_design_overview.txt defines `A_sketch` as DOC A's
+               carried right-action sketch, maps `state.s * state.V^T`
+               to its stored SVD form, and defines or removes `B_top`.
+               Raw rows, row reservoirs, carried sketches, and right
+               row-space audit domains are not conflated.
+
+[FB-009] Make S-1 through S-5 mandatory controls for new scores
+  Priority:    P1
+  Effort:      M
+  Status:      open
+  Depends on:  FAM-01-DIAG for S-2; existing force-oracle tooling for S-4
+  Resolves:    Major methodology feedback on confounded T3 interpretation
+  Acceptance:  Every new score proposal spec includes S-1 vector gap,
+               S-2 frame gap when rank-r, S-3 row-cheat dominance, S-4
+               force-oracle ceilings, and S-5 anchor sensitivity before
+               any T3 conclusion. Specs also record fixed factors:
+               matrix, seed, block, rank, half-window, lookahead length,
+               optimizer budget, restarts, carry initialization, and SVD
+               update path.
+
+[FB-010] Reframe mechanism taxonomy around oracle identifiability
+  Priority:    P1
+  Effort:      S/M
+  Status:      open
+  Depends on:  —
+  Resolves:    Major scientific + evidence + logic feedback on
+               M1/M2/M3/M4 overlap
+  Acceptance:  score_design_overview.txt treats M1/M2/M3/M4, plateau
+               drift, carry pinning, and u-imbalance as overlapping
+               identifiability/reliability failures unless a diagnostic
+               isolates them. "Tail conspiracy" is reserved for cases
+               with actual row-tail/support evidence.
+
+[FB-011] Make entropy-regime labels target-specific
+  Priority:    P1
+  Effort:      M
+  Status:      open
+  Depends on:  DIAG-01 outputs
+  Resolves:    Major assumption/core feedback on matrix-level HIGH/LOW
+               labels
+  Acceptance:  Regime claims are stated by `(matrix, slot, block,
+               target)` where possible, distinguishing oracle support,
+               score-winner support, and row-cheat support. "Home turf"
+               claims cite the target cell, not only the matrix name.
+
+[FB-012] Test evidence-feature sufficiency, not just HM variants
+  Priority:    P1
+  Effort:      M/L
+  Status:      blocked
+  Depends on:  FAM-01-DIAG result
+  Resolves:    Major scientific/methodology feedback that failures of
+               HM3/E2/GM/D0 do not exhaust functions of
+               {A_sketch,A_cur,A_fut}
+  Acceptance:  If FAM-01-DIAG fails, run or spec source ablations and
+               simple feature families: additive/log-additive/min forms,
+               cross-window response consistency (FAM-07), robust
+               row-energy aggregation (FAM-08), support-aware u_X, and
+               simple Gram/power-step proxies.
+
+[FB-013] Standardize optimizer certification for oracle-vs-winner claims
+  Priority:    P2
+  Effort:      M
+  Status:      open
+  Depends on:  INFRA-04 useful but not required
+  Resolves:    Major methodology/logic feedback: local non-oracle wins do
+               not certify global nonconvex maxima
+  Acceptance:  Oracle-vs-winner reports include high-budget restarts,
+               oracle warm starts, state warm starts, independent random
+               seeds, and score distribution across restarts. Claims state
+               optimizer coverage and residual risk.
+
+[FB-014] Clean the active open-work queue
+  Priority:    P2
+  Effort:      S
+  Status:      open
+  Depends on:  FB-001 and FAM-01-DIAG recommended
+  Resolves:    Major decision-relevance feedback on backlog hygiene
+  Acceptance:  Resolved items (Q7-Q11 and Q16 phase 1) are moved into
+               prior-evidence summaries. Active sequencing shows only the
+               live decision gates: value-only online propagation,
+               FAM-01-DIAG, rank-r T3 if it passes, and reliability-aware
+               evidence features if it fails.
+
+[FB-015] Add edge-case conventions before productionizing new scores
+  Priority:    P2
+  Effort:      S
+  Status:      open
+  Depends on:  —
+  Resolves:    Major implementation/math feedback
+  Acceptance:  Score definitions/specs define zero-denominator behavior,
+               epsilon floors if used, projection failure handling, and
+               tie-breaking for per-vector `k(v)` weights. Diagnostic-only
+               and production-path conventions are labeled separately.
 
 
 --- AGGREGATOR ABLATIONS (in-family) ---
@@ -148,9 +510,11 @@ Status key:
                (2026-04-28) Acceptance RELAXED to within-family bar —
                the prior "≥50% of S6→online gap" formulation depended
                on `future_hmean_online` as an operational target, but
-               online's pool is oracle-aware (see INFRA-10 / §4
-               CAUTION). Aggregator ablations are intra-family choices
-               and don't need an online-relative bar.
+               at the time that target meant the older oracle-aware pool
+               (see INFRA-10 / §4 CAUTION). Current acceptance elsewhere
+               resolves "online" to the value-only rerun; aggregator
+               ablations are intra-family choices and don't need an
+               online-relative bar.
                (2026-04-28) DONE/KILLED — see
                summary/score_family_aggregator_ablation/synthesis.md.
                T1 PASS (rel ≤ 3.1e-10). T3: GM beats HM by ≥0.05 cos1²
@@ -164,7 +528,7 @@ Status key:
 [AB-02] F-norm vs operator-norm weighting ablation
   Priority:    P2
   Effort:      S
-  Status:      partial (2026-04-28; T1+T2 done, T3 + synthesis pending)
+  Status:      done / KILLED (2026-04-28)
   Depends on:  —
   Resolves:    §2bis (b.i)
   Acceptance:  Same harness as AB-01. Compare S6_HM3 with u_X =
@@ -197,7 +561,121 @@ Status key:
                can be deleted on the next attempt. The driver script
                aggregate_S6_OP.py is a useful starting point for
                whoever finishes this — read it before re-running.
+               DONE/KILLED 2026-04-28: see
+               summary/score_family_aggregator_ablation/synthesis_S6_OP.md.
+               T3 completed on the 7-matrix §6 suite with distinct
+               `{matrix}_S6_OP_win64.{json,csv,txt}` outputs. S6_OP
+               improves mixed-tail-balanced (+0.0914 cos1²) and
+               diffuse-diffuse (+0.0714), but fails the explicit
+               static-cex heavy-tailed criterion (−0.0631), regresses
+               mixed-tail-sharp (−0.0226), and materially regresses
+               etf-basket-basis (−0.1286). Verdict: keep Frobenius
+               normalization for FAM-01/FAM-03 unless a new rank-r-
+               specific normalization hypothesis is written.
 
+
+[AB-03] Oracle u-balance re-weighting ablation
+  Priority:    P0
+  Effort:      M (~1 day; phase 1 oracle-aware ~2h, phase 2 value-only proxy
+               search ~half a day)
+  Status:      phase 1 done / KILLED for E2 (2026-04-28). See
+               summary/score_family_aggregator_ablation/synthesis_S6_E2.md
+               and the closure note why_E2_breaks_landscape.md. Wired
+               E2 into r_sk_g_score.py as variant S6_E2 (T1 grad check
+               passed, rel ≤ 2.5e-10). T3 sliding bench on the §6
+               suite (half_win=32, b31): S6_E2 catastrophically
+               regresses cos1² on 4/7 matrices including the two
+               (diffuse-diffuse, residual-spiky-shocks) where DIAG-04b
+               predicted simultaneous oracle balance — diffuse-diffuse
+               cos0² collapsed by 0.39 and residual-spiky-shocks cos1²
+               by 0.43. Closure investigation (probe_e2_landscape.py +
+               --force-oracle-v{2,frame} bench) identifies the dominant
+               mechanism as H1 (landscape-argmax-off-oracle): at b31
+               the optimizer reaches a strictly higher S6_E2 score than
+               the oracle does — Δ_S6_E2(winner − oracle_v2_proj) =
+               +0.041 on diffuse-diffuse, +0.047 on residual-spiky-
+               shocks (vs +0.007 under S6 baseline). The new score's
+               argmax IS balanced but is no longer at the oracle.
+               H2 (Voronoi step changes) weak (~1e-3 jumps); H3 (slot-1
+               collapse) refuted (E2 gradient near sketch_v1 is 30-100×
+               LARGER than S6, with positive back-pull). Force-oracle
+               bench shows cos² ceiling at b31 is ~1.95/2.00 on every
+               §6 matrix — FAM-01 (rank-r joint Stiefel lift) is the
+               structural fix. Lesson: oracle u-balance is NECESSARY
+               but NOT SUFFICIENT — any audit-stage win must additionally
+               pass an oracle-vs-winner gap test before promotion.
+               E3/E4 skipped per recommendation. Phase 2 not pursued.
+               Promoted FAM-01 to active in this closure.
+  Depends on:  DIAG-04 (provides the imbalance baseline numbers)
+  Resolves:    §2bis (b.i)/(b.ii); reframes the silent weighting assumption
+               from "Frobenius vs op-norm" to "calibrated to oracle u-balance
+               or not"
+  Acceptance:
+    Phase 1 (oracle-aware feasibility, NOT a ship variant — diagnostic only):
+      Re-weight HM3 with w_X := raw_X(oracle_v_proj) per matrix/block, slot-1
+      and slot-2 separately. Run T2 per-block on the §6 high-entropy suite
+      and T3 streaming bench. If oracle-aware re-weighting closes ≥50% of
+      the S6 → (value-only online) cos1² gap on at least one of mixed-tail-
+      sharp / mixed-tail-balanced / static-cex / diffuse-diffuse, oracle
+      u-imbalance is verified as a dominant failure mechanism and the
+      hypothesis advances to phase 2. If gap closure < 20% across the
+      board, the hypothesis is refuted; STOP and document. Phase 1
+      outputs go to summary/score_family_oracle_balance/phase1_oracle_aware/.
+    Phase 2 (per-vector weight scheme search):
+      The static (one-weight-per-source) candidate list is REPLACED with
+      the per-vector E-family below. Rationale (2026-04-28 — see overview
+      §1quater per-vector amendment): DIAG-04 showed raw_sk(oracle_v1)
+      and raw_sk(oracle_v2) differ by 2.6× (mixed-tail-sharp b31) to
+      ~500,000× (etf-basket-basis b31) in the SAME sketch state, so no
+      scalar w_sk can simultaneously balance slot-1 and slot-2 oracles.
+      The weight must depend on v's alignment with the carry's internal
+      structure (state.V columns and state.s singular values).
+        (E1)  op-norm cap: w_sk(v) = state.s[0]² regardless of v.
+              Equivalent to AB-02's killed op-norm but evaluated against
+              oracle-balance, not bench. Cheapest test of "any scalar
+              fix exists".
+        (E2)  alignment-weighted ceiling: w_sk(v) = state.s[k(v)]² where
+              k(v) = argmax_i (state.V[:,i]^T v)². Per-vector — slot-1
+              oracle gets state.s[0]², slot-2 oracle gets state.s[1]²,
+              etc. Decisive test of the per-direction hypothesis.
+        (E3)  slot-aware: for slot-k optimization, w_sk = state.s[k-1]²
+              (the carry capacity expected for that slot under deflation
+              order). Couples score to slot index; cheaper than E2 but
+              less general.
+        (E4)  spectrally-weighted projection: w_sk(v) = Σ_i state.s[i]^p
+              · (state.V[:,i]^T v)² for p ∈ [1, 2). At p=2 degenerates to
+              raw_sk(v); at p=1 a softer per-vector capacity. Free
+              parameter; explore last.
+      Symmetric extension to A_cur / A_fut: each window has its own SVD
+      (compute top-r SVD of A_X per block); E1-E4 generalize directly
+      with state replaced by per-window SVD factors.
+      For each candidate: T1 grad rel<1e-7; T2 oracle ranks above
+      hm_triplet on every probed block; T3 cos1² compared to S6_HM3 on §6
+      table. Ship the candidate that minimizes oracle u-imbalance ratio
+      from DIAG-04b AND beats S6 on at least one of mixed-tail-sharp /
+      diffuse-diffuse / static-cex without regressing the others by ≥0.05
+      cos1². Otherwise document the negative result.
+  Notes:       Folder: summary/score_family_oracle_balance/.
+               Variants (2026-04-28 reframed under per-vector framing —
+               see overview §1quater per-vector amendment): O1 = E1
+               op-norm cap; O2 = E2 alignment-weighted ceiling; O3 = E3
+               slot-aware; O4 = E4 spectrally-weighted (deferred). The
+               original static schemes (top-r truncated F², block-count-
+               aware sketch, op-norm hybrid) are dropped as primary
+               candidates because the audited scalar schemes did not
+               balance slot-1 and slot-2 oracles simultaneously.
+               This is in-family (changes weight, not aggregator) and
+               cheaper than FAM-01. Two outcomes both useful: (a) partial
+               fix that gives FAM-01 a better starting baseline; (b)
+               negative result strengthens the case that the failure is
+               landscape-wide (plateau) rather than peak-misplaced
+               (imbalance), focusing FAM-01 effort.
+               Acceptance is deliberately matrix-conditional rather than
+               universal: oracle u-imbalance varies dramatically across §6
+               (1.7x on etf-basket-basis vs 412x on static-cex per
+               INFRA-07 b31 numbers), so a re-weighting that helps the
+               worst-imbalance matrices is informative even if it doesn't
+               help the best-imbalance ones.
 
 --- INFRASTRUCTURE (toolkit gaps) ---
 
@@ -227,7 +705,7 @@ Status key:
 [INFRA-02] Stiefel FD gradient check
   Priority:    P1
   Effort:      M
-  Status:      open (unblocked — INFRA-01 done b6f136a)
+  Status:      done (2026-04-28)
   Depends on:  INFRA-01
   Resolves:    toolkit §8 (d)
   Acceptance:  Column-wise FD with tangent-space projection; rel<1e-7
@@ -247,11 +725,24 @@ Status key:
                       the trough of the U-shaped error curve.
                  (iii) Use Kahan/compensated summation on trace inner
                       products if the matrix dimension is large.
-               If after those tweaks rel_err sits at 1-3e-9 on the
-               trace sanity but ≪1e-7 on actual S6/S6_GM grads, the
-               sanity test is the more stringent one (no division by
-               u_X²); relax the trace-sanity bar to <1e-8 and treat
-               the HM3/GM3 acceptance as the real bar.
+               Follow-up resolved this without weakening acceptance: the
+               workflow acceptance remains rel<1e-7 for the trace sanity.
+               DONE 2026-04-28: stiefel_grad_check.py implements
+               column-wise finite differences on St(d,r) by seeding one
+               ambient column at a time, projecting with
+               P_V(G)=G - V sym(V^T G), and comparing polar-retracted
+               central differences against trace(P_V(grad)^T Z). Smoke
+               evidence in summary/infra_stiefel_fd_gradient_check/:
+               gauntlet.txt and synthesis.md. Results on
+               mixed-tail-sharp b2/b12, r=2: worst score rel_err
+               2.29e-09; worst trace-form sanity rel_err 1.11e-09,
+               both below the rel<1e-7 acceptance bar. Epsilon sweep in
+               epsilon_sweep.txt documents the expected float64
+               U-shaped curve (best 1.53e-09 at eps=3e-5; still
+               <1e-7 through eps=1e-7). Verdict: ship. This closes
+               toolkit §8(d) and removes the Stiefel-gradient infra
+               blocker for FAM-01 / FAM-03; FAM-01 can start once its
+               baseline snapshot is pinned.
 
 [INFRA-03] Rank-r row-cheat baseline
   Priority:    P1
@@ -261,7 +752,7 @@ Status key:
   Resolves:    toolkit §8 (e), (i)
   Acceptance:  "top-r rows of A_fut" candidate produced per-block,
                wired into T2 ranking. T2 STOP rule generalizes to
-               "score(V_oracle) ≥ score(V_rowcheat) on every block".
+               "score(Z_oracle) ≥ score(Z_rowcheat) on every block".
   Notes:       Without this, the exploitability check breaks at r>1.
                DONE 2026-04-28: helper at
                test_matrices_fast/row_cheat_baseline.py
@@ -304,8 +795,9 @@ Status key:
   Acceptance:  Sample N=200 random V's on Stiefel(d, r) within
                score ≥ τ·score(V_opt); plot principal-angles to oracle.
                Report mean/percentile angles per matrix.
-  Notes:       Quantifies whether the rank-r lift actually shrinks the
-               plateau — IF FAM-01 fails on T3, this tells us why.
+  Notes:       Quantifies whether the empirical high-score/non-oracle
+               region shrinks under a rank-r lift — IF FAM-01 fails on
+               T3 after passing S-2, this helps explain why.
                Done: plateau_width_probe.py (test_matrices_fast/).
                Outputs in summary/infra_plateau_width/. Synthesis at
                summary/infra_plateau_width/synthesis.md. Verdict on
@@ -317,7 +809,7 @@ Status key:
                (catastrophic plateau drift). Acceptance rates 2.84–
                6.74% — pure rejection sufficed; MCMC fallback wired but
                unused. Establishes the r=1 baseline that FAM-01's
-               plateau-shrinkage hypothesis must beat.
+               empirical rank-r landscape check must beat.
 
 [INFRA-06] Carry-trajectory probe
   Priority:    P2
@@ -426,19 +918,751 @@ Status key:
                §6 table of score_design_overview.txt should be
                re-propagated; FAM-01 acceptance is now reachable.
 
+--- DOCUMENTATION / CONSISTENCY ---
+
+[DOC-01] Search-domain and target-definition cleanup
+  Priority:    P0
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    Q17; feedback audit fatal B_union notation issue and target
+               slippage between slotwise vectors, oriented frames, and
+               unordered subspaces
+  Acceptance:  Audit summary/overview/*.txt, diagnostic_toolkit.txt, and
+               active score-family specs for:
+                 (a) `B_union` or "union span" definitions. They must say
+                     `rowspan([B; A_cur; A_fut])` or
+                     `range([B; A_cur; A_fut]^T) subset R^d`, never
+                     `range([B; A_cur; A_fut])` without transpose.
+                 (b) Target labels. Use slotwise `v_i` for vector tests,
+                     `Z_oracle` for oriented-frame tests, and
+                     `span(V_r)` / principal angles for subspace tests.
+                 (c) Any V4/right-rotation language. If the objective is
+                     Grassmann-invariant, residual oriented-frame gaps must
+                     not be described as span-recovery failures.
+               Write a short note in summary/feedback/doc_cleanup.md listing
+               files touched and remaining report-sync work.
+  Notes:       DONE 2026-04-28. Mechanical pass completed across
+               score_design_overview.txt, diagnostic_toolkit.txt, and this
+               workflow file. B_union is consistently documented as the
+               right row-space audit domain
+               `rowspan([B; A_cur; A_fut]) =
+               range([B; A_cur; A_fut]^T) subset R^d`; vector tests use
+               slotwise v_i / oracle_v{i}_proj targets; oriented-frame
+               tests use Z_oracle / Z_winner / Z_rowcheat; and
+               Grassmann-invariant rank-r claims are expressed as
+               span(V_r) / principal-angle statements. Cleanup note:
+               summary/feedback/doc_cleanup.md. Remaining report-sync
+               work: copy these definitions into
+               ../reports/approximation/current_report.txt.
+
+
+--- THEORY / MODELING ---
+
+[TH-01] HM3 theory note: bound, surrogate, or explicit heuristic
+  Priority:    P1
+  Effort:      M
+  Status:      done / ITERATE (2026-04-28)
+  Depends on:  —
+  Resolves:    Q8; tightens the new-score story relative to combined
+  Acceptance:  Write summary/theory_hm3_surrogate.md with one of:
+               (a) a defensible lower-bound / surrogate derivation for
+                   HM3 under explicit assumptions;
+               (b) a minimax / stability objective for which HM3 is the
+                   natural smooth proxy;
+               (c) a negative result: no theorem-shaped story is valid
+                   without assumptions stronger than A2, so S6 must stay
+                   labeled as a heuristic inductive bias.
+               The note must explicitly compare against the combined
+               score's A2-derived phi story and list which assumptions
+               are weaker, stronger, or merely different.
+  Notes:       Current docs should not present S6 as having the same
+               theoretical status as combined. Combined has an algebraic
+               lower-bound/surrogate story under assumptions; S6/HM3 is
+               presently a bias motivated by failure mechanisms and
+               diagnostics. This item exists to either close that gap or
+               make the limitation permanent and explicit.
+               DONE/ITERATE 2026-04-28: see
+               summary/theory_hm3_surrogate.md. Closure is acceptance
+               route (b), with a recovery caveat from (c). HM3 is the
+               natural smooth proxy for the max-min visible stability
+               objective max_v min(u_sk, u_g1, u_g2); algebraically
+               min_i u_i <= HM_k(u) <= k min_i u_i. This is NOT a
+               population lower bound or subspace-recovery theorem.
+               Compared with combined's A2/phi story, HM3 is weaker on
+               entropy invariance, stronger on split-sample/carry
+               relevance, and different because it is between-window
+               stability rather than within-window entropy extrapolation.
+               Keep S6 labeled as a heuristic recovery bias until TH-02
+               / TH-03 say otherwise.
+
+[TH-02] Entropy-proxy model study
+  Priority:    P1
+  Effort:      M
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    Q9
+  Acceptance:  For at least three simple matrix models, characterize
+               when high visible-window entropy predicts high population
+               entropy of oracle directions, and when tail conspiracy
+               breaks the proxy. Output a matrix-by-matrix hypothesis
+               table for the §6 suite: expected proxy validity, expected
+               failure mode, and predicted helpful score axis
+               (between-window HM3, within-window relH1, rank-r lift).
+  Notes:       This is the missing premise behind the high-entropy bias:
+               "spread on visible sample -> spread on population" is
+               currently a heuristic. This task can be analytic,
+               simulation-based, or both, but it must state the model
+               assumptions rather than relying on post-hoc labels.
+               DONE 2026-04-28: see
+               summary/theory_entropy_proxy_model.md. Analytic study
+               covers diffuse exchangeable rowspace, heavy-tail / tail-
+               conspiracy mixtures, spiky low-entropy residuals, and a
+               coherent dictionary / ETF-basket model. Verdict: SHIP as a
+               model-assumption note; ITERATE empirically through DIAG-01
+               and DIAG-02. The result is narrow: visible entropy is
+               plausible under exchangeable / stable-mixture rows with
+               bounded leverage and enough active-component samples, but
+               fails under rare high-magnitude tails, coupled visible
+               tails, genuinely low-entropy oracle directions, or scalar
+               plateau ambiguity. No diagnostic_toolkit update was needed.
+
+[DIAG-01] Oracle entropy and regime-label audit
+  Priority:    P0
+  Effort:      S
+  Status:      done (2026-04-28)
+  Depends on:  —
+  Resolves:    Q10; validates / corrects the HIGH vs LOW regime split
+  Acceptance:  Add a diagnostic that reports per matrix/block/slot:
+               relH1 or effective row support for V_exact[:,k],
+               S6 opt, iSVD/mgain candidate, combined candidate, and
+               rowcheat. Write summary/infra_oracle_entropy_audit/
+               synthesis.md with a revised regime table. Any boundary
+               case (e.g. a matrix labeled HIGH whose oracle slot-2 is
+               low-entropy) must be called out explicitly.
+  Notes:       DONE 2026-04-28: diagnostic script
+               oracle_entropy_audit.py; outputs and synthesis in
+               summary/infra_oracle_entropy_audit/. Verdict: SHIP.
+               Formula: row-response energy p_i=(Wv)_i^2/sum_j(Wv)_j^2,
+               relH1=H/log(m), effective support=exp(H). The HIGH labels
+               for static-cex, mixed-tail-*, diffuse-diffuse, and
+               etf-basket-basis are validated by oracle visible-window
+               effective support. risk-residual-panel remains LOW.
+               residual-spiky-shocks is corrected from LOW to BOUNDARY:
+               oracle slot-1 median visible eff_frac=0.177, oracle slot-2
+               median visible eff_frac=0.474 (min 0.403). S6/HM3/relH1
+               remain heuristic until TH-01/TH-02/TH-03 say otherwise.
+
+[TH-04] iSVD entropy-regime limitation: theory plus audit
+  Priority:    P1
+  Effort:      M
+  Status:      done (2026-04-30)
+  Depends on:  DIAG-01 (done); TH-02 (done); §6 benchmark outputs
+  Resolves:    Q18; supplies the missing theoretical basis for the
+               SVD-complementarity plan
+  Acceptance:  Write summary/theory_isvd_entropy_regime.md. It must define
+               a finite-window model with at least two competing rank-one
+               directions: a spike-dominated direction u with large
+               top-row share, and a diffuse direction v whose row response
+               is spread and replicates across independent windows. Prove
+               a condition, or give a clean counterexample family, under
+               which the stacked-norm update selects u over v at finite
+               window size even though the final oracle subspace contains
+               v. The note must state which assumptions are responsible:
+               leverage, sample size, spectral gap, response entropy, or
+               window-to-window stability.
+
+               Also add an empirical audit table for the §6 matrices. For
+               iSVD-selected directions and oracle directions, report
+               terminal cos², relH1 / effective row support, top-row
+               share, current/future balance, and cross-window
+               replicability. The result must explain the known
+               high-entropy failures (diffuse-diffuse, mixed-tail-sharp)
+               and the low-entropy or boundary cases where iSVD is still
+               the right baseline (risk-residual-panel, residual-spiky-
+               shocks). A conclusion that only restates benchmark wins /
+               losses does not close the item.
+  Notes:       This is not a new score proposal. It is the missing
+               theoretical support for the claim that iSVD and the score
+               family occupy different entropy regimes. If the theory
+               cannot produce the separation, the overview must weaken the
+               SVD-complementarity story to an empirical observation.
+               DONE 2026-04-30: see
+               summary/theory_isvd_entropy_regime.md. The separation is
+               verified but conditional, not universal. Finite-window iSVD
+               selects the largest observed stacked norm, so a transient
+               one-row spike u beats a diffuse stable direction v whenever
+               L^2 - m a^2 > beta_v^2 - beta_u^2, even though a
+               current/future stability score selects v. The responsible
+               assumptions are leverage, finite sample size, observed
+               spectral gap, low row-response entropy, and missing
+               window-to-window stability evidence. Empirically, iSVD/mgain
+               candidates on static-cex and mixed-tail-* are low-support
+               (visible eff_frac 0.016-0.049), top-row dominated
+               (top-row share 0.750-0.998), and current/future imbalanced
+               (~1e-6 to 1e-4), while oracle directions are diffuse and
+               balanced. Terminal iSVD collapses on static-cex (0.045/0.044)
+               and mixed-tail-sharp (0.078/0.013), and is weak on
+               mixed-tail-balanced (0.182/0.060) and slot 2 of
+               mixed-tail-soft (0.003). The caveat is important:
+               diffuse-diffuse is partly recovered by iSVD (0.911/0.489),
+               etf-basket-basis is more a rank/slot issue than a pure
+               entropy issue, and residual-spiky-shocks / risk-residual-
+               panel remain iSVD territory. Conclusion: the motivation for
+               a different score is strong in the high-sample-entropy,
+               finite-window leverage regime, but the report-level claim
+               must be complementarity, not blanket replacement.
+
+[TH-05] Random finite-sample separation for iSVD vs stability scoring
+  Priority:    P1
+  Effort:      S/M
+  Status:      done (2026-04-30)
+  Depends on:  TH-04 (done); existing half-window score harness
+  Resolves:    Hardens Q18 against the objection that the separation is only
+               adversarial ordering or hand-built matrix structure.
+  Acceptance:  Write a short note and Monte Carlo probe showing that the
+               TH-04 transient-spike / recurring-diffuse separation occurs
+               under randomized row order from an iid row model. Minimal
+               model: every row has diffuse response a in direction v;
+               direction u appears through rare spike rows of response L
+               independently with probability p. For current block size m
+               and validation size q, verify the event "one current spike,
+               no validation spike" has probability m p (1-p)^(m+q-1), and
+               conditional on ma^2 < L^2 < (m+q)a^2, iSVD/stacked norm
+               selects u while the current-plus-validation matrix and HM2
+               stability score select v.
+
+               Probe a small grid over p, m, q, and L/a; report empirical
+               frequencies for (i) iSVD selects transient u, (ii) full
+               current-plus-validation selects recurring v, and (iii) HM2
+               selects v. Include at least one non-negligible-probability
+               setting, e.g. m=32, q=96, a=1, L=8 with p chosen so the
+               event probability is visible. The synthesis must state that
+               randomization removes adversarial placement but not finite-
+               sample leverage variance.
+  Notes:       This is not a new score family. It is a report-hardening
+               theory/diagnostic bridge: exact energy preservation is still
+               a representation statement after a subspace is chosen, while
+               subspace selection is predictive because rank-r storage must
+               allocate capacity before all recurrence evidence is known.
+               If the Monte Carlo only works at negligible probabilities or
+               requires pathological parameter tuning, weaken the report
+               example back to a deterministic cautionary construction.
+               DONE 2026-04-30: see
+               summary/theory_isvd_random_finite_sample/theory_isvd_random_finite_sample.md
+               and `probe_random_separation.py` (driver). 200000 trials per
+               grid row, 30-row grid sweeping (p, L/a, (m,q), q/m).
+               Closed-form single-spike probability m p (1-p)^(m+q-1)
+               reproduced empirically to ~1e-3 absolute. Canonical
+               m=32, q=96, a=1, L=8, p=1/128 setting yields freq_isvd_picks_u
+               = 0.222, freq_stacked_picks_v = 0.736, freq_hm2_picks_v =
+               0.882, freq_joint_separation = 0.0928 (vs theory 0.0923).
+               Joint maximum over p attained at p* = 1/(m+q) and is
+               bounded below by (m/(m+q)) e^{-1} for all window sizes
+               with fixed m/q, so the regime is not a small-window
+               artifact. Outside the parameter window m a^2 < L^2 <
+               (m+q) a^2 the joint event collapses to ~0; inside it is
+               robust to all three sweeps. HM2 dominates stacked which
+               dominates iSVD on per-trial v-selection across the grid.
+               Conclusion: randomization removes adversarial placement
+               but not finite-sample leverage variance — Q18 hardened
+               against the iid-ordering objection. The deterministic
+               weakening fallback in Notes is NOT triggered.
+
+[DIAG-02] Tail-conspiracy forward-replication probe
+  Priority:    P1
+  Effort:      M
+  Status:      done / DEMOTED (2026-04-29 — within-window
+               tail-conspiracy mechanism not verified on §6 mixed-tail
+               set; M1/M2/M3 split from DIAG-05 stands; FAM-08 not
+               unblocked)
+  Depends on:  DIAG-01 (done)
+  Resolves:    Q11; tests whether tail conspiracy is a real mechanism
+  Acceptance:  For high-scoring non-oracle candidates, log current
+               score, per-window relH1/effective support, top-row energy
+               share, overlap of dominant rows between A_cur and A_fut,
+               response on the next unseen window, and subsequent carry
+               alignment decay. Write a synthesis that either verifies
+               the tail-conspiracy signature on at least one mixed-tail
+               matrix or demotes the idea to an unverified hypothesis.
+  Notes:       HM3 already catches between-window imbalance. This probe
+               asks whether the remaining failures are actually caused
+               by within-window row concentration that appears stable
+               only because rare rows align in the visible sample.
+               (2026-04-29 closure.) DEMOTED — see
+               summary/diag02_tail_conspiracy_forward/synthesis.md.
+               The within-window-concentration-that-breaks-on-A_fut
+               signature (S1+S2+S3) is NOT observed on the §6 mixed-tail
+               set: failure directions are not characterized by visible
+               top-row concentration that fails to replicate forward.
+               Q11 is REFUTED in this specific form; the existing
+               M1/M2/M3 split from DIAG-05 remains the operative
+               decomposition of combined-score failures.
+               FAM-08 (robust row-energy evidence) remains BLOCKED —
+               DIAG-02 was its prior unblocking candidate but produced
+               no row-cheat signal; FAM-08 needs a different motivation
+               before opening.
+
+[DIAG-06] Frame-audit representativeness sweep
+  Priority:    P1
+  Effort:      M
+  Status:      open
+  Depends on:  FAM-01-DIAG
+  Resolves:    feedback audit major underpowered/selected-cases issue for
+               V1/V2/V3 and frame-sufficiency conclusions
+  Acceptance:  After FAM-01-DIAG exists, rerun the frame-level oracle-vs-
+               winner gap screen across:
+                 matrices: full §6 suite, not only the three regression
+                   matrices;
+                 blocks: early/middle/late, at least {1, 6, 12, 31};
+                 ranks: r in {2, 3, 4} where dimensions permit;
+                 seeds/restarts: record optimizer restart count and at
+                   least two independent random seeds for the joint search.
+               Output summary/infra_frame_audit_representativeness/
+               synthesis.md with a table of Δ = Score(Z_winner) -
+               Score(Z_oracle), principal-angle gaps, restart stability,
+               and which conclusions remain only regression-gate claims.
+  Notes:       The current evidence is strong enough to kill specific
+               features on named counterexamples, but not to claim broad
+               rank-2 window-local insufficiency. This sweep decides which
+               claims can be promoted from "selected regression failures"
+               to "representative design limitation."
+
+[DIAG-07] M2 per-direction score-decomposition audit
+  Priority:    P1
+  Effort:      S
+  Status:      open
+  Depends on:  DIAG-05 (done)
+  Resolves:    feedback audit major issue that aggregate rho/state-align
+               does not prove pointwise sketch-energy dominance
+  Acceptance:  For mixed-tail-sharp and at least two other §6 matrices,
+               blocks {6, 12, 31}, log at winner, projected oracle, and
+               joint-Stiefel candidate:
+                 ||Bv||², ||A_cur v||², phi_w(v), combined score,
+                 state_align(v), rho_past, rho_B, and gradients if cheap.
+               Write summary/combined_score_m2_decomposition/synthesis.md
+               stating when "sketch dominates" is pointwise true, when it
+               is only an alignment/path-dependence story, and what wording
+               should be used in overview/report.
+  Notes:       DIAG-05 reproduced the carry-pinning headline. This item is
+               narrower: it checks whether the energy-term explanation is
+               numerically supported at the actual compared directions.
+
+[DIAG-05] Ablate M1/M2/M3 individually and test tail-conspiracy unification
+  Priority:    P0
+  Effort:      M (~1 day)
+  Status:      done (2026-04-28; diagnostic-only)
+  Depends on:  DIAG-01 (done); existing combined-score probes and
+               reports/approximation/new_approx_combined.txt
+  Resolves:    Q11 subtask; decides whether overview §1bis can be folded
+               into the §1ter/§1quart tail-conspiracy framing or must
+               retain distinct residual mechanisms.
+  Acceptance:
+    Implement one driver script `probe_m1m2m3_unification.py` that runs
+    all three ablations and tail-conspiracy diagnostics in one pass,
+    emitting JSON rows per (matrix, block, mechanism).
+    M1: on mixed-tail-sharp b=1, evaluate combined score, phi_1, and
+    |A_cur v|² at combined argmax, oracle_v2 projected onto the
+    deflation complement, and 5 random orthogonal directions. Confirm
+    phi accounts for the score gap and the energy term is flat.
+    M2: on mixed-tail-sharp b ∈ {1,6,12,31}, log state_align(v) and
+    rho=||B||_F²/||A_cur||_F² for combined slot-2, oracle slot-2, and
+    joint-Stiefel-2 winner. Confirm carry dominance begins around
+    rho ≳ 5 and joint Stiefel does not escape.
+    M3: on diffuse-diffuse b=1, compare combined / HM2(u_cur,u_fut) / S6
+    against oracle by cos², and confirm M3 isolates to slot-1 by
+    re-checking that combined slot-1 succeeds on mixed-tail-sharp
+    (cos0² ≈ 0.785).
+    Tail-conspiracy diagnostic: for each failure point, compute at the
+    score argmax, projected oracle, and a handful of randoms:
+      relH1_X(v)=max_i (A_X v)_i² / ||A_X v||² for X ∈ {B,A_cur,A_fut};
+      |u_cur-u_fut|/max(u_cur,u_fut); and Pearson corr(|A_cur v|,
+      |A_fut v|). The unification claim passes only if the score-
+      favoured direction differs from the oracle on at least one of
+      low relH1, high between-window asymmetry, or low replicability at
+      every failure point.
+    Write `summary/<topic>/m1m2m3_tail_conspiracy_unification.md`
+    answering: (a) are M1/M2/M3 reproducible within ±0.01 absolute, or
+    why not; (b) does the diagnostic separate score-favoured directions
+    from oracle at every failure point; (c) if yes, propose the §1bis
+    rewrite as one tail-conspiracy mechanism with M1/M2/M3 sub-cases;
+    if no, record the residual mechanism and stop.
+  Notes:       Read first: reports/approximation/new_approx_combined.txt;
+               overview §1bis/§1ter/§1quart; diagnostic_toolkit relH1 /
+               row-cheat sections; and
+               summary/score_family_aggregator_ablation/
+               why_E2_breaks_landscape.md.
+               DONE 2026-04-28: driver script
+               `probe_m1m2m3_unification.py`; outputs in
+               `summary/m1m2m3_tail_conspiracy_unification/`
+               (`probe_m1m2m3_unification.{json,csv}` and
+               `m1m2m3_tail_conspiracy_unification.md`). Verdict:
+               M1/M2/M3 are separable by tail-conspiracy diagnostics at
+               the score-favoured direction vs oracle. M1 reproduced
+               within tolerance. M2 reproduced carry pinning and
+               full-prefix rho≈30; current-code oracle state_align is
+               0.293 rather than older 0.103. M3 reproduced diffuse b1
+               failure and S6/HM2 projected-oracle recovery; current-code
+               mixed-tail combined slot-1 control is cos0²=0.891 rather
+               than older 0.785. Overview §1bis and toolkit propagated;
+               `../reports/approximation/current_report.txt` remains the
+               later report-sync step.
+               Out of scope: modifying S6, proposing aggregators, running
+               the full §6 streaming bench, or extending to V1-V4 frame-
+               level evidence.
+
+[DIAG-04] Oracle u-balance audit
+  Priority:    P0
+  Effort:      S (~half a day; reuses INFRA-07 harness and oracle_v?_proj
+               builders from frob_norm_diagnostic.py)
+  Status:      done / PARTIALLY VERIFIED (2026-04-28 — see
+               summary/infra_oracle_u_balance/synthesis.md)
+  Depends on:  —
+  Resolves:    New Q on §7 of score_design_overview.txt: "Are HM3's
+               Frobenius weights calibrated against an oracle u-balance
+               criterion, or only inherited from a unit-fixer story?"
+               Empirical data already shows large imbalance on failure
+               matrices (INFRA-07 oracle_v1_proj: 412x sk/g1 ratio at
+               static-cex b31; 21x on diffuse-diffuse b31; vs 1.7x on
+               etf-basket-basis b31 where S6 partially works).
+  Acceptance:  For each §6 matrix × probed block (1, 2, 6, 12, 31) ×
+               slot k ∈ {1, 2}, compute (u_sk, u_g1, u_g2) at
+               oracle_v_k_proj and report imbalance metrics:
+                 ratio_max  = max(u) / min(u)        (dominant axis)
+                 ratio_skg1 = u_sk / u_g1            (sketch vs cur)
+                 ratio_skg2 = u_sk / u_g2            (sketch vs fut)
+                 ratio_g1g2 = u_g1 / u_g2            (cur vs fut)
+               Output: summary/infra_oracle_u_balance/{matrix}_audit.csv
+               + cross-matrix synthesis.md tabulating slot-1 and slot-2
+               imbalance vs S6 cos[k]² from
+               summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt. The
+               synthesis MUST include a correlation read between
+               imbalance ratio and cos1² failure, and an explicit slot-2
+               table — INFRA-07 only logs slot-1.
+  Notes:       This closes the gap behind the user-raised hypothesis:
+               HM3's "smallest-link enforcer" property only fires
+               correctly if oracle has roughly balanced (u_sk, u_g1,
+               u_g2). When the oracle is itself imbalanced under current
+               weights, HM3 punishes oracle relative to non-oracle
+               directions with mediocre but balanced u's. This audit
+               quantifies the imbalance at scale across the §6 suite and
+               gates AB-03 phase 2.
+               If imbalance is uniformly low (<2x everywhere), the
+               hypothesis is refuted at the audit stage and AB-03 is
+               killed before any re-weighting work.
+               If imbalance is large where S6 fails AND small where it
+               works (the etf-basket-basis pattern), AB-03 is strongly
+               motivated.
+               (2026-04-28 closure.) Done: PARTIALLY VERIFIED. See
+               summary/infra_oracle_u_balance/synthesis.md. Slot-1 b31
+               ratio_max is 17–347x on the seven §6 matrices vs 1.74x
+               on etf-basket-basis (calibration anchor where S6
+               cos0²=1.000) — strong evidence FOR the imbalance
+               hypothesis. Two refutations against M4 as the universal
+               mechanism: (a) mixed-tail-balanced slot-2 is balanced
+               (1.07x) but S6 fails 0.0004 cos1² — failure is not
+               imbalance there; (b) static-cex slot-1 hugely imbalanced
+               (322x) but S6 cos0²=0.936 — slot-1 is robust to
+               imbalance via the combined-style block-1 fall-through.
+               Block-trajectory shape (monotone growth from 1-9x at b2
+               to 243-347x at b31 on tail-dominant matrices) confirms
+               the §1quater mechanism: u_sk = raw_sk/sk_F2_low grows
+               linearly with block while u_g1/u_g2 stay on half-window
+               scale; the §2(c) rank-r CARRY normalization is the
+               structural source. AB-03 phase 1 should run; expect
+               matrix-conditional results.
+
+[DIAG-04b] Per-vector weight-scheme audit (extension of DIAG-04)
+  Priority:    P0
+  Effort:      S (~half a day; extend oracle_u_balance_audit.py with
+               --weight-scheme flag, add E1/E2 closed-form weight
+               computers, rerun on §6 suite)
+  Status:      done (2026-04-28). VERIFIED on the one-number bar. See
+               summary/infra_oracle_u_balance/scheme_comparison.md.
+               E2 drives slot-2 ratio_max < 5× on diffuse-diffuse (2.43×)
+               and residual-spiky-shocks (1.73×) at b31; the only scheme
+               of the three (current, E1, E2) that achieves SIMULTANEOUS
+               BALANCE anywhere on the §6 suite. Caveats: E2 *worsens*
+               slot-2 on mixed-tail-sharp (9× → 57×) and leaves
+               static-cex stuck at >20× both slots — i.e. the
+               per-direction reweighting is necessary on some matrices
+               but insufficient on heavy-tailed/static, where the
+               structural fix (FAM-01) remains required.
+               Outcome: E2 wired into r_sk_g_score.py as variant S6_E2
+               and advanced to AB-03 phase 1 (T1/T2/T3 gauntlet).
+  Depends on:  DIAG-04 (done)
+  Resolves:    Gates AB-03 phase 2 by selecting which per-vector scheme
+               (E1, E2, E3) to wire into r_sk_g_score.py for the T1/T2/T3
+               gauntlet. Closes the per-vector reframing of overview Q16.
+  Acceptance:  Extend oracle_u_balance_audit.py with
+                 --weight-scheme {current, E1, E2, E3}
+               and rerun on the §6 suite at half_win=32, blocks
+               {1,2,6,12,31}, slots {1,2}. For each scheme record:
+                 ratio_max(oracle_v1)  per (matrix, block)
+                 ratio_max(oracle_v2)  per (matrix, block)
+                 cross-slot consistency: max(ratio_max_v1, ratio_max_v2)
+                 cross-slot disparity:   |ratio_max_v1 − ratio_max_v2|
+                 ratio_skg1, ratio_skg2 retained for diagnostic context
+               Acceptance signal classifications (per scheme, per matrix
+               at b31):
+                 SIMULTANEOUS BALANCE — both slots have ratio_max ≤ 5×.
+                   Verifies the scheme calibrates evidence-level for
+                   both slots at once. STRONG: advance the scheme to
+                   AB-03 phase 1.
+                 SLOT-1 ONLY — slot-1 ratio_max ≤ 5×, slot-2 ratio_max
+                   > 10×. Verifies static / scalar weighting can fix
+                   slot-1 but not slot-2. WEAK: keep on the list but
+                   only useful as part of a multi-scheme combination.
+                 NO IMPROVEMENT — both ratios still > 10×. The scheme
+                   is not approximating evidence-level; demote.
+               Synthesis must include a per-matrix scheme-comparison
+               table (current vs E1 vs E2 vs E3) at b31 for both slots,
+               and a per-block trajectory for the most-improved matrix
+               under each scheme.
+  Notes:       This is the DIRECT test of "different vectors in the
+               sketch have different evidence levels" (overview §1quater
+               per-vector amendment). E1 (op-norm cap, scalar) is the
+               control: it tests whether ANY scalar improvement exists.
+               E2 (alignment-weighted ceiling, per-vector) is the
+               decisive per-direction test: it sets w_sk(v) = state.s[k]²
+               for k = argmax (state.V[:,i]^T v)², so slot-1 oracle is
+               normalized against state.s[0]² and slot-2 oracle against
+               state.s[1]². If E2 produces SIMULTANEOUS BALANCE on at
+               least one §6 high-entropy matrix where E1 produces only
+               SLOT-1 ONLY, the per-direction hypothesis is verified
+               and AB-03 phase 2 advances with E2. If E2 also produces
+               SLOT-1 ONLY or NO IMPROVEMENT, the per-direction hypothesis
+               is refuted at the audit stage and the search shifts to
+               either E3/E4 or to FAM-04 carry-confidence multipliers.
+               Output: extend summary/infra_oracle_u_balance/ with one
+               subdirectory per scheme (current/, E1/, E2/, E3/) and a
+               cross-scheme synthesis at the top.
+               Implementation: state.V and state.s come from the rank-r
+               truncated SVD of the carry already computed in
+               hmean_evidence_score.stream_to_block; expose them via the
+               snap dict (or recompute from snap["A_sketch"] via SVD).
+               For windows, compute top-r SVD of A_X on the fly; this is
+               cheap (32 × 1024 matrix per block).
+
+[TH-03] Scalar-score plateau limitation
+  Priority:    P2
+  Effort:      M
+  Status:      open
+  Depends on:  INFRA-05
+  Resolves:    Q12
+  Acceptance:  Write a short theory/diagnostic note explaining whether
+               scalar-per-v scores are intrinsically unable to pin slot-2
+               on the relevant B_union row-space audit domains.
+               Acceptable closure is either
+               a formal identifiability/impossibility argument, or a
+               constructive counterexample family where HM-like scalar
+               balance scores have high-score non-oracle ridges. Must
+               reference INFRA-05 plateau-width numbers as empirical
+               support.
+  Notes:       If this lands as a strong negative result, it strengthens
+               the case for FAM-01/FAM-03 and should demote further
+               scalar epicycles unless they directly attack the proven
+               limitation.
+
 
 --- NEW FAMILIES ---
 
-[FAM-01] Stiefel rank-r lift family
-  Priority:    P1
+[FAM-01-DIAG] Frame-level oracle-vs-winner gap probe (Tier-A canonical screen)
+  Priority:    P0
+  Effort:      S (1 day; reuses probe_e2_landscape.py + Stiefel(d,2)
+               optimizer scaffolding from FAM-01 spec)
+  Status:      done (2026-04-28) for canonical HM frame evidence and
+               required ablations.
+               REREAD 2026-04-28 evening: under the revised two-part
+               S-2 rule (score Δ + pa_cos² alignment, see
+               score_design_overview.txt §1quinquies and the closure
+               principle in the legend above), the canonical run
+               yields a MIXED verdict, not a uniform kill.
+               Per-matrix S-2 verdicts (canonical HM frame):
+                 residual-spiky-shocks   PASS-with-overshoot
+                 etf-basket-basis        FAIL-slot-2-only
+                 mixed-tail-sharp        FAIL-slot-2-only
+                 mixed-tail-balanced     FAIL-slot-2-only
+                 mixed-tail-soft         FAIL-slot-2-only*
+                 diffuse-diffuse         FAIL-subspace
+                 static-cex              FAIL-subspace
+               * pa_cos²[0]=0.896 just under the 0.9 slot-1 bar.
+               This item is `done`; downstream items (FAM-01,
+               FAM-03, future weight schemes) inherit the matrix-level
+               verdicts above when applying the S-2 gate.
+               User-directed: per score_design_overview.txt
+               §1quinquies, every new score-design proposal at rank-r
+               must pass S-2 (frame-level oracle-vs-winner gap) BEFORE
+               T3 effort. This item builds the canonical screen.
+  Depends on:  INFRA-02 (Stiefel FD grad), AB-03 phase 1 closure
+  Resolves:    none directly; gates FAM-01 / FAM-04 / future weight
+               schemes via §1quinquies S-2 acceptance.
+  Acceptance:  Implement a probe that, given a per-block snapshot,
+               computes a frame-level score Score(Z) over Stiefel(d, 2)
+               restricted to B_union, where Z is rank-2 with columns
+               unit-norm and orthogonal. The default frame score is
+                 Score(Z) = HM(u_sk(Z), u_cur(Z), u_fut(Z))
+                 with u_X(Z) = ||A_X Z||_F² / ||A_X||_F²
+               (other frame extensions may be plugged in). The probe
+               returns:
+                 (a) Score(Z_oracle) where Z_oracle = SVD-frame of
+                     [oracle_v1_proj, oracle_v2_proj] in B_union,
+                 (b) Score(Z_winner) from joint Stiefel(d, 2)
+                     optimization with high budget (≥100 random
+                     restarts; alternating sphere ascent + reorth
+                     OR retraction-based gradient ascent),
+                 (c) the gap Δ_score = Score(Z_winner) − Score(Z_oracle),
+                 (d) pa_cos² principal-angle cos² between span(Z_winner)
+                     and span(V_exact[:, :r]), sorted descending.
+               Run on the §6 suite at b31. Closure note must label each
+               matrix with the canonical S-2 verdict
+               (PASS-aligned / PASS-with-overshoot / FAIL-slot-r-only /
+               FAIL-subspace) per the two-part rule in
+               score_design_overview.txt §1quinquies. Δ_score alone is
+               diagnostic; alignment governs operational ship/kill.
+  Notes:       Script: probe_frame_oracle_gap.py. Folder:
+               summary/infra_frame_oracle_gap/. T1 gradient check
+               for Score(Z)=HM(u_sk,u_cur,u_fut), u_X=||A_XZ||_F²/
+               ||A_X||_F², passed on the 7-matrix §6 suite at
+               b1/b2/b12/b31, r=2: 28/28 cells passed; worst score
+               rel=5.84e-08, worst trace sanity rel=1.20e-08.
+               Artifacts: summary/infra_frame_oracle_gap/
+               T1_gradient_check.{txt,md}. Do not implement
+               as N independent rank-1 scores — the whole point is the
+               frame-level coupling. The frame extension u_X(Z) above
+               is the simplest GRASSMANNIAN-INVARIANT choice; FAM-01
+               B0 should ship with this same form to ensure FAM-01-DIAG
+               results transfer.
+               S-2 canonical result (2026-04-28, two-part rule). Δ_score
+               is positive on all seven §6 matrices at b31 with high-
+               budget free Stiefel search (100 restarts), but alignment
+               splits the verdict:
+                 matrix                 Δ_score   pa_cos²[0/1]   verdict
+                 residual-spiky-shocks  +0.0050   0.967 / 0.867  PASS-w-overshoot
+                 etf-basket-basis       +0.0335   0.996 / 0.154  FAIL-slot-2-only
+                 mixed-tail-sharp       +0.0130   0.971 / 0.484  FAIL-slot-2-only
+                 mixed-tail-balanced    +0.0121   0.988 / 0.530  FAIL-slot-2-only
+                 mixed-tail-soft        +0.0158   0.896 / 0.474  FAIL-slot-2-only*
+                 diffuse-diffuse        +0.0094   0.507 / 0.057  FAIL-subspace
+                 static-cex             +0.0348   0.331 / 0.301  FAIL-subspace
+                 * pa_cos²[0] just under the 0.9 slot-1 bar.
+               Artifacts:
+               summary/infra_frame_oracle_gap/frame_gap_b31.{txt,json}
+               and synthesis.md. Anchor sensitivity rows are included
+               in the same output.
+  Ablations:   Per user directive (point 5 of 2026-04-28 update),
+               additionally run:
+                 (a1) Frame score with HM × total energy:
+                      Score(Z) = HM(u_X) · ||A_total Z||_F²
+                      Tests whether absolute energy is the missing signal.
+               (a2) Frame score with HM × cross-window correlation:
+                      Score(Z) = HM(u_X) · cross-corr(A_cur Z, A_fut Z)
+                      Tests whether cross-window response alignment is
+                      the missing signal. This ablation must define a
+                      principled row-pairing model first; if current and
+                      future rows are independent/unpaired, use a Gram- or
+                      CCA-style right-space agreement term instead of a raw
+                      Frobenius inner product of row coordinates.
+                 (a3) Anchor-sensitivity: fix v1 = oracle_v1_proj and
+                      optimize v2 jointly; fix v2 = oracle_v2_proj and
+                      optimize v1. If asymmetry — one direction
+                      identifies, the other doesn't — that's the slot
+                      where evidence is weakest.
+               Document which ablation, if any, makes Z_oracle the
+               unique maximizer.
+               Result: neither ablation fixes identifiability. With
+               analytic free-frame Stiefel ascent (8 restarts,
+               max_iter=80), HM × total energy and HM × Gram/right-
+               space agreement both have Δ>0 on all seven matrices.
+               Artifacts: summary/infra_frame_oracle_gap_ablations/.
+
+[FAM-01] Stiefel rank-r lift family — REFRAMED as evidence-sufficiency diagnostic
+  Priority:    P0 (promoted from P1 on 2026-04-28 after AB-03 phase 1
+               KILL; reframed 2026-04-28 evening — see [AB-03] closure,
+               why_E2_breaks_landscape.md, score_design_overview.txt
+               §1quinquies)
   Effort:      L (3–5 days infra + 1–2 days per variant)
-  Status:      blocked (depends on infra)
-  Depends on:  INFRA-01, INFRA-02, INFRA-03, INFRA-10; baseline snapshot
+  Status:      done / KILLED for B0 (2026-04-29 T3 closure; supersedes
+               2026-04-28 partial). REFRAMED: rank-r joint optimization
+               was tested as a DIAGNOSTIC of evidence sufficiency, not
+               as an assumed solution.
+               (2026-04-29 T3 closure.) B0 (HM3-rank-r joint-frame
+               Stiefel) is KILLED on the partial-pass set. 3 of 4 high-
+               entropy matrices collapse cos0² (mixed-tail-sharp Δ=
+               −0.7392, mixed-tail-balanced Δ=−0.4192, mixed-tail-soft
+               Δ=−0.8275 vs greedy S6); etf-basket-basis is within
+               tolerance on cos0² (Δ=−0.0046) AND lifts cos1² by
+               +0.169 (single matrix bright spot, not enough to retry).
+               On the 3 collapse matrices B0's tail_mass is 0.85–0.99
+               and cos0² is 0.018–0.032 — the rank-r joint-frame
+               optimizer finds a degenerate frame missing the dominant
+               direction. Pattern (3 of 4 matrices, 31/31 optimizer
+               steps each, consistent tail_mass concentration) argues
+               STRUCTURAL, not implementation: HM3-rank-r joint-frame
+               on current evidence is structurally mis-aligned with
+               slot-1 capture in the mixed-tail regime. The S-2 reread
+               anticipated slot-2 evidence pinning; T3 falsifies that
+               and reveals slot-1 collapse as the dominant failure
+               mode. Do NOT pursue B1 (carry-confidence multipliers)
+               or B2 (trace-form rank-r) on the same evidence base —
+               the structural argument generalizes. Pivot to evidence
+               augmentation (FAM-07 / FAM-08 / FAM-09).
+               See summary/score_family_stiefel_rank_r/variants/B0/
+               03_cross_variant_synthesis.md.
+               FAM-01-DIAG, evaluated under the two-part S-2 rule
+               (alignment governs ship; Δ_score is diagnostic), splits
+               the §6 suite into:
+                 PASS-with-overshoot (1):  residual-spiky-shocks
+                 FAIL-slot-2-only (4):     etf-basket-basis,
+                                           mixed-tail-sharp,
+                                           mixed-tail-balanced,
+                                           mixed-tail-soft
+                 FAIL-subspace (2):        diffuse-diffuse, static-cex
+               B0 is therefore a LIVE T3 candidate on the 5 matrices
+               where slot-1 is captured (pa_cos²[0] ≥ 0.9, except
+               mixed-tail-soft 0.896): the operational question is
+               whether the rank-r joint frame's slot-1 capture lifts
+               §6 cos0² over greedy S6, even though slot-2 evidence
+               does not improve. KILLED on diffuse-diffuse and
+               static-cex: the score's argmax misranks the dominant
+               direction, so structural optimizer changes cannot fix
+               them — those two matrices require evidence augmentation
+               (FAM-07 / FAM-08 / FAM-09).
+  Depends on:  INFRA-01, INFRA-02, INFRA-03, INFRA-10 all done;
+               baseline snapshot still required
   Resolves:    Q1 + Q2; absorbs Q5 (FAM-04 as subfamily)
-  Acceptance:  Plateau-width (INFRA-05) shrinks with r on mixed-tail-
-               sharp; T3 cos1² closes ≥50% of S6→(value-only online)
-               gap on the §6 table. Ship the best variant; kill the
-               family if the lift produces no plateau improvement.
+  Acceptance:  Tier-A FAM-01-DIAG S-2 screen (the MANDATORY first
+               step) — two-part rule per score_design_overview.txt
+               §1quinquies. Per-matrix verdict labels:
+                 PASS-aligned         (ship-eligible)
+                 PASS-with-overshoot  (ship-eligible — Δ_score>0
+                                      tolerated when min pa_cos²
+                                      ≥ τ_align)
+                 FAIL-slot-r-only     (slot-1 captured at ≥0.9,
+                                      lower slots collapse: T3
+                                      streaming bench is the next
+                                      gate to check whether cos0²
+                                      lifts over greedy S6;
+                                      slot-r ship is blocked)
+                 FAIL-subspace        (slot-1 lost: structural redirect
+                                      to evidence augmentation —
+                                      FAM-07 / FAM-08 / FAM-09)
+               B0 acceptance flow:
+                 (1) S-2 partition the §6 suite (above).
+                 (2) On the PASS / FAIL-slot-r-only set, run T3
+                     streaming bench. Acceptance: cos0² lifts over
+                     greedy S6 by ≥0.05 on at least 2 high-entropy
+                     matrices AND no §6 matrix regresses cos0² by
+                     >0.02. cos1² is informational only because
+                     slot-2 evidence didn't pass S-2.
+                 (3) On the FAIL-subspace set (diffuse-diffuse,
+                     static-cex), no T3 — kill these from the B0
+                     production target and redirect to evidence
+                     augmentation.
+                 (4) Ship B0 if (2) clears and the T3 set is at
+                     least 4 of 5 candidate matrices.
+               If T3 produces no cos0² lift on the candidate set,
+               kill B0 and pivot fully to evidence augmentation.
   Notes:       Folder: summary/score_family_stiefel_rank_r/.
                Variants: B0 HM3-rank-r (or GM3 if AB-01 wins),
                          B1 HM3-rank-r + carry-confidence (= FAM-04),
@@ -446,18 +1670,34 @@ Status key:
                If FAM-01 fails, pivot to FAM-03 as the structural fix.
                (2026-04-28) The "online" bar was tightened to refer to
                the value-only rerun (INFRA-10), not the original
-               oracle-aware numbers. The plateau-shrinkage hypothesis
-               is the true ship-criterion; the online comparison
-               quantifies how much of the residual gap remains
-               explainable by score-design choices vs. by the
+               oracle-aware numbers. The rank-r landscape check is an
+               empirical ship-criterion, not a dimension theorem; the
+               online comparison quantifies how much of the residual gap
+               remains explainable by score-design choices vs. by the
                oracle-aware advantage that online enjoyed.
+               (2026-04-28 reliability-evidence framing.) Infrastructure
+               exists, but the proper frame-level score is still missing.
+               B0 must define a Grassmann-invariant frame score over Z,
+               using frame evidence such as ||A_X Z||_F² and the rank-r
+               row-cheat/oracle-frame acceptance checks. Do not implement
+               rank-r as independent per-column scalar scores.
+               (2026-04-28 FAM-01-DIAG closure; reread under the
+               two-part S-2 rule on 2026-04-28 evening.) Current-
+               evidence B0 is `partial`: Δ_score>0 on all seven §6
+               matrices, but alignment splits the verdict — 1 PASS-
+               with-overshoot, 4 FAIL-slot-2-only (slot-1 captured
+               ≥0.9), 2 FAIL-subspace. T3 is LIVE on the 5-matrix
+               partial-pass set (acceptance: cos0² lifts ≥0.05 on ≥2
+               high-entropy matrices, no §6 cos0² regression > 0.02);
+               BLOCKED on diffuse-diffuse and static-cex pending
+               evidence augmentation (FAM-07/FAM-08/FAM-09).
 
 [FAM-02] Row-concentration guard family
   Priority:    P1 (was P0; demoted 2026-04-28 under §1ter framing —
                see Notes)
   Effort:      M (~1 day per variant)
-  Status:      partial-D0 (2026-04-28; spec/T1/T2 done; T3 4/8 matrices;
-               synthesis pending)
+  Status:      D0 done / KILLED (2026-04-28; D1/D2 spec-only and
+               out of scope)
   Depends on:  —
   Resolves:    Q3 (F1); REFRAMED — primary target is the HIGH-sample-
                entropy regime as a within-window bias term on top of
@@ -470,14 +1710,16 @@ Status key:
                as good as S6 on every matrix, AND strictly better on
                at least one of the matrices where S6 currently fails
                (diffuse-diffuse 0.005, mixed-tail-sharp 0.013,
-               mixed-tail-balanced 0.0004). Beating iSVD on residual-
-               spiky-shocks / risk-residual-panel is a STRETCH GOAL,
-               not the ship-criterion — that regime is conceded to
-               iSVD/SVD by the complementarity plan. Ship best variant
-               if it improves any high-entropy matrix without
-               regressing others; kill if it produces no improvement
-               on the high-entropy regime regardless of spiky-residual
-               outcome.
+               mixed-tail-balanced 0.0004). Beating iSVD on risk-
+               residual-panel is a STRETCH GOAL, not the ship-criterion
+               — that low-entropy regime is conceded to iSVD/SVD by the
+               complementarity plan. DIAG-01 corrected residual-spiky-
+               shocks to BOUNDARY, so treat it as a mixed-case audit
+               point rather than a primary ship criterion. Ship best
+               variant if it improves any high-entropy matrix without
+               regressing others; kill if it produces no improvement on
+               the high-entropy regime regardless of low-entropy or
+               boundary-case outcome.
   Notes:       Folder: summary/score_family_row_concentration_guard/.
                Variants: D0 S6 · relH1 multiplicative,
                          D1 S6 with leverage-weighted u_X (overlaps Q4),
@@ -503,11 +1745,11 @@ Status key:
                plateau-drift dominated (FAM-01's territory), not purely
                bias-stability dominated; (ii) D0 work is already partial
                and the existing T3 matrices include diffuse-diffuse and
-               mixed-tail-* — finishing D0 directly tests the within-
+               mixed-tail-* — finishing D0 directly tested the within-
                window stability hypothesis on the high-entropy regime.
-               Keep D0 closure as an immediate todo; defer D1/D2 unless
-               D0 surprises.
-               PARTIAL D0 2026-04-28 (agent ran out of usage budget):
+               D0 did not surprise positively; defer D1/D2 unless a new
+               non-D0 relH1 hypothesis is written.
+               Historical partial D0 state before closure (2026-04-28):
                - Family folder populated: 00_known_vs_unknown.md,
                  01_family_design.md, 02_gradient_theory.md, baseline/.
                - D0 spec at variants/D0/spec.md; D0 variant added to
@@ -522,57 +1764,106 @@ Status key:
                  mixed-tail-balanced, mixed-tail-sharp, static-cex
                  have full {.json,.csv,.txt,.log}; etf-basket-basis,
                  mixed-tail-soft, residual-spiky-shocks,
-                 risk-residual-panel have only .log (incomplete runs).
-               - synthesis.md NOT WRITTEN.
-               To finish: rerun the 4 missing T3 matrices with
-               `--rsk-variant D0`, then write variants/D0/synthesis.md
-               and 03_cross_variant_synthesis.md (D1 / D2 still
-               spec-only — out of scope for D0 closure).
+                 risk-residual-panel had only zero-byte .log placeholders
+                 from incomplete runs; those placeholders were removed
+                 during D0 closure.
+               - synthesis.md was not yet written at that point.
                (2026-04-28, 2nd attempt under reframed acceptance.)
                Stopped mid-run; added 0 new bench JSONs. Empty .log
                placeholders for etf-basket-basis, mixed-tail-soft,
-               residual-spiky-shocks, risk-residual-panel are leftover
-               from the killed runs and can be deleted on the next
-               attempt without harm. Apply the REFRAMED acceptance
-               from above (high-entropy regime focus; spiky-residual
-               stretch-only) when writing synthesis.md.
+               residual-spiky-shocks, risk-residual-panel were later
+               removed during D0 closure. The closure below applies the
+               REFRAMED acceptance from above.
+               (2026-04-28 D0 closure.) DONE/KILLED — see
+               summary/score_family_row_concentration_guard/variants/D0/
+               synthesis.md and 03_cross_variant_synthesis.md. T1 PASS.
+               T2 oracle-vs-hm_triplet ranking pattern is effectively
+               unchanged versus S6. T3 high-entropy evidence kills D0:
+               diffuse-diffuse improves cos1² (+0.1395), but
+               mixed-tail-balanced regresses (-0.0095),
+               mixed-tail-sharp regresses materially (-0.0878), and
+               static-cex regresses materially (-0.1104) versus the
+               frozen S6 baseline. This violates the "at least as good
+               on every high-entropy matrix" criterion. Attempts to
+               rerun missing etf-basket-basis and mixed-tail-soft D0
+               benches produced no JSON/CSV/TXT before being stopped as
+               long-running CPU-bound processes; missing stretch/residual
+               outputs cannot change the killed D0 verdict. D1/D2 remain
+               spec-only; do not treat them as accepted or rejected.
+               (2026-04-28 reliability-evidence framing.) Direction 2 is
+               not "not integrated": D0 was integrated and killed. What is
+               still missing is a non-D0 reliability-aware evidence
+               definition, e.g. per-window u_X * relH1(A_X v),
+               leverage-weighted u_X, or influence-capped evidence.
+               Promote only after FAM-01 B0 or if DIAG-02 verifies a
+               within-window tail-conspiracy mechanism that rank-r alone
+               cannot address.
 
 [FAM-03] Subspace-trace family
-  Priority:    P2
+  Priority:    P1 (alternative aggregator on the same magnitude
+               evidence; complements FAM-01 B0 partial-pass and
+               targets the FAIL-subspace pair where B0 cannot ship)
   Effort:      L (uses FAM-01 infra)
-  Status:      blocked (depends on infra)
-  Depends on:  INFRA-01, INFRA-02, INFRA-10
+  Status:      open after E0 spec / S-2 screen
+  Depends on:  INFRA-01, INFRA-02, INFRA-10 all done; must define a
+               frame objective and pass FAM-01-DIAG S-2 before T3
   Resolves:    Tests §2bis "HM-family hypothesis itself" critique
-  Acceptance:  T1 grad correct; T2 oracle ranks above row-cheat at
-               rank-r; T3 cos1² beats FAM-01 B0 on at least 2 of the
-               §6 tail-dominant matrices. Ship if so; otherwise the
-               HM aggregator is validated.
+  Acceptance:  T1 grad correct. S-2 verdict per the two-part rule
+               (score_design_overview.txt §1quinquies): a matrix
+               counts as a candidate if it is PASS-aligned,
+               PASS-with-overshoot, or FAIL-slot-r-only; it is killed
+               for E0 if FAIL-subspace. Specifically, the priority is
+               whether E0 flips diffuse-diffuse and static-cex out of
+               FAIL-subspace (where B0 cannot ship) into a slot-1-
+               aligned verdict. T3 only after S-2 partition. Compare
+               against B0 per-matrix diagnostics rather than against
+               B0 streaming numbers, since B0 itself only has T3
+               candidates on the partial-pass set.
   Notes:       Folder: summary/score_family_subspace_trace/.
                Variants: E0 sum-of-trace (no per-v aggregator),
                          E1 HM-of-traces, E2 min-of-traces (smoothed).
-               Run E0 in parallel with FAM-01 B0 once infra is built.
+               FAM-01 B0 split the §6 suite under the two-part S-2
+               rule (1 PASS-with-overshoot, 4 FAIL-slot-2-only, 2
+               FAIL-subspace); E0 is the next structural frame-
+               objective candidate, primarily aimed at the FAIL-
+               subspace pair (diffuse-diffuse, static-cex).
 
 [FAM-04] Carry-confidence multipliers (subfamily of FAM-01)
   Priority:    P2
   Effort:      M
-  Status:      blocked (depends on FAM-01 + INFRA-06)
-  Depends on:  FAM-01, INFRA-06
+  Status:      blocked (depends on a frame score that passes S-2 +
+               INFRA-06; INHERITS FAM-01 B0 KILL 2026-04-29 — do not
+               pursue without evidence augmentation)
+  Depends on:  FAM-01-DIAG pass for a new evidence model, INFRA-06
   Resolves:    Q5, §2bis (a.ii)
-  Acceptance:  Beats FAM-01 B0 on ≥1 tail-dominant matrix without
-               regressing others.
+  Acceptance:  Beats the first S-2-passing rank-r baseline on ≥1
+               tail-dominant matrix without regressing others.
   Notes:       Multiplier candidates: s_top², spectral concentration,
                carry-drift. Pick shape AFTER INFRA-06 reveals
                trajectories per matrix family.
+               (2026-04-29) FAM-01 B0 T3 KILLED — structural mis-
+               alignment of HM3-rank-r with slot-1 capture in the
+               mixed-tail regime. As B1 (= FAM-04) shares the same
+               evidence base, it is NOT pursued on this evidence.
+               See summary/score_family_stiefel_rank_r/variants/B0/
+               03_cross_variant_synthesis.md.
 
 [FAM-05] Rank-aware threshold
   Priority:    P3
   Effort:      M
-  Status:      blocked (rank-r only)
+  Status:      blocked (rank-r only; INHERITS FAM-01 B0 KILL
+               2026-04-29 — no rank-r baseline to beat on current
+               evidence)
   Depends on:  FAM-01
   Resolves:    Q6
   Acceptance:  Beats FAM-01 B0 on the §6 table.
   Notes:       u_sk = max(r·raw_sk/sk_F2_low − 1, 0). Sharper than S5
                per-row gate; meaningful only at rank-r.
+               (2026-04-29) FAM-01 B0 T3 KILLED — no shippable rank-r
+               baseline exists on current evidence; FAM-05 stays
+               blocked until a new rank-r variant on augmented evidence
+               passes S-2 and T3. See summary/score_family_stiefel_
+               rank_r/variants/B0/03_cross_variant_synthesis.md.
 
 [FAM-06] Per-row leverage / c-weighting
   Priority:    P3
@@ -583,6 +1874,99 @@ Status key:
   Acceptance:  Beats S6 on §6 table OR demonstrates equivalence-up-to-
                scale claim from §7 Q4.
   Notes:       Could be merged into FAM-02 D1 if scope stays narrow.
+
+[FAM-07] Cross-window consistency / correlation evidence
+  Priority:    P1
+  Effort:      M
+  Status:      in-progress / T2 PASS (2026-04-29)
+  Depends on:  —
+  Resolves:    Q13; toolkit §8(n)
+  Acceptance:  Prototype a vector-level correlation / CCA-style evidence
+               term and a rank-r extension. T1 gradient check passes
+               rel<1e-7 if used in optimization; T2 reports cases where
+               u_cur and u_fut are both high but response consistency is
+               low; T3 improves at least one high-entropy matrix without
+               regressing static-cex, mixed-tail-sharp, diffuse-diffuse,
+               or etf-basket-basis. Kill if correlation is numerically
+               unstable or duplicates HM3 with no added diagnostic value.
+  Notes:       This is the first new reliability-aware evidence prototype
+               after rank-r: HM3 enforces magnitude balance, not
+               directional/response-pattern consistency. For rank-r, use
+               a frame correlation / CCA-style statistic rather than
+               independent column correlations. Keep write scope separate
+               from FAM-01 unless explicitly wiring into a rank-r variant.
+               T1 passed in summary/score_family_cross_window_consistency/
+               02_t1_grad_check_log.txt. T2 refreshed by FAM-07 on
+               2026-04-29:
+               summary/score_family_cross_window_consistency/
+               04_t2_synthesis.md. Result: 36 signature rows across
+               12/16 cells; all four blocks of diffuse-diffuse and
+               static-cex fire, mixed-tail-sharp also fires, and
+               etf-basket-basis is quiet. Next gate is S-2 for the
+               FAM-07 augmented frame score before any T3 run.
+
+[FAM-08] Robust row-energy evidence
+  Priority:    P2
+  Effort:      M
+  Status:      blocked (2026-04-29 — prior unblocking candidate DIAG-02
+               demoted without producing the required row-cheat signal;
+               FAM-08 needs a different motivation before opening)
+  Depends on:  DIAG-02 or clear row-cheat evidence
+  Resolves:    Q14; toolkit §8(o)
+  Acceptance:  Implement at least one differentiable robust u_X
+               (capped, trimmed-smoothed, Huberized, or influence-
+               reweighted). T1 gradient check passes rel<1e-7; T2
+               oracle-frame beats row-cheat on probed blocks; T3 improves
+               at least one heavy-tail/high-entropy matrix without
+               regressing diffuse-diffuse or etf-basket-basis.
+  Notes:       Distinct from relH1: robust evidence changes the row-energy
+               aggregation itself, while relH1 multiplies by a support
+               summary. Avoid stacking both until each is measured alone.
+
+[DIAG-03] Subsample-stability diagnostic
+  Priority:    P2
+  Effort:      M
+  Status:      done / SHIPPED (2026-04-29 — SIGNAL: g2_p50_cv predicts
+               carry-alignment decay, |r|=0.539 vs base 0.314, gap
+               +0.225; unblocks FAM-09)
+  Depends on:  DIAG-01
+  Resolves:    Q15; toolkit §8(p)
+  Acceptance:  For oracle, S6 opt, mgain/iSVD, combined, rowcheat, and
+               high-scoring non-oracle candidates, estimate row-subsample
+               mean/variance of evidence by matrix/block/slot. Synthesis
+               must decide whether instability predicts next-window
+               replication failure or carry-alignment decay better than
+               raw u_X / relH1 alone.
+  Notes:       Diagnostic first; do not turn this into a score until it
+               shows signal on at least one high-entropy failure matrix.
+               (2026-04-29 closure.) SHIPPED with SIGNAL — see
+               summary/diag03_subsample_stability/synthesis.md. Canonical
+               metric is g2_p50_cv (CV of u_g2 under 30 row-subsamples
+               at p=0.50). It predicts carry-alignment decay with
+               |r|=0.539 vs base predictors (raw u_g1, rel_h1) at
+               |r|=0.314 — gap +0.225. Toolkit §8(p) entry promoted from
+               NOT BUILT to SHIPPED 2026-04-29 with probe.py +
+               synthesis.md references. FAM-09 unblocked.
+
+[FAM-09] Stability-weighted evidence
+  Priority:    P2
+  Effort:      L
+  Status:      open (2026-04-29 — unblocked by DIAG-03 SIGNAL)
+  Depends on:  DIAG-03 (done / SHIPPED 2026-04-29)
+  Resolves:    Q15
+  Acceptance:  Define u_X -> u_X * stability_X with an efficient
+               subsampling or analytic variance estimate; pass gradient
+               checks or document a derivative-free optimizer; improve a
+               high-entropy failure without regressing the §6 suite.
+  Notes:       Potentially expensive and noisy. Keep blocked until DIAG-03
+               proves subsample stability adds information beyond HM3,
+               relH1/effective support, and robust row aggregation.
+               (2026-04-29 unblock note.) DIAG-03 verified the signal
+               (g2_p50_cv, |r|=0.539 vs base 0.314, gap +0.225). See
+               summary/diag03_subsample_stability/synthesis.md. Proposed
+               wiring: u_X -> u_X / (1 + λ · CV(u_X | subsamples)),
+               with λ calibrated on high-entropy matrices. Promoted
+               P3 -> P2.
 
 
 --- CURRENT SEQUENCING RECOMMENDATION ---
@@ -595,40 +1979,164 @@ priority is now "high-sample-entropy regime first." Low-entropy /
 spiky-residual work is conceded to iSVD by the complementarity plan
 and is downstream.)
 
-  Now (parallel; all unblocked, all targeting the high-entropy regime):
-    INFRA-02         (P1, M, blocked-until-INFRA-01 ✓)  →  unblock FAM-01
-    INFRA-04         (P2, M, blocked-until-INFRA-01 ✓)  →  unblock FAM-01
-                                                          drift diagnosis
-    FAM-02 D0 close  (P1, S, partial)                  →  finish 4 missing
-                                                          T3 matrices,
-                                                          write synthesis;
-                                                          tests within-
-                                                          window bias on
-                                                          high-entropy
-                                                          regime
-    AB-02 finish     (P2, S, partial)                  →  T3 + synthesis
-                                                          for op-norm
-                                                          weighting
+  Now (parallel; all unblocked, all targeting the high-entropy regime
+  OR tightening the theory/regime story that gates that work):
+    DIAG-04          (P0, S)                            →  oracle u-balance
+                                                          audit; gates AB-03
+                                                          phase 2; cheap and
+                                                          high-information
+    (FAM-01 B0 T3 was here; CLOSED/KILLED 2026-04-29 — see DONE
+     block below. Removed from Now-parallel list.)
+    (TH-04 was here; CLOSED/DONE 2026-04-30 — see
+     summary/theory_isvd_entropy_regime.md. Report-level iSVD
+     shortcomings should now use the complementarity framing.)
+    (TH-05 was here; CLOSED/DONE 2026-04-30 — see
+     summary/theory_isvd_random_finite_sample/theory_isvd_random_finite_sample.md.
+     Random iid Monte Carlo (200k trials/setting) reproduced the
+     closed-form single-spike probability m p (1-p)^(m+q-1) and
+     confirmed ~9.3 % joint TH-04 separation event at canonical
+     m=32, q=96, a=1, L=8, p=1/128. Q18 is now hardened against
+     the adversarial-ordering objection; report-level iSVD shortcoming
+     claims may invoke iid finite-sample leverage variance, not just
+     a hand-built example.)
+    FAM-07 T2        (P1, S/M; PROMOTED 2026-04-29 to next concrete
+                      forward move on the evidence-augmentation track
+                      after FAM-01 B0 KILL; FAM-07 spec frozen, T1
+                      passed at rel ≤ 9.96e-09 — see summary/
+                      score_family_cross_window_consistency/00_spec.md;
+                      primary aim diffuse-diffuse + static-cex
+                      FAIL-subspace pair, secondary aim mixed-tail
+                      slot-1 collapse exposed by B0 T3)
+                                                       →  cross-window
+                                                          response
+                                                          consistency
+                                                          evidence; simple
+                                                          Gram multiplier
+                                                          failed S-2
+                                                          ablation
+    FAM-03 E0 spec   (P1, M; aimed at flipping FAIL-subspace pair
+                      into slot-1-aligned verdict)   →  alternative
+                                                          frame objective,
+                                                          not magnitude-only
+                                                          HM over u_X
+    FAM-09           (P2, L, unblocked by DIAG-03 SIGNAL
+                      2026-04-29)                        →  stability-
+                                                          weighted
+                                                          evidence;
+                                                          wire u_X /
+                                                          (1 + λ ·
+                                                          CV(u_X)) with
+                                                          λ calibrated
+                                                          on high-entropy
+                                                          matrices
 
-  Next (FAM-01 — the structural fix for the high-entropy regime):
-    FAM-01 B0        (P1, L, blocked-until-INFRA-02)   →  rank-r lift,
-                                                          THE high-entropy
-                                                          fix for plateau
-                                                          drift on
-                                                          mixed-tail-sharp
-                                                          / diffuse-diffuse
-    FAM-03 E0        (P2, L, blocked-until-INFRA-02)   →  parallel to
-                                                          FAM-01
+  After DIAG-04 lands (DONE 2026-04-28; PARTIALLY VERIFIED). Next:
+    DIAG-04b         (P0, S, per-vector weight audit)   →  RUN NEXT.
+                                                          Decisive
+                                                          test of the
+                                                          per-direction
+                                                          hypothesis.
+                                                          Extends the
+                                                          DIAG-04 audit
+                                                          script with
+                                                          E1/E2/E3 weight
+                                                          schemes; tells
+                                                          us WHICH scheme
+                                                          to wire into
+                                                          r_sk_g_score.py
+                                                          before any T2/T3
+                                                          work.
+    AB-03 phase 1    (P0, S, oracle-aware feasibility) →  parallel to
+                                                          DIAG-04b; tests
+                                                          how much of the
+                                                          gap is closeable
+                                                          by oracle-aware
+                                                          re-weighting
+                                                          (ceiling).
+    AB-03 phase 2    (P0, M, per-vector E-family)       →  after DIAG-04b
+                                                          identifies the
+                                                          best scheme.
+                                                          Wire into
+                                                          r_sk_g_score.py
+                                                          with T1/T2/T3.
 
-  Conditional on FAM-01 B0 closing ≥50% of S6→(value-only online) gap
-  on the high-entropy §6 matrices:
+  Next (after a new evidence/objective spec passes S-2):
+    Rank-r T3 bench (new frame score)                   →  for new
+                                                          evidence axes
+                                                          (FAM-07/08/09)
+                                                          or aggregator
+                                                          variants
+                                                          (FAM-03), gated
+                                                          on a fresh S-2
+                                                          run under the
+                                                          two-part rule.
+                                                          (FAM-01 B0 T3
+                                                          on its partial-
+                                                          pass set is
+                                                          listed in the
+                                                          Now block above.)
+    TH-03            (P2, M, after INFRA-05)           →  formalize scalar
+                                                          plateau limitation
+    (FAM-08 stays in the blocked section below — DIAG-02 demoted
+     2026-04-29 without producing the required row-cheat signal.)
+
+  Conditional on a future rank-r frame score closing ≥50% of
+  S6→(value-only online) gap on the high-entropy §6 matrices:
     FAM-04, FAM-05   (P2/P3)
-  Conditional on FAM-01 failing plateau-shrinkage hypothesis:
-    Promote FAM-03 to P1; deprioritize remaining FAM-01 variants.
+  FAM-01-DIAG produced a PARTIAL S-2 verdict for current-evidence HM
+  B0 under the two-part rule: 5 of 7 §6 matrices remain T3 candidates
+  (slot-1 captured at ≥0.9 or full-subspace overshoot harmless), 2
+  (diffuse-diffuse, static-cex) are FAIL-subspace and need new
+  evidence. FAM-03 (alternative aggregator) is P1 and primarily aimed
+  at the FAIL-subspace pair; FAM-04/FAM-05 remain blocked on a
+  T3-validated B0 or a successor B-variant.
 
   (2026-04-28) "online" everywhere in this section now means the
   value-only rerun from INFRA-10 — see §4 CAUTION. AB-01 (HM-vs-GM)
   is DONE/KILLED — keep HM3.
+  TH-01 is DONE/ITERATE — HM3 has a visible max-min stability surrogate,
+  but no population recovery theorem; TH-02 and TH-03 remain the theory
+  gates for the entropy proxy and scalar-score plateau limits.
+  INFRA-02 is DONE/SHIP — the Stiefel FD gradient checker is in
+  stiefel_grad_check.py with evidence under
+  summary/infra_stiefel_fd_gradient_check/. This removes the Stiefel
+  gradient-check blocker for FAM-01/FAM-03; the remaining setup step is
+  pinning the family baseline snapshot.
+  AB-02 is DONE/KILLED — op-norm weighting fails the static-cex
+  criterion and regresses etf-basket-basis; keep Frobenius normalization.
+  DIAG-02 is DONE/DEMOTED 2026-04-29 — within-window tail-conspiracy
+  signature not observed on §6 mixed-tail set (S1+S2+S3 fail); M1/M2/M3
+  split from DIAG-05 stands. FAM-08 remains BLOCKED — DIAG-02 was its
+  prior unblocking candidate and produced no row-cheat signal; FAM-08
+  needs a different motivation. See
+  summary/diag02_tail_conspiracy_forward/synthesis.md.
+  DIAG-03 is DONE/SHIPPED 2026-04-29 — g2_p50_cv predicts carry-alignment
+  decay (|r|=0.539 vs base 0.314, gap +0.225). Toolkit §8(p) promoted
+  NOT BUILT → SHIPPED. FAM-09 unblocked (P3 → P2). See
+  summary/diag03_subsample_stability/synthesis.md.
+  FAM-01-DIAG is DONE for current-evidence HM B0 — Δ_score is positive
+  on all seven §6 matrices (and on both required ablations), but
+  alignment splits the verdict under the two-part S-2 rule. T3 is LIVE
+  on the 5-matrix partial-pass set (residual-spiky-shocks
+  PASS-with-overshoot + 4 FAIL-slot-2-only with slot-1 captured ≥0.9);
+  T3 is BLOCKED on diffuse-diffuse and static-cex (FAIL-subspace) until
+  evidence augmentation lands.
+  FAM-01 B0 is DONE/KILLED 2026-04-29 — T3 streaming bench on the
+  partial-pass set produced cos0² collapse on 3 of 4 high-entropy
+  matrices (mixed-tail-sharp Δ=−0.7392, mixed-tail-balanced
+  Δ=−0.4192, mixed-tail-soft Δ=−0.8275 vs greedy S6); etf-basket-basis
+  was within tolerance on cos0² and lifted cos1² by +0.169 (single-
+  matrix bright spot, not enough to retry). The 3-matrix collapse
+  pattern (tail_mass 0.85–0.99, cos0² 0.018–0.032, 31/31 optimizer
+  steps each) argues STRUCTURAL: HM3-rank-r joint-frame on current
+  evidence is mis-aligned with slot-1 capture in the mixed-tail
+  regime, not the slot-2 evidence pinning the S-2 reread anticipated.
+  Per the synthesis, B1 (carry-confidence multipliers = FAM-04) and
+  B2 (trace-form rank-r = FAM-03 wired in) are NOT pursued on the
+  same evidence base; the structural argument generalizes. Forward
+  move: evidence augmentation track (FAM-07 T2 promoted; FAM-08
+  blocked; FAM-09 unblocked by DIAG-03). See summary/score_family_
+  stiefel_rank_r/variants/B0/03_cross_variant_synthesis.md.
 
   What is NOT in this sequencing list (deliberately): any work whose
   primary acceptance is "beat iSVD on residual-spiky-shocks /
@@ -638,10 +2146,11 @@ and is downstream.)
   regime is solved, and only as a stretch goal.
 
 
-6. Family handoff checklist
-----------------------------
+6. Handoff checklist
+---------------------
 
-When a family closes (kill OR ship):
+When any backlog item closes (kill OR ship), apply the cross-document
+propagation policy in §3b. For score families specifically:
   - 03_cross_variant_synthesis.md written, includes T1/T2/T3 numbers
     diff'd against baseline/.
   - score_design_overview.txt §7 updated: mark each Q resolved /

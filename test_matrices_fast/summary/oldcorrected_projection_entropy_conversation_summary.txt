@@ -1,0 +1,223 @@
+Old-corrected projection entropy conversation summary
+=====================================================
+
+Date: 2026-04-19
+
+Command under discussion
+------------------------
+
+The main reproduction command was:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected
+
+To inspect the original optimizer-only trajectory after adding the oracle
+candidate control, use:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected \
+    --no-oracle-candidate-check
+
+
+Oracle candidate check
+----------------------
+
+The earlier debug summary showed that, on the small preset, the optimizer could
+return a rank-2 frame whose old-corrected score sum was lower than the
+orthonormalized oracle-projected frame:
+
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :rank]).
+
+An explicit diagnostic/control was added to
+test_matrices_fast/cex_restricted_space_probe.py:
+
+  --oracle-candidate-check / --no-oracle-candidate-check
+
+For oldcorrected runs with known V_exact and no row-concentration penalty, the
+script compares Q_oracle against V_score before compression. If Q_oracle has a
+higher old-corrected score sum, V_score is replaced by Q_oracle for that block.
+
+With the default oracle candidate check enabled on the n=128 small run:
+
+  block 1: oracle candidate accepted
+  block 2: oracle candidate accepted
+  block 3: oracle candidate rejected
+  block 4: oracle candidate rejected
+
+This made the first two block diagnostics show exact containment of the raw
+projected oracle vectors:
+
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2) = [1, 1]
+  principal_cosines(V_score, Q_oracle)           = [1, 1]
+
+The check is an oracle diagnostic/control, not a deployable streaming rule,
+because it uses V_exact.
+
+
+Old/new score factorization
+---------------------------
+
+For streaming oldcorrected scoring, each vector score splits as:
+
+  score(v) = old(v) + new(v)
+
+where
+
+  old(v) = E_old(v) * phi_old(v)
+         = ||B_old v||_2^2 * phi_old(v)
+
+  new(v) = E_new(v) * phi_new(v)
+         = ||A_block v||_2^2 * phi_new(v).
+
+The relative entropy quantities discussed were:
+
+  rel_old = h_old / log(s)
+  rel_new = h_new / log(k)
+
+where s is the old row-memory sample size and k is the current block row count.
+
+
+Optimizer direction on block 3
+------------------------------
+
+On the optimizer-only trajectory, block 3 was the suspicious case. The raw
+oracle projections had high old retained energy and perfectly flat current
+block responses:
+
+  v1_proj:
+    old E       = 0.575121045113
+    old phi     = 1.180001230165
+    old score   = 0.678643540727
+    rel_old     = 0.955153
+    new E       = 0.375529229641
+    new phi     = 1.414213559326
+    new score   = 0.531078528482
+    rel_new     = 1.000000
+
+  v2_proj:
+    old E       = 0.578287601471
+    old phi     = 1.177026229703
+    old score   = 0.680659675244
+    rel_old     = 0.940586
+    new E       = 0.364269316196
+    new phi     = 1.414213569090
+    new score   = 0.515154609768
+    rel_new     = 1.000000
+
+The optimizer did not improve rel_new entropy. It reduced it but gained much
+larger current-window energy:
+
+  opt1:
+    old E       = 0.148258656263
+    old phi     = 1.179929738593
+    old score   = 0.174934797529
+    rel_old     = 0.954804
+    new E       = 0.773970544338
+    new phi     = 1.361434546652
+    new score   = 1.053710237153
+    rel_new     = 0.890255
+
+  opt2:
+    old E       = 0.071954153478
+    old phi     = 1.177222253274
+    old score   = 0.084706030690
+    rel_old     = 0.941547
+    new E       = 0.830814957619
+    new phi     = 1.376208620287
+    new score   = 1.143374706539
+    rel_new     = 0.921398
+
+Interpretation:
+
+  - v1_proj/v2_proj are old-memory-preserving directions in block 3.
+  - opt1/opt2 mostly abandon old energy and chase larger current-block
+    ||A_block v||_2^2.
+  - The oldcorrected score remains energy-dominated enough that this can beat
+    the projected oracle directions even when the oracle directions have
+    maximal new-block relative entropy.
+
+
+Why rel_new is exactly 1 for vj_proj
+------------------------------------
+
+The projection diagnostic uses the current gain row space:
+
+  vj_proj = normalized P_row(M_gain) vj_exact
+
+not just row(A_block). For streaming blocks,
+
+  M_gain = [B_prev; A_block].
+
+Even so, A_block cannot see the component removed by P_row(M_gain), since
+A_block is part of M_gain. Therefore the current-block response shape is the
+same as A_block vj_exact, up to a scalar normalization.
+
+For the static CEX construction, the top left singular directions are
+Hadamard-like and have constant magnitude on each 32-row block. Hence:
+
+  h_new(A_block vj_proj) = log(32)
+  rel_new = h_new / log(32) = 1.
+
+
+Why rel_old is not exactly 1 on block 3
+---------------------------------------
+
+For block 3, old_memory_size=64 and exactly 64 rows have been seen before the
+block. Thus old_row_memory is all raw rows 1:64, not a biased subsample.
+
+The diagnostic found:
+
+  row_sample @ v1_proj:
+    h_old / log(64) = 0.955153424018
+    ||response||_2^2 = 0.575448413951
+    ||response||_4^4 = 0.006234961961
+
+  row_sample @ v2_proj:
+    h_old / log(64) = 0.940585933392
+    ||response||_2^2 = 0.579134385959
+    ||response||_4^4 = 0.006709516526
+
+The old response is not flat because vj_proj is projected onto
+row([B_after_block2; A_block3]), not onto the full raw row space for rows 1:64.
+The projection preserves what the current gain matrix sees, but it does not
+preserve the original raw old-row response shape.
+
+
+New old-row response dump option
+--------------------------------
+
+The inline diagnostic was incorporated into the main script with:
+
+  --dump-oracle-old-row-responses
+  --dump-oracle-old-row-response-block N
+
+Example for the block-3 optimizer-only diagnostic:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected \
+    --no-oracle-candidate-check \
+    --dump-oracle-old-row-responses \
+    --dump-oracle-old-row-response-block 3
+
+The dump prints:
+
+  - old_row_memory_indices_1based
+  - v1_proj_old_row_response
+  - v1_proj_old_row_response_stats: h, rel_h, norm2_sq, norm4_4
+  - v2_proj_old_row_response
+  - v2_proj_old_row_response_stats: h, rel_h, norm2_sq, norm4_4
+
+Use block value 0 to dump every block with old memory.
+
+
+Current takeaway
+----------------
+
+The oldcorrected scaling bug is fixed, and the oracle candidate check exposes
+the early search/span-selection failure. The remaining suspicious behavior is
+objective-level: in block 3, the score can prefer directions with much larger
+current-window energy even when they discard most of the old projected target
+energy and have lower current-window relative entropy.

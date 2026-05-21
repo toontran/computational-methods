@@ -1,0 +1,43 @@
+FAM-01-DIAG T1 gradient check
+========================================================================
+Score: HM(u_sk(Z), u_cur(Z), u_fut(Z)); u_X(Z)=||A_X Z||_F^2/||A_X||_F^2
+Acceptance: score max_rel < 1e-7 and trace sanity < 1e-7
+
+matrix                 block   r         score     max_rel  sanity_rel grad_tan_resid
+--------------------------------------------------------------------------------------
+diffuse-diffuse            1   2    1.7866e-03    3.87e-10    6.50e-10       2.43e-01
+diffuse-diffuse            2   2    1.8340e-03    4.90e-10    1.47e-10       8.90e-02
+diffuse-diffuse           12   2    2.4525e-03    8.48e-10    1.74e-09       2.37e-01
+diffuse-diffuse           31   2    2.1763e-03    1.96e-09    2.00e-10       1.14e-01
+etf-basket-basis           1   2    1.8117e-03    1.86e-10    2.26e-10       6.63e-02
+etf-basket-basis           2   2    1.6197e-03    1.29e-09    2.36e-10       5.33e-02
+etf-basket-basis          12   2    1.4100e-03    9.33e-10    2.67e-10       6.76e-02
+etf-basket-basis          31   2    6.0608e-04    5.09e-10    1.98e-09       4.07e-02
+mixed-tail-balanced        1   2    2.0737e-03    1.01e-09    6.98e-10       2.52e-01
+mixed-tail-balanced        2   2    1.9308e-03    3.61e-10    7.83e-10       1.99e-01
+mixed-tail-balanced       12   2    1.4775e-03    1.63e-09    6.37e-10       6.30e-02
+mixed-tail-balanced       31   2    1.2730e-03    5.13e-10    7.67e-10       6.33e-02
+mixed-tail-sharp           1   2    1.9765e-03    5.84e-08    1.02e-09       2.57e-01
+mixed-tail-sharp           2   2    1.6493e-03    5.51e-10    1.13e-09       8.79e-02
+mixed-tail-sharp          12   2    2.0646e-03    7.42e-10    6.95e-10       1.09e-01
+mixed-tail-sharp          31   2    2.1168e-03    1.95e-09    2.32e-10       1.90e-01
+mixed-tail-soft            1   2    2.2138e-03    1.34e-09    3.34e-09       2.66e-01
+mixed-tail-soft            2   2    6.4908e-04    6.98e-10    1.20e-08       2.30e-02
+mixed-tail-soft           12   2    1.8126e-03    9.79e-10    7.53e-10       1.48e-01
+mixed-tail-soft           31   2    5.2211e-04    7.75e-10    1.18e-09       1.94e-02
+residual-spiky-shocks      1   2    1.7280e-03    1.37e-09    1.58e-09       2.30e-01
+residual-spiky-shocks      2   2    1.5748e-03    2.96e-09    1.78e-09       1.16e-01
+residual-spiky-shocks     12   2    1.8893e-03    5.79e-10    1.30e-09       1.16e-01
+residual-spiky-shocks     31   2    1.2369e-03    2.21e-09    3.55e-10       4.54e-02
+static-cex                 1   2    1.9140e-03    1.37e-09    1.28e-09       2.52e-01
+static-cex                 2   2    1.5770e-03    4.41e-10    3.49e-10       8.37e-02
+static-cex                12   2    1.3992e-03    3.65e-10    6.30e-10       5.69e-02
+static-cex                31   2    1.5395e-03    3.79e-10    6.08e-10       9.23e-02
+
+TOTAL CELLS: 28
+FAILED (score rel >= 1e-7): 0
+FAILED (trace sanity >= 1e-7): 0
+WORST SCORE REL: 5.84e-08
+WORST SANITY REL: 1.20e-08
+ELAPSED_SECONDS: 75.536
+STATUS: PASS

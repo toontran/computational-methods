@@ -1,0 +1,154 @@
+Oracle gradient norms and row/leverage regularization notes
+===========================================================
+
+Context
+-------
+The oracle diagnostic evaluates the entropy-score gradient at
+
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :rank])
+
+where P_row(M_gain) projects into the current gain/sketch row space.
+
+The goal is to determine whether the entropy score is locally aligned with the
+oracle-projected top singular subspace, or whether it has a first-order
+incentive to leave that subspace.
+
+
+Tangent, inside, and outside norms
+----------------------------------
+The optimizer works on the Stiefel manifold:
+
+  Q' Q = I
+
+The raw Euclidean score gradient G is not itself a valid update direction,
+because arbitrary movement can break orthonormality. The diagnostic first
+projects G onto the valid Stiefel tangent space at Q:
+
+  G_tangent = tangent projection of G at Q
+
+The reported norms are Frobenius norms of pieces of this tangent gradient.
+
+1. tangent_norm
+
+   Total valid first-order ascent force:
+
+     tangent_norm = ||G_tangent||_F
+
+   Large tangent_norm means the entropy score still wants to move the frame.
+
+2. inside_norm
+
+   The component that only rotates the columns inside the current Q_oracle
+   subspace. For rank 2, this changes the basis inside the same 2D plane but
+   does not change the plane itself.
+
+   This can improve score without changing the subspace.
+
+3. outside_norm
+
+   The component that changes the subspace itself:
+
+     outside ~= (I - Q Q') G_tangent
+
+   This is the key objective-mismatch diagnostic. A nontrivial outside_norm
+   means the entropy score has a first-order incentive to leave Q_oracle.
+
+
+Observed diagnostic pattern
+---------------------------
+For the documented n=128, win=32, rank=2 static-cex run:
+
+  block      tangent_norm   inside_norm   outside_norm
+  ----------------------------------------------------
+  1:32       0.109811       0.099403      0.046664
+  33:64      0.050759       0.019185      0.046993
+  65:96      0.034971       0.012834      0.032531
+  97:128     0.008981       0.001005      0.008925
+
+Interpretation:
+
+  - Early blocks have a real outward score gradient away from Q_oracle.
+  - The final block still has an outward component, but it is much smaller.
+  - The objective mismatch is not only an optimizer artifact; it is visible at
+    first order in the score gradient.
+
+For block 1, the dominant outside direction is strongly tied to local/block
+structure:
+
+  proj_svec_1_2 = 0.775325
+  proj_svec_1_5 = 0.783716
+  top rows      = 27, 32, 13, 12, 7
+
+This supports the previous interpretation that high-leverage local rows and
+current-window singular structure pull the entropy optimizer away from the
+oracle-projected top-2 target.
+
+
+Row/leverage regularized score
+------------------------------
+The current entropy score can reward a direction v whose current-window
+response is dominated by a few high-energy rows:
+
+  y = A_block v
+
+A row-concentration regularizer penalizes this behavior. A simple first
+candidate is:
+
+  p_i = y_i^2 / sum_j y_j^2
+
+  score_reg(v) = entropy_score(v) - lambda * sum_i p_i^2
+
+The penalty sum_i p_i^2 is large when the response energy is concentrated in a
+few rows and small when the response is spread across many rows.
+
+This is a useful first regularizer because it does not require identifying bad
+rows ahead of time.
+
+
+Leverage-weighted variant
+-------------------------
+A more targeted variant uses row weights:
+
+  score_reg(v) = entropy_score(v) - lambda * sum_i leverage_i * p_i
+
+Possible leverage_i definitions:
+
+  - normalized row norm of A_block,
+  - leverage in the current block top singular-vector span,
+  - leverage in M_gain row structure,
+  - historical/high-frequency influence across adjacent blocks.
+
+For static-cex block 1, the earlier row analysis found high-leverage rows such
+as:
+
+  27, 32, 13, 25, 9
+
+The leverage-weighted penalty would directly reduce the score incentive to tilt
+toward directions explained mostly by those rows.
+
+
+Recommended first experiment
+----------------------------
+Start with the unweighted concentration penalty:
+
+  score_reg(v) = entropy_score(v) - lambda * sum_i p_i^2
+
+Sweep:
+
+  lambda = 0, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2
+
+Compare:
+
+  - final_align
+  - final_relerr
+  - found_vs_Q_oracle
+  - outside_norm at Q_oracle
+  - score_sum / regularized_score_sum
+
+Success criterion:
+
+  A small lambda should reduce early outward attraction away from Q_oracle while
+  preserving the strong final singular-vector recovery.
+
+If the unweighted penalty hurts too much, try the leverage-weighted version
+with row weights based on block row norm or block top-singular-vector leverage.

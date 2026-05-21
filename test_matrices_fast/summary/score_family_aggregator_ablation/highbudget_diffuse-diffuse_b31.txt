@@ -1,0 +1,8 @@
+== matrix=diffuse-diffuse block=31 (high budget) ==
+  anchor       variant   v1_score   v2_score  oracle_v2    Δ(v2−o) cos²(v1,o1) cos²(v2,o2)
+  default      S6          0.0190     0.0189     0.0188    +0.0001       0.146       0.001
+  default      S6_E2       0.3407     0.3390     0.2164    +0.1226       0.447       0.001
+  oracle_v1    S6             nan     0.0189     0.0188    +0.0002         nan       0.272
+  oracle_v1    S6_E2          nan     0.3387     0.2164    +0.1223         nan       0.057
+  sketch_v1    S6             nan     0.0189     0.0188    +0.0002         nan       0.167
+  sketch_v1    S6_E2          nan     0.3398     0.2164    +0.1235         nan       0.219

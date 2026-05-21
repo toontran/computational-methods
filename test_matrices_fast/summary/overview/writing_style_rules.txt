@@ -1,0 +1,236 @@
+Writing-style rules for advisor reports
+=======================================
+
+Date first compiled: 2026-04-28
+Source: corrections applied while drafting
+  reports/approximation/current_report.txt
+Audience for the rules: future-self when revising any LaTeX report
+  in reports/approximation/ (or similar advisor-facing notes).
+
+Use this file as a checklist when drafting and as a diff target after
+each round of advisor feedback.
+
+------------------------------------------------------------------
+1. Banned words and phrases
+------------------------------------------------------------------
+
+Hard-banned (replace, never use):
+
+  - "proxy"        -> name the actual quantity ("approximation of X",
+                      "X-style inner product using current+future rows"
+                      depending on what is meant)
+  - "response"     -> use the explicit norm or vector
+                      (||A_X v||_2^2, "image A_X v", or just A_X v)
+  - "prefix"       -> "history", "past", "rows seen so far"
+                      ("full-prefix scale" -> "full-history scale")
+  - "carried sketch", "the carry"  -> just "sketch"
+                      ("carry index" -> "sketch-direction index";
+                       "no carry" -> "B = 0";
+                       "carry-only directions" -> "sketch-only
+                       directions"). Verb sense ("features do not
+                       carry information") is unrelated and OK.
+
+Soft-banned (avoid; use only if no alternative):
+
+  - "concrete"     -> drop (it's the reader's call whether something
+                      is concrete). Most uses are filler:
+                      "three concrete mechanisms" -> "three
+                      mechanisms"; "concrete norm condition" ->
+                      state the condition.
+  - "pin / pinned / pins"  -> describe the mechanism instead.
+                      "M2 pins slot-2 to span(V_state)" ->
+                      "the sketch term aligns slot-2 with
+                       span(V_state)".
+                      Exception: imperative usage in open-work lists
+                      ("pin the RNG seed") is fine.
+  - "essentially", "actually", "directly" as filler -> drop unless
+                      load-bearing.
+
+Style of "we" / passive voice:
+
+  - "We extend each ..." -> "Extend each ..."
+  - "We use it to extract directions" -> "Directions are extracted ..."
+  - Keep "we" only where it disambiguates an authorial choice.
+
+------------------------------------------------------------------
+2. No unsupported geometric / mechanistic claims
+------------------------------------------------------------------
+
+Rule: every assertion about what a direction does (e.g. "produces a
+concentrated A_w v", "loses by mathematical construction") must be
+either (a) a measurement reported in this document or (b) a math
+identity. Do not infer geometric properties of the oracle from the
+score-decomposition data and then state them as fact.
+
+Examples of corrections actually made:
+
+  BEFORE  "M1: v_oracle produces a concentrated A_w v_oracle, and phi
+          rewards spread, so the oracle loses by mathematical
+          construction."
+  AFTER   "M1: phi_w ranks the combined argmax above the oracle. On
+          mixed-tail-sharp at block 1 the score gap between
+          v^(combined)_2 and v^(oracle proj)_2 sits entirely inside
+          phi_1 (5.66 vs 3.70, energy term flat at 0.819-0.833)."
+
+  BEFORE  "the carried sketch pins slot-2 to span(V_state)"
+  AFTER   "once ||Bv||^2 >> ||A_w v||^2 the energy term reduces to
+          ||Bv||^2, whose argmax over the deflation complement lies
+          in span(B); state_align(v^(combined)_2) = 0.989 vs
+          state_align(v^(oracle proj)_2) = 0.293 at block 31"
+
+When tempted to write a one-liner mechanism claim, attach the table
+row or measurement that supports it. If neither exists, label the
+statement as a working hypothesis (see section 5 below).
+
+------------------------------------------------------------------
+3. Notation conventions for streaming-SVD reports
+------------------------------------------------------------------
+
+Use these consistently across sections and appendices:
+
+  v^_i^(sigma)         i-th greedy direction extracted by score sigma
+                         (e.g. sigma in {combined, S_6, S_6+E_2,
+                          S_1, S_2, S_3, HM_2, ...})
+                       LaTeX: \hat v^{(\mathrm{combined})}_i etc.
+
+  v^_i^(oracle proj)   projection of the i-th oracle right singular
+                         vector onto the relevant deflation
+                         complement / row span.
+                       LaTeX: \hat v^{(\mathrm{oracle\,proj})}_i
+
+  Z^(sigma)            joint Stiefel(d,2) argmax under score sigma.
+                       LaTeX: \hat Z^{(\sigma)}
+
+  Z_oracle             oracle frame [v_1^*, v_2^*]                 .
+                       LaTeX: Z_{\mathrm{oracle}}
+
+  v_i^*                exact oracle right singular vector (no
+                         projection); use only when distinguishing
+                         from v^_i^(oracle proj).
+
+  rho_past, rho_B      energy ratios:
+                         rho_past := ||A_{1:w-1}||_F^2 / ||A_w||_F^2
+                         rho_B    := ||B||_F^2 / ||A_w||_F^2
+                       Used in the M2 / sketch-dominance discussion.
+
+Drop "slot-1" / "slot-2 winner" terminology in favor of the explicit
+indexed vectors. Keep "slot" only when it refers to the three feature
+slots of the score (u_sk, u_cur, u_fut).
+
+------------------------------------------------------------------
+4. State definitions and objectives explicitly
+------------------------------------------------------------------
+
+Recap paragraphs must include:
+
+  - The score formula in closed form (not just a name).
+  - The optimization objective. For the combined score:
+        v^_i^(combined) in argmax_{v in S^{d-1}, v perp v^_j^(combined)
+                                  for all j < i} score_w(v).
+  - The reference (oracle): top-r right singular vectors of A.
+  - The entropy-style term in its simplest form:
+        phi_w(v) = (n/k)^{h_2(C_w v) / (2 log k)},
+        n = rows(A), k = rows(C_w), C_w = (R^T, A_w^T)^T,
+        h_2(y) = 4 log ||y||_2 - 4 log ||y||_4.
+
+Avoid hand-wavy wrappers like "multiplies an energy term on the
+carried sketch B and the current window A_w by a pooled-entropy
+correction phi_w(v)". Just write the formula and define each symbol.
+
+------------------------------------------------------------------
+5. Hypotheses vs facts; placeholders
+------------------------------------------------------------------
+
+A unifying claim that is suggestive but not yet measured ("the
+residual problem after S_6 is a misleading combination of window-local
+tails") must be marked as a working hypothesis, with a one-line
+statement of what experiment will test it. Use a paragraph header
+like "(working hypothesis)" or an explicit "[Placeholder for the
+M1-M3 -> X bridge.]" note. Do not narrate the hypothesis as if
+verified.
+
+If a planned experiment is not yet run (e.g. probe_m1m2m3_unification),
+do not link to its output file as if it exists. Either run it, or
+remove the pointer and frame the bridge as hypothesis.
+
+------------------------------------------------------------------
+6. Evidence vs main body
+------------------------------------------------------------------
+
+Main body: claim + one headline number per claim + pointer to
+appendix. Keep narrative tight; resist the temptation to put the
+table inline.
+
+Appendix: setup paragraph (what matrix, which block, which control),
+the table verbatim, then a "Reading" paragraph that draws only what
+the table supports. Be more abundant than strictly necessary in the
+appendix - extra block trajectories, extra random controls, extra
+seven-matrix sweeps - so the advisor never needs to ask "do you have
+the rest of this?".
+
+When making revisions, the abundance test for the appendix is:
+remove every numeric value that does not appear elsewhere in the
+report and ask whether the appendix still answers a follow-up the
+advisor might raise. If not, add it back, or run it and add it.
+
+------------------------------------------------------------------
+7. Brevity micro-rules
+------------------------------------------------------------------
+
+  - "We extend each Rayleigh-type slot to an orthonormal pair Z=..."
+        -> "Extend each u_X to an orthonormal pair Z=..."
+  - "We use random restarts warm-started from ..."
+        -> "Random restarts are warm-started from ..."
+  - "the conclusion is structural: per-direction reweighting balances
+     the oracle's slot values, but in doing so it relocates the
+     score's actual peak away from the oracle"
+        -> "per-direction reweighting balances the oracle's slot
+            values but relocates the score's peak away from the
+            oracle"
+  - Avoid stacking adverbs ("essentially flat", "actually identifies",
+    "directly tests"); pick one or none.
+
+------------------------------------------------------------------
+8. H3 / design-choice advocacy
+------------------------------------------------------------------
+
+When justifying a design choice (H3 = the evidence-sufficiency
+sweep), do not write claims like "lowest commitment cost", "highest
+information yield per experiment", "the right next step". State the
+properties of the choice (per-feature falsifiable output;
+optimiser-vs-feature-set separation; reusable screens) and let the
+reader judge.
+
+------------------------------------------------------------------
+9. Compile and integrity sweep before sending
+------------------------------------------------------------------
+
+Pre-compile checklist (run as one block):
+
+  grep -nE 'proxy|response|prefix|carried sketch|carried|carry index|no carry|pinned three|three concrete|by mathematical construction|produces a concentrated' \
+       reports/approximation/current_report.txt \
+    || echo "OK: clean"
+
+  grep -nE '\\end\{align>|\\end\{center>|\\end\{quote>' \
+       reports/approximation/current_report.txt \
+    || echo "OK: no LaTeX delimiter typos"
+
+Then:
+  cd reports/approximation
+  bash compile_txt_report.sh current_report.txt
+
+Overfull-hbox warnings are cosmetic; only investigate if they exceed
+~50 pt or break the layout.
+
+------------------------------------------------------------------
+10. Workflow note for parallel revisions
+------------------------------------------------------------------
+
+For multi-section rewrites, dispatch one agent per disjoint section
+and have each write its revised fragment to a separate file in
+/tmp/report_revisions/, then concatenate. Never have parallel agents
+edit the same file.
+
+After splicing, run the integrity sweep (section 9) and re-check for
+agent-introduced banned words (one of the agents reintroduced
+"prefix" via "full-prefix scale" - the integrity grep caught it).

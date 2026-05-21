@@ -1,0 +1,84 @@
+Quick tests for the streaming methods in this repo
+
+The main entry point is:
+
+python3 -u main.py <matrix_name> <method> [stream_size] [k] [score_rank]
+
+From codex_context.txt, the quickest useful methods to test are:
+- isvd
+- entropyscore_forget
+- entropyscore_forget_svd_aux
+
+Good fast sanity checks
+
+1. Baseline iSVD run
+Use this first to confirm the pipeline works and writes diagnostics.
+
+python3 -u main.py kernel_stocks_1000_0.2236 isvd 12 4
+
+2. Direct comparison against entropyscore_forget
+This is the small case discussed in codex_context.txt.
+
+python3 -u main.py kernel_stocks_1000_0.2236 entropyscore_forget 12 4
+python3 -u main.py kernel_stocks_1000_0.2236 isvd 12 4
+
+What to compare:
+- `leftout_data_*.txt`
+- `canonical_angles_data_*.txt`
+- `spectrum_data_*.txt`
+
+The context says this pair is useful for checking:
+- whether `leftout` files are being written
+- whether `throw_left_projected_true` stays nonnegative up to float noise
+- whether entropyscore_forget is still worse or better than isvd on summed throw
+
+3. Higher-sketch aux test
+This is the next quick check if you want to probe the known difficult path.
+
+python3 -u main.py kernel_stocks_1000_0.2236 entropyscore_forget_svd_aux 199 14 4
+python3 -u main.py kernel_stocks_1000_0.2236 isvd 199 10
+
+This pair is useful because codex_context.txt says the `svd_aux` path had a real carry-state bug and still needs diagnostic checking even after that fix.
+
+What files to inspect after a run
+
+Each run writes an output directory whose name includes the matrix, method, stream size, rank, and optional score rank. The most useful quick-test files are:
+
+- `leftout_data_*.txt`
+- `canonical_angles_data_*.txt`
+- `spectrum_data_*.txt`
+
+What they mean in practice:
+- `leftout_data_*.txt`: fastest place to check retained-vs-thrown mass
+- `canonical_angles_data_*.txt`: quickest subspace-quality check
+- `spectrum_data_*.txt`: quickest singular-value / approximation check
+
+Quick pass/fail checks
+
+For `isvd`:
+- make sure `leftout_data_*.txt` exists
+- make sure `throw` values are small and only slightly negative at worst due to float noise
+
+For `entropyscore_forget`:
+- make sure `leftout_mode = "left_projected_operator_svd"` appears
+- check `throw_left_projected_true`
+- check `keep_left_projector_vs_factor_gap` is near zero
+
+For `entropyscore_forget_svd_aux`:
+- verify later windows are not effectively cold starts
+- inspect `throw_left_projected_true`
+- inspect `keep_left_projector_direct`
+- inspect `keep_left_projector_vs_factor_gap`
+
+Useful one-line grep checks
+
+rg -n "leftout_mode|throw|keep_left_projector_vs_factor_gap" output output2
+rg --files output output2 | rg "leftout_data_|canonical_angles_data_|spectrum_data_"
+
+If you want a batch sweep
+
+There is already a helper script for parameter sweeps:
+
+./run_sweep.sh
+
+From the current script contents, it is already set up around `entropyscore_forget_svd_aux`, so it is the fastest way to scan several `(score_rank, k, win_size)` combinations once the single-run checks above are working.

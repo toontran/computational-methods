@@ -1,0 +1,175 @@
+Mixed-tail-sharp per-block objective probe synthesis
+===================================================
+
+Date: 2026-04-23
+
+Artifacts
+---------
+- `summary/mixed_tail_sharp_per_block_objective_probe.json`
+- `summary/mixed_tail_sharp_per_block_objective_probe.csv`
+- `summary/mixed_tail_sharp_per_block_objective_probe.txt`
+
+
+Question answered
+-----------------
+Is `b2` uniquely bad, or is it the first visible instance of the same
+objective mismatch that later causes the collapse?
+
+Answer:
+
+- `b2` is not unique.
+- It is an early microscope for the mismatch.
+- The same qualitative disagreement between score families reappears later,
+  including in the late-failure region around `b25-b27`.
+
+
+Main findings
+-------------
+1. In `normal`, the full current objective and the oracle-free diagnostics do
+   not rank candidates the same way.
+
+   Aggregate winner counts across all 32 blocks:
+
+   - `full_score`: `q2_raw_projected` wins 23 blocks, `opt2` wins 9.
+   - `block_score`: mostly `mgain_deflated_svd` / `block_complement`
+     (13 + 11 wins), with `opt2` winning only 2 blocks.
+   - `block_gain`: entirely complement-like (`mgain_deflated_svd` 15,
+     `block_complement` 17).
+   - `hard_complement_block`: mostly oracle-like
+     (`q2_raw_projected` 17, `q2_vs_q1oracle` 12).
+   - `future_hmean`: entirely oracle-like except one block
+     (`q2_raw_projected` 18, `q2_vs_q1oracle` 12, `opt2_outside` 1).
+
+   So the basic picture from the earlier benchmark persists in the fixed
+   mixed-tail-sharp trajectory:
+
+   - raw/complement-only block criteria are not aligned with the useful
+     direction;
+   - future-consistency and hard complement control keep preferring the
+     oracle-like continuation;
+   - the selected `opt2` wins only under the actual carried objective in a
+     minority of blocks, but those are enough to damage the trajectory.
+
+2. `b2` is an early instance of that mismatch, not a one-off anomaly.
+
+   `normal`, `b2`:
+
+   - `full_score`: `opt2` wins (`3.2884`) over oracle candidates
+     (`q2_raw_projected=2.6580`, `q2_vs_q1oracle=2.6534`).
+   - `block_score`: oracle candidates win strongly
+     (`2.6166`, `2.6157`) over `opt2` (`1.7420`).
+   - `future_hmean`: oracle candidates also win strongly
+     (`0.6420`, `0.6382`) over `opt2` (`0.2402`).
+   - `opt2` has tiny oracle mass (`0.0178`), while oracle candidates have
+     oracle mass `1.0`.
+
+   This is exactly the mismatch the handoff suspected:
+
+   - the carried objective prefers a non-oracle continuation;
+   - corrected block-only score does not support that choice;
+   - future-consistency also does not support that choice.
+
+3. A midstream "good" block still shows the same mismatch.
+
+   `normal`, `b8` is a clean representative example:
+
+   - `full_score`: `opt2` wins (`1.6525`) over oracle candidates
+     (`1.6088`, `1.5681`).
+   - `block_score`: oracle/complement candidates win, with
+     `mgain_deflated_svd` / `block_complement` on top.
+   - `hard_complement_block` and `future_hmean`: both prefer oracle
+     candidates.
+   - `opt2` oracle mass is still small (`0.0752`).
+
+   So the early-vs-late story is not "only b2 is pathological". The same
+   objective disagreement is already present in midstream blocks that have not
+   yet catastrophically collapsed.
+
+4. The late failure region changes character, but it is still the same family
+   of mismatch.
+
+   `normal`, `b25-b27`:
+
+   - `b25`: `full_score` still prefers oracle candidates, but `block_score`
+     flips to `opt2` / `opt2_outside`; `opt2` oracle mass is only `0.0022`.
+   - `b26`: `full_score` prefers oracle candidates, `block_score` prefers the
+     current-block complement, and `future_hmean` still prefers oracle.
+   - `b27`: `full_score` now prefers `opt2`, `block_score` is almost entirely
+     complement-like, and `opt2` has complement alignment `0.9838`.
+
+   Interpretation:
+
+   - late blocks are not just a replay of `b2`;
+   - by `b25-b27`, the selected `opt2` can become almost a complement
+     direction even when future/hard-complement probes still prefer the
+     oracle-like continuation.
+
+
+Intervention readout
+--------------------
+1. `force-b1` improves the local `b2` state, but does not remove the mismatch.
+
+   `force-b1`, `b2`:
+
+   - `full_score` is now much closer:
+     `q2_raw_projected=3.3367`, `opt2=3.3038`, `q2_vs_q1oracle=3.2699`.
+   - `block_score` still prefers a non-oracle direction:
+     `opt2_outside=1.8231` is the winner.
+   - `future_hmean` still prefers oracle candidates.
+
+   So the forced first block helps, but the objective handoff problem is still
+   visible immediately at `b2`.
+
+2. `force-b1b2` largely fixes `b2`, but the late mismatch returns.
+
+   `force-b1b2`, `b2`:
+
+   - `opt2` and `q2_vs_q1oracle` are identical.
+   - `hard_complement_block` is fully oracle-like.
+   - `future_hmean` is still slightly won by `opt2_outside`, but all top
+     candidates are nearly oracle-aligned here.
+
+   However, in the late region:
+
+   - `b25`: `block_score` and `hard_complement_block` prefer `opt2_outside`
+     or `opt2`, while `future_hmean` prefers oracle candidates.
+   - `b26`: `full_score` prefers `opt2`, but `block_score`,
+     `hard_complement_block`, and `future_hmean` all prefer oracle-like
+     directions.
+   - `b27`: `full_score` prefers `opt2`, `block_score` is almost pure
+     complement, and `opt2` complement alignment is `0.9864`.
+
+   So forcing both early blocks delays the visible failure, but does not
+   remove the deeper per-block objective mismatch.
+
+
+Conclusion
+----------
+The recommended next-step probe confirms the handoff hypothesis:
+
+- `b2` is a useful microscope, not a unique special case.
+- The same ranking disagreement appears in midstream blocks and reappears in
+  stronger form near `b25-b27`.
+- The late region is qualitatively harsher because `opt2` can become almost a
+  complement direction, but future-consistency and hard-complement probes
+  continue to prefer oracle-like candidates.
+
+This strengthens the "compression / objective handoff" diagnosis:
+
+- early interventions can improve local blocks,
+- but the carried online objective keeps producing blocks where the selected
+  second slot disagrees with the oracle-like continuation under future-aware
+  diagnostics.
+
+
+Most actionable follow-up
+-------------------------
+If the next task is another implementation step, the cleanest target is now:
+
+- test an online objective variant that replaces or augments the current
+  second-slot score with a conservative hard-complement guard first, and
+- separately test whether a lightweight future-consistency proxy can be
+  approximated online without using oracle information.
+
+The new per-block probe is the right offline benchmark for evaluating either
+change.

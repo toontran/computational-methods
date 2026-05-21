@@ -1,0 +1,227 @@
+
+=== mean_exact_cos1 (higher is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.9984    0.9984    0.9983    0.9985    0.9986     future_hmean_evidence
+diffuse-diffuse                0.2324    0.5744    0.6175    0.6214    0.4165     future_hmean_online
+etf-basket-basis               0.9992    0.9992    0.9993    0.9991    0.9992     isvd
+execution-cost-slippage        0.9991    0.9990    0.9993    0.9988    0.9992     isvd
+futures-term-structure         0.9991    0.9992    0.9992    0.9992    0.9993     future_hmean_evidence
+intraday-liquidity-shape       0.9994    0.9993    0.9995    0.9993    0.9993     isvd
+macro-factor-panel             0.9995    0.9995    0.9995    0.9995    0.9995     combined
+mixed-tail-balanced            0.4532    0.2861    0.1229    0.6892    0.4531     future_hmean_online
+mixed-tail-sharp               0.5079    0.3595    0.0738    0.6911    0.4940     future_hmean_online
+mixed-tail-soft                0.2166    0.4900    0.2087    0.6904    0.6173     future_hmean_online
+options-vol-surface            0.9994    0.9995    0.9994    0.9994    0.9995     hybrid
+rates-cross-currency           0.9988    0.9989    0.9992    0.9988    0.9989     isvd
+realized-vol-corr              0.9992    0.9992    0.9993    0.9992    0.9992     isvd
+residual-spiky-shocks          0.3719    0.6319    0.6525    0.2749    0.3098     isvd
+risk-residual-panel            0.2413    0.3842    0.4546    0.3512    0.1882     isvd
+stat-arb-spreads               0.9995    0.9995    0.9995    0.9995    0.9995     isvd
+static-cex                     0.6818    0.6657    0.0636    0.6908    0.6931     future_hmean_evidence
+
+=== mean_exact_cos2 (higher is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.9815    0.9922    0.9913    0.9486    0.9391     hybrid
+diffuse-diffuse                0.1013    0.0377    0.2991    0.3172    0.2642     future_hmean_online
+etf-basket-basis               0.0249    0.1730    0.1906    0.8142    0.8258     future_hmean_evidence
+execution-cost-slippage        0.9819    0.9919    0.9944    0.9588    0.9094     isvd
+futures-term-structure         0.9988    0.9989    0.9990    0.9905    0.9952     isvd
+intraday-liquidity-shape       0.9940    0.9966    0.9968    0.9854    0.9789     isvd
+macro-factor-panel             0.9980    0.9986    0.9986    0.9940    0.9892     hybrid
+mixed-tail-balanced            0.0377    0.0545    0.0369    0.4373    0.1660     future_hmean_online
+mixed-tail-sharp               0.0536    0.0188    0.0264    0.4896    0.2195     future_hmean_online
+mixed-tail-soft                0.0605    0.0746    0.0053    0.4427    0.2313     future_hmean_online
+options-vol-surface            0.9925    0.9631    0.9631    0.9100    0.8865     combined
+rates-cross-currency           0.9970    0.9973    0.9974    0.9919    0.9850     isvd
+realized-vol-corr              0.9915    0.9927    0.9935    0.9804    0.9671     isvd
+residual-spiky-shocks          0.0218    0.2214    0.3786    0.1153    0.1162     isvd
+risk-residual-panel            0.0779    0.0839    0.3239    0.0872    0.0682     isvd
+stat-arb-spreads               0.9986    0.9963    0.9954    0.9800    0.9729     combined
+static-cex                     0.5731    0.0322    0.0105    0.4717    0.2777     combined
+
+=== mean_relerr_sval (lower is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.0158    0.0158    0.0164    0.0158    0.0158     future_hmean_evidence
+diffuse-diffuse                0.0503    0.0151    0.0090    0.0116    0.0379     isvd
+etf-basket-basis               0.0146    0.0146    0.0147    0.0145    0.0145     future_hmean_evidence
+execution-cost-slippage        0.0149    0.0149    0.0148    0.0149    0.0148     isvd
+futures-term-structure         0.0146    0.0146    0.0146    0.0148    0.0146     isvd
+intraday-liquidity-shape       0.0135    0.0135    0.0135    0.0135    0.0135     isvd
+macro-factor-panel             0.0165    0.0165    0.0165    0.0165    0.0165     future_hmean_evidence
+mixed-tail-balanced            0.0295    0.0199    0.0180    0.0052    0.0318     future_hmean_online
+mixed-tail-sharp               0.0206    0.0138    0.0135    0.0048    0.0235     future_hmean_online
+mixed-tail-soft                0.0550    0.0201    0.0192    0.0050    0.0128     future_hmean_online
+options-vol-surface            0.0159    0.0159    0.0159    0.0159    0.0159     hybrid
+rates-cross-currency           0.0144    0.0144    0.0144    0.0144    0.0144     isvd
+realized-vol-corr              0.0173    0.0173    0.0173    0.0173    0.0173     combined
+residual-spiky-shocks          0.1337    0.0565    0.0369    0.1570    0.1530     isvd
+risk-residual-panel            0.1116    0.0755    0.0494    0.1062    0.1123     isvd
+stat-arb-spreads               0.0128    0.0131    0.0133    0.0128    0.0127     future_hmean_evidence
+static-cex                     0.0039    0.0010    0.0010    0.0048    0.0025     isvd
+
+=== final_exact_cos1 (higher is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               1.0000    1.0000    1.0000    1.0000    1.0000     hybrid
+diffuse-diffuse                0.4592    0.9125    0.9114    0.9432    0.7015     future_hmean_online
+etf-basket-basis               1.0000    1.0000    1.0000    1.0000    1.0000     isvd
+execution-cost-slippage        1.0000    1.0000    1.0000    1.0000    1.0000     combined
+futures-term-structure         1.0000    1.0000    1.0000    1.0000    1.0000     hybrid
+intraday-liquidity-shape       1.0000    1.0000    1.0000    1.0000    1.0000     hybrid
+macro-factor-panel             1.0000    1.0000    1.0000    1.0000    1.0000     isvd
+mixed-tail-balanced            0.8101    0.2163    0.1816    0.9814    0.7839     future_hmean_online
+mixed-tail-sharp               0.8741    0.0643    0.0785    0.9830    0.8527     future_hmean_online
+mixed-tail-soft                0.4819    0.8387    0.3585    0.9833    0.9368     future_hmean_online
+options-vol-surface            1.0000    1.0000    1.0000    1.0000    1.0000     future_hmean_evidence
+rates-cross-currency           1.0000    1.0000    1.0000    1.0000    1.0000     isvd
+realized-vol-corr              1.0000    1.0000    1.0000    1.0000    1.0000     isvd
+residual-spiky-shocks          0.6679    0.8953    0.9298    0.4471    0.5440     isvd
+risk-residual-panel            0.3207    0.6235    0.6107    0.5188    0.3006     hybrid
+stat-arb-spreads               1.0000    1.0000    1.0000    1.0000    1.0000     combined
+static-cex                     0.9756    0.9682    0.0448    0.9817    0.9845     future_hmean_evidence
+
+=== final_exact_cos2 (higher is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.9962    0.9989    0.9990    0.9673    0.9819     isvd
+diffuse-diffuse                0.1721    0.0595    0.4892    0.5277    0.3394     future_hmean_online
+etf-basket-basis               0.0173    0.1856    0.2051    0.9623    0.8886     future_hmean_online
+execution-cost-slippage        0.9926    0.9975    0.9984    0.9995    0.9716     future_hmean_online
+futures-term-structure         1.0000    1.0000    1.0000    1.0000    0.9957     isvd
+intraday-liquidity-shape       0.9999    1.0000    1.0000    0.9677    0.9556     hybrid
+macro-factor-panel             1.0000    1.0000    1.0000    0.9845    0.9850     isvd
+mixed-tail-balanced            0.0438    0.0923    0.0596    0.8268    0.2750     future_hmean_online
+mixed-tail-sharp               0.0273    0.0300    0.0128    0.8500    0.2762     future_hmean_online
+mixed-tail-soft                0.1133    0.1231    0.0025    0.0192    0.0816     hybrid
+options-vol-surface            0.9983    0.9828    0.9828    0.9990    0.6914     future_hmean_online
+rates-cross-currency           1.0000    1.0000    1.0000    0.9732    0.9612     combined
+realized-vol-corr              0.9994    0.9995    0.9995    1.0000    0.9676     future_hmean_online
+residual-spiky-shocks          0.0283    0.5699    0.6375    0.2459    0.3455     isvd
+risk-residual-panel            0.0927    0.0846    0.4714    0.0636    0.0758     isvd
+stat-arb-spreads               0.9998    0.9993    0.9991    0.9998    0.9958     combined
+static-cex                     0.9125    0.0316    0.0442    0.8186    0.2733     combined
+
+=== final_tail_mass (lower is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.0038    0.0011    0.0010    0.0322    0.0179     isvd
+diffuse-diffuse                0.8798    0.5819    0.4650    0.4159    0.6964     future_hmean_online
+etf-basket-basis               0.4999    0.4828    0.4790    0.0370    0.1052     future_hmean_online
+execution-cost-slippage        0.0074    0.0025    0.0016    0.0006    0.0280     future_hmean_online
+futures-term-structure         0.0000    0.0000    0.0000    0.0000    0.0043     isvd
+intraday-liquidity-shape       0.0001    0.0000    0.0000    0.0318    0.0434     hybrid
+macro-factor-panel             0.0000    0.0000    0.0000    0.0154    0.0149     isvd
+mixed-tail-balanced            0.6709    0.9723    0.9817    0.1767    0.6549     future_hmean_online
+mixed-tail-sharp               0.6176    0.9975    0.9968    0.1556    0.5983     future_hmean_online
+mixed-tail-soft                0.8775    0.6407    0.9357    0.5164    0.5578     future_hmean_online
+options-vol-surface            0.0017    0.0170    0.0170    0.0011    0.2610     future_hmean_online
+rates-cross-currency           0.0000    0.0001    0.0000    0.0264    0.0381     combined
+realized-vol-corr              0.0006    0.0005    0.0005    0.0000    0.0319     future_hmean_online
+residual-spiky-shocks          0.7766    0.4368    0.3645    0.8698    0.7923     isvd
+risk-residual-panel            0.9443    0.8020    0.7024    0.8634    0.9519     isvd
+stat-arb-spreads               0.0002    0.0007    0.0009    0.0002    0.0042     combined
+static-cex                     0.1078    0.5308    0.9980    0.1831    0.4780     combined
+
+=== elapsed (lower is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               3.109     1.529     0.355     2.865     55.324     isvd
+diffuse-diffuse                5.480     2.531     0.342     4.465     47.560     isvd
+etf-basket-basis               3.011     1.625     0.345     2.926     33.121     isvd
+execution-cost-slippage        2.837     1.363     0.356     2.810     40.770     isvd
+futures-term-structure         3.409     1.919     0.352     3.373     48.820     isvd
+intraday-liquidity-shape       3.002     1.524     0.348     2.939     33.988     isvd
+macro-factor-panel             2.711     1.343     0.356     2.701     34.670     isvd
+mixed-tail-balanced            4.796     2.551     0.343     4.090     46.370     isvd
+mixed-tail-sharp               4.352     2.160     0.340     3.949     46.524     isvd
+mixed-tail-soft                5.569     2.658     0.338     4.123     46.266     isvd
+options-vol-surface            2.858     1.398     0.352     2.747     36.264     isvd
+rates-cross-currency           3.046     1.466     0.349     3.026     32.753     isvd
+realized-vol-corr              3.007     1.506     0.351     2.887     37.699     isvd
+residual-spiky-shocks          5.095     2.521     0.348     5.084     49.678     isvd
+risk-residual-panel            5.401     2.786     0.343     4.907     53.267     isvd
+stat-arb-spreads               3.148     1.841     0.350     3.114     48.536     isvd
+static-cex                     4.342     1.641     0.359     4.134     42.512     isvd
+
+=== sec_per_step (lower is better) ===
+matrix                         comb      hybr      isvd      online    evi        winner
+----------------------------------------------------------------------------------------
+crowded-strategy               0.100     0.049     0.011     0.092     1.785      isvd
+diffuse-diffuse                0.177     0.082     0.011     0.144     1.534      isvd
+etf-basket-basis               0.097     0.052     0.011     0.094     1.068      isvd
+execution-cost-slippage        0.092     0.044     0.011     0.091     1.315      isvd
+futures-term-structure         0.110     0.062     0.011     0.109     1.575      isvd
+intraday-liquidity-shape       0.097     0.049     0.011     0.095     1.096      isvd
+macro-factor-panel             0.087     0.043     0.011     0.087     1.118      isvd
+mixed-tail-balanced            0.155     0.082     0.011     0.132     1.496      isvd
+mixed-tail-sharp               0.140     0.070     0.011     0.127     1.501      isvd
+mixed-tail-soft                0.180     0.086     0.011     0.133     1.492      isvd
+options-vol-surface            0.092     0.045     0.011     0.089     1.170      isvd
+rates-cross-currency           0.098     0.047     0.011     0.098     1.057      isvd
+realized-vol-corr              0.097     0.049     0.011     0.093     1.216      isvd
+residual-spiky-shocks          0.164     0.081     0.011     0.164     1.603      isvd
+risk-residual-panel            0.174     0.090     0.011     0.158     1.718      isvd
+stat-arb-spreads               0.102     0.059     0.011     0.100     1.566      isvd
+static-cex                     0.140     0.053     0.012     0.133     1.371      isvd
+
+=== Win counts across 17 matrices (sliding) ===
+metric                 comb      hybr      isvd      online    evi      
+mean_exact_cos1        1         1         8         4         3        
+mean_exact_cos2        3         2         7         4         1        
+mean_relerr_sval       1         1         8         3         4        
+final_exact_cos1       2         4         5         4         2        
+final_exact_cos2       3         2         5         7         0        
+final_tail_mass        3         1         5         8         0        
+elapsed                0         0         17        0         0        
+sec_per_step           0         0         17        0         0        
+
+=== Elapsed (s) summary across 17 matrices ===
+policy                     min      median   mean     max      total   
+combined                   2.71     3.15     3.83     5.57     65.2    
+hybrid                     1.34     1.64     1.90     2.79     32.4    
+isvd                       0.34     0.35     0.35     0.36     5.9     
+future_hmean_online        2.70     3.11     3.54     5.08     60.1    
+future_hmean_evidence      32.75    46.27    43.18    55.32    734.1   
+
+=== Speedup of isvd vs each other policy (median across 17 matrices) ===
+  isvd is   9.0x faster than combined
+  isvd is   4.7x faster than hybrid
+  isvd is   8.9x faster than future_hmean_online
+  isvd is 132.6x faster than future_hmean_evidence
+
+=== future_hmean_evidence vs each baseline (W/T/L across 17 matrices) ===
+  vs combined               mean_exact_cos1        evi W/T/L = 10/0/7
+  vs combined               mean_exact_cos2        evi W/T/L = 6/0/11
+  vs combined               mean_relerr_sval       evi W/T/L = 10/2/5
+  vs combined               final_exact_cos1       evi W/T/L = 4/5/8
+  vs combined               final_exact_cos2       evi W/T/L = 5/0/12
+  vs combined               final_tail_mass        evi W/T/L = 5/0/12
+  vs combined               elapsed                evi W/T/L = 0/0/17
+  vs combined               sec_per_step           evi W/T/L = 0/0/17
+  vs hybrid                 mean_exact_cos1        evi W/T/L = 11/1/5
+  vs hybrid                 mean_exact_cos2        evi W/T/L = 6/0/11
+  vs hybrid                 mean_relerr_sval       evi W/T/L = 6/1/10
+  vs hybrid                 final_exact_cos1       evi W/T/L = 4/6/7
+  vs hybrid                 final_exact_cos2       evi W/T/L = 5/0/12
+  vs hybrid                 final_tail_mass        evi W/T/L = 5/0/12
+  vs hybrid                 elapsed                evi W/T/L = 0/0/17
+  vs hybrid                 sec_per_step           evi W/T/L = 0/0/17
+  vs isvd                   mean_exact_cos1        evi W/T/L = 8/0/9
+  vs isvd                   mean_exact_cos2        evi W/T/L = 5/0/12
+  vs isvd                   mean_relerr_sval       evi W/T/L = 6/0/11
+  vs isvd                   final_exact_cos1       evi W/T/L = 6/3/8
+  vs isvd                   final_exact_cos2       evi W/T/L = 5/0/12
+  vs isvd                   final_tail_mass        evi W/T/L = 5/0/12
+  vs isvd                   elapsed                evi W/T/L = 0/0/17
+  vs isvd                   sec_per_step           evi W/T/L = 0/0/17
+  vs future_hmean_online    mean_exact_cos1        evi W/T/L = 11/0/6
+  vs future_hmean_online    mean_exact_cos2        evi W/T/L = 3/0/14
+  vs future_hmean_online    mean_relerr_sval       evi W/T/L = 9/1/7
+  vs future_hmean_online    final_exact_cos1       evi W/T/L = 4/5/8
+  vs future_hmean_online    final_exact_cos2       evi W/T/L = 5/0/12
+  vs future_hmean_online    final_tail_mass        evi W/T/L = 3/0/14
+  vs future_hmean_online    elapsed                evi W/T/L = 0/0/17
+  vs future_hmean_online    sec_per_step           evi W/T/L = 0/0/17

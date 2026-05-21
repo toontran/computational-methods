@@ -1,0 +1,668 @@
+Consolidated debug techniques and workflows
+===========================================
+
+Date: 2026-04-19
+
+Purpose
+-------
+This file consolidates the debugging techniques from the summary folder. It is
+organized as a practical workflow for diagnosing restricted/streaming CEX
+failures, especially cases where score optimization, span preservation, and
+final SVD recovery disagree.
+
+
+Core invariant to debug against
+-------------------------------
+For a target right vector v and current gain matrix
+
+  M_gain = [B_prev; A_block],
+
+define the normalized projected target
+
+  p = P_row(M_gain) v / ||P_row(M_gain) v||.
+
+If the selected rank-r right subspace contains p, exact compression inside the
+selected subspace preserves the action of M_gain on v:
+
+  ||B_t v||_2^2 = ||B_{t-1} v||_2^2 + ||A_block v||_2^2.
+
+Therefore, when restricted+cex misses a known target despite enough row-space
+evidence, test which implementation assumption failed:
+
+1. The optimizer did not retain the projected target vector/span.
+2. The diagnostic score differs from the optimized objective.
+3. The projected vector was computed in a different space than the optimizer
+   or compressor used.
+4. Post-selection compression did not preserve the retained direction.
+
+For rank > 1, the invariant is span-level. A sequence of strong single-vector
+choices can still miss the projected rank-r target span.
+
+
+First reproduction workflow
+---------------------------
+Start from a deterministic small/static CEX run:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected
+
+For the combined score variant, the bundled debug workflow is:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --debug-mode combined
+
+This selects combined mode by default and enables the oracle projected-span
+comparison, score-component dump, and oracle old-row response dump for every
+block. Add --no-oracle-candidate-check to reproduce the optimizer-only
+combined trajectory while keeping the diagnostics enabled.
+
+To reproduce the optimizer-only trajectory after oracle controls were added:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected \
+    --no-oracle-candidate-check
+
+If random restarts are involved, reproduce in-process with
+np.random.seed(seed), because some restart paths still use NumPy's global RNG.
+
+
+Oracle projected-span diagnostic
+--------------------------------
+For synthetic/debug runs with known exact right singular vectors, form
+
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :rank]).
+
+Report these quantities before compression:
+
+  raw projected-vector score sum:
+    sum_j score(normalized P_row(M_gain) v_j_exact)
+
+  QR projected-span score sum:
+    sum_j score(Q_oracle[:, j])
+
+  optimizer score sum:
+    sum_j score(V_score[:, j])
+
+  containment:
+    vecnorm(V_score V_score' [v1_proj v2_proj], 2)
+
+  span closeness:
+    principal cosines span(V_score) vs Q_oracle
+
+This separates raw target-vector quality, feasible orthonormal target-span
+quality, and the frame actually selected by the optimizer.
+
+Important interpretation rules:
+
+  - Raw projected vectors are not necessarily orthogonal after projection, so
+    their score sum is not directly feasible for an orthonormal optimizer.
+
+  - QR projected-span score is a fair feasible comparison for a rank-r
+    optimizer, but the entropy score is basis-dependent, not purely
+    span-dependent.
+
+  - A high optimizer score does not prove that the selected subspace preserves
+    the target span.
+
+
+Oracle candidate check/control
+------------------------------
+The debug control in cex_restricted_space_probe.py compares Q_oracle against
+the optimizer frame under the same oldcorrected score before compression:
+
+  --oracle-candidate-check / --no-oracle-candidate-check
+
+When Q_oracle has a larger oldcorrected score sum, it replaces V_score for that
+block. This is not deployable, because it uses V_exact, but it is useful for
+classifying failures:
+
+  accepted oracle candidate:
+    the optimizer/search missed a feasible projected-target frame with higher
+    score.
+
+  rejected oracle candidate:
+    the current objective itself prefers another frame, so the issue is likely
+    objective mismatch rather than only search failure.
+
+On the n=128 small oldcorrected run, the control accepted in blocks 1 and 2
+and rejected in blocks 3 and 4. This exposed an early optimizer/span-selection
+failure followed by later objective-choice behavior.
+
+
+Oldcorrected score sanity checks
+--------------------------------
+The corrected old score should treat old rows as a fraction of the full matrix,
+not use the old sketch rank as the entropy correction base:
+
+  psi_old(v) =
+      ||Bv||_2^2 * (n_seen / n)^(-h_R(v) / (4 log s)).
+
+Equivalent simplified form:
+
+  c_old = log(n_seen / n) / log(s)
+
+  psi_old(v) =
+      ||Bv||_2^2 * ||Rv||_2^(-c_old) * ||Rv||_4^(c_old).
+
+Debug split each vector score as:
+
+  score(v) = old(v) + new(v)
+
+  old(v) = E_old(v) * phi_old(v)
+  new(v) = E_new(v) * phi_new(v)
+
+Track:
+
+  E_old, phi_old, old score, rel_old = h_old / log(s)
+  E_new, phi_new, new score, rel_new = h_new / log(k)
+
+Use this split to detect whether the score is dominated by old retained energy,
+current-window energy, or entropy multipliers. After the oldcorrected patch,
+the second-window old term should be comparable to the new term, not 16x-25x
+larger.
+
+
+Old-row response dump workflow
+------------------------------
+Use this when projected oracle vectors have unexpected old entropy:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected \
+    --no-oracle-candidate-check \
+    --dump-oracle-old-row-responses \
+    --dump-oracle-old-row-response-block 3
+
+The dump prints:
+
+  old_row_memory_indices_1based
+  v1_proj_old_row_response
+  v1_proj_old_row_response_stats
+  v2_proj_old_row_response
+  v2_proj_old_row_response_stats
+
+Use block value 0 to dump every block with old memory.
+
+Interpretation:
+
+  - Projection onto row([B_prev; A_block]) preserves what the current gain
+    matrix sees.
+
+  - It does not necessarily preserve the original raw old-row response shape.
+
+  - In static CEX, rel_new can be exactly 1 because A_block cannot see the
+    component removed by P_row(M_gain), and the exact top left response is flat
+    on each 32-row block.
+
+
+Greedy versus joint rank-r workflow
+-----------------------------------
+The greedy restricted optimizer chooses vectors one at a time:
+
+  1. optimize score(v1);
+  2. optimize score(v2) subject to v2 orthogonal to v1;
+  3. continue to rank r.
+
+This can miss a better rank-r span because the first choice is irreversible.
+
+Use the joint Stiefel option to optimize all columns together:
+
+  --basis-selection joint
+  --joint-solver riemannian
+
+Useful variants:
+
+  --joint-warm-start-greedy
+  --joint-warm-start-rotations N
+  --joint-warm-start-perturbations N
+  --joint-oversample K
+  --joint-oversample-rotate svd
+  --joint-solver slsqp
+
+Expected sanity check:
+
+  If the joint optimizer is well solved, its score sum should be at least the
+  greedy score sum, because the greedy frame is feasible for the joint problem.
+  A lower joint score points to local optimization, insufficient seeding, or an
+  implementation issue.
+
+Limitation:
+
+  Joint score-sum optimization is still a basis objective. Rotating the same
+  selected subspace can change sum_j score(z_j), so it is not a pure
+  span-preservation objective.
+
+
+Same-state comparison workflow
+------------------------------
+Whole-stream results are path-dependent because each method carries a
+different state into later blocks. Do not compare final-block score sums from
+different streaming trajectories as if they solved the same problem.
+
+Use:
+
+  python compare_joint_same_state.py --target-block 3
+
+This freezes one reference previous state and compares candidate optimizers on
+the exact same:
+
+  state_prev
+  M_gain
+  A_block
+
+Compare:
+
+  score_sum
+  per-column scores
+  final alignment
+  singular-value relative error
+  grad_perp_max
+
+Observed lesson:
+
+  High-random joint can improve the whole stream by finding better early
+  carried states. On a fixed final greedy previous state, score-based
+  final-block optimizers mostly collapse to the same solution.
+
+
+Oracle initialization workflow
+------------------------------
+Use oracle projected-exact initialization to ask whether a good basin exists
+near Q_oracle:
+
+  --joint-warm-start-oracle
+
+Compare:
+
+  direct Q_oracle without entropy optimization
+  oracle init with one restart
+  oracle init with multiple restarts
+  high-random non-oracle joint
+  old greedy baseline
+
+Important interpretation:
+
+  - Direct Q_oracle can be perfect in synthetic diagnostics by construction.
+
+  - Entropy optimization started at Q_oracle can still move slightly away from
+    the perfect SVD target if the score has an outward incentive.
+
+  - Oracle warm start is not an upper bound on algorithm quality; it is a
+    diagnostic seed for the current score objective.
+
+
+Rotation-only versus unrestricted objective test
+------------------------------------------------
+To test whether the score maximizer lies inside Q_oracle:
+
+1. Fix the Q_oracle subspace.
+2. Optimize only 2D rotations inside Q_oracle.
+3. Compare against unrestricted joint optimization initialized from Q_oracle.
+
+If unrestricted optimization gets a higher score, the entropy objective has an
+incentive to leave the oracle-projected target span. In static CEX this
+incentive is largest in early blocks and becomes much smaller by the final
+block.
+
+
+Gradient decomposition at Q_oracle
+----------------------------------
+At Q_oracle, compute the entropy-score gradient and project it onto the
+Stiefel tangent space:
+
+  G_tangent = G - Q sym(Q'G).
+
+Report Frobenius norms:
+
+  tangent_norm:
+    total valid first-order score ascent force.
+
+  inside_norm:
+    component that rotates columns within the same Q_oracle subspace.
+
+  outside_norm:
+    component that changes the selected subspace.
+
+The outside_norm is the key objective-mismatch diagnostic, but leaving
+Q_oracle is not automatically a bug. If an outside direction gives a genuinely
+better streaming approximation, the optimizer should be allowed to take it.
+The failure mode is narrower:
+
+  the objective pays too much for an outside direction whose value comes from
+  transient high-leverage row/local-tail structure rather than durable signal.
+
+A nontrivial outside_norm means the current entropy objective locally wants to
+leave Q_oracle. The next question is therefore not "how do we forbid leaving?"
+but:
+
+  What part of the score makes this outside direction attractive?
+  Is that attraction explained by gain2, entropy/phi, row concentration,
+  or high-leverage row response?
+  Can a compensated objective remove this specific incentive while still
+  allowing useful outside motion?
+
+For static CEX, the outside gradient is tied to current-window singular
+structure and high-leverage local rows in early blocks.
+
+
+Row and leverage diagnostics
+----------------------------
+When the optimizer leaves Q_oracle, identify the outward direction:
+
+1. Compute the residual part of the found frame:
+
+     R = (I - Q_oracle Q_oracle') V_found.
+
+2. Inspect singular values of R to see whether the deviation is mostly
+   one-dimensional.
+
+3. Compare the dominant outside direction against:
+
+     projected exact v3:v10 residuals
+     projected exact v3 residual
+     current block right singular vectors
+     top-row span
+
+4. Report top rows by absolute normalized response or cosine.
+
+5. For each top row, report:
+
+     stream row index
+     original row index if rows were permuted
+     row norm rank
+     outside-direction cosine rank
+     block top-singular-span leverage rank
+
+In static CEX, the block-1 deviation is explained mainly by high-energy,
+high-leverage tail rows that landed in the first randomized window, not by the
+projected global third singular vector.
+
+Objective-flaw diagnostics for outside directions
+-------------------------------------------------
+For each candidate frame or vector, compare the score components before
+changing the objective:
+
+  gain2:
+    ||M_gain v||^2. If the outside direction wins mainly here, the objective is
+    rewarding local energy.
+
+  phi:
+    combined entropy multiplier. If phi increases, check whether the entropy
+    term is smoothing a bad row pattern or simply failing to penalize a local
+    tail event enough.
+
+  score_total:
+    gain2 * phi for the combined objective.
+
+  current-window response shares:
+    p_i = (A_block v)_i^2 / ||A_block v||^2.
+
+  concentration:
+    sum_i p_i^2 and top-k sum_i p_i.
+
+  leverage-weighted response:
+    sum_i leverage_i p_i.
+
+Recommended first-block command for the static CEX case:
+
+  python debug_combined_objective_probe.py
+
+Focused joint warm-start check:
+
+  python check_oracle_warm_joint.py --q0 5
+  python check_oracle_warm_joint.py --q0 32
+
+Interpretation from the current static-CEX check:
+
+  q0=5:
+    the oracle-projected seed is poorly represented in the initial reduced
+    basis, so oracle warm-starting is not actually a good oracle seed.
+
+  q0=32:
+    Q_oracle is represented accurately. Optimizing from the oracle-projected
+    seed moves only mildly outside Q_oracle, but the default subspace-svd-eye
+    seed reaches a higher combined score while moving much farther outside.
+
+This is objective evidence, not just search failure: the higher-score basin is
+the less oracle-aligned basin.
+
+Use:
+
+  --no-joint-default-svd-start
+
+when the goal is to isolate the oracle-projected Stiefel seed. This is a
+diagnostic switch, not a proposed production fix.
+
+
+Row-concentration regularization workflow
+-----------------------------------------
+Use when score optimization appears to chase a few high-response rows:
+
+  y = A_block v
+  p_i = y_i^2 / sum_j y_j^2
+
+  score_reg(v) = score(v) - lambda * sum_i p_i^2
+
+First lambda sweep:
+
+  0, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2
+
+Compare:
+
+  final_align
+  final_relerr
+  score_sum
+  regularized_score_sum
+  found_vs_Q_oracle where available
+  outside_norm at Q_oracle where available
+  row concentration sum_i p_i^2
+
+If unweighted concentration hurts too much, test leverage-weighted penalties:
+
+  score_reg(v) = score(v) - lambda * sum_i leverage_i p_i
+
+Possible leverage definitions:
+
+  row norm of A_block
+  leverage in current block top singular span
+  leverage in M_gain row structure
+  historical high-frequency row influence
+
+Leverage compensation workflow
+------------------------------
+Use this when the outside direction is not merely concentrated, but
+concentrated specifically on high-leverage local rows.
+
+For a candidate vector v:
+
+  y = A_block v
+  p_i = y_i^2 / sum_j y_j^2
+
+Choose nonnegative leverage weights w_i, normalized so mean(w_i) = 1. Then
+evaluate:
+
+  score_reg(v) = score(v) - lambda * sum_i w_i p_i
+
+Useful first weights:
+
+  row-norm:
+    w_i proportional to ||A_block[i, :]||^2.
+
+  block-top-svd:
+    w_i = leverage of row i in the top k left singular vectors of A_block.
+
+  M_gain-top-svd:
+    same idea, but computed on M_gain if old compressed rows should affect
+    row leverage.
+
+Diagnostics to print for optimizer vectors, oracle QR vectors, and outside
+components:
+
+  score_total
+  regularized score under each proposed compensation
+  gain2
+  phi
+  sum_i p_i^2
+  sum_i w_i p_i
+  top response rows with original row ids
+  each top row's p_i, w_i, and w_i p_i
+
+Decision rule:
+
+  A compensation is promising if it demotes the high-leverage local-tail
+  outside direction relative to Q_oracle or a durable outside direction, while
+  preserving final singular-value error and improving or preserving alignment.
+
+  A compensation is too blunt if it removes the first-block outside component
+  but worsens the full stream, as hard downweighting original row 1 did in the
+  static-CEX check.
+
+
+Benchmark/recheck workflow
+--------------------------
+Keep the old greedy baseline in every table. A stronger optimizer is not
+automatically better; greedy can act as an implicit regularizer when the score
+objective overfits transient row structure.
+
+Medium joint benchmark command:
+
+  python run_joint_warmstart_benchmarks.py
+
+Regularized benchmark example:
+
+  python run_joint_warmstart_benchmarks.py \
+    --row-concentration-lambda 0.001
+
+Regression-focused example:
+
+  python run_joint_warmstart_benchmarks.py \
+    --matrices risk-residual-panel,intraday-liquidity-shape \
+    --row-concentration-lambda 0.001
+
+For objective changes, compare at least:
+
+  old restricted/greedy
+  joint-greedywarm
+  joint-oraclewarm, diagnostic only
+  joint with regularization
+
+Track both alignment and singular-value error. Some methods improve scale while
+worsening vector alignment.
+
+
+Randomized-row audit workflow
+-----------------------------
+Before using non-CEX matrix diagnostics to tune objective changes, verify the
+row-order model.
+
+Known status from the notes:
+
+  static-cex:
+    rows are explicitly randomized by the generator.
+
+  risk-residual-panel:
+    generated in ordered t positions; not explicitly randomized at the end.
+
+  etf-basket-basis:
+    generated with stride-spaced local dislocations; not explicitly randomized
+    at the end.
+
+  intraday-liquidity-shape:
+    generated with ordered intraday/event structure; not explicitly randomized
+    at the end.
+
+For fully randomized-row claims, add an explicit row-shuffle option near matrix
+creation:
+
+  Generate A and V_exact normally.
+  Apply deterministic row permutation to A using the experiment seed.
+  Leave V_exact and singular values unchanged.
+
+Retest:
+
+  risk-residual-panel-shuffled
+  etf-basket-basis-shuffled
+  intraday-liquidity-shape-shuffled
+
+Decision criteria:
+
+  If failure survives row shuffling:
+    treat it as row-geometry/objective mismatch and proceed with row or
+    leverage regularization.
+
+  If failure weakens strongly after row shuffling:
+    treat the earlier result as an ordered event-window artifact.
+
+  If static-cex remains the only strong randomized-row special case:
+    focus first on static-cex-like high-leverage row geometry.
+
+
+Recommended debug order
+-----------------------
+1. Reproduce with fixed seed and the smallest deterministic command.
+
+2. Confirm oldcorrected score scaling by dumping old/new score components.
+
+3. Check the projection-preservation invariant:
+
+     Does selected span contain P_row(M_gain) V_exact[:, :rank]?
+
+4. Compare raw projected-vector score, QR projected-span score, and optimizer
+   score before compression.
+
+5. Enable the oracle candidate check to separate search failure from objective
+   mismatch.
+
+6. Run same-state comparisons before drawing conclusions from whole-stream
+   score differences.
+
+7. If Q_oracle is known, run oracle initialization and rotation-only versus
+   unrestricted tests.
+
+8. For joint oracle warm-starting, separate the seed effects:
+
+     oracle-projected only
+     subspace-svd-eye only
+     oracle-projected plus subspace-svd-eye
+     greedy-warm plus oracle-projected
+
+   Use --no-joint-default-svd-start when isolating the oracle-projected seed.
+
+9. Decompose the gradient at Q_oracle into inside and outside components.
+
+10. If outside_norm is significant, inspect the outward direction with row,
+   leverage, and current-block singular-vector diagnostics.
+
+11. For each outside direction, print score decomposition and compensation
+    diagnostics:
+
+      gain2
+      phi
+      score_total
+      sum_i p_i^2
+      sum_i leverage_i p_i
+      top response rows and original row ids
+
+12. Before tuning regularization on non-CEX matrices, audit and, if needed,
+    randomize row order.
+
+13. Sweep row-concentration or leverage regularization only after the failure
+    survives the row-order audit.
+
+
+Useful source notes
+-------------------
+summary/streaming_projection_invariant.txt
+summary/oldcorrected_score_patch_summary.txt
+summary/oldcorrected_oracle_projection_debug.txt
+summary/oldcorrected_projection_entropy_conversation_summary.txt
+summary/restricted_cex_span_selection_insight.txt
+summary/restricted_cex_joint_sum_theory.txt
+summary/joint_stiefel_progress_summary.txt
+summary/oracle_projection_score_insight_summary.txt
+summary/oracle_gradient_regularization_notes.txt
+summary/matrix_benchmark_joint_warmstart_summary.txt
+summary/randomized_rows_special_cases_summary.txt

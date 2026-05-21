@@ -1,0 +1,5 @@
+Half-window HM experiment
+=========================
+
+mode=split_probe policy=future_hmean_r_sk_g half_win=32 steps=16 mean_align=0.021086 mean_relerr_sval=0.07890460 mean_cos2=0.232584 final_cos=[0.471841 0.115377] final_exact_cos=[0.070598 0.017037] final_car_exact_cos=[0.071358 0.016204] final_oracle_proj_norm=[0.140694 0.148948] final_tail_mass=0.997363 labels={"rsk_g_best": 16}
+mode=sliding policy=future_hmean_r_sk_g half_win=32 steps=61 mean_align=0.735127 mean_relerr_sval=0.03327155 mean_cos2=0.241532 final_cos=[0.999614 0.253143] final_exact_cos=[0.752273 0.035161] final_car_exact_cos=[0.752277 0.035225] final_oracle_proj_norm=[0.735431 0.213256] final_tail_mass=0.716425 labels={"rsk_g_best": 61}

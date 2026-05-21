@@ -1,0 +1,343 @@
+Combined objective outside-direction debug handoff
+=================================================
+
+Date: 2026-04-19
+
+Purpose
+-------
+This note records the current debugging state for the combined objective on the
+static-cex first block. The immediate question was whether the combined
+objective still steers away from the oracle span even when using
+--joint-warm-start-oracle, and if so, which outside direction it prefers.
+
+
+Primary run of interest
+-----------------------
+Command:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset fast --seed 0 \
+    --score-variant combined \
+    --no-oracle-candidate-check \
+    --dump-oracle-old-row-responses \
+    --dump-oracle-old-row-response-block 1 \
+    --joint-warm-start-oracle
+
+Important note:
+
+  For static-cex, --preset changes optimizer settings, not the generated
+  matrix. The first-block matrix is therefore the same as the earlier
+  n=128 static-cex probes with seed 0 and v_type=rand. The fast preset plus
+  --joint-warm-start-oracle gives a much better optimizer solve than the
+  earlier small/optimizer-only reproduction.
+
+
+First-block output from the primary run
+---------------------------------------
+Observed block rows 1:32:
+
+  s:  0.9539  0.9515
+  H:  3.4081  3.2123
+  scores:  1.0524  1.0413
+
+  oracle_raw_projection_scores:  1.0497  1.0482 sum=2.097898299669
+  oracle_qr_projection_scores:   1.0497  1.0329 sum=2.082683124339
+  optimizer_score_sum: 2.093669147969
+
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.994205  0.919255
+  principal_cosines(V_score, Q_oracle):  0.996644  0.903957
+  raw_oracle_projection_overlap: 0.240044791324
+
+Interpretation:
+
+  The first-block oracle projected directions are not weak. Their block
+  response norms are large. The issue is not oracle invisibility.
+
+  Raw projected oracle directions are strong but not orthogonal. Their overlap
+  is about 0.2400. QR orthogonalization makes the frame feasible but lowers the
+  second vector's combined score. The optimizer finds a feasible span between
+  raw oracle and QR oracle: mostly oracle-aligned, but tilted outside enough to
+  improve the combined objective over oracle QR.
+
+
+Projection-norm / score mapping
+-------------------------------
+The printed oracle_*_projection_scores are combined objective scores, not
+projection norms. For the first block, the underlying block response norms are:
+
+  raw oracle v1:
+    score = 1.049738
+    gain2 ~= 0.903390
+    ||A_block v1_proj|| ~= 0.95047
+
+  raw oracle v2:
+    score = 1.048160
+    gain2 ~= 0.902032
+    ||A_block v2_proj|| ~= 0.94975
+
+  oracle QR q1:
+    score = 1.049738
+    gain2 ~= 0.903390
+    ||A_block q1|| ~= 0.95047
+
+  oracle QR q2:
+    score = 1.032945
+    gain2 ~= 0.897454
+    ||A_block q2|| ~= 0.94734
+
+So the oracle QR frame is feasible and still has good block projection norm;
+the objective gap comes mainly from entropy/score effects after
+orthogonalizing the raw projected oracle directions.
+
+
+Diagnostic script added
+-----------------------
+Current diagnostic script:
+
+  debug_combined_objective_probe.py
+
+It reproduces the same first-block matrix and now also reproduces the fast
+oracle-warm first-block optimizer settings in-process via entropy_iter_basis_forget.
+
+The script prints:
+
+  - first-block original-row mapping;
+  - oracle QR / raw projection scores;
+  - tangent gradient outside the oracle span;
+  - full-dimensional joint objective probe;
+  - fast oracle-warm selected vector decomposition into oracle and outside
+    components;
+  - outside-direction response concentration by display row and original row;
+  - alignments with global exact singular vectors and first-block right
+    singular vectors.
+
+
+Fast oracle-warm outside decomposition
+--------------------------------------
+The diagnostic reproduction of the fast oracle-warm first block reports:
+
+  fast_oracle_warm_scores:
+    [1.0523756, 1.04129344]
+
+  fast_oracle_warm_score_sum:
+    2.093669039
+
+  fast_oracle_warm_principal_cosines:
+    [0.9966443, 0.90395684]
+
+  fast_oracle_warm_vecnorm_raw_projected_oracle_into_V_score:
+    [0.99420477, 0.91925485]
+
+Per selected optimizer vector, decomposed against Q_oracle:
+
+  V_score[:,1]:
+    oracle_part_norm = 0.995441
+    outside_norm     = 0.095377
+    outside_energy   = 0.009097
+
+  V_score[:,2]:
+    oracle_part_norm = 0.905282
+    outside_norm     = 0.424812
+    outside_energy   = 0.180465
+
+Interpretation:
+
+  In the oracle-warm run, the first selected vector is only mildly outside
+  oracle space. The second selected vector has a significant outside component:
+  about 42.5% norm, or 18.0% energy.
+
+
+Which direction does the oracle-warm outside component point to?
+---------------------------------------------------------------
+For V_score[:,1] outside component, top global exact directions:
+
+  v3:   0.6210
+  v16:  0.3298
+  v11:  0.2779
+  v13:  0.2448
+  v121: 0.2097
+  v17:  0.1877
+
+For V_score[:,2] outside component, top global exact directions:
+
+  v3:  0.9402
+  v11: 0.1665
+  v13: 0.1541
+  v17: 0.1348
+  v31: 0.0880
+
+The second vector's outside component is therefore mostly global exact v3.
+
+
+Row mapping for first block
+---------------------------
+"display row" means row index after the static-cex row permutation, i.e. the
+row number used in the streamed matrix A and block output.
+
+"original row" means row index before the generator applies:
+
+  p = np.random.permutation(n)
+  A = A_unpermuted[p, :]
+
+For this run, first-block display rows 1:32 map to original rows:
+
+  display:   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+  original: 62  96  82  64  67  51 115 109  29 101  31 119  11 111  60  14
+
+  display:  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32
+  original:124  42  33 112  83  39  84  85  15  43   1  38  57 105 120   9
+
+Sorted original rows in the first block:
+
+  [1, 9, 11, 14, 15, 29, 31, 33,
+   38, 39, 42, 43, 51, 57, 60, 62,
+   64, 67, 82, 83, 84, 85, 96, 101,
+   105, 109, 111, 112, 115, 119, 120, 124]
+
+Original rows 2, 3, 4, 5, 6, 7, 8 are not in the first block.
+Original row 1 is in the first block at display row 27.
+Original row 9 is in the first block at display row 32.
+Original row 11 is in the first block at display row 13.
+Original row 14 is in the first block at display row 16.
+Original row 15 is in the first block at display row 25.
+
+
+Row concentration of oracle-warm outside components
+---------------------------------------------------
+For V_score[:,2] outside component, row responses:
+
+  first-block energy fraction over all rows:
+    0.999839
+
+  top rows:
+    display row 27, original row 1:
+      response = 0.92834
+      energy   = 0.86182
+
+    display row 32, original row 9:
+      response = -0.16374
+      energy   = 0.02681
+
+    display row 13, original row 11:
+      response = -0.15097
+      energy   = 0.02279
+
+    display row 25, original row 15:
+      response = -0.13060
+      energy   = 0.01706
+
+  Total all-row response energy is about 0.97108. Thus row-energy fractions
+  are approximately:
+
+    original row 1:  0.86182 / 0.97108 ~= 88.75%
+    original row 9:  0.02681 / 0.97108 ~= 2.76%
+    original row 11: 0.02279 / 0.97108 ~= 2.35%
+    original row 15: 0.01706 / 0.97108 ~= 1.76%
+
+For V_score[:,1] outside component:
+
+  first-block energy fraction over all rows:
+    0.999521
+
+  top rows:
+    display row 27, original row 1:
+      response = 0.61208
+      energy   = 0.37464
+
+    display row 16, original row 14:
+      response = 0.32659
+      energy   = 0.10666
+
+    display row 32, original row 9:
+      response = 0.26204
+      energy   = 0.06866
+
+    display row 13, original row 11:
+      response = 0.22858
+      energy   = 0.05225
+
+  Total all-row response energy is about 0.92084. Thus original row 9
+  contributes about 0.06866 / 0.92084 ~= 7.46%.
+
+Conclusion:
+
+  Original row 9 contributes to the outside direction, but it is secondary.
+  The dominant row is original row 1, especially for the second selected
+  optimizer vector's outside component.
+
+
+Full-dimensional objective probe
+--------------------------------
+The script also performs a full-dimensional joint combined objective probe
+from many random starts. This is not the same as the greedy fast oracle-warm
+optimizer path, but it tests the objective itself.
+
+Observed:
+
+  oracle QR objective:
+    2.082683012
+
+  best full-dimensional joint combined objective found:
+    2.097283772
+
+  best_vs_oracle_cosines:
+    [0.945121, 0.838836]
+
+The best full-dimensional outside direction has top global exact alignments:
+
+  v3:  0.7316
+  v17: 0.5945
+  v11: 0.1527
+  v13: 0.1255
+
+and row responses dominated by:
+
+  display row 27, original row 1:
+    response ~= -0.7220
+    energy ~= 0.5213
+
+  display row 25, original row 15:
+    response ~= -0.5626
+    energy ~= 0.3165
+
+This independently supports that the combined objective itself can prefer a
+non-oracle span due to first-block high-leverage tail rows.
+
+
+Current hypothesis
+------------------
+The oracle projected directions are strong in the first block, but the two raw
+projected oracle directions have nontrivial overlap (~0.2400). The combined
+objective is an additive per-vector score with an entropy correction. QR
+orthogonalization makes the oracle candidate feasible but hurts the second
+vector's entropy/score.
+
+The objective can improve by rotating the second selected vector outside the
+oracle QR span. In the oracle-warm fast run, that outside component points
+mostly toward global exact tail direction v3, driven by original row 1 appearing
+in the first block. Original row 9 also contributes but is much smaller.
+
+This means the oracle-warm optimizer is not simply failing to contain the
+oracle span. It is being steered by the combined objective toward a feasible
+span that is close to oracle but includes a significant outside/tail component,
+especially in the second vector.
+
+
+Suggested next checks
+---------------------
+1. Add a first-block diagnostic to cex_restricted_space_probe.py that reports
+   each V_score column's outside norm relative to Q_oracle and the top exact
+   coordinates of that outside component.
+
+2. Sweep row shuffles/seeds and check whether failures correlate with early
+   blocks containing original row 1 or other large tail rows.
+
+3. Compare the current additive per-column combined objective with a subspace
+   objective that scores the rank-2 span jointly. This would test whether the
+   non-oracle preference is an artifact of per-vector entropy scoring under
+   orthogonality.
+
+4. Add an objective-gradient diagnostic at Q_oracle. If the outside tangent
+   gradient is nonzero and points to v3/row 1, then oracle QR is not even a
+   local stationary point of the current combined objective.

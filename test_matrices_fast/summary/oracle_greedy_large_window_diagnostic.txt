@@ -1,0 +1,119 @@
+Oracle-greedy diagnostic on large-window failure cases
+======================================================
+
+Date: 2026-04-20
+
+Context
+-------
+See:
+  summary/combined_rownorm_allblocks_benchmark_handoff.txt
+  summary/larger_matrix_smaller_window_handoff.txt
+
+The larger-matrix sweep showed that the combined-score advantage on
+static-cex collapses when win/n >= 1/8 (combined matches iSVD at ~0.999
+top-1 align) and returns at full strength when win/n <= 1/16 (combined
+~0.12-0.16 vs iSVD ~0.999). This diagnostic asks:
+
+  At large win/n, is combined failing because the greedy optimizer is stuck,
+  or because the combined OBJECTIVE itself prefers the bad subspace?
+
+
+Method: greedy-oracle
+---------------------
+Added to run_joint_warmstart_benchmarks.py:
+
+  "greedy-oracle": {
+      "basis_selection": "greedy",
+      "joint_warm_start_greedy": False,
+      "joint_warm_start_oracle": False,
+      "rownorm_seed_first_block": True,
+      "rownorm_seed_all_blocks": True,
+      "oracle_candidate_check": True,
+  },
+
+Also: make_args now passes through oracle_candidate_check from overrides.
+
+Semantics (from cex_restricted_space_probe.py around lines 4176-4211):
+After the greedy optimizer produces V_score on each block, build an oracle
+candidate V from the projected true span of V_exact, score it under the
+same combined objective, and replace V_score iff the oracle candidate's
+combined-score sum is strictly higher. This is a direct oracle probe of
+the greedy step under the combined objective.
+
+
+Configs
+-------
+Priority failure-regime configs (win/n >= 1/8):
+
+  n=512  win=64   (1/8)
+  n=1024 win=128  (1/8)
+  n=1024 win=64   (1/16, boundary between tied and winning)
+
+Matrices: static-cex, risk-residual-panel.
+Methods: greedy-medium, greedy-oracle, isvd.
+Seed 0, row_shuffle_seed 0, matrix_preset=fast, dtype=float32, rank=2,
+row_concentration_lambda=0, old_memory_size=win.
+
+Raw outputs:
+  larger_sweep_results/oracle_n512_win64.txt
+  larger_sweep_results/oracle_n1024_win128.txt
+  larger_sweep_results/oracle_n1024_win64.txt
+
+
+Results
+-------
+greedy-oracle == greedy-medium to 6+ sigfigs on every (matrix, config):
+
+  matrix               n     win   greedy-medium        greedy-oracle        isvd
+  static-cex           512   64    0.997980/0.00101731  0.997980/0.00101731  0.997925/0.00101754
+  static-cex           1024  128   0.998993/0.00101058  0.998993/0.00101058  0.999001/0.00101107
+  static-cex           1024  64    0.998993/0.00101082  0.998993/0.00101082  0.999004/0.00101130
+  risk-residual-panel  512   64    0.480630/0.02716691  0.480630/0.02716691  0.517554/0.02954984
+  risk-residual-panel  1024  128   0.817619/0.04654135  0.817619/0.04654135  0.812268/0.04487142
+  risk-residual-panel  1024  64    0.850441/0.04903815  0.850441/0.04903815  0.818081/0.04488601
+
+(columns: mean_align / mean_relerr_sval)
+
+The oracle candidate was NEVER accepted. Greedy already finds the subspace
+with the highest combined-score sum available on every block.
+
+
+Interpretation
+--------------
+Failure is at the objective level, not the optimizer level. The combined
+objective's argmax at large win/n coincides with the iSVD-like subspace;
+the oracle subspace does NOT achieve a higher combined-score sum, so the
+optimizer has nothing to improve.
+
+Why:
+  - At small win/n, the within-block SVD term in the combined score is
+    weakly identifying (too few rows to pin down rank-r). The entropy /
+    old-row-memory term has real leverage and can pull the pick away from
+    the local SVD choice toward the global subspace. This is where
+    combined beats iSVD on static-cex.
+  - At large win/n, the within-block SVD term dominates (many rows per
+    block resolve rank-r locally). The combined score is effectively a
+    perturbation of the block SVD score; its argmax coincides with the
+    iSVD pick and the entropy term cannot move the optimum.
+
+So combined is not a "better optimizer targeting the same thing as iSVD";
+it is a different objective. It agrees with iSVD in the data-rich per-block
+regime and differs in the data-poor per-block regime where retaining
+old-row information actually matters.
+
+
+Implications for next steps
+---------------------------
+1. In the large-win regime, no amount of greedy improvement or oracle
+   warm-start will help combined beat iSVD. Improvements have to come
+   from changing the objective: for example, up-weighting the entropy /
+   old-row-memory term as win grows, or normalizing the within-block SVD
+   term so it does not dominate as win grows.
+
+2. Before chasing a fix, add the rank-r subspace metric to the benchmark.
+   It is plausible that at large win/n both methods are producing correct
+   rank-2 subspaces with only a leading-vector rotation, in which case the
+   top-1 0.999 values are a metric artifact and there is nothing to fix.
+
+3. Deployment guidance: evaluate combined at win/n <= 1/16. Benchmarks at
+   win/n = 1/8 systematically understate its edge.

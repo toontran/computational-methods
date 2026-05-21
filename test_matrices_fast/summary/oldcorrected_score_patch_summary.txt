@@ -1,0 +1,92 @@
+Old-Corrected Score Patch Summary
+=================================
+
+Date: 2026-04-19
+
+Context
+-------
+The first implementation of the old-corrected score used the old sketch rank
+as the old correction base:
+
+    (k_old / n_old)^(-(h_R / (4 log s)) * (log n_old / log k_old)).
+
+On the n=128, win=32 CEX probe this made c_old = -4 in the second window
+because k_old=2, n_old=32, and s=32. The resulting old entropy multiplier was
+about 16x to 25x on projected oracle directions, so the old term dominated the
+new term by roughly 6x to 13x.
+
+Correction
+----------
+The old rows should be treated as the old-row fraction of the full matrix. The
+row sample is used only to estimate the normalized entropy of the old response:
+
+    h_old / log(n_seen) ~= h_R / log(s).
+
+The old contribution is now
+
+    psi_old(v) =
+        ||Bv||_2^2 * (n_seen / n)^(-h_R(v) / (4 log s)).
+
+Equivalently, with
+
+    c_old = log(n_seen / n) / log(s),
+
+the simplified old term is
+
+    psi_old(v) =
+        ||Bv||_2^2 * ||Rv||_2^(-c_old) * ||Rv||_4^(c_old).
+
+The sketch rank k_old is not part of the entropy correction. In the code, the
+old compatibility argument k_old is ignored by the corrected score function.
+
+Files Changed
+-------------
+- test_matrices_fast/cex_restricted_space_probe.py
+- new_approx_oldcorrected.txt
+
+CEX Check
+---------
+Command:
+
+    python test_matrices_fast/cex_restricted_space_probe.py \
+      --matrix static-cex --n 128 --rank 2 --win 32 --preset small \
+      --seed 0 --score-variant oldcorrected
+
+After the patch, second-window scores are no longer explosive:
+
+    window 2 scores: [1.2862, 1.2749]
+
+Final metric on this small CEX run:
+
+    mean_align        0.246471
+    mean_relerr_sval  0.04622307
+
+For comparison, legacy on the same setting was:
+
+    mean_align        0.938834
+    mean_relerr_sval  0.00252601
+
+Second-Window Oracle Split After Patch
+--------------------------------------
+For exact top-2 right singular vectors projected onto row([B; A_2]):
+
+    oracle v1:
+        E_old   = 0.383494
+        phi_old = 1.368872
+        old     = 0.524955
+        new     = 0.768102
+        old/new = 0.683444
+        c_old   = -0.4
+
+    oracle v2:
+        E_old   = 0.360859
+        phi_old = 1.360173
+        old     = 0.490831
+        new     = 0.787933
+        old/new = 0.622934
+        c_old   = -0.4
+
+This confirms the scaling bug is fixed: the old term is now comparable to, not
+dominant over, the new term on the second-window oracle projections. The poor
+final CEX metric therefore appears to come from the corrected objective/search
+behavior rather than the previous old-term blow-up.

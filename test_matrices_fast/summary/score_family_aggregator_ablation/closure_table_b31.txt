@@ -1,0 +1,19 @@
+# AB-03 phase 1 closure — bench cos² at b31 across configurations
+# cos0/cos1 are principal cosines vs V_exact (sorted descending)
+# capture = c0² + c1²  (oracle-mass captured; max=2)
+
+matrix                   | S6 c0/c1²        | S6 cap  | E2 c0/c1²        | E2 cap  | fO2 c0/c1²       | fO2 cap | fFr c0/c1²       | fFr cap
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+diffuse-diffuse          |  0.727 /  0.322 |  1.049 |  0.640 /  0.016 |  0.656 |  1.000 /  0.001 |  1.001 |  0.983 /  0.964 |  1.947
+residual-spiky-shocks    |  0.984 /  0.195 |  1.178 |  0.822 /  0.198 |  1.020 |  0.999 /  0.007 |  1.007 |  0.983 /  0.936 |  1.919
+mixed-tail-soft          |  1.000 /  0.083 |  1.083 |  1.000 /  0.553 |  1.553 |  1.000 /  0.000 |  1.000 |  0.983 /  0.963 |  1.947
+mixed-tail-sharp         |  1.000 /  0.071 |  1.070 |  1.000 /  0.087 |  1.086 |  1.000 /  0.000 |  1.000 |  0.983 /  0.963 |  1.947
+static-cex               |  1.000 /  0.123 |  1.123 |  1.000 /  0.050 |  1.050 |  1.000 /  0.000 |  1.000 |  0.975 /  0.972 |  1.947
+mixed-tail-balanced      |  0.999 /  0.086 |  1.085 |  0.995 /  0.199 |  1.193 |  1.000 /  0.000 |  1.000 |  0.983 /  0.963 |  1.947
+etf-basket-basis         |  1.000 /  0.636 |  1.636 |  1.000 /  0.544 |  1.544 |  1.000 /  1.000 |  2.000 |  1.000 /  1.000 |  2.000
+
+# Key:
+#   S6   = baseline F-norm HM3 (current shipped variant)
+#   E2   = per-direction sigma² weighting (AB-03 / S6_E2)
+#   fO2  = chosen_v2 forced to oracle_v2_proj (V_default[:,0] from streaming)
+#   fFr  = entire V_selected forced to SVD-frame(oracle_v1_proj, oracle_v2_proj)

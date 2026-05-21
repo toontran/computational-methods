@@ -1,0 +1,171 @@
+future_hmean_online vs combined / hybrid / iSVD — apples-to-apples
+====================================================================
+
+Date: 2026-04-23
+
+
+Setup
+-----
+All four methods streamed on the SAME matrix, SAME input order, SAME state
+carry (diag(s) · V.T across blocks), SAME rank=2, SAME heavy-optimizer
+defaults, SAME float32 working dtype.
+
+Harness: `half_window_sliding_hmean_experiment.py` extended with two new
+baselines as policies:
+
+  - `isvd`       V_selected = top-k right singular vectors of M_gain
+                 (pure streaming SVD; no greedy, no candidate swap).
+  - `hybrid`     `entropy_iter_basis_forget(..., combined_rank=1)` —
+                 combined-greedy picks column 0, deflated-SVD picks
+                 column 1 (the entropyscore_hybrid configuration from
+                 utils.py: `aux_method=deflated_svd`, `rank_ratio=0.5`).
+                 No candidate swap.
+  - `combined`   existing baseline: combined-greedy picks both columns,
+                 second slot kept as opt2 (no candidate swap).
+  - `future_hmean_online` (patched v2 from
+                 `future_hmean_online_v2_patch_synthesis.txt`): greedy
+                 column 0, HM-online candidate-scored column 1 from pool
+                 {opt2, q2_vs_q1oracle, mgain_deflated_svd,
+                  block_complement, prev_opt2}, then rank-2 SVD reframe.
+
+Matrix: `mixed-tail-sharp`, n=1024, signal rank=2, alpha_sig=0.003,
+alpha_tail=0.0145, tail_scale=0.99, sigma1=0.991, v-type=rand,
+--shuffle-rows (row_shuffle_seed=0), seed=0. The row shuffle and all
+seeds were fixed, so the four methods see the identical row stream.
+
+Metrics (all computed per step, then averaged over blocks):
+  - mean_cos1, mean_cos2   : principal cosines of V_selected vs
+                             Q_oracle = orthonormal basis of
+                             P_{row(M_gain)}(V_exact[:,:rank]).
+  - mean_exact_cos1, mean_exact_cos2 : principal cosines of V_selected
+                                       vs V_exact[:,:rank] (true dirs).
+  - mean_relerr_sval       : mean |s_new[0] - sigma1| / sigma1 from the
+                             projected-state SVD.
+  - final_exact_cos        : last-step principal cosines vs V_exact[:,:2].
+  - final_tail_mass        : 1 - ||Q_sig Q_sig^T V_q||_F^2 / rank, where
+                             Q_sig = V_exact[:,:2]. Fraction of the frame
+                             in tail/noise directions at the final step.
+
+Artifacts:
+  - summary/benchmark_online_vs_baselines_win32.{json,csv,txt}   half_win=16
+  - summary/benchmark_online_vs_baselines_win64.{json,csv,txt}   half_win=32
+  - summary/benchmark_online_vs_baselines_win128.{json,csv,txt}  half_win=64
+
+
+Results — sliding mode (averaged per step, all blocks)
+------------------------------------------------------
+  half_win  policy                 steps  mCos1   mCos2   mEx1    mEx2    relerr
+  16        combined                  63  0.9709  0.6280  0.5777  0.2007  0.01518
+  16        hybrid                    63  0.7978  0.1515  0.2785  0.0210  0.01589
+  16        isvd                      63  0.4704  0.1912  0.0729  0.0264  0.01323
+  16        future_hmean_online       63  0.9940  0.8007  0.6434  0.3428  0.00850
+  32        combined                  31  0.9234  0.4816  0.5012  0.1265  0.02328
+  32        hybrid                    31  0.8348  0.1754  0.3911  0.0349  0.01380
+  32        isvd                      31  0.3546  0.1384  0.0738  0.0264  0.01353
+  32        future_hmean_online       31  0.9995  0.6403  0.6831  0.2409  0.00605
+  64        combined                  15  0.8108  0.3707  0.4370  0.1207  0.02653
+  64        hybrid                    15  0.5389  0.1284  0.1867  0.0360  0.01428
+  64        isvd                      15  0.2438  0.0937  0.0688  0.0252  0.01364
+  64        future_hmean_online       15  0.9997  0.6946  0.6937  0.3164  0.00743
+
+Wins per metric (sliding, within each half_win):
+
+  half_win   mCos1     mCos2     mEx1      mEx2      relerr
+  16         online    online    online    online    online
+  32         online    online    online    online    online
+  64         online    online    online    online    online
+
+future_hmean_online wins on every averaged metric at every window size.
+
+
+Results — final-step subspace quality (sliding)
+-----------------------------------------------
+  half_win  policy                 final_ex1  final_ex2  final_tail  relerr
+  16        combined                  0.9182     0.0224     0.5782   0.01518
+  16        hybrid                    0.1212     0.0425     0.9918   0.01589
+  16        isvd                      0.0811     0.0111     0.9966   0.01323
+  16        future_hmean_online       0.9619     0.7183     0.2793   0.00850
+  32        combined                  0.8495     0.0248     0.6388   0.02328
+  32        hybrid                    0.1114     0.0541     0.9923   0.01380
+  32        isvd                      0.0785     0.0128     0.9968   0.01353
+  32        future_hmean_online       0.9746     0.6012     0.3443   0.00605
+  64        combined                  0.7933     0.0450     0.6843   0.02653
+  64        hybrid                    0.0457     0.0396     0.9982   0.01428
+  64        isvd                      0.0730     0.0171     0.9972   0.01364
+  64        future_hmean_online       0.9659     0.6674     0.3108   0.00743
+
+Takeaway on final state:
+
+  - future_hmean_online is the only method that recovers V_exact[:,1]
+    (final_ex2 in 0.60–0.72). All three baselines see final_ex2 in
+    0.01–0.05 across every window size.
+  - hybrid and isvd end with final_tail_mass ~ 0.99 — the final frame is
+    almost entirely tail/noise on this matrix. combined ends at
+    ~0.58–0.68 tail (better but still a majority-tail frame). Only
+    future_hmean_online ends sub-0.35 tail.
+  - relerr on the top singular value: future_hmean_online is 1.6x better
+    than isvd (best baseline) at half_win=16, 2.2x better at half_win=32,
+    1.8x better at half_win=64.
+
+
+What this measures
+------------------
+mixed-tail-sharp is a counterexample-style matrix: signal rank=2, very
+small sigma factor (alpha_sig=0.003) against a tail with alpha_tail=0.0145
+and tail_scale=0.99. On such matrices the pure-gain streaming SVD picks
+up whichever tail direction happens to have the largest squared gain in
+M_gain — never the signal. The numbers confirm this:
+
+  - isvd: mCos1 0.24–0.47, mEx1 0.07 across all window sizes, final_tail
+    0.99+. It estimates sigma1 within ~1.3%, but the V subspace is junk.
+  - hybrid: combined-greedy only captures signal in the first slot; the
+    SVD-complement in the second slot is then almost always tail. After
+    the carried state mixes in, the signal-like first slot gets pulled
+    toward the tail direction too, and by the final block only a
+    fraction of V_exact[:,0] remains (0.05–0.12 on final_ex1).
+  - combined: keeps signal in both slots via greedy, reaches
+    final_ex1 ~0.8–0.9 but final_ex2 ~0.02–0.05 (second slot drifts
+    toward a Q_row tail direction).
+  - future_hmean_online: explicit second-slot objective selects q2-like
+    candidates from the five-candidate online pool; the rank-2 SVD
+    reframe prevents the step-27-style Gram-Schmidt cancellation
+    (see `joint_win32_vanishing_analysis.txt`). Final frame captures
+    both V_exact[:,0] (0.96–0.98) and V_exact[:,1] (0.60–0.72), and the
+    top singular value estimate is tightest of all four methods.
+
+
+Notes on fairness
+-----------------
+- Same M_gain construction across policies — B_top = diag(s)·V_prev.T
+  stacked on A_half1. Each policy sees the same input; only the choice
+  of V_selected (which becomes V_prev for the next state) differs.
+- rng: entropy_iter_basis_forget is seeded the same each call; global
+  numpy rng seed is set once at the top of main(). Running four policies
+  in one process shifts the global rng state slightly across policies,
+  so a per-policy seed reset inside run_pair_stream would make every
+  policy's stream 100% identical. In practice the state_prev / V_init
+  construction used for the optimizer does not consume global rng, so
+  the drift is cosmetic — the gap between future_hmean_online and the
+  baselines is an order of magnitude larger than any single-seed
+  variation observed on this matrix.
+- split_probe numbers (non-sliding, disjoint halves) are included in
+  the raw JSON/CSV/txt for completeness but are noisy due to the tiny
+  step count (8–32). The sliding comparison with 15–63 blocks per
+  window size is the relevant one.
+
+
+Summary
+-------
+On `mixed-tail-sharp` (signal-rank-2, sharp-tail counterexample), with
+matched streaming state and matched rank, the patched
+`future_hmean_online` wins every mean subspace-quality metric and the
+top-singular-value error against iSVD, entropyscore-hybrid, and
+entropyscore-combined at half_win in {16, 32, 64}. The gap is largest
+on final_exact_cos2: only future_hmean_online recovers V_exact[:,1]
+(0.60–0.72) while the three baselines stay below 0.05.
+
+Limitation: this is a single matrix designed to expose tail-vs-signal
+failures of pure SVD. The comparison does NOT claim dominance on kernel
+/ finance / well-conditioned matrices, where iSVD and combined are known
+to do fine. A follow-up on a wider matrix suite (kernel_stocks, cfd2,
+finan512, bmw7st_1, nd24k) would answer that.

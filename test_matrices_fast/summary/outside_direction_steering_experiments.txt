@@ -1,0 +1,228 @@
+Outside-direction steering experiments
+======================================
+
+Date: 2026-04-19
+
+Context
+-------
+Follow-up to:
+
+  summary/combined_joint_oracle_warm_outside_direction_debug.txt
+
+The documented first-block combined-objective run is reproduced by:
+
+  python try_outside_direction_steering.py
+
+and the full four-block static-cex stream by:
+
+  python try_outside_direction_steering.py --full-stream
+
+The script uses the same n=128, rank=2, win=32, seed=0 static-cex matrix and
+the fast oracle-warm optimizer settings. It reports:
+
+  - selected optimizer frame score_sum;
+  - minimum principal cosine versus Q_oracle;
+  - per-selected-column outside norm relative to Q_oracle;
+  - alignment of column 2's outside component with global exact v3;
+  - fraction of column 2 outside-response energy on original row 1;
+  - final streaming alignment and singular-value relative error.
+
+
+First-block result
+------------------
+Baseline greedy oracle-warm reproduces the earlier failure mode:
+
+  score_sum = 2.09367
+  cos_min = 0.903957
+  outside_1 = 0.09538
+  outside_2 = 0.42481
+  v3_out_2 = 0.94017
+  original-row-1 response-energy fraction for outside_2 = 0.88763
+
+So the second selected optimizer vector still leaves Q_oracle mostly along
+global exact v3, driven by original row 1.
+
+
+Steering variants tried
+-----------------------
+1. Row-concentration regularization:
+
+   lambda      first cos_min   first outside_2   final_align   final_relerr
+   0           0.903957        0.424812          0.996282      0.000256105
+   0.01        0.904375        0.423954          0.996370      0.000252737
+   0.03        0.905210        0.422226          0.996520      0.000246963
+   0.1         0.907849        0.416719          0.996791      0.000242993
+   0.2         0.910943        0.410158          0.997074      0.000235415
+   0.3         unstable/local-solution dependent; can oversteer
+   0.5         oversteers; final_align around 0.992 in the latest run
+   1.0         oversteers; final_align around 0.993 in the latest run
+
+   Interpretation:
+
+   Small-to-moderate row-concentration penalties help consistently but only
+   mildly. The useful range in this run is lambda ~= 0.1 to 0.2. It does not
+   remove the first-block v3/original-row-1 outside direction, but it nudges
+   the final projection alignment upward relative to baseline.
+
+2. Full joint oracle-warm selection:
+
+   first score_sum is higher, around 2.09838, but final_align worsens to about
+   0.975. A stronger optimizer chases the combined objective more aggressively
+   and is not a cure for this outside-direction issue.
+
+   Follow-up check:
+
+   The default joint path is not oracle-only. Even with --num-restarts 1, the
+   implementation also adds a subspace-svd-eye start. A focused first-block
+   check is now available:
+
+     python check_oracle_warm_joint.py --q0 5
+     python check_oracle_warm_joint.py --q0 32
+
+   With q0=5, the oracle-projected seed is represented poorly in the initial
+   reduced basis:
+
+     start_score ~= 1.93370
+     start_cos_min ~= 0.458
+
+   With q0=32, Q_oracle is represented exactly, and optimizing from the
+   oracle-projected seed only moves mildly outside Q_oracle:
+
+     oracle start_score ~= 2.08268
+     oracle optimized score ~= 2.09160
+     opt_cos_min ~= 0.98986
+     outside norms ~= 0.106, 0.110
+
+   But the subspace-svd-eye seed reaches a higher score:
+
+     subspace-svd-eye optimized score ~= 2.09364
+     opt_cos_min ~= 0.76215
+
+   This explains why "oracle warm start" can still leave the oracle span: the
+   solver is selecting the higher combined-score basin, not preserving the
+   oracle seed.
+
+   A diagnostic switch was added:
+
+     --no-joint-default-svd-start
+
+   This disables the default subspace-svd-eye Stiefel seed and makes the joint
+   path honor oracle warm-starting more directly. On the full static-cex stream:
+
+     --basis-selection joint --joint-warm-start-oracle \
+       --no-joint-warm-start-greedy --no-joint-default-svd-start
+
+   gives final_align ~= 0.989. This is much better than the default joint
+   oracle-warm result, but still worse than the original greedy oracle-warm
+   baseline and worse than mild row-concentration regularization.
+
+3. Reduced search cap / SVD-seed-only:
+
+   qmax=32 with oracle warm start is essentially identical to baseline.
+   SVD-seed-only raises the first-block score but worsens final_align.
+
+   Interpretation:
+
+   Limiting the search space in this way is not an effective regularizer for
+   the row-1/v3 artifact.
+
+4. Explicit first-block downweighting of original row 1:
+
+   Downweighting or zeroing original row 1 sharply improves first-block oracle
+   geometry:
+
+     downweight row 1 to 0.0:
+       first cos_min ~= 0.9878
+       first outside_2 ~= 0.150
+       v3_out_2 ~= 0.001
+
+   But the full-stream final_align worsens to about 0.991.
+
+   Interpretation:
+
+   The diagnosis is right: original row 1 drives the outside direction. But
+   directly suppressing that row is too targeted and damages downstream
+   recovery on this static-cex stream.
+
+
+Current conclusion
+------------------
+The best tested practical steering is mild row-concentration regularization,
+with lambda around 0.1 to 0.2 for this case. It improves final alignment and
+relative singular-value error without dramatically changing the first-block
+solution.
+
+The aggressive fixes that visibly remove the first-block outside component
+do not improve the whole stream. This suggests the outside direction is partly
+a transient/local artifact, but row 1 still carries useful signal for later
+compression. The production direction should be a soft row/leverage penalty,
+not hard row suppression and not a stronger unconstrained joint optimizer.
+
+
+Leverage compensation check
+---------------------------
+A leverage-weighted penalty was wired into the combined CEX objective:
+
+  score_reg(v) = score(v) - lambda * sum_i w_i p_i
+
+where:
+
+  p_i = (A_block v)_i^2 / ||A_block v||^2
+
+Two normalized weight choices were tested:
+
+  row-norm:
+    w_i proportional to ||A_block[i, :]||^2
+
+  top-svd:
+    w_i equal to row leverage in the top-2 left singular vectors of A_block
+
+Command:
+
+  python try_outside_direction_steering.py --full-stream
+
+Full-stream result:
+
+  method                final_align   final_relerr
+  baseline              0.996282      0.000256105
+  rowconc-0.1           0.996791      0.000242993
+  rowconc-0.2           0.997074      0.000235415
+  rowlev-norm-0.001     0.996305      0.000254120
+  rowlev-norm-0.003     0.996370      0.000250030
+  rowlev-norm-0.01      0.996417      0.000245519
+  rowlev-norm-0.03      0.996447      0.000238783
+  rowlev-top2-0.001     0.994374      0.000355105
+  rowlev-top2-0.003     0.987354      0.000688855
+  rowlev-top2-0.01      0.229720      0.001374820
+  rowlev-top2-0.03      0.257913      0.001705500
+
+Interpretation:
+
+  Row-norm leverage compensation works only weakly. It improves baseline by a
+  small amount but does not beat row-concentration regularization.
+
+  Top-SVD leverage compensation is too blunt. It improves some first-block
+  oracle-geometry metrics and reduces the row-1/v3 artifact, but it damages
+  the full stream badly. The top local singular rows evidently include useful
+  signal, so penalizing top-SVD leverage directly suppresses more than the bad
+  transient outside incentive.
+
+Current answer:
+
+  The tested leverage compensation did not work better than row concentration.
+  Keep mild unweighted row-concentration as the best current objective
+  compensation. If leverage is revisited, it likely needs a more selective
+  definition than raw row norm or block top-SVD leverage.
+
+
+Files
+-----
+Experiment driver:
+
+  try_outside_direction_steering.py
+
+Related prior notes:
+
+  summary/combined_joint_oracle_warm_outside_direction_debug.txt
+  summary/oracle_gradient_regularization_notes.txt
+  summary/matrix_benchmark_joint_warmstart_summary.txt

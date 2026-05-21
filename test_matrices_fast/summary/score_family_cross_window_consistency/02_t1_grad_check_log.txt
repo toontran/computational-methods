@@ -1,0 +1,17 @@
+FAM-07 T1 Stiefel/sphere gradient check
+========================================================================
+date: 2026-04-29
+acceptance: max_rel < 1e-7 at float64 on every cell
+trace-form sanity acceptance: max_rel < 1e-9
+
+[sanity trace-form r=3]  max_rel=9.361e-10   (< 1e-9 expected)
+[rank-1 rho_F^2 sphere]  score=1.8920e-01  max_rel=9.963e-09
+[rank-1 rho_frame Stiefel]  score=3.4405e-01  max_rel=6.150e-10  tan_resid=9.02e-17  grad_tan_resid=7.25e-17
+[rank-2 rho_frame Stiefel]  score=6.1998e-02  max_rel=3.401e-10  tan_resid=3.79e-16  grad_tan_resid=1.55e-01
+[rank-3 rho_frame Stiefel]  score=1.2218e-01  max_rel=7.750e-10  tan_resid=2.57e-16  grad_tan_resid=2.90e-01
+[rank-4 rho_frame Stiefel]  score=1.4845e-01  max_rel=5.402e-09  tan_resid=2.20e-16  grad_tan_resid=3.92e-01
+[r=1 cross-check]  rho_frame=1.718602e-01  rho_F^2=1.718602e-01  rel_diff=0.000e+00
+[O(r)-invariance r=3]  rho(V)=1.497982e-01  rho(V Q)=1.497982e-01  rel_diff=0.000e+00
+
+WORST max_rel across cells: 9.963e-09
+STATUS: PASS  (T1 acceptance bar met at float64)

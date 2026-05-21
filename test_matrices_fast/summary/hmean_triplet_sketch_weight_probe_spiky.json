@@ -1,0 +1,1984 @@
+{
+  "rows": [
+    {
+      "block": 2,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11281684813875095,
+      "hm_with_implied_w_raw": 0.22279595258058216,
+      "implied_w_sketch_for_balance": 0.04153391402176738,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.17964867034823653,
+      "raw_gain1": 0.4506650183847271,
+      "raw_gain2": 0.16157545471034807,
+      "raw_gain_avg_g1g2": 0.3061202365475376,
+      "raw_sketch": 0.05499409346245278,
+      "rows_seen_before": 32,
+      "sigma_top_seen": [
+        0.8180816355138313,
+        0.8153345534955468
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.12105350307918455,
+        0.039105709948171516
+      ],
+      "sketch_quality_ratio": [
+        0.9867691399530399,
+        0.9833823973627156
+      ],
+      "sketch_singvals": [
+        0.8072577118873596,
+        0.8017856478691101
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 2,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.12313539888228855,
+      "hm_with_implied_w_raw": 0.25165000439299584,
+      "implied_w_sketch_for_balance": 0.042782605664734456,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.19647171345159734,
+      "raw_gain1": 0.39364974101522365,
+      "raw_gain2": 0.2061379761809276,
+      "raw_gain_avg_g1g2": 0.2998938585980756,
+      "raw_sketch": 0.05892066025237496,
+      "rows_seen_before": 32,
+      "sigma_top_seen": [
+        0.8180816355138313,
+        0.8153345534955468
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.12105350307918455,
+        0.039105709948171516
+      ],
+      "sketch_quality_ratio": [
+        0.9867691399530399,
+        0.9833823973627156
+      ],
+      "sketch_singvals": [
+        0.8072577118873596,
+        0.8017856478691101
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 3,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1259284778003327,
+      "hm_with_implied_w_raw": 0.2262823934454924,
+      "implied_w_sketch_for_balance": 0.05510234780942815,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.20909551670774773,
+      "raw_gain1": 0.16723400601676414,
+      "raw_gain2": 0.4458817260072602,
+      "raw_gain_avg_g1g2": 0.3065578660120122,
+      "raw_sketch": 0.06409987539460618,
+      "rows_seen_before": 64,
+      "sigma_top_seen": [
+        0.828562590467418,
+        0.8259130818172233
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.17636461235316037,
+        0.08333006296304002
+      ],
+      "sketch_quality_ratio": [
+        0.9843317053290357,
+        0.9779168129563968
+      ],
+      "sketch_singvals": [
+        0.815580427646637,
+        0.8076742887496948
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 3,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2155722804715345,
+      "hm_with_implied_w_raw": 0.21680963462329028,
+      "implied_w_sketch_for_balance": 0.7865158584787547,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.8777998914377474,
+      "raw_gain1": 0.1959751745702446,
+      "raw_gain2": 0.2611383639491317,
+      "raw_gain_avg_g1g2": 0.22855676925968815,
+      "raw_sketch": 0.20062710724351654,
+      "rows_seen_before": 64,
+      "sigma_top_seen": [
+        0.828562590467418,
+        0.8259130818172233
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.17636461235316037,
+        0.08333006296304002
+      ],
+      "sketch_quality_ratio": [
+        0.9843317053290357,
+        0.9779168129563968
+      ],
+      "sketch_singvals": [
+        0.815580427646637,
+        0.8076742887496948
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 4,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.15591779813833856,
+      "hm_with_implied_w_raw": 0.268072907729661,
+      "implied_w_sketch_for_balance": 0.07383628274801422,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.2690157859614237,
+      "raw_gain1": 0.34142466708312896,
+      "raw_gain2": 0.2570699700844924,
+      "raw_gain_avg_g1g2": 0.2992473185838107,
+      "raw_sketch": 0.0805022526056724,
+      "rows_seen_before": 96,
+      "sigma_top_seen": [
+        0.834879475962075,
+        0.8313981048863145
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.1712145631085244,
+        0.11769450845714394
+      ],
+      "sketch_quality_ratio": [
+        0.977197589276408,
+        0.9768335999163932
+      ],
+      "sketch_singvals": [
+        0.8158422112464905,
+        0.8121376037597656
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 4,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.215225095582339,
+      "hm_with_implied_w_raw": 0.22850584023290874,
+      "implied_w_sketch_for_balance": 0.46280813472174387,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.676217641389689,
+      "raw_gain1": 0.22382299471878606,
+      "raw_gain2": 0.27880438297143856,
+      "raw_gain_avg_g1g2": 0.2513136888451123,
+      "raw_sketch": 0.16994274991978403,
+      "rows_seen_before": 96,
+      "sigma_top_seen": [
+        0.834879475962075,
+        0.8313981048863145
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.1712145631085244,
+        0.11769450845714394
+      ],
+      "sketch_quality_ratio": [
+        0.977197589276408,
+        0.9768335999163932
+      ],
+      "sketch_singvals": [
+        0.8158422112464905,
+        0.8121376037597656
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 5,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.19105152076240864,
+      "hm_with_implied_w_raw": 0.20213745250447696,
+      "implied_w_sketch_for_balance": 0.4326223547127301,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.6055434664909701,
+      "raw_gain1": 0.35516556528538595,
+      "raw_gain2": 0.15571422674032465,
+      "raw_gain_avg_g1g2": 0.2554398960128553,
+      "raw_sketch": 0.15467996011171736,
+      "rows_seen_before": 128,
+      "sigma_top_seen": [
+        0.8493719374907024,
+        0.8441813975200035
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.18877189060300398,
+        0.13947670636906967
+      ],
+      "sketch_quality_ratio": [
+        0.9650183799785097,
+        0.9668903341489289
+      ],
+      "sketch_singvals": [
+        0.8196595311164856,
+        0.816230833530426
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 5,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21874764243729294,
+      "hm_with_implied_w_raw": 0.229257428748254,
+      "implied_w_sketch_for_balance": 0.509641026920946,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.7128373147435166,
+      "raw_gain1": 0.2350506992110314,
+      "raw_gain2": 0.2620553968376638,
+      "raw_gain_avg_g1g2": 0.2485530480243476,
+      "raw_sketch": 0.1771778873249923,
+      "rows_seen_before": 128,
+      "sigma_top_seen": [
+        0.8493719374907024,
+        0.8441813975200035
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.18877189060300398,
+        0.13947670636906967
+      ],
+      "sketch_quality_ratio": [
+        0.9650183799785097,
+        0.9668903341489289
+      ],
+      "sketch_singvals": [
+        0.8196595311164856,
+        0.816230833530426
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 6,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21580114548162946,
+      "hm_with_implied_w_raw": 0.21968987696883963,
+      "implied_w_sketch_for_balance": 1.4849818453713413,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.2185980080397898,
+      "raw_gain1": 0.20275415325652787,
+      "raw_gain2": 0.2030406452332417,
+      "raw_gain_avg_g1g2": 0.20289739924488479,
+      "raw_sketch": 0.24725036655627053,
+      "rows_seen_before": 160,
+      "sigma_top_seen": [
+        0.8585541740011067,
+        0.8485539651120615
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.22006735738882913,
+        0.15147592631665374
+      ],
+      "sketch_quality_ratio": [
+        0.9574869829268353,
+        0.9653966530103443
+      ],
+      "sketch_singvals": [
+        0.8220544457435608,
+        0.8191911578178406
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 6,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22635183348687066,
+      "hm_with_implied_w_raw": 0.22697510424216033,
+      "implied_w_sketch_for_balance": 0.8533971037494733,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.9236920715746099,
+      "raw_gain1": 0.23609004619193097,
+      "raw_gain2": 0.22914708239851073,
+      "raw_gain_avg_g1g2": 0.23261856429522085,
+      "raw_sketch": 0.2148679235405641,
+      "rows_seen_before": 160,
+      "sigma_top_seen": [
+        0.8585541740011067,
+        0.8485539651120615
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.22006735738882913,
+        0.15147592631665374
+      ],
+      "sketch_quality_ratio": [
+        0.9574869829268353,
+        0.9653966530103443
+      ],
+      "sketch_singvals": [
+        0.8220544457435608,
+        0.8191911578178406
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 7,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.15818546929262167,
+      "hm_with_implied_w_raw": 0.17696207719561347,
+      "implied_w_sketch_for_balance": 0.270778331967183,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.43153804492424275,
+      "raw_gain1": 0.12156134438200988,
+      "raw_gain2": 0.4294902458093078,
+      "raw_gain_avg_g1g2": 0.27552579509565883,
+      "raw_sketch": 0.11889986294177812,
+      "rows_seen_before": 192,
+      "sigma_top_seen": [
+        0.8618353661813593,
+        0.8522148853468509
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2171142083512216,
+        0.13396159060280463
+      ],
+      "sketch_quality_ratio": [
+        0.9536612549003138,
+        0.9617086216143441
+      ],
+      "sketch_singvals": [
+        0.8218989968299866,
+        0.8195824027061462
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 7,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21473746573184718,
+      "hm_with_implied_w_raw": 0.21824940512735286,
+      "implied_w_sketch_for_balance": 1.4109550200966976,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.1459798024154586,
+      "raw_gain1": 0.273172975500153,
+      "raw_gain2": 0.15936300915467363,
+      "raw_gain_avg_g1g2": 0.21626799232741334,
+      "raw_sketch": 0.24783875111615705,
+      "rows_seen_before": 192,
+      "sigma_top_seen": [
+        0.8618353661813593,
+        0.8522148853468509
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2171142083512216,
+        0.13396159060280463
+      ],
+      "sketch_quality_ratio": [
+        0.9536612549003138,
+        0.9617086216143441
+      ],
+      "sketch_singvals": [
+        0.8218989968299866,
+        0.8195824027061462
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 8,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14246727927210812,
+      "hm_with_implied_w_raw": 0.22825173445098088,
+      "implied_w_sketch_for_balance": 0.08035205432118193,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.25858881409362017,
+      "raw_gain1": 0.41976098138819784,
+      "raw_gain2": 0.17579410015177233,
+      "raw_gain_avg_g1g2": 0.2977775407699851,
+      "raw_sketch": 0.07700194113142507,
+      "rows_seen_before": 224,
+      "sigma_top_seen": [
+        0.8667931606484715,
+        0.8570368655054896
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2256195733415957,
+        0.11249405853335656
+      ],
+      "sketch_quality_ratio": [
+        0.9501010646847227,
+        0.9564119889452548
+      ],
+      "sketch_singvals": [
+        0.8235411047935486,
+        0.8196803331375122
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 8,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21107016585542973,
+      "hm_with_implied_w_raw": 0.2441137340558466,
+      "implied_w_sketch_for_balance": 3.056314812111619,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.748118006796046,
+      "raw_gain1": 0.1830447844096434,
+      "raw_gain2": 0.17891302662442693,
+      "raw_gain_avg_g1g2": 0.18097890551703516,
+      "raw_sketch": 0.31637248358456943,
+      "rows_seen_before": 224,
+      "sigma_top_seen": [
+        0.8667931606484715,
+        0.8570368655054896
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2256195733415957,
+        0.11249405853335656
+      ],
+      "sketch_quality_ratio": [
+        0.9501010646847227,
+        0.9564119889452548
+      ],
+      "sketch_singvals": [
+        0.8235411047935486,
+        0.8196803331375122
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 9,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14234038446223915,
+      "hm_with_implied_w_raw": 0.2163431305683497,
+      "implied_w_sketch_for_balance": 0.09082491547895989,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.26747371860511404,
+      "raw_gain1": 0.16061520227311404,
+      "raw_gain2": 0.43510245362356903,
+      "raw_gain_avg_g1g2": 0.2978588279483415,
+      "raw_sketch": 0.07966940833070377,
+      "rows_seen_before": 256,
+      "sigma_top_seen": [
+        0.8736026546315181,
+        0.8625634175442104
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19406900245263062,
+        0.1113899281065593
+      ],
+      "sketch_quality_ratio": [
+        0.942218164229165,
+        0.9533170133018742
+      ],
+      "sketch_singvals": [
+        0.8231242895126343,
+        0.8222963809967041
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 9,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21735669972104377,
+      "hm_with_implied_w_raw": 0.2173627136071145,
+      "implied_w_sketch_for_balance": 0.9359515224019656,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.9377332049257362,
+      "raw_gain1": 0.17456403234481466,
+      "raw_gain2": 0.28842774767769985,
+      "raw_gain_avg_g1g2": 0.23149589001125725,
+      "raw_sketch": 0.21708138286739198,
+      "rows_seen_before": 256,
+      "sigma_top_seen": [
+        0.8736026546315181,
+        0.8625634175442104
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19406900245263062,
+        0.1113899281065593
+      ],
+      "sketch_quality_ratio": [
+        0.942218164229165,
+        0.9533170133018742
+      ],
+      "sketch_singvals": [
+        0.8231242895126343,
+        0.8222963809967041
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 10,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1367089375799019,
+      "hm_with_implied_w_raw": 0.1573555871616909,
+      "implied_w_sketch_for_balance": 0.20951279147347618,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.35065210228273197,
+      "raw_gain1": 0.4686013221344467,
+      "raw_gain2": 0.10190656225397537,
+      "raw_gain_avg_g1g2": 0.2852539421942111,
+      "raw_sketch": 0.10002489451483701,
+      "rows_seen_before": 288,
+      "sigma_top_seen": [
+        0.8793479477797373,
+        0.8682673265557985
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19836336843590294,
+        0.1206782597563102
+      ],
+      "sketch_quality_ratio": [
+        0.93862266541664,
+        0.9484724450136337
+      ],
+      "sketch_singvals": [
+        0.8253759145736694,
+        0.8235276341438293
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 10,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21956321766303544,
+      "hm_with_implied_w_raw": 0.21965417318712166,
+      "implied_w_sketch_for_balance": 0.9195873017318661,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.9404825574746218,
+      "raw_gain1": 0.2749222755426793,
+      "raw_gain2": 0.18507797772450169,
+      "raw_gain_avg_g1g2": 0.23000012663359048,
+      "raw_sketch": 0.21631110731584607,
+      "rows_seen_before": 288,
+      "sigma_top_seen": [
+        0.8793479477797373,
+        0.8682673265557985
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19836336843590294,
+        0.1206782597563102
+      ],
+      "sketch_quality_ratio": [
+        0.93862266541664,
+        0.9484724450136337
+      ],
+      "sketch_singvals": [
+        0.8253759145736694,
+        0.8235276341438293
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 11,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21464751746593386,
+      "hm_with_implied_w_raw": 0.2253083701012347,
+      "implied_w_sketch_for_balance": 1.9088603207386443,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.3799894146475953,
+      "raw_gain1": 0.18581269324562696,
+      "raw_gain2": 0.2047539509928133,
+      "raw_gain_avg_g1g2": 0.19528332211922012,
+      "raw_sketch": 0.26948891738174036,
+      "rows_seen_before": 320,
+      "sigma_top_seen": [
+        0.888347786637308,
+        0.8726272761190054
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2097022106841808,
+        0.13455069026893102
+      ],
+      "sketch_quality_ratio": [
+        0.9301630762876585,
+        0.9465401231399991
+      ],
+      "sketch_singvals": [
+        0.8263083100318909,
+        0.8259767293930054
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 11,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21983230783618207,
+      "hm_with_implied_w_raw": 0.21983334495538126,
+      "implied_w_sketch_for_balance": 1.0014064730266856,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.9863594880987763,
+      "raw_gain1": 0.1871569279855535,
+      "raw_gain2": 0.2631211209940192,
+      "raw_gain_avg_g1g2": 0.22513902448978634,
+      "raw_sketch": 0.2220680129468035,
+      "rows_seen_before": 320,
+      "sigma_top_seen": [
+        0.888347786637308,
+        0.8726272761190054
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2097022106841808,
+        0.13455069026893102
+      ],
+      "sketch_quality_ratio": [
+        0.9301630762876585,
+        0.9465401231399991
+      ],
+      "sketch_singvals": [
+        0.8263083100318909,
+        0.8259767293930054
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 12,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2199288216378747,
+      "hm_with_implied_w_raw": 0.21993072566975977,
+      "implied_w_sketch_for_balance": 1.0041419575382073,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.9947137720042395,
+      "raw_gain1": 0.19558671870682298,
+      "raw_gain2": 0.24940263861632161,
+      "raw_gain_avg_g1g2": 0.2224946786615723,
+      "raw_sketch": 0.22131852106232375,
+      "rows_seen_before": 352,
+      "sigma_top_seen": [
+        0.8913316360498916,
+        0.8783538256691659
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.20793921114392225,
+        0.1339460435710218
+      ],
+      "sketch_quality_ratio": [
+        0.9311410979686587,
+        0.9406560013628968
+      ],
+      "sketch_singvals": [
+        0.829955518245697,
+        0.8262287974357605
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 12,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22046501808097002,
+      "hm_with_implied_w_raw": 0.2252540208135135,
+      "implied_w_sketch_for_balance": 0.6323439540839396,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.7886219966094183,
+      "raw_gain1": 0.21148054294755558,
+      "raw_gain2": 0.27376902622842514,
+      "raw_gain_avg_g1g2": 0.24262478458799036,
+      "raw_sketch": 0.191339242048711,
+      "rows_seen_before": 352,
+      "sigma_top_seen": [
+        0.8913316360498916,
+        0.8783538256691659
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.20793921114392225,
+        0.1339460435710218
+      ],
+      "sketch_quality_ratio": [
+        0.9311410979686587,
+        0.9406560013628968
+      ],
+      "sketch_singvals": [
+        0.829955518245697,
+        0.8262287974357605
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 13,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.18114701513303452,
+      "hm_with_implied_w_raw": 0.19348371035021833,
+      "implied_w_sketch_for_balance": 0.38211397969822986,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.542751656832052,
+      "raw_gain1": 0.13967812356209042,
+      "raw_gain2": 0.39612645672866587,
+      "raw_gain_avg_g1g2": 0.26790229014537814,
+      "raw_sketch": 0.1454044118455051,
+      "rows_seen_before": 384,
+      "sigma_top_seen": [
+        0.8954040517654249,
+        0.8833481876718111
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.21759900338657107,
+        0.13970066100781864
+      ],
+      "sketch_quality_ratio": [
+        0.926800369988222,
+        0.9378877404609123
+      ],
+      "sketch_singvals": [
+        0.8298608064651489,
+        0.8284814357757568
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 13,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21693239889264154,
+      "hm_with_implied_w_raw": 0.23431443997803594,
+      "implied_w_sketch_for_balance": 0.4134441872543831,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.6368309572462897,
+      "raw_gain1": 0.22492895945226565,
+      "raw_gain2": 0.29703754529354803,
+      "raw_gain_avg_g1g2": 0.26098325237290687,
+      "raw_sketch": 0.16620221443388827,
+      "rows_seen_before": 384,
+      "sigma_top_seen": [
+        0.8954040517654249,
+        0.8833481876718111
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.21759900338657107,
+        0.13970066100781864
+      ],
+      "sketch_quality_ratio": [
+        0.926800369988222,
+        0.9378877404609123
+      ],
+      "sketch_singvals": [
+        0.8298608064651489,
+        0.8284814357757568
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 14,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.17986923171423896,
+      "hm_with_implied_w_raw": 0.20905661177148824,
+      "implied_w_sketch_for_balance": 0.25481244898507327,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.45952053430476497,
+      "raw_gain1": 0.3890758579885057,
+      "raw_gain2": 0.16128143695094949,
+      "raw_gain_avg_g1g2": 0.2751786474697276,
+      "raw_sketch": 0.12645023911455178,
+      "rows_seen_before": 416,
+      "sigma_top_seen": [
+        0.8992099588645482,
+        0.8892388490758234
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2461483392763146,
+        0.13318339026052103
+      ],
+      "sketch_quality_ratio": [
+        0.9250313709034925,
+        0.9344495357062675
+      ],
+      "sketch_singvals": [
+        0.8317974209785461,
+        0.8309488296508789
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 14,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22774477569080848,
+      "hm_with_implied_w_raw": 0.2310584418157312,
+      "implied_w_sketch_for_balance": 0.6894415487237509,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.8263835865309166,
+      "raw_gain1": 0.269007128162447,
+      "raw_gain2": 0.22128499405003982,
+      "raw_gain_avg_g1g2": 0.2451460611062434,
+      "raw_sketch": 0.20258468120090467,
+      "rows_seen_before": 416,
+      "sigma_top_seen": [
+        0.8992099588645482,
+        0.8892388490758234
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.2461483392763146,
+        0.13318339026052103
+      ],
+      "sketch_quality_ratio": [
+        0.9250313709034925,
+        0.9344495357062675
+      ],
+      "sketch_singvals": [
+        0.8317974209785461,
+        0.8309488296508789
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 15,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21965290486909436,
+      "hm_with_implied_w_raw": 0.21965435377380027,
+      "implied_w_sketch_for_balance": 1.0062612698036435,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.0014884049205346,
+      "raw_gain1": 0.2325893475783481,
+      "raw_gain2": 0.20745724870827126,
+      "raw_gain_avg_g1g2": 0.22002329814330968,
+      "raw_sketch": 0.22035078190289842,
+      "rows_seen_before": 448,
+      "sigma_top_seen": [
+        0.9074568372444263,
+        0.8966892773115513
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.24595692623085072,
+        0.14665176182784648
+      ],
+      "sketch_quality_ratio": [
+        0.9199121540367644,
+        0.9284220093456406
+      ],
+      "sketch_singvals": [
+        0.8347805738449097,
+        0.8325060606002808
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 15,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21890618156063812,
+      "hm_with_implied_w_raw": 0.22162850987837698,
+      "implied_w_sketch_for_balance": 1.3524280129607382,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.1284782482479665,
+      "raw_gain1": 0.2727225353077608,
+      "raw_gain2": 0.16657328786738446,
+      "raw_gain_avg_g1g2": 0.21964791158757263,
+      "raw_sketch": 0.2478678904996682,
+      "rows_seen_before": 448,
+      "sigma_top_seen": [
+        0.9074568372444263,
+        0.8966892773115513
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.24595692623085072,
+        0.14665176182784648
+      ],
+      "sketch_quality_ratio": [
+        0.9199121540367644,
+        0.9284220093456406
+      ],
+      "sketch_singvals": [
+        0.8347805738449097,
+        0.8325060606002808
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 16,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1693352676699666,
+      "hm_with_implied_w_raw": 0.18768683521128995,
+      "implied_w_sketch_for_balance": 0.28913523949959663,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.4512084729834371,
+      "raw_gain1": 0.13017051911047645,
+      "raw_gain2": 0.44067571251826615,
+      "raw_gain_avg_g1g2": 0.2854231158143713,
+      "raw_sketch": 0.12878532824077718,
+      "rows_seen_before": 480,
+      "sigma_top_seen": [
+        0.913818829636338,
+        0.9029323354147442
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.27625803596411974,
+        0.1436523657133997
+      ],
+      "sketch_quality_ratio": [
+        0.9157992559183751,
+        0.9231617544966657
+      ],
+      "sketch_singvals": [
+        0.8368746042251587,
+        0.8335525989532471
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 16,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.20993300812314053,
+      "hm_with_implied_w_raw": 0.26011689723107256,
+      "implied_w_sketch_for_balance": 3.8888698533860238,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.9717413157587937,
+      "raw_gain1": 0.17844491609059968,
+      "raw_gain2": 0.17252597196143193,
+      "raw_gain_avg_g1g2": 0.1754854440260158,
+      "raw_sketch": 0.34601190030037254,
+      "rows_seen_before": 480,
+      "sigma_top_seen": [
+        0.913818829636338,
+        0.9029323354147442
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.27625803596411974,
+        0.1436523657133997
+      ],
+      "sketch_quality_ratio": [
+        0.9157992559183751,
+        0.9231617544966657
+      ],
+      "sketch_singvals": [
+        0.8368746042251587,
+        0.8335525989532471
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 17,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14631863827091687,
+      "hm_with_implied_w_raw": 0.1526581257217064,
+      "implied_w_sketch_for_balance": 0.3563845833718079,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.44434782602549555,
+      "raw_gain1": 0.4767136562861205,
+      "raw_gain2": 0.09494863229653616,
+      "raw_gain_avg_g1g2": 0.28583114429132833,
+      "raw_sketch": 0.12700844757623148,
+      "rows_seen_before": 512,
+      "sigma_top_seen": [
+        0.9179032691285166,
+        0.9088492983375888
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.29641653756214364,
+        0.13704742246219698
+      ],
+      "sketch_quality_ratio": [
+        0.9138965359693296,
+        0.920204151198747
+      ],
+      "sketch_singvals": [
+        0.8388686180114746,
+        0.8363268971443176
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 17,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.20359603981271565,
+      "hm_with_implied_w_raw": 0.2697877408070853,
+      "implied_w_sketch_for_balance": 4.751569388442653,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 2.173663721480786,
+      "raw_gain1": 0.15513532221765824,
+      "raw_gain2": 0.18030656105135312,
+      "raw_gain_avg_g1g2": 0.16772094163450568,
+      "raw_sketch": 0.3645689261635213,
+      "rows_seen_before": 512,
+      "sigma_top_seen": [
+        0.9179032691285166,
+        0.9088492983375888
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.29641653756214364,
+        0.13704742246219698
+      ],
+      "sketch_quality_ratio": [
+        0.9138965359693296,
+        0.920204151198747
+      ],
+      "sketch_singvals": [
+        0.8388686180114746,
+        0.8363268971443176
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 18,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1876370134408097,
+      "hm_with_implied_w_raw": 0.1886931351735242,
+      "implied_w_sketch_for_balance": 1.1318793479455258,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.9202708043515186,
+      "raw_gain1": 0.11715739702764469,
+      "raw_gain2": 0.35314051123607526,
+      "raw_gain_avg_g1g2": 0.23514895413186,
+      "raw_sketch": 0.21640071716134515,
+      "rows_seen_before": 544,
+      "sigma_top_seen": [
+        0.9310807282149496,
+        0.9144620517848625
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.31542022442507994,
+        0.1621082140971317
+      ],
+      "sketch_quality_ratio": [
+        0.9043306451202111,
+        0.9174631173148298
+      ],
+      "sketch_singvals": [
+        0.8420048356056213,
+        0.8389852046966553
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 18,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2081881985196089,
+      "hm_with_implied_w_raw": 0.26350999407382414,
+      "implied_w_sketch_for_balance": 4.1291011302753,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 2.016507640904921,
+      "raw_gain1": 0.1537248609501247,
+      "raw_gain2": 0.19697425649831557,
+      "raw_gain_avg_g1g2": 0.17534955872422014,
+      "raw_sketch": 0.35359372499669606,
+      "rows_seen_before": 544,
+      "sigma_top_seen": [
+        0.9310807282149496,
+        0.9144620517848625
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.31542022442507994,
+        0.1621082140971317
+      ],
+      "sketch_quality_ratio": [
+        0.9043306451202111,
+        0.9174631173148298
+      ],
+      "sketch_singvals": [
+        0.8420048356056213,
+        0.8389852046966553
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 19,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.21008816819647627,
+      "hm_with_implied_w_raw": 0.2383002824230443,
+      "implied_w_sketch_for_balance": 0.3152050094989158,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.5517993531764833,
+      "raw_gain1": 0.2217528349051788,
+      "raw_gain2": 0.32205111678565995,
+      "raw_gain_avg_g1g2": 0.27190197584541936,
+      "raw_sketch": 0.1500353343989102,
+      "rows_seen_before": 576,
+      "sigma_top_seen": [
+        0.9344412299719737,
+        0.9211980001146207
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3429816586540879,
+        0.1693077090495583
+      ],
+      "sketch_quality_ratio": [
+        0.9028169275282055,
+        0.913562089081865
+      ],
+      "sketch_singvals": [
+        0.8436293601989746,
+        0.841571569442749
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 19,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.18929454729520834,
+      "hm_with_implied_w_raw": 0.28870780678472013,
+      "implied_w_sketch_for_balance": 6.756439888999822,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 2.549707484068877,
+      "raw_gain1": 0.18621505683478579,
+      "raw_gain2": 0.12558890394765926,
+      "raw_gain_avg_g1g2": 0.15590198039122252,
+      "raw_sketch": 0.3975044461846594,
+      "rows_seen_before": 576,
+      "sigma_top_seen": [
+        0.9344412299719737,
+        0.9211980001146207
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3429816586540879,
+        0.1693077090495583
+      ],
+      "sketch_quality_ratio": [
+        0.9028169275282055,
+        0.913562089081865
+      ],
+      "sketch_singvals": [
+        0.8436293601989746,
+        0.841571569442749
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 20,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1891771189381173,
+      "hm_with_implied_w_raw": 0.1906302520012216,
+      "implied_w_sketch_for_balance": 0.644958518516528,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.7015024615199824,
+      "raw_gain1": 0.37941185336207983,
+      "raw_gain2": 0.13095411156482895,
+      "raw_gain_avg_g1g2": 0.2551829824634544,
+      "raw_sketch": 0.17901149033612376,
+      "rows_seen_before": 608,
+      "sigma_top_seen": [
+        0.9412117998581105,
+        0.9290962671610971
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.35490291911002286,
+        0.17114137494269951
+      ],
+      "sketch_quality_ratio": [
+        0.897725128391758,
+        0.9077958593254993
+      ],
+      "sketch_singvals": [
+        0.84494948387146,
+        0.8434297442436218
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 20,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.179830965152048,
+      "hm_with_implied_w_raw": 0.32210230325753286,
+      "implied_w_sketch_for_balance": 9.921460279379927,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 3.1391668863978026,
+      "raw_gain1": 0.12830285694200638,
+      "raw_gain2": 0.1512950266795844,
+      "raw_gain_avg_g1g2": 0.13979894181079539,
+      "raw_sketch": 0.43885220888590215,
+      "rows_seen_before": 608,
+      "sigma_top_seen": [
+        0.9412117998581105,
+        0.9290962671610971
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.35490291911002286,
+        0.17114137494269951
+      ],
+      "sketch_quality_ratio": [
+        0.897725128391758,
+        0.9077958593254993
+      ],
+      "sketch_singvals": [
+        0.84494948387146,
+        0.8434297442436218
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 21,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1858029123938573,
+      "hm_with_implied_w_raw": 0.18537082537822688,
+      "implied_w_sketch_for_balance": 0.8173172041252126,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.7740246444944648,
+      "raw_gain1": 0.12034205200874357,
+      "raw_gain2": 0.37765527371079144,
+      "raw_gain_avg_g1g2": 0.24899866285976752,
+      "raw_sketch": 0.19273110149962866,
+      "rows_seen_before": 640,
+      "sigma_top_seen": [
+        0.9509968464418175,
+        0.934690415245214
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3686058906254967,
+        0.1851442307665248
+      ],
+      "sketch_quality_ratio": [
+        0.8905226697748908,
+        0.9057770807639247
+      ],
+      "sketch_singvals": [
+        0.8468842506408691,
+        0.8466211557388306
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 21,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1878595873711806,
+      "hm_with_implied_w_raw": 0.31864862552727763,
+      "implied_w_sketch_for_balance": 8.809428626257219,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 2.962929877415898,
+      "raw_gain1": 0.13817413341061355,
+      "raw_gain2": 0.15544370732443075,
+      "raw_gain_avg_g1g2": 0.14680892036752213,
+      "raw_sketch": 0.4349845364281027,
+      "rows_seen_before": 640,
+      "sigma_top_seen": [
+        0.9509968464418175,
+        0.934690415245214
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3686058906254967,
+        0.1851442307665248
+      ],
+      "sketch_quality_ratio": [
+        0.8905226697748908,
+        0.9057770807639247
+      ],
+      "sketch_singvals": [
+        0.8468842506408691,
+        0.8466211557388306
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 22,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.20865002709916416,
+      "hm_with_implied_w_raw": 0.24489169772221087,
+      "implied_w_sketch_for_balance": 0.2718575793925495,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.5166693500465421,
+      "raw_gain1": 0.31340059557825034,
+      "raw_gain2": 0.2391412358736374,
+      "raw_gain_avg_g1g2": 0.27627091572594387,
+      "raw_sketch": 0.14274071446488643,
+      "rows_seen_before": 672,
+      "sigma_top_seen": [
+        0.9549255239811371,
+        0.940407394851852
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.37977845952257117,
+        0.1771178611764937
+      ],
+      "sketch_quality_ratio": [
+        0.8910592550236908,
+        0.9008433450722484
+      ],
+      "sketch_singvals": [
+        0.8508952260017395,
+        0.847159743309021
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 22,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1748970167022429,
+      "hm_with_implied_w_raw": 0.3397569229751089,
+      "implied_w_sketch_for_balance": 11.750057381215369,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 3.401831856662727,
+      "raw_gain1": 0.15218655149615345,
+      "raw_gain2": 0.11886329240826393,
+      "raw_gain_avg_g1g2": 0.1355249219522087,
+      "raw_sketch": 0.46103299686875326,
+      "rows_seen_before": 672,
+      "sigma_top_seen": [
+        0.9549255239811371,
+        0.940407394851852
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.37977845952257117,
+        0.1771178611764937
+      ],
+      "sketch_quality_ratio": [
+        0.8910592550236908,
+        0.9008433450722484
+      ],
+      "sketch_singvals": [
+        0.8508952260017395,
+        0.847159743309021
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 23,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2222644293392722,
+      "hm_with_implied_w_raw": 0.23797223335115897,
+      "implied_w_sketch_for_balance": 0.43265242605064536,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.646604100830459,
+      "raw_gain1": 0.21877443631290444,
+      "raw_gain2": 0.3170560696543363,
+      "raw_gain_avg_g1g2": 0.2679152529836204,
+      "raw_sketch": 0.17323510125423883,
+      "rows_seen_before": 704,
+      "sigma_top_seen": [
+        0.9667038368236331,
+        0.9455552675875976
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4017185181011114,
+        0.20314839148475206
+      ],
+      "sketch_quality_ratio": [
+        0.883221844916368,
+        0.8997986944580612
+      ],
+      "sketch_singvals": [
+        0.8538139462471008,
+        0.8508093953132629
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 23,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.16926846045382826,
+      "hm_with_implied_w_raw": 0.34587737164038423,
+      "implied_w_sketch_for_balance": 12.90016870708107,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 3.5256140393647364,
+      "raw_gain1": 0.10770332505956351,
+      "raw_gain2": 0.1585330322798531,
+      "raw_gain_avg_g1g2": 0.13311817866970832,
+      "raw_sketch": 0.46932331961258705,
+      "rows_seen_before": 704,
+      "sigma_top_seen": [
+        0.9667038368236331,
+        0.9455552675875976
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4017185181011114,
+        0.20314839148475206
+      ],
+      "sketch_quality_ratio": [
+        0.883221844916368,
+        0.8997986944580612
+      ],
+      "sketch_singvals": [
+        0.8538139462471008,
+        0.8508093953132629
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 24,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1769938928171528,
+      "hm_with_implied_w_raw": 0.1788482177421618,
+      "implied_w_sketch_for_balance": 1.1787289197299573,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.8802160942902588,
+      "raw_gain1": 0.39086934526505224,
+      "raw_gain2": 0.10221534766870813,
+      "raw_gain_avg_g1g2": 0.24654234646688017,
+      "raw_sketch": 0.21701054128423306,
+      "rows_seen_before": 736,
+      "sigma_top_seen": [
+        0.9751710270805165,
+        0.9498492814142744
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.42212845194129006,
+        0.20311641969026037
+      ],
+      "sketch_quality_ratio": [
+        0.8814177694462775,
+        0.8986551745229002
+      ],
+      "sketch_singvals": [
+        0.8595330715179443,
+        0.8535869717597961
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 24,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14879815165106938,
+      "hm_with_implied_w_raw": 0.37518432715775174,
+      "implied_w_sketch_for_balance": 19.17386584743223,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 4.213499187658427,
+      "raw_gain1": 0.15126846106903793,
+      "raw_gain2": 0.08654401118166483,
+      "raw_gain_avg_g1g2": 0.11890623612535138,
+      "raw_sketch": 0.5010113293216891,
+      "rows_seen_before": 736,
+      "sigma_top_seen": [
+        0.9751710270805165,
+        0.9498492814142744
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.42212845194129006,
+        0.20311641969026037
+      ],
+      "sketch_quality_ratio": [
+        0.8814177694462775,
+        0.8986551745229002
+      ],
+      "sketch_singvals": [
+        0.8595330715179443,
+        0.8535869717597961
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 25,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.18699840282539296,
+      "hm_with_implied_w_raw": 0.2032974239128374,
+      "implied_w_sketch_for_balance": 2.053845785537394,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.2306614447321378,
+      "raw_gain1": 0.10712218872846337,
+      "raw_gain2": 0.3322946931399586,
+      "raw_gain_avg_g1g2": 0.21970844093421096,
+      "raw_sketch": 0.27038670733994163,
+      "rows_seen_before": 768,
+      "sigma_top_seen": [
+        0.9872791429337242,
+        0.9558412421302249
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.442612054996057,
+        0.21523046316344918
+      ],
+      "sketch_quality_ratio": [
+        0.8750492034492374,
+        0.895858754504165
+      ],
+      "sketch_singvals": [
+        0.8639178276062012,
+        0.8562987446784973
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 25,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14025820400741995,
+      "hm_with_implied_w_raw": 0.405309989977201,
+      "implied_w_sketch_for_balance": 25.221603923439993,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 4.888683568297146,
+      "raw_gain1": 0.08345765685856739,
+      "raw_gain2": 0.13302777463480875,
+      "raw_gain_avg_g1g2": 0.10824271574668806,
+      "raw_sketch": 0.5291643858586926,
+      "rows_seen_before": 768,
+      "sigma_top_seen": [
+        0.9872791429337242,
+        0.9558412421302249
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.442612054996057,
+        0.21523046316344918
+      ],
+      "sketch_quality_ratio": [
+        0.8750492034492374,
+        0.895858754504165
+      ],
+      "sketch_singvals": [
+        0.8639178276062012,
+        0.8562987446784973
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 26,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.16504391902077553,
+      "hm_with_implied_w_raw": 0.1990682454005176,
+      "implied_w_sketch_for_balance": 2.9601064967322475,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.3811420477389182,
+      "raw_gain1": 0.3361405304666113,
+      "raw_gain2": 0.08500775925277274,
+      "raw_gain_avg_g1g2": 0.210574144859692,
+      "raw_sketch": 0.2908328056323866,
+      "rows_seen_before": 800,
+      "sigma_top_seen": [
+        0.9910481802988416,
+        0.9604873900870954
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4437174835131549,
+        0.22234159783197446
+      ],
+      "sketch_quality_ratio": [
+        0.8740439233912286,
+        0.8935539899671874
+      ],
+      "sketch_singvals": [
+        0.8662196397781372,
+        0.8582473397254944
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 26,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.16882606987639764,
+      "hm_with_implied_w_raw": 0.3739918765970342,
+      "implied_w_sketch_for_balance": 15.504999724290533,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 3.936823405326602,
+      "raw_gain1": 0.12430965679186759,
+      "raw_gain2": 0.12947425195730372,
+      "raw_gain_avg_g1g2": 0.12689195437458567,
+      "raw_sketch": 0.4995512159295042,
+      "rows_seen_before": 800,
+      "sigma_top_seen": [
+        0.9910481802988416,
+        0.9604873900870954
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4437174835131549,
+        0.22234159783197446
+      ],
+      "sketch_quality_ratio": [
+        0.8740439233912286,
+        0.8935539899671874
+      ],
+      "sketch_singvals": [
+        0.8662196397781372,
+        0.8582473397254944
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 27,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1687536189960902,
+      "hm_with_implied_w_raw": 0.3333562062600652,
+      "implied_w_sketch_for_balance": 12.242595633621923,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 3.4921969677300297,
+      "raw_gain1": 0.12103620373142604,
+      "raw_gain2": 0.13705401391198108,
+      "raw_gain_avg_g1g2": 0.12904510882170356,
+      "raw_sketch": 0.4506509377275449,
+      "rows_seen_before": 832,
+      "sigma_top_seen": [
+        1.0000812531100658,
+        0.9670758617442236
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4584466495022059,
+        0.2301046320339567
+      ],
+      "sketch_quality_ratio": [
+        0.870426740253937,
+        0.8897309586777836
+      ],
+      "sketch_singvals": [
+        0.870497465133667,
+        0.8604373335838318
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 27,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.16352769209138504,
+      "hm_with_implied_w_raw": 0.3875758963589553,
+      "implied_w_sketch_for_balance": 17.738856216201196,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 4.2112567553443405,
+      "raw_gain1": 0.12385877177574259,
+      "raw_gain2": 0.12011684611839606,
+      "raw_gain_avg_g1g2": 0.12198780894706931,
+      "raw_sketch": 0.5137219844980004,
+      "rows_seen_before": 832,
+      "sigma_top_seen": [
+        1.0000812531100658,
+        0.9670758617442236
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4584466495022059,
+        0.2301046320339567
+      ],
+      "sketch_quality_ratio": [
+        0.870426740253937,
+        0.8897309586777836
+      ],
+      "sketch_singvals": [
+        0.870497465133667,
+        0.8604373335838318
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 28,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.17451971912679612,
+      "hm_with_implied_w_raw": 0.21210348215840436,
+      "implied_w_sketch_for_balance": 3.118300430061378,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.468789079420382,
+      "raw_gain1": 0.0924344065342336,
+      "raw_gain2": 0.323121058494524,
+      "raw_gain_avg_g1g2": 0.2077777325143788,
+      "raw_sketch": 0.3051816644638488,
+      "rows_seen_before": 864,
+      "sigma_top_seen": [
+        1.002694109806839,
+        0.9735991554832624
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.48855779827530177,
+        0.22790077263437
+      ],
+      "sketch_quality_ratio": [
+        0.8710773348065659,
+        0.8859860398246918
+      ],
+      "sketch_singvals": [
+        0.8734241127967834,
+        0.86259526014328
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 28,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.136427822844967,
+      "hm_with_implied_w_raw": 0.44200096580583836,
+      "implied_w_sketch_for_balance": 31.92644010010638,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 5.592594813670889,
+      "raw_gain1": 0.11537125462607273,
+      "raw_gain2": 0.08657180464711384,
+      "raw_gain_avg_g1g2": 0.10097152963659328,
+      "raw_sketch": 0.564692852974028,
+      "rows_seen_before": 864,
+      "sigma_top_seen": [
+        1.002694109806839,
+        0.9735991554832624
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.48855779827530177,
+        0.22790077263437
+      ],
+      "sketch_quality_ratio": [
+        0.8710773348065659,
+        0.8859860398246918
+      ],
+      "sketch_singvals": [
+        0.8734241127967834,
+        0.86259526014328
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 29,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.24106612108389786,
+      "hm_with_implied_w_raw": 0.24308330840212686,
+      "implied_w_sketch_for_balance": 0.7561013878522171,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.8676858135095894,
+      "raw_gain1": 0.23742433804302285,
+      "raw_gain2": 0.2705906830029711,
+      "raw_gain_avg_g1g2": 0.25400751052299697,
+      "raw_sketch": 0.22039871340569223,
+      "rows_seen_before": 896,
+      "sigma_top_seen": [
+        1.0063487839506313,
+        0.979065022180587
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5064514519145356,
+        0.2312602325153135
+      ],
+      "sketch_quality_ratio": [
+        0.8728323182896272,
+        0.8829283410651882
+      ],
+      "sketch_singvals": [
+        0.8783737421035767,
+        0.8644442558288574
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 29,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11951490230750833,
+      "hm_with_implied_w_raw": 0.4910156456266086,
+      "implied_w_sketch_for_balance": 50.36914521679532,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 7.096521841118288,
+      "raw_gain1": 0.08419422446801075,
+      "raw_gain2": 0.08641350409374327,
+      "raw_gain_avg_g1g2": 0.08530386428087701,
+      "raw_sketch": 0.6053607360010339,
+      "rows_seen_before": 896,
+      "sigma_top_seen": [
+        1.0063487839506313,
+        0.979065022180587
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5064514519145356,
+        0.2312602325153135
+      ],
+      "sketch_quality_ratio": [
+        0.8728323182896272,
+        0.8829283410651882
+      ],
+      "sketch_singvals": [
+        0.8783737421035767,
+        0.8644442558288574
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 30,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.24127049925694388,
+      "hm_with_implied_w_raw": 0.2425737133835295,
+      "implied_w_sketch_for_balance": 1.2373411561426768,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 1.1061392508730745,
+      "raw_gain1": 0.2602212054671578,
+      "raw_gain2": 0.21051330369071614,
+      "raw_gain_avg_g1g2": 0.23536725457893698,
+      "raw_sketch": 0.2603489586599976,
+      "rows_seen_before": 928,
+      "sigma_top_seen": [
+        1.0170373263469434,
+        0.9836670852171504
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5204639856710079,
+        0.2551800729959088
+      ],
+      "sketch_quality_ratio": [
+        0.868003477874719,
+        0.8826430190087401
+      ],
+      "sketch_singvals": [
+        0.8827919363975525,
+        0.8682268857955933
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 30,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1272453265517062,
+      "hm_with_implied_w_raw": 0.47940862237587817,
+      "implied_w_sketch_for_balance": 42.39273321139161,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 6.453049764441705,
+      "raw_gain1": 0.08056447802058472,
+      "raw_gain2": 0.10530101441699118,
+      "raw_gain_avg_g1g2": 0.09293274621878794,
+      "raw_sketch": 0.5996996360960702,
+      "rows_seen_before": 928,
+      "sigma_top_seen": [
+        1.0170373263469434,
+        0.9836670852171504
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5204639856710079,
+        0.2551800729959088
+      ],
+      "sketch_quality_ratio": [
+        0.868003477874719,
+        0.8826430190087401
+      ],
+      "sketch_singvals": [
+        0.8827919363975525,
+        0.8682268857955933
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 31,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22597977704576722,
+      "hm_with_implied_w_raw": 0.2258027939680294,
+      "implied_w_sketch_for_balance": 0.8945700046000974,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.8660019900447511,
+      "raw_gain1": 0.1594610349341257,
+      "raw_gain2": 0.37390860223334754,
+      "raw_gain_avg_g1g2": 0.2666848185837366,
+      "raw_sketch": 0.2309495836082393,
+      "rows_seen_before": 960,
+      "sigma_top_seen": [
+        1.027561871157325,
+        0.988542271851753
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.54026444058858,
+        0.2710013957229083
+      ],
+      "sketch_quality_ratio": [
+        0.8649222281401243,
+        0.8820492778173485
+      ],
+      "sketch_singvals": [
+        0.8887611031532288,
+        0.8719429969787598
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 31,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.13811314193587898,
+      "hm_with_implied_w_raw": 0.47420995191405785,
+      "implied_w_sketch_for_balance": 36.042472045613124,
+      "matrix": "residual-spiky-shocks",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 6.001530444057248,
+      "raw_gain1": 0.09722693467986004,
+      "raw_gain2": 0.10238915081834501,
+      "raw_gain_avg_g1g2": 0.09980804274910253,
+      "raw_sketch": 0.5990010071205061,
+      "rows_seen_before": 960,
+      "sigma_top_seen": [
+        1.027561871157325,
+        0.988542271851753
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.54026444058858,
+        0.2710013957229083
+      ],
+      "sketch_quality_ratio": [
+        0.8649222281401243,
+        0.8820492778173485
+      ],
+      "sketch_singvals": [
+        0.8887611031532288,
+        0.8719429969787598
+      ],
+      "union_dim": 66
+    }
+  ]
+}

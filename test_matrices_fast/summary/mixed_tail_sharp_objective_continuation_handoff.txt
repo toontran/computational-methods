@@ -1,0 +1,279 @@
+Mixed-tail-sharp objective continuation handoff
+==============================================
+
+Date: 2026-04-23
+
+Scope
+-----
+This note summarizes the current understanding of the `mixed-tail-sharp`
+matrix, with emphasis on the `force-b1` / `force-b1b2` intervention results,
+the block-2 (`b2`) failure mode, and what to test next for similar
+oracle-free objectives.
+
+
+Current picture
+---------------
+1. Forcing `b1` and/or `b2` to oracle does not fix final oracle-2 recovery.
+
+   The cleanest evidence is in:
+
+     - `summary/current_block_sketch_oracle_projection_intervention_report.txt`
+     - `summary/current_block_sketch_oracle_checks/internal_rank_diagnostics_interpretation.txt`
+
+   Main result:
+
+     - the final oracle-2 direction is often present in the current
+       `[sketch; block]` rowspace,
+     - but the selected second slot still does not align with the projected
+       oracle frame.
+
+   This points to a selection/compression/objective problem, not just missing
+   oracle signal.
+
+2. The failure is not only an early `b1` / `b2` capture problem.
+
+   For `force-b1`:
+
+     - `b2` is already frame-mixed;
+     - the forced second slot from `b1` is almost immediately not preserved as
+       the selected second column;
+     - the catastrophic drop in projected-oracle cosine happens later, around
+       `b27`.
+
+   For `force-b1b2`:
+
+     - `b3` is better than the `force-b1` `b2` state, but still not a clean
+       continuation of the forced oracle frame;
+     - the later collapse happens around `b25`.
+
+   So `b2` is an early visible symptom, but not the whole story.
+
+3. Internal oversampling helps retention, but rank-2 handoff can still lose
+   oracle-2.
+
+   The internal-rank diagnostics show that for `mixed-tail-sharp`, internal
+   rank 8/16 can keep oracle-2 nearly perfectly inside the internal frame, yet
+   the final rank-2 compression can still drop it. This supports a
+   "compression / objective handoff" diagnosis.
+
+
+What is special about `b2` after `force-b1`
+-------------------------------------------
+Primary references:
+
+  - `summary/mixed_tail_sharp_force_b1_b2_howto_diagnostic_dump.txt`
+  - `summary/mixed_tail_sharp_force_b1_block2_diagnostic_dump.txt`
+  - `summary/diagnostic_dumps_howto.txt`
+
+At `mixed-tail-sharp`, `force-b1`, `b2`:
+
+1. The optimizer beats the QR projected-oracle candidate, but only narrowly.
+
+   From the how-to-format dump:
+
+     - `optimizer_sum = 6.634877679379`
+     - `oracle QR candidate_sum = 6.604170964137`
+
+2. Raw oracle projections are attractive before QR orthogonalization.
+
+     - `oracle_raw_projection_scores sum = 6.670978020505`
+
+   So the issue is not that oracle-2 is absent or weak in raw form. The trouble
+   appears when turning the oracle projection into an orthonormal candidate
+   frame.
+
+3. Entropy-like terms are saturated and do not separate the candidates here.
+
+   This matches the broader objective-design conclusion that entropy /
+   anti-spike checks are useful but incomplete.
+
+4. The optimizer's outside component is not explained well by "top deflated SVD
+   direction" or by pure complement chasing.
+
+   Checks already done:
+
+     - It does not align strongly with the top right singular vector of
+       `[sketch; block]` deflated by `opt1`.
+     - It is only weakly aligned with the current-block or `[sketch; block]`
+       complement direction `c_t`.
+     - The outside component still has much stronger block-only score than the
+       oracle-like alternatives.
+
+   Interpretation:
+
+     - this looks more like a high-scoring diffuse outside direction than a
+       pure "local complement" failure.
+
+
+Objective-design interpretation
+-------------------------------
+Primary references:
+
+  - `summary/objective_design_oracle_free_full_benchmark_synthesis.txt`
+  - `summary/objective_design_block_only_recheck_synthesis.txt`
+  - `summary/objective_design_repeated_block_support_synthesis.txt`
+
+The relevant takeaways for `mixed-tail-sharp` are:
+
+1. Raw block score alone is not defensible.
+
+   The full benchmark synthesis shows that plain block score strongly favors
+   block-SVD-like directions across the matrix suite.
+
+2. Entropy / concentration guards help, but they are not enough.
+
+   A non-oracle direction can still have diffuse row response. That is exactly
+   consistent with the `mixed-tail-sharp b2` behavior.
+
+3. `obj_future_hmean` is the best per-matrix objective for `mixed-tail-sharp`
+   in the broad benchmark.
+
+   This matters because it says the useful signal is not just:
+
+     - current-block gain, or
+     - old-row memory,
+
+   but a notion of repeated/future consistency.
+
+4. Hard complement control is still useful as a conservative guard, but it does
+   not fully explain this `b2` case.
+
+   In this matrix/block, complement alignment exists but is modest. Penalizing
+   it pushes in the right direction, but does not explain why the optimizer's
+   outside direction still wins on fresh support.
+
+
+How to think about `future_hmean`
+---------------------------------
+For continuation work, the best source context is:
+
+  - `summary/objective_design_oracle_free_full_benchmark_synthesis.txt`
+  - `summary/objective_design_repeated_block_support_synthesis.txt`
+  - `summary/objective_design_block_only_recheck_synthesis.txt`
+
+Use them in that order:
+
+1. `oracle_free_full_benchmark_synthesis`
+
+   Use this for the high-level objective ranking and the statement that
+   `obj_future_hmean` is the best per-matrix objective for `mixed-tail-sharp`.
+
+2. `repeated_block_support_synthesis`
+
+   Use this for the underlying motivation:
+
+     - raw fresh-row support is real,
+     - but repeated raw support alone prefers block-SVD complements,
+     - the missing ingredient is consistency with oracle-like / repeated
+       support rather than one-block gain.
+
+3. `block_only_recheck_synthesis`
+
+   Use this to keep the semantics straight:
+
+     - "block-only score" means `||A_block v||^2 * phi_pooled(v)`,
+     - not score on stacked `[sketch; block]`.
+
+
+Most important open question
+----------------------------
+Is `b2` uniquely bad, or does the same objective mismatch appear in many blocks?
+
+The current evidence suggests:
+
+  - `b2` is a useful microscope because it is early and easy to inspect;
+  - but the late collapse near `b25-b27` says the same kind of issue may recur
+    in other blocks, not just `b2`.
+
+
+Next experiment to run
+----------------------
+Goal:
+
+  Check per-block scores to see whether the `mixed-tail-sharp` problem is
+  specifically "b2 is bad" or whether the same objective ordering appears in
+  most blocks.
+
+Per-block comparison to log for every block:
+
+  candidates:
+    - selected `opt2`
+    - `q2_vs_q1oracle`
+    - raw projected oracle-2
+    - current-block complement
+    - `[sketch; block]` deflated-SVD challenger
+    - outside component of `opt2`
+
+  score families:
+    - full current objective score
+    - block-only score
+    - block-only gain
+    - hard-complement-adjusted block-only score
+    - future-hmean-style score, if available in the probe
+
+  geometry:
+    - oracle projected cosine / oracle mass
+    - complement alignment `|v^T c_t|^2`
+    - alignment with deflated `[sketch; block]` singular vectors
+    - row concentration / entropy
+
+Questions to answer from that dump:
+
+1. Is `opt2` usually losing on block-only score but winning on full score?
+2. Is `b2` unusually bad, or does that pattern show up in many blocks?
+3. Does the outside direction keep winning because of one-block support only,
+   or does it also score well under future-consistency probes?
+4. Does the late failure region (`b25-b27`) look qualitatively different from
+   the early `b2` mismatch?
+
+
+Implementation notes
+--------------------
+1. Keep the trajectory fixed.
+
+   Do not change the optimizer first. Re-score the same saved blockwise states
+   under multiple objectives/candidates.
+
+2. Use corrected block-only semantics.
+
+   For fresh support, use:
+
+     `block_only_score(v) = ||A_block v||^2 * phi_pooled(v)`
+
+   not stacked `[sketch; block]` gain.
+
+3. Treat `future_hmean` as a diagnostic target first.
+
+   Do not immediately turn it into the online objective. First use it to test
+   whether the bad outside directions are really one-block winners or whether
+   they keep future support.
+
+4. Keep the `b2` dump as the template.
+
+   The easiest next step is a per-block table that extends the current
+   `mixed-tail-sharp force-b1 b2` checks to all blocks for:
+
+     - `normal`
+     - `force-b1`
+     - optionally `force-b1b2`
+
+
+Recommended immediate task
+--------------------------
+Add a per-block `mixed-tail-sharp` objective probe that prints, for each block,
+the candidate ordering under:
+
+  - full score,
+  - corrected block-only score,
+  - hard complement penalty,
+  - and future-hmean-style score.
+
+Then compare:
+
+  - `b2`,
+  - a midstream "good" block,
+  - and the late failure blocks around `b25-b27`.
+
+That will tell us whether `b2` is a special pathological block or just the
+first visible instance of the same objective mismatch that later causes the
+collapse.

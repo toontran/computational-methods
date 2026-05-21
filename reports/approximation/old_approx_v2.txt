@@ -1,0 +1,530 @@
+Let $\mathrm{row}(X)$ denote the number of rows of a matrix $X$. Let
+\begin{align}
+A \in \mathbb R^{m\times d}
+\end{align}
+be the full data matrix. Let $A_w$ denote the current row-window, let
+$A_{<w}$ denote all rows seen before the current window, and let
+$B \in \mathbb R^{r\times d}$ denote the sketch carried from the previous
+windows. Write
+\begin{align}
+A_w &\in \mathbb R^{k\times d},
+\qquad
+k = \mathrm{row}(A_w),
+\qquad
+k>1,
+\\
+t_w &:=
+\text{(\# rows already seen up to and including the current window)},
+\\
+v &\in \mathbb S^{d-1}.
+\end{align}
+For any matrix $X$ with a nonzero response on $v$, write
+\begin{align}
+h_2\left(\frac{Xv}{\|Xv\|_2}\right)
+=
+-\log\left(\frac{\|Xv\|_4^4}{\|Xv\|_2^4}\right).
+\end{align}
+
+\paragraph{Exact quantities we would like to use.}
+The exact old-plus-new operator at window $w$ is
+\begin{align}
+N_w
+:=
+\begin{pmatrix}
+A_{<w}\\
+A_w
+\end{pmatrix}.
+\end{align}
+If the old rows were still available, the exact second moment, fourth moment,
+entropy, and score for a direction $v$ would be
+\begin{align}
+e_w^\star(v)
+&:=
+\|N_wv\|_2^2,
+\\
+q_w^\star(v)
+&:=
+\|N_wv\|_4^4,
+\\
+h_{2,w}^\star(v)
+&:=
+h_2\left(\frac{N_wv}{\|N_wv\|_2}\right)
+=
+-\log\frac{q_w^\star(v)}{(e_w^\star(v))^2},
+\\
+\operatorname{score}_{N_w}(v)
+&:=
+\|N_wv\|_2
+\left(\frac{t_w}{d}\right)^{-\frac{h_{2,w}^\star(v)}{4\log t_w}}.
+\end{align}
+The streamed objective is constructed to approximate
+$\operatorname{score}_{N_w}(v)$ without storing $A_{<w}$.
+
+\paragraph{Available carried summary.}
+The previous windows are represented by
+\begin{align}
+B=SV^\top,
+\qquad
+V=[v_1,\dots,v_r],
+\qquad
+S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+together with carried entropy values $h_1,\dots,h_r$. For a candidate
+direction $v$, define
+\begin{align}
+a=V^\top v,
+\qquad
+a_j=v_j^\top v.
+\end{align}
+The compact streamed operator used by the algorithm is
+\begin{align}
+M_w
+:=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix}.
+\end{align}
+
+\paragraph{Streamed moment and entropy surrogates.}
+The carried summary gives the following approximations to the exact quantities
+$e_w^\star(v)$ and $q_w^\star(v)$:
+\begin{align}
+e_w(v)
+&:=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2 + \|A_wv\|_2^2,
+\\
+q_w(v)
+&:=
+\sum_{j=1}^r s_j^4 e^{-h_j}(v_j^\top v)^4 + \|A_wv\|_4^4.
+\end{align}
+Since $B=SV^\top$, the second-moment surrogate is exactly the squared norm of
+the compact streamed operator:
+\begin{align}
+e_w(v)
+=
+\|Bv\|_2^2+\|A_wv\|_2^2
+=
+\|M_wv\|_2^2.
+\end{align}
+The fourth-moment surrogate $q_w(v)$ models the old fourth moment using the
+stored per-direction entropies and adds the current-window fourth moment
+exactly. The streamed entropy surrogate is
+\begin{align}
+\widehat h_{2,w}(v)
+:=
+-\log\frac{q_w(v)}{e_w(v)^2}.
+\end{align}
+
+\paragraph{Why $\widehat h_{2,w}$ approximates the exact entropy.}
+Let
+\begin{align}
+y_{\mathrm{old}}:=A_{<w}v,
+\qquad
+y_{\mathrm{new}}:=A_wv.
+\end{align}
+The stacked old and new responses occupy disjoint row coordinates, so
+\begin{align}
+\|N_wv\|_4^4
+=
+\|y_{\mathrm{old}}\|_4^4+\|y_{\mathrm{new}}\|_4^4,
+\qquad
+\|N_wv\|_2^2
+=
+\|y_{\mathrm{old}}\|_2^2+\|y_{\mathrm{new}}\|_2^2.
+\end{align}
+To state the approximation error, decompose the old response into the retained
+coordinates and a residual component with coefficient $a_\perp$, gain
+$s_\perp$, and entropy $h_\perp$. Define
+\begin{align}
+R_{4,w}
+&:=
+a_\perp^4s_\perp^4e^{-h_\perp}
++
+R_{4,w}^{\mathrm{mix}},
+\\
+E_{2,w}
+&:=
+a_\perp^2s_\perp^2
++
+E_{2,w}^{\mathrm{mix}},
+\end{align}
+where
+\begin{align}
+R_{4,w}^{\mathrm{mix}}
+&:=
+\|y_{\mathrm{old}}\|_4^4
+-
+\sum_{j=1}^r a_j^4s_j^4e^{-h_j}
+-
+a_\perp^4s_\perp^4e^{-h_\perp},
+\\
+E_{2,w}^{\mathrm{mix}}
+&:=
+\|y_{\mathrm{old}}\|_2^2
+-
+\sum_{j=1}^r a_j^2s_j^2
+-
+a_\perp^2s_\perp^2.
+\end{align}
+Then the exact entropy ratio can be written as
+\begin{align}
+\frac{\|N_wv\|_4^4}{\|N_wv\|_2^4}
+=
+\frac{q_w(v)+R_{4,w}}{(e_w(v)+E_{2,w})^2}.
+\end{align}
+Consequently, if
+\begin{align}
+|R_{4,w}| \ll e_w(v)^2,
+\qquad
+|E_{2,w}| \ll e_w(v),
+\end{align}
+then
+\begin{align}
+h_{2,w}^\star(v)
+=
+\widehat h_{2,w}(v)
++
+\mathcal O\left(
+\frac{|R_{4,w}|}{e_w(v)^2}
++
+\frac{|E_{2,w}|}{e_w(v)}
++
+\frac{E_{2,w}^2}{e_w(v)^2}
+\right).
+\end{align}
+Thus $\widehat h_{2,w}$ approximates the exact entropy
+$h_2(N_wv/\|N_wv\|_2)$ when the omitted old residual and old mixing terms are
+small relative to the retained second-moment scale.
+
+\paragraph{Streamed score.}
+The exact score $\operatorname{score}_{N_w}(v)$ depends on both
+$\|N_wv\|_2$ and $h_{2,w}^\star(v)$. The sketch is designed so that
+\begin{align}
+\|N_wv\|_2\approx \|M_wv\|_2,
+\end{align}
+while the previous paragraph gives
+\begin{align}
+h_{2,w}^\star(v)\approx \widehat h_{2,w}(v).
+\end{align}
+Substituting these approximations into the exact score motivates the streamed
+score
+\begin{align}
+\widehat{\operatorname{score}}_w(v)
+:=
+\|M_wv\|_2
+\left(\frac{t_w}{d}\right)^{-\frac{\widehat h_{2,w}(v)}{4\log t_w}}.
+\end{align}
+This is the sense in which the later-window objective approximates the exact
+score of the unavailable operator $N_w$.
+
+\paragraph{First-window special case.}
+For the first window, there is no previous sketch:
+\begin{align}
+B=0,
+\qquad
+M_1=N_1=A_1.
+\end{align}
+Therefore
+\begin{align}
+e_1(v)=\|A_1v\|_2^2,
+\qquad
+q_1(v)=\|A_1v\|_4^4,
+\qquad
+\widehat h_{2,1}(v)
+=
+h_2\left(\frac{A_1v}{\|A_1v\|_2}\right),
+\end{align}
+so the entropy and score are exact for the first observed window.
+
+\paragraph{Algorithm overview.}
+The method processes the matrix one row-window at a time.
+
+For the first window, define
+\begin{align}
+\operatorname{score}_1(v)
+:=
+\|A_1v\|_2
+\left(\frac{\mathrm{row}(A_1)}{d}\right)^{
+-\frac{h_2\left(\frac{A_1v}{\|A_1v\|_2}\right)}
+{4\log \mathrm{row}(A_1)}
+}.
+\end{align}
+The retained directions are computed sequentially by solving
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v = 0\ \forall i<j}
+\operatorname{score}_1(v).
+\end{align}
+After the selected directions are accepted, the sketch carried to the next
+window is
+\begin{align}
+V_1&=[v_1,\dots,v_r],
+\\
+s_j^{(1)}&:=\|M_1v_j\|_2,
+\qquad
+h_j^{(1)}:=\widehat h_{2,1}(v_j),
+\qquad
+j=1,\dots,r,
+\\
+S_1&=\operatorname{diag}(s_1^{(1)},\dots,s_r^{(1)}),
+\qquad
+h^{(1)}=(h_1^{(1)},\dots,h_r^{(1)}),
+\\
+B^{(1)}&=S_1V_1^\top.
+\end{align}
+
+For a later window $w$, the method receives the previous sketch
+\begin{align}
+V_{w-1}&=[v_1^{(w-1)},\dots,v_r^{(w-1)}],
+\\
+S_{w-1}&=\operatorname{diag}(s_1^{(w-1)},\dots,s_r^{(w-1)}),
+\\
+h^{(w-1)}&=(h_1^{(w-1)},\dots,h_r^{(w-1)}),
+\\
+B&=B^{(w-1)}=S_{w-1}V_{w-1}^\top,
+\end{align}
+where
+\begin{align}
+s_j^{(w-1)}
+&:=
+\|M_{w-1}v_j^{(w-1)}\|_2,
+\\
+h_j^{(w-1)}
+&:=
+\widehat h_{2,w-1}\left(v_j^{(w-1)}\right),
+\qquad
+j=1,\dots,r.
+\end{align}
+It forms $M_w$, $e_w(v)$, $q_w(v)$, $\widehat h_{2,w}(v)$, and
+$\widehat{\operatorname{score}}_w(v)$ as defined above. The retained
+directions are computed sequentially from
+\begin{align}
+v_j^{(w)}
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ (v_i^{(w)})^\top v = 0\ \forall i<j}
+\widehat{\operatorname{score}}_w(v).
+\end{align}
+After solving for the updated directions, the next sketch is again the direct
+singular-factor summary
+\begin{align}
+V_w&=[v_1^{(w)},\dots,v_r^{(w)}],
+\\
+s_j^{(w)}&:=\|M_wv_j^{(w)}\|_2,
+\qquad
+h_j^{(w)}:=\widehat h_{2,w}\left(v_j^{(w)}\right),
+\qquad
+j=1,\dots,r,
+\\
+S_w&=\operatorname{diag}(s_1^{(w)},\dots,s_r^{(w)}),
+\qquad
+h^{(w)}=(h_1^{(w)},\dots,h_r^{(w)}),
+\\
+B^{(w)}&=S_wV_w^\top.
+\end{align}
+
+\paragraph{Derivation of the entropy correction factor.}
+Let
+\begin{align}
+z = Xv
+\end{align}
+be a row-restricted response and let
+\begin{align}
+x = Av
+\end{align}
+be the response of the full matrix. We use the normalized-entropy heuristic
+\begin{align}
+\frac{h_2\left(\frac{x}{\|x\|_2}\right)}{\log d}
+\approx
+\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{\log \mathrm{row}(X)},
+\end{align}
+that is,
+\begin{align}
+h_2\left(\frac{x}{\|x\|_2}\right)
+\approx
+h_2\left(\frac{z}{\|z\|_2}\right)\frac{\log d}{\log \mathrm{row}(X)}.
+\end{align}
+Using
+\begin{align}
+h_2\left(\frac{y}{\|y\|_2}\right)
+=
+4\log\|y\|_2 - 4\log\|y\|_4,
+\end{align}
+and $\|z\|_4 \le \|x\|_4$ for a restriction $z$ of $x$, we obtain
+\begin{align}
+4\log\frac{\|z\|_2}{\|x\|_2}
+\le
+h_2\left(\frac{z}{\|z\|_2}\right)
+-
+h_2\left(\frac{x}{\|x\|_2}\right).
+\end{align}
+Substituting the heuristic entropy scaling gives
+\begin{align}
+\log\frac{\|z\|_2}{\|x\|_2}
+\lesssim
+-\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{4}
+\frac{\log(d/\mathrm{row}(X))}{\log \mathrm{row}(X)},
+\end{align}
+hence
+\begin{align}
+\frac{\|Xv\|_2}{\|Av\|_2}
+\lesssim
+\left(\frac{\mathrm{row}(X)}{d}\right)^{
+\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}
+{4\log \mathrm{row}(X)}
+}.
+\end{align}
+This motivates the reciprocal entropy factor
+\begin{align}
+\left(\frac{\mathrm{row}(X)}{d}\right)^{
+-\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}
+{4\log \mathrm{row}(X)}
+}.
+\end{align}
+Thus, for an exact window matrix $X$, the entropy-corrected score is
+\begin{align}
+\operatorname{score}_X(v)
+:=
+\|Xv\|_2
+\left(\frac{\mathrm{row}(X)}{d}\right)^{
+-\frac{h_2\left(\frac{Xv}{\|Xv\|_2}\right)}
+{4\log \mathrm{row}(X)}
+}.
+\end{align}
+
+\paragraph{Simplified log form.}
+Let
+\begin{align}
+\gamma_w := \frac{\log(t_w/d)}{2\log t_w}.
+\end{align}
+Then
+\begin{align}
+\log \widehat{\operatorname{score}}_w(v)
+&=
+\frac12\log\|M_wv\|_2^2
++
+\gamma_w \log q_w(v)
+-
+2\gamma_w \log e_w(v)
+\\
+&=
+\frac12\log e_w(v)
++
+\gamma_w \log q_w(v)
+-
+2\gamma_w \log e_w(v).
+\end{align}
+Equivalently, with
+\begin{align}
+c_w := \frac{2\log(t_w/d)}{\log t_w},
+\end{align}
+we have
+\begin{align}
+f_w(v)
+:=
+\log \widehat{\operatorname{score}}_w(v)
+=
+\frac{1-c_w}{2}\log e_w(v)
++
+\frac{c_w}{4}\log q_w(v).
+\end{align}
+This is the same interpolation between quadratic energy and fourth-moment
+concentration as in the first window, but now with the old moments represented
+by the carried sketch.
+
+\paragraph{Gradient.}
+For the first window,
+\begin{align}
+\nabla f_1(v)
+=
+\left(1-c_1\right)\frac{A_1^\top A_1v}{\|A_1v\|_2^2}
++
+c_1 A_1^\top\left(\frac{(A_1v)^{\odot 3}}{\|A_1v\|_4^4}\right),
+\end{align}
+where
+\begin{align}
+c_1 := \frac{\log(\mathrm{row}(A_1)/d)}{\log \mathrm{row}(A_1)}.
+\end{align}
+For later windows, differentiate the streamed quantities:
+\begin{align}
+\nabla e_w(v)
+&=
+2V\bigl((s^{\odot 2})\odot a\bigr) + 2A_w^\top A_wv,
+\\
+\nabla q_w(v)
+&=
+4V\bigl((s^{\odot 4}\odot e^{-h})\odot a^{\odot 3}\bigr)
++
+4A_w^\top\bigl((A_wv)^{\odot 3}\bigr).
+\end{align}
+Therefore
+\begin{align}
+\nabla f_w(v)
+=
+\frac12\frac{\nabla \|M_wv\|_2^2}{\|M_wv\|_2^2}
++
+\gamma_w \frac{\nabla q_w(v)}{q_w(v)}
+-
+2\gamma_w \frac{\nabla e_w(v)}{e_w(v)}.
+\end{align}
+Using $\nabla \|M_wv\|_2^2 = 2M_w^\top M_wv$, this is
+\begin{align}
+\nabla f_w(v)
+=
+\frac{M_w^\top M_wv}{\|M_wv\|_2^2}
++
+\gamma_w \frac{\nabla q_w(v)}{q_w(v)}
+-
+2\gamma_w \frac{\nabla e_w(v)}{e_w(v)}.
+\end{align}
+This is the exact gradient of the streamed surrogate objective.
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+q_j := s_j^4 e^{-h_j},
+\end{align}
+then
+\begin{align}
+q_w(v)
+=
+\sum_{j=1}^r q_j (v_j^\top v)^4 + \|A_wv\|_4^4.
+\end{align}
+So the carried state needed by the next window is naturally
+\begin{align}
+(V,s,h)
+\qquad\text{or equivalently}\qquad
+(V,s^{\odot 2},q),
+\end{align}
+with
+\begin{align}
+q = s^{\odot 4}\odot e^{-h}.
+\end{align}
+This is the low-rank moment summary used in the streamed objective.
+
+\paragraph{Optimization problem.}
+To extract a direction, solve
+\begin{align}
+\max_{v \in \mathbb S^{d-1},\ Q^\top v = 0}
+\widehat{\operatorname{score}}_w(v),
+\end{align}
+where the columns of $Q$ are the previously accepted directions.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the streamed surrogate score and project it onto the
+feasible tangent space:
+\begin{align}
+g_{\mathrm{tan}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla f_w(v).
+\end{align}
+Then take
+\begin{align}
+\widetilde v^{+} = v + \eta\, g_{\mathrm{tan}}(v),
+\qquad
+v^{+} = \frac{(I-QQ^\top)\widetilde v^{+}}
+{\|(I-QQ^\top)\widetilde v^{+}\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on the streamed surrogate
+objective.

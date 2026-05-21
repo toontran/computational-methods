@@ -1,0 +1,10 @@
+# n=512, rank=2, win=64, matrix_preset=fast, seed=0, shuffle_rows=True, row_shuffle_seed=0
+# medium params: q0=8, qmax=48, restarts=8, maxit=120, expansion_maxit=8, post_expansion_maxit=80, dtype=float32
+# Higher mean_align and lower mean_relerr_sval are better.
+matrix	method	mean_align	mean_relerr_sval	elapsed
+static-cex	greedy-medium	0.063529	0.00101731	3.419
+static-cex	greedy-oracle	0.063529	0.00101731	3.175
+static-cex	isvd	0.064387	0.00101754	0.162
+risk-residual-panel	greedy-medium	0.876923	0.02716691	6.692
+risk-residual-panel	greedy-oracle	0.876923	0.02716691	8.886
+risk-residual-panel	isvd	0.855651	0.02954984	0.537

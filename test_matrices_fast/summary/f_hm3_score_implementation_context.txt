@@ -1,0 +1,452 @@
+F-weighted HM3 score (S6): implementation + benchmark context
+==============================================================
+
+Date: 2026-04-27
+Audience: someone wiring this score into the existing r_sk_g_score family
+(S1–S5) plus the half_window_sliding_hmean_experiment streaming harness, and
+running the same diagnostic + benchmark gauntlet.
+
+Read this BEFORE editing. Cross-references are to files at the absolute
+paths below.
+
+
+0. TL;DR
+--------
+
+New score, name "S6":
+
+    u_sk(v)   = raw_sk(v)  / sk_F2_low      raw_sk = ||A_sketch v||^2
+    u_g1(v)   = raw_g1(v)  / cur_F2         raw_g1 = ||A_cur v||^2
+    u_g2(v)   = raw_g2(v)  / fut_F2         raw_g2 = ||A_fut v||^2
+
+    sk_F2_low = ||A_sketch||_F^2 = sum_i s_i^2  (rank-r carry; state.s)
+    cur_F2    = ||A_cur||_F^2
+    fut_F2    = ||A_fut||_F^2
+
+    score(v) = HM3(u_sk, u_g1, u_g2)         when sketch present (block ≥ 2)
+    score(v) = HM2(u_g1, u_g2)               block-1 fall-through
+
+  HM3(a,b,c) = 3 / (1/a + 1/b + 1/c);  HM2(a,b) = 2/(1/a + 1/b)
+
+NOTE — the F-weights are matrix-Frobenius squared, NOT the existing
+c_X = N_X / F2_X used by S4/S5/HM-evi. The differences:
+
+  - sk_F2_low is the rank-r CARRY (state.s · state.V^T), not the full
+    A_sk_full. It sits at ≈1.65–1.93 across blocks because s_top ≈ 0.91–0.99
+    dominates. (vs sk_F2_full which grows linearly: 26 → 793.)
+  - cur_F2 ≈ fut_F2 ≈ 26.4 (constant — half-window of unit-energy rows).
+  - On the g-side this collapses to almost the same thing as c-weighting up
+    to a per-block constant; the structural difference is on the sketch
+    side: u_sk uses 1/sk_F2_low (≈0.55), c_sk · raw_sk uses N_sk/sk_F2_full
+    (which scales differently with block).
+
+Optional `· relH1(A_cur v)` factor (mirroring S4/S5) — RECOMMENDED to start
+WITHOUT it, since the diagnostic shows the bare HM3 already places the
+oracle at the top of the order on most blocks. Add relH1 only if streaming
+underperforms.
+
+Block-1 fall-through is HM2(u_g1, u_g2). This matches S4/S5 fall-through
+(they fall to HM2(raw_g1, raw_g2)·relH1; we drop relH1 and switch to
+F-weighted u_g's).
+
+
+1. What we already know (diagnostic evidence)
+---------------------------------------------
+
+Inputs available:
+  frob_norm_diagnostic.py                     raw norms across candidates
+  frob_hm3_score_diagnostic.py                F-HM3 ranking on mixed-tail-sharp
+  summary/frob_norm_diag.txt                  full norm table (3 matrices)
+  summary/frob_hm3_score_mixed.txt            ranked F-HM3 on mixed-tail-sharp
+
+Headline results on mixed-tail-sharp (blocks 1, 2, 6, 12, 31), sorted by
+F-HM3 score, top of the table:
+
+  block 1 :  c_evi_v1 (0.0164)  >  c_evi_v2  >  oracle_v2_proj  >  oracle_v1_proj  >>  combined_v* (~1e-6)
+  block 2 :  oracle_v2_proj (0.0187)  >  oracle_v1_proj  >  c_evi_v1  >  c_evi_v2  >>  combined_v*
+  block 6 :  oracle_v2_proj (0.0179)  >  oracle_v1_proj  >  c_evi_v1  >  c_evi_v2  >>  combined_v*
+  block 12:  oracle_v1_proj (0.0170)  >  c_evi_v1  >  c_evi_v2  >  oracle_v2_proj (0.0106)  >>  combined_v*
+  block 31:  oracle_v1_proj (0.0187)  >  c_evi_v1  >  c_evi_v2  >  oracle_v2_proj (0.0025)  >>  combined_v*
+
+Three structural observations driving design:
+
+  O1. Oracle is REACHABLE under F-HM3. Unlike S5 which gives oracle = 0
+      score in the gate-clipped region, F-HM3 puts the oracle at rank 1 on
+      4 of 5 blocks. S5's structural failure (P4 in the prior context) is
+      avoided here because there's no hard gate.
+
+  O2. oracle_v2_proj falls off a cliff at b12+ (0.0106 → 0.0025 → ...). At
+      late blocks it has high u_sk (0.28→0.46) but tiny u_g1, u_g2
+      (0.007→0.0017): HM3 is dominated by the smallest term and gets
+      crushed. This is the new pathology.
+
+  O3. combined_v1/v2 are always last (~1e-6). They have raw_g2 ≈ 1e-6
+      because the combined-step optimizer fits A_cur + carry but is
+      essentially orthogonal to A_fut. Single tiny u_g2 → tiny HM3.
+      Translation: in streaming, combined's V_default[:, 1] is NOT a good
+      seed for slot-2 under F-HM3.
+
+Block-1 specific finding (verified manually, see prior message log):
+  At b1, c_sk = 0 → c-weighted HM-evi reduces to HM(raw_g1, raw_g2). Since
+  cur_F2 ≈ fut_F2, that's the SAME objective (up to scale) as the F-HM3
+  fall-through HM(u_g1, u_g2). So c_evi_v1 is by construction the
+  near-maximum of the new F-HM3 at block 1. oracle_v_proj is balanced
+  but not optimal for the local-block HM. This is a feature, not a bug.
+
+
+2. Gradient derivation (analytic)
+---------------------------------
+
+Let
+  y_sk = A_sketch v,   y_c = A_cur v,   y_f = A_fut v
+  raw_sk = y_sk·y_sk,  raw_g1 = y_c·y_c,  raw_g2 = y_f·y_f
+  d raw_sk / dv = 2 A_sk^T y_sk
+  d raw_g1 / dv = 2 A_c^T  y_c
+  d raw_g2 / dv = 2 A_f^T  y_f
+
+For a fixed scalar W > 0,  d (raw / W) / dv = (1/W) · d raw / dv.
+
+HM3 case (sketch present):
+  D    = 1/u_sk + 1/u_g1 + 1/u_g2
+  HM3  = 3 / D
+  d (1/u_X) / dv = -(1/u_X^2) · d u_X / dv = -(1/u_X^2) · (1/W_X) · (2 A_X^T y_X)
+                 = -(W_X / raw_X^2) · 2 · A_X^T y_X     (since u_X = raw_X/W_X)
+
+  d HM3 / dv = -(3/D^2) · dD/dv = (HM3^2 / 3) · (W_sk/raw_sk^2)·(2 A_sk^T y_sk)
+                                 + (HM3^2 / 3) · (W_c/raw_g1^2)·(2 A_c^T y_c)
+                                 + (HM3^2 / 3) · (W_f/raw_g2^2)·(2 A_f^T y_f)
+
+  where W_sk = sk_F2_low, W_c = cur_F2, W_f = fut_F2.
+
+  Equivalent form (the cleanest, mirroring r_sk_g_score.py:200–208):
+    coef = HM3^2 / 3
+    grad = coef * (1/u_sk^2) * (1/W_sk) * 2 A_sk^T y_sk
+         + coef * (1/u_g1^2) * (1/W_c)  * 2 A_c^T  y_c
+         + coef * (1/u_g2^2) * (1/W_f)  * 2 A_f^T  y_f
+
+  Sign-check: positive on each term (no sketch shortfall flip — u_sk is
+  "good" energy, not a penalty). Score is high when ALL three u's are big.
+
+HM2 case (block 1, no sketch):
+  D2 = 1/u_g1 + 1/u_g2
+  HM2 = 2 / D2
+  grad = (HM2^2 / 2) * [(1/u_g1^2)(1/W_c) 2 A_c^T y_c + (1/u_g2^2)(1/W_f) 2 A_f^T y_f]
+
+Edge cases:
+  - u_g1 ≤ eps  OR  u_g2 ≤ eps  → score := 0,  grad := 0
+  - u_sk ≤ eps with sketch present (degenerate carry direction): treat as
+    block-1-style fall-through OR as 0. Pick block-1 fall-through (more
+    informative), but note score will jump when sketch appears.
+  - sk_F2_low ≤ eps (rank-r carry empty) → no sketch case.
+
+Numerical: prefer float64 inside the value/grad. The g-side denominators
+include 1/u_g^2 = (cur_F2/raw_g1)^2 which can be 1e8+ on counterexample
+candidates — fine in float64 as long as raw_g1 isn't underflowing.
+
+
+3. Code surface area (where to edit)
+------------------------------------
+
+A. Score implementation
+   r_sk_g_score.py:67   r_sk_g_value_grad(...)  add  elif variant == "S6":
+                        Return signature MUST stay 8-tuple:
+                          (score, grad, r_sk, raw_g1, raw_g2, hm_g, sat_term, s_align)
+                        Use:
+                          - r_sk = (1.0 - c_sk * raw_sk) for the diagnostic slot
+                            (so existing per-block table columns stay populated)
+                          - sat_term = u_sk if sketch present else 0.0
+                            (the sketch contribution; lets analyze_block surface it)
+                          - s_align = ||V_state^T v||^2 (compute as today)
+                        Pass W_c, W_f, W_sk via three NEW kwargs:
+                          cur_F2, fut_F2, sk_F2_low
+                        These are NOT consts; they must be passed in (computed
+                        once per block in analyze_block / streaming wiring).
+
+   r_sk_g_score.py:43   docstring: add S6.
+
+B. FD check
+   r_sk_g_score.py:582  gradient_check.  Add S6 to the for-loop.
+   The S6 grad is smooth everywhere u_sk, u_g1, u_g2 > 0. Random v on the
+   sphere will NOT pass through any clipped region (no gate), so a random
+   probe is fine for FD — unlike S5 (P1 in the prior context). Acceptance:
+   rel < 1e-7 in float64.
+
+C. Per-block diagnostic
+   r_sk_g_score.py:355  analyze_block.
+   - Compute  sk_F2_low = float(np.sum(snap["A_sketch"]**2)) once per block
+     (already known; a one-liner).
+   - Already have  cur_F2 = consts["cur_F2"],  fut_F2 = consts["fut_F2"].
+   - Add S6 to the variants tuple at L444 (rsk_best loop).
+   - Add S6_v1_full / S6_v2_deflate sequential rank-2 over B_union
+     (mirror the S4/S5 blocks at L454–530). Sample candidates dict at
+     L543 — add  r_sk_g_S6_best, r_sk_g_S6_v1_full, r_sk_g_S6_v2_deflate.
+   - Row dict L592: add  score_S6, sat_S6 (=u_sk component).
+   - write_text L728: add score_S6 column. Δ-row at L751: add S6.
+
+D. Streaming wiring
+   half_window_sliding_hmean_experiment.py:566   future_hmean_r_sk_g branch.
+   - Add "S6" to --rsk-variant choices at L899.
+   - Compute sk_F2_low, cur_F2, fut_F2 inline (mirror per_block_constants
+     formula at hmean_evidence_score.py:188–204) and thread them through.
+   - WARNING: the existing branch deflates B_search against V_default[:, 0]
+     (P2 in prior context). For S6 this is a problem — see §6 P2'.
+
+For Stiefel-rank-2 ambitions: NOT NEEDED for S6 (S6 is still a scalar-per-v
+score). If you do go Stiefel later, see §7-D1 in the prior context.
+
+
+4. Test gauntlet (run in this order)
+------------------------------------
+
+T1. FD CHECK
+    python r_sk_g_score.py --gradient-check \
+        --matrices mixed-tail-sharp \
+        --blocks 1 2 12 31 --dtype float64
+    Acceptance: rel < 1e-7 on each variant at each block.
+    For S6, FD should pass at random v (no gate). For S5 keep the
+    state.V[:, 0] probe override.
+
+T2. PER-BLOCK ORACLE ALIGNMENT
+    python r_sk_g_score.py \
+        --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+        --blocks 1 2 6 12 31 \
+        --no-oracle-warmstart \
+        --out-prefix summary/r_sk_g_S6
+    Inspect:
+      - score_S6 column at each candidate
+      - sub_v1pr, sub_v2pr metrics (cos²(candidate, oracle_v_pr))
+      - rank order: oracle_v_proj should be in top 2 on all blocks ≥ 2
+        (already verified for mixed-tail-sharp; check the other 2)
+    Acceptance — STARTING bar:
+      sub_v2pr ≥ 0.4 on ≥ 1 block per matrix (lower than S5's bar
+      because S6 is value-only optimised, no oracle warm-start)
+    Stretch bar:
+      sub_v2pr ≥ 0.6 on b12+ on counterexample matrices.
+
+    Compare oracle_v_pr score vs hm_triplet_raw_best score: oracle should
+    OUTRANK hm_triplet_raw on ≥ 1 block per matrix under score_S6 (this
+    is the row-of-A_fut cheat-resistance check).
+
+    Specific block-by-block expectation on mixed-tail-sharp (verified):
+      b1:  c_evi or oracle in top 3 (combined will be last by ~4 OoM)
+      b2:  oracle_v1_proj or oracle_v2_proj in top 2
+      b6:  oracle in top 2
+      b12: oracle_v1_proj in top 2; oracle_v2_proj may have dropped (O2)
+      b31: oracle_v1_proj in top 2; oracle_v2_proj likely below c_evi (O2)
+
+T3. STREAMING BENCH (3 matrices first; 17 if T3 looks promising)
+    export OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2
+    mkdir -p summary/bench_matrix_sweep_r_sk_g_S6
+    for M in static-cex mixed-tail-sharp diffuse-diffuse; do
+      python half_window_sliding_hmean_experiment.py \
+        --matrix "$M" \
+        --policies combined hybrid isvd future_hmean_online \
+                   future_hmean_evidence future_hmean_r_sk_g \
+        --half-win 32 --rsk-variant S6 \
+        --json-out summary/bench_matrix_sweep_r_sk_g_S6/${M}_win64.json \
+        --csv-out  summary/bench_matrix_sweep_r_sk_g_S6/${M}_win64.csv \
+        --text-out summary/bench_matrix_sweep_r_sk_g_S6/${M}_win64.txt \
+        > summary/bench_matrix_sweep_r_sk_g_S6/${M}_win64.log 2>&1 &
+    done
+    wait
+    Acceptance for the variant on sliding mode (same as prior context):
+      final_exact_cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp
+      final_exact_cos[1]² ≥ 0.7 on diffuse-diffuse
+      final_tail_mass ≤ 0.5 on at least 2 of 3 matrices
+    Wall budget: ≤ 20 s per matrix, parallel.
+
+T4. ORACLE-INIT LANDSCAPE PROBE (optional)
+    python r_sk_g_oracle_init_probe.py \
+        --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+        --blocks 1 2 6 12 31 \
+        --variants S6 \
+        --out-prefix summary/r_sk_g_S6/oracle_init_probe
+    (You may need to add S6 wiring to this script — see r_sk_g_score.py
+    style for hooking new variants in.)
+    Two checks:
+      (a) score gain Δ from oracle_v_proj should be small (oracle near
+          critical point)
+      (b) cos²(start, end) ≥ 0.7 (optimizer doesn't run away from oracle
+          to the c_evi basin)
+
+
+5. Comparison table format
+--------------------------
+For T2, the per-matrix .txt should add a column for score_S6 and at minimum
+list these candidates per (matrix, block) (extends the prior context's set):
+
+    cand                  raw_sk  u_sk  raw_g1  u_g1  raw_g2  u_g2  score_S6  ...
+
+  combined_v1, combined_v2     V_default[:, :2]
+  c_evi_v1, c_evi_v2           c-weighted HM-evi on B_union (v2 deflated)
+  S6_default_v1, S6_default_v2 S6 optimizer with default starts
+  oracle_v1_proj, oracle_v2_proj
+  hm_triplet_raw_best          (existing baseline; row-of-A_fut cheat)
+
+In the diagnostic JSON, also dump the three F-norms per block:
+  sk_F2_low, cur_F2, fut_F2  — needed for any post-hoc replotting.
+
+
+6. Pitfalls
+-----------
+
+P1. (NEW for S6, NOT in prior context) — combined_v1/v2 are tail-of-the-pack
+    under S6. Their raw_g2 ≈ 1e-6 makes u_g2 ≈ 4e-8 → HM3 ≈ 1e-7. Implication:
+    in streaming, do NOT seed slot-2 from V_default[:, 1] alone — the
+    optimizer will be at a near-zero starting point. Always include
+    sketch_v[:,0/1] AND mgain_svd_v[0/1] as additional starts (these have
+    decent u_sk and reasonable u_g1).
+
+P2'. (REVISED from P2 in prior context) — Slot-1 deflation against
+    V_default[:, 0] is more harmful for S6 than for S5. S6 wants v's that
+    have BOTH u_sk and u_g coverage. Deflating against V_default[:, 0]
+    removes the carry direction from B_search, but oracle_v1_proj at b31
+    on mixed-tail-sharp has u_sk = 0.062 (the "carry-aligned" component is
+    NOT V_default[:, 0]'s direction; it's spread). So deflation will damage
+    S6 less than it damaged S5 — but it still removes part of the basin.
+
+    RECOMMENDATION: try BOTH wiring variants for S6:
+      (a) standard: B_search ⊥ V_default[:, 0] (current code path)
+      (b) "no-deflate": run S6 over B_union for both slots, sequential
+          rank-2 (use S6_v1_full / S6_v2_deflate from analyze_block).
+          Slot-1 is then chosen by S6, not by combined.
+    Compare on T3 — pick whichever has higher final_exact_cos[1]^2.
+
+P3. (UNCHANGED) future_hmean_online includes an oracle-aware candidate
+    (q2_vs_q1oracle). When comparing S6 to online, either drop that
+    candidate from ONLINE_POOL or note the oracle dependence.
+
+P4. (UNCHANGED) Plateau argument — any scalar-per-v score has a 62-dim
+    level set in R^64 union span. S6 still has this limit; the oracle is
+    NOT at the global plateau on counterexamples. The diagnostic shows
+    S6 puts oracle in top 2 NUMERICALLY, but the basin can still be
+    narrow. T4 (oracle-init probe) checks whether the optimizer stays
+    near the oracle when seeded there.
+
+P5. (UNCHANGED) Streaming bench final_* numbers are at block 31. For
+    intermediate analysis use the rows[] in the JSON.
+
+P6. (UNCHANGED + EXTENDED) F-norms (sk_F2_low, cur_F2, fut_F2) must be
+    consistent in TWO places:
+      (a) analyze_block in r_sk_g_score.py
+      (b) inline in half_window_sliding_hmean_experiment.py:566+
+    Compute once per block from the snapshot:
+      sk_F2_low = float(np.sum(A_sketch**2))   (rank-r carry; NOT full)
+      cur_F2    = float(np.sum(A_cur**2))
+      fut_F2    = float(np.sum(A_fut**2))
+    Do NOT mix sk_F2_full (used by per_block_constants) with sk_F2_low.
+
+P7. (NEW) u_sk uses sk_F2_low (rank-r) but the energy budget that the
+    sketch could in principle hold is sk_F2_full (linear in block_id).
+    sk_F2_low is a tight cap because raw_sk ≤ s_top^2 ≈ sk_F2_low / 2 when
+    s_1 ≈ s_2. So u_sk ∈ [0, 1] tightly (not loosely). Implication: u_sk's
+    dynamic range is ~0.5 (capped at ≈0.5 for sketch-aligned v's), so the
+    HM3 tends to be dominated by u_g terms which can be 10^-3 to 10^-2 —
+    much smaller. The score is g-bottlenecked by design.
+
+
+7. What NOT to do
+-----------------
+
+  - Do NOT add a hard gate on u_sk (e.g., score := 0 if u_sk < T). That
+    re-introduces S5's structural failure (P4 in prior context).
+  - Do NOT use sk_F2_full instead of sk_F2_low. sk_F2_full grows with
+    block, so u_sk would shrink linearly with block — the score would
+    become block-id sensitive in a way the rank-r carry isn't.
+  - Do NOT remove relH1 from S4/S5 to make this "S6 with relH1". Keep
+    S6 bare (no relH1) for the first round; experiment with relH1 only
+    after T3.
+  - Do NOT reuse S5's sketch-init warm-start (start = state.V[:, :2]).
+    Under S6 those starts have u_g1, u_g2 ≈ 1e-5 → HM3 collapses, the
+    optimizer may not escape the basin. Use mixed starts (V_default,
+    mgain_svd, oracle_v_proj if --no-oracle-warmstart is off).
+
+
+8. Files in this codebase that the variant must coexist with
+------------------------------------------------------------
+
+DO NOT MODIFY:
+  future_hmean_optimizer_diagnostic.py     sphere ascent core
+  hmean_evidence_score.py                  HM-evi baseline + per_block_constants
+  hmean_combinations_optimizer_diagnostic.py
+  cex_restricted_space_probe.py
+  Existing combined / hybrid / isvd / online policy paths in
+    half_window_sliding_hmean_experiment.py (other than the
+    future_hmean_r_sk_g branch).
+
+SAFE TO EDIT:
+  r_sk_g_score.py                          add S6 variant + diagnostic plumbing
+  half_window_sliding_hmean_experiment.py  L566–630 (rsk_g branch only)
+
+PROBE HELPERS (already exist for S6 design work):
+  frob_norm_diagnostic.py                  raw norms + ratios per candidate
+  frob_hm3_score_diagnostic.py             ranked F-HM3 per candidate
+  summary/frob_norm_diag.txt               3-matrix norm dump
+  summary/frob_hm3_score_mixed.txt         mixed-tail-sharp ranking
+
+
+9. Output artefacts to produce
+------------------------------
+For S6:
+  summary/r_sk_g_S6.{csv,json,txt}                       T2 per-block
+  summary/r_sk_g_S6_<matrix>.txt                          T2 per-matrix breakdown
+  summary/bench_matrix_sweep_r_sk_g_S6/{matrix}_win64.{json,csv,txt,log}
+                                                          T3 streaming
+  summary/bench_matrix_sweep_r_sk_g_S6/synthesis.txt
+                                                          algorithm + results
+                                                          modeled on
+                                                          summary/bench_matrix_sweep_r_sk_g_S5_sketchinit/synthesis.txt
+
+If you ran the no-deflate variant (P2'), name those outputs
+  summary/bench_matrix_sweep_r_sk_g_S6_nodeflate/...
+so the two streaming wiring variants don't collide.
+
+
+10. Ground-truth numbers for sanity (3-matrix sliding, from prior context)
+--------------------------------------------------------------------------
+                       cos[0]²   cos[1]²    tail_mass
+  static-cex  combined  0.9595    0.7797     0.130
+              isvd      0.0020    0.0019     0.998
+              online    0.9582    0.8808     0.081 (with oracle peek)
+              S5        0.9623    0.1680     0.435
+
+  mixed-tail- combined  0.7849    0.0016     0.607
+   sharp      isvd      0.0062    0.0002     0.997
+              online    0.9630    0.5594     0.239 (with oracle peek)
+              S5        0.7765    0.0728     0.575
+
+  diffuse-    combined  0.0847    0.0300     0.943
+   diffuse    isvd      0.8306    0.2393     0.465
+              online    0.9650    0.0289     0.503 (with oracle peek)
+              S5        0.6191    0.0080     0.687
+
+A new variant is interesting if it:
+  - Beats S5 on all three slot-2 metrics, AND
+  - Matches or beats `combined` on the counterexample matrices, AND
+  - Matches or beats `iSVD` on `diffuse-diffuse`,
+  WITHOUT using V_exact in its candidate construction.
+
+Diagnostic suggests S6 has a real shot at beating S5 on cos[1]² for
+static-cex and mixed-tail-sharp because the oracle is now at rank 1 in T2.
+Diffuse-diffuse is the worry: oracle_v2_proj has weak local-block
+projection there, and S6 may leave too much energy in u_g (need to verify
+in T3).
+
+
+11. Open follow-ups (DO NOT pursue before T3 lands)
+---------------------------------------------------
+
+F1. Add relH1 factor:  score = HM3(u_sk, u_g1, u_g2) · relH1(A_cur v)
+    Only if T3 sliding cos[1]² is between S5 and combined.
+
+F2. Soft gate on u_sk:  multiply HM3 by sigmoid((u_sk - T_soft) / scale).
+    Provides extra signal in low-u_sk region. Only after F1 if needed.
+
+F3. Per-row instead of Frobenius weighting:
+    u_X = raw_X / mean_row_F2_X (= raw_X / (F2_X / N_X))
+    Equivalent to a re-scaled c-weighting. Probably not worth a separate
+    variant unless F1+F2 fail.
+
+F4. Stiefel rank-2 lift (the §9 escape from prior context). High effort,
+    requires reworking the streaming wiring. Defer indefinitely; only
+    pursue if scalar-per-v variants S6/S7/... all fail T3 acceptance.

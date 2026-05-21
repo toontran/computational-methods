@@ -1,0 +1,217 @@
+Joint-polish on future_hmean_online — context and next-step instructions
+========================================================================
+
+Date: 2026-04-23
+Matrix under investigation: `mixed-tail-sharp` (n=1024, rank=2).
+
+
+Context: what's happened so far
+-------------------------------
+1. Per-slot greedy (half_hmean, half_hmean_guard):
+   - `half_hmean` on mixed-tail-sharp collapses onto the current-block SVD
+     complement (`mgain_deflated_svd`); the complement guard doesn't rescue
+     it at small windows either.
+   - See `summary/half_window_sliding_hmean_experiment_synthesis.txt` and
+     `summary/half_window_sliding_hmean_doubled_synthesis.txt`.
+
+2. Patched online variant `future_hmean_online`:
+   - Drops `half2_complement` (future-built candidate).
+   - Uses current-half entropy, no guard.
+   - Eliminates all complement-like wins on mixed-tail-sharp; mean winner
+     oracle_mass grows with window size and at half_win=64 matches the
+     oracle-free benchmark's `obj_future_hmean` (0.975 vs 0.970).
+   - BUT: high oracle_mass does not imply full 2D recovery. The winner
+     oracle_mass measures v_2 alone; `mean_align` measures V_exact[:,0] in
+     the carried sketch. At half_win=32 sliding the two disagree by a lot
+     (final v_2 oracle_mass ~0.9, but mean_align swings between 0.19 and
+     0.74 across reruns).
+   - See `summary/future_hmean_online_synthesis.txt`.
+
+3. Subspace-level polish `future_hmean_online_joint`:
+   - Takes the greedy 2D pick V_selected as init, ascends
+     J_span(W) = HM(‖A_current W‖_F^2, ‖A_future W‖_F^2) · relH_current(W)
+     on a rank-2 Stiefel, constrained to the 6-dim candidate span (v_1 +
+     pool). Projected-gradient Riemannian ascent with QR retraction.
+   - Full-Stiefel version found spurious maxima (row-dense tail); the
+     candidate-span constraint eliminated those.
+   - Helps at half_win=16 sliding (mean_align 0.017 → 0.699) and half_win=64
+     sliding (0.492 → 0.679). Hurts at half_win=32 sliding (0.739 → 0.076).
+   - J_span landscape is extremely flat in the candidate span
+     (dJ_med ~ 1e-6 against J ~ 1.0), so tiny J improvements can correspond
+     to large alignment swings.
+   - See `summary/joint_span_polish_synthesis.txt`.
+
+4. Root cause of the half_win=32 regression (this investigation):
+   - See `summary/joint_win32_vanishing_analysis.txt`.
+   - The polish is a near-no-op at every step (pre- and post-polish columns
+     differ by < 0.002 in all inner products).
+   - The vanishing of V_exact[:,0] happens at a single step (step 27 of 31)
+     in the greedy pipeline, specifically in the Gram-Schmidt step that
+     builds V_selected[:,1] = orth(chosen_v2, v_1).
+   - At step 27, v_1 = V_default[:,0] has converged to ~92% V_exact[:,1];
+     the greedy objective (correctly) prefers `q2_raw_projected` as
+     chosen_v2; but `q2_raw_projected` is ~92% V_exact[:,1] too. They are
+     nearly co-linear. Gram-Schmidt cancels both, the residual is whatever
+     tail direction is left in Q_row, which turns out to be 0.987-aligned
+     with `mgain_deflated_svd`.
+   - V_selected[:,1] therefore ends up ≈ mgain_deflated_svd (tail/noise),
+     and the carried state's SVD promotes that to the second slot. The
+     subsequent steps cycle in (V_exact[:,1], tail) subspace and never
+     recover V_exact[:,0], even though the row-space continues to carry
+     V_exact[:,0] at ~20–45% (opn1).
+
+
+Key takeaway
+------------
+The polish can't fix this because by the time J_span sees V_selected, the
+V_exact[:,0] content has already been knocked out by the greedy
+orthonormalisation. J_span over any basis that starts without V_exact[:,0]
+content cannot put it back.
+
+The failure is a *pipeline* bug, not an *objective* bug: the rule
+"V_selected[:,1] = Gram-Schmidt(chosen_v2, V_default[:,0])" is unsafe when
+V_default[:,0] and chosen_v2 share the same top signal direction.
+
+
+Next step — technical instructions
+----------------------------------
+Replace the current greedy orthonormalisation rule with a 2D assignment
+that preserves span({V_default[:,0], chosen_v2}) but re-orders columns so
+that the output captures the most oracle content per column.
+
+Two concrete patches (do A first; if A is not enough, extend to B).
+
+Patch A: SVD-based column ordering (small, local)
+-------------------------------------------------
+File: `half_window_sliding_hmean_experiment.py`
+
+Location: inside `run_pair_stream`, replace the block
+
+    V_selected = np.ascontiguousarray(V_default.copy())
+    if chosen_v2 is not None:
+        V_selected[:, 1] = chosen_v2
+    V_selected = probe.orthonormalize_columns(
+        V_selected[:, :rank], dtype=np.float64
+    )[:, :rank]
+
+with
+
+    v1 = np.asarray(V_default[:, 0], dtype=np.float64).reshape(-1)
+    v1 = v1 / max(np.linalg.norm(v1), 1e-30)
+    vc = chosen_v2 if chosen_v2 is not None else V_default[:, 1]
+    vc = np.asarray(vc, dtype=np.float64).reshape(-1)
+    # Orthonormal basis of span({v1, vc}) without picking a column order
+    C_raw = np.column_stack([v1, vc])
+    Q, R = np.linalg.qr(C_raw)
+    if abs(R[1, 1]) < 1e-12:
+        # degenerate: vc collinear with v1 — fall back to old behaviour
+        V_selected = probe.orthonormalize_columns(
+            np.column_stack([v1, vc]), dtype=np.float64
+        )[:, :rank]
+    else:
+        # Order columns by current-block singular dominance of M_gain@Q
+        U_svd, s_svd, Vt_svd = np.linalg.svd(
+            np.asarray(M_gain, dtype=np.float64) @ Q, full_matrices=False
+        )
+        V_selected = np.ascontiguousarray(Q @ Vt_svd.T)[:, :rank]
+
+This keeps span(V_selected) = span({v1, chosen_v2}) but re-bases it so the
+columns are the principal directions of M_gain projected into that span.
+At step 27 of the half_win=32 run, span({v1, q2_raw_projected}) still
+contains V_exact[:,0] at ~44% (it's what raw_oracle[0] lives in, minus v1's
+share). The SVD re-basing will put the V_exact[:,0]-aligned direction into
+slot 2 instead of "residual after subtraction", preventing the cancellation.
+
+Expected effect: mean_align at half_win=32 sliding recovers to the
+"captures-both-directions" regime (>= 0.6). Should not hurt the other
+sizes.
+
+
+Patch B: oracle-mass swap (bigger, diagnostic only)
+---------------------------------------------------
+If Patch A is not sufficient (check by rerunning half_win=32 sliding and
+looking at step 27's `pre_c0_Ve0`, `pre_c1_Ve0` in the diagnostic dump),
+add a swap based on oracle-content per pair assignment.
+
+At the same location, after forming span({v1, chosen_v2}) via QR, evaluate
+two candidate 2D frames and keep the one with higher joint oracle mass:
+
+    # both frames span the same 2D; they differ only in column assignment
+    M1 = np.column_stack([v1, (vc - v1 * float(v1 @ vc))])
+    M1[:, 1] = M1[:, 1] / max(np.linalg.norm(M1[:, 1]), 1e-30)
+    M2 = np.column_stack([vc, (v1 - vc * float(vc @ v1))])
+    M2[:, 1] = M2[:, 1] / max(np.linalg.norm(M2[:, 1]), 1e-30)
+    # Use Q_oracle (projected-true-span of V_exact[:,:rank]) to pick the
+    # pairing with more joint oracle mass — this is a diagnostic oracle,
+    # not an online rule. For online deployment replace Q_oracle by the
+    # top-2 right-singular basis of M_gain or the row-space itself.
+    om1 = float(np.linalg.norm(Q_oracle.T @ M1, "fro") ** 2)
+    om2 = float(np.linalg.norm(Q_oracle.T @ M2, "fro") ** 2)
+    V_selected = M1 if om1 >= om2 else M2
+
+For online deployment, replace Q_oracle with a proxy: the top-2 right
+singular vectors of M_gain (which approximate the projected true span when
+the sketch has matured). This form keeps the algorithm online.
+
+
+Validation plan after Patch A
+-----------------------------
+1. Rebuild and run the diagnostic at half_win=32 sliding only:
+
+     python test_matrices_fast/half_window_sliding_hmean_experiment.py \
+       --matrix mixed-tail-sharp --half-win 32 \
+       --policies future_hmean_online_joint \
+       --n 1024 --rank 2 --preset fast \
+       --json-out test_matrices_fast/summary/half_window_joint_diag_win64_v2.json \
+       --csv-out test_matrices_fast/summary/half_window_joint_diag_win64_v2.csv \
+       --text-out test_matrices_fast/summary/half_window_joint_diag_win64_v2.txt
+
+2. Check in the JSON that `pre_c1_Ve0` at step 27 does NOT crash to ≈ 0.
+   Target: |pre_c1_Ve0| >= 0.30 (matching step 26's 0.399), indicating the
+   V_exact[:,0] content was preserved across the orthonormalisation.
+
+3. If the step-27 cancellation is gone, run the full three-size sweep:
+
+     # half_win = 16, 32, 64, comparing future_hmean_online and _joint
+     for HW in 16 32 64; do
+       python test_matrices_fast/half_window_sliding_hmean_experiment.py \
+         --matrix mixed-tail-sharp --half-win $HW \
+         --policies future_hmean_online future_hmean_online_joint \
+         --n 1024 --rank 2 --preset fast \
+         --json-out test_matrices_fast/summary/half_window_joint_v2_win$((2*HW)).json \
+         --csv-out test_matrices_fast/summary/half_window_joint_v2_win$((2*HW)).csv \
+         --text-out test_matrices_fast/summary/half_window_joint_v2_win$((2*HW)).txt
+     done
+
+4. Target metrics (sliding mode):
+   - half_win=16: mean_align >= 0.7
+   - half_win=32: mean_align >= 0.6  ← THIS is the one that currently fails
+   - half_win=64: mean_align >= 0.65
+   - Across all sizes: mean winner oracle_mass >= 0.9, block_svd wins = 0.
+
+5. If Patch A helps half_win=32 without hurting half_win=16 or half_win=64,
+   write a short update to `summary/joint_span_polish_synthesis.txt` noting
+   the pipeline fix and the new numbers. If Patch A does not resolve it,
+   implement Patch B with the SVD-of-M_gain oracle proxy and repeat.
+
+
+Files of record
+---------------
+Source (instrumented with joint polish + diagnostic):
+  test_matrices_fast/half_window_sliding_hmean_experiment.py
+
+Prior-arc summaries:
+  summary/half_window_sliding_hmean_experiment_synthesis.txt
+  summary/half_window_sliding_hmean_doubled_synthesis.txt
+  summary/future_hmean_online_synthesis.txt
+  summary/joint_span_polish_synthesis.txt
+  summary/joint_win32_vanishing_analysis.txt     ← root-cause write-up
+
+Diagnostic data:
+  summary/half_window_joint_diag_win64.json      ← per-step columns used
+  summary/half_window_joint_diag_win64.csv
+  summary/half_window_joint_diag_win64.txt
+
+Benchmark reference (obj_future_hmean etc.):
+  summary/objective_design_oracle_free_full_benchmark_synthesis.txt
+  summary/objective_design_oracle_free_objective_probe_all_matrices_corrected.csv

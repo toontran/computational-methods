@@ -1,0 +1,33 @@
+== block 2  matrix=mixed-tail-soft  N_sk=32  union_dim=66 ==
+  c_sk=1.2106e+00  c_g1=1.2117e+00  c_g2=1.2113e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.5047   0.4985   0.0000  5.1379e-05  0.9994  5.1349e-05 3.3088e+00     0.0006    0.0006
+  hm_triplet_norm_best           0.4142   0.5879   0.0054  1.1120e-02  1.0000  1.1120e-02 3.1667e+00     0.0143    0.0062
+  hm_triplet_raw_best            0.3357   0.3377   0.3404  3.3894e-01  1.0000  3.3893e-01 2.2026e+00     0.0545    0.0005
+  hm_triplet_evidence_best       0.1123   0.4496   0.4536  4.1370e-01  0.9999  4.1367e-01 1.6672e+00     0.0638    0.0006
+  oracle_v1_proj_S+G1+G2         0.0595   0.4767   0.4765  3.9312e-01  1.0000  3.9312e-01 1.5044e+00     0.0780    0.0016
+  oracle_v2_proj_S+G1+G2         0.1126   0.4495   0.4493  4.1203e-01  1.0000  4.1203e-01 1.6754e+00     0.0016    0.0824
+
+== block 6  matrix=mixed-tail-soft  N_sk=160  union_dim=66 ==
+  c_sk=1.2110e+00  c_g1=1.2124e+00  c_g2=1.2069e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.7563   0.2387   0.0000  8.9064e-05  0.9999  8.9058e-05 1.8866e+00     0.0006    0.0005
+  hm_triplet_norm_best           0.4636   0.5368   0.0047  9.6803e-03  1.0000  9.6801e-03 1.7923e+00     0.0003    0.0370
+  hm_triplet_raw_best            0.3368   0.3376   0.3397  3.3860e-01  1.0000  3.3859e-01 1.2194e+00     0.0000    0.0172
+  hm_triplet_evidence_best       0.1130   0.4507   0.4535  4.1441e-01  0.9999  4.1438e-01 9.6236e-01     0.0002    0.0165
+  oracle_v1_proj_S+G1+G2         0.0638   0.4754   0.4733  3.9689e-01  1.0000  3.9689e-01 9.0857e-01     0.0783    0.0006
+  oracle_v2_proj_S+G1+G2         0.1001   0.4579   0.4558  4.1232e-01  1.0000  4.1232e-01 9.3263e-01     0.0006    0.0809
+
+== block 12  matrix=mixed-tail-soft  N_sk=352  union_dim=66 ==
+  c_sk=1.2110e+00  c_g1=1.2114e+00  c_g2=1.2091e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.8941   0.1063   0.0000  8.9389e-05  1.0000  8.9386e-05 1.3444e+00     0.0001    0.0019
+  hm_triplet_norm_best           0.4843   0.5172   0.0055  1.1230e-02  1.0000  1.1230e-02 1.2720e+00     0.0004    0.0372
+  hm_triplet_raw_best            0.3384   0.3381   0.3408  3.3940e-01  1.0000  3.3940e-01 8.6046e-01     0.0003    0.0503
+  hm_triplet_evidence_best       0.1133   0.4530   0.4526  4.1511e-01  1.0000  4.1510e-01 7.0803e-01     0.0001    0.0563
+  oracle_v1_proj_S+G1+G2         0.1736   0.4220   0.4212  4.0410e-01  1.0000  4.0410e-01 7.4788e-01     0.0881    0.0013
+  oracle_v2_proj_S+G1+G2         0.1465   0.4354   0.4346  4.1049e-01  1.0000  4.1049e-01 7.2603e-01     0.0014    0.0850
+

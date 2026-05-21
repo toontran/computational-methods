@@ -1,0 +1,2 @@
+sigma1,mean_align,std_align,mean_relerr_sval,std_relerr_sval,low_sval_count,num_exper,mean_sval,std_sval,E_opt,Delta_comp,mean_Delta,std_Delta,sigma_index,machine_index
+1.069,1.0,2.2204460492503132e-17,9.1808901194447e-16,1.0035671492425336e-15,0,100,1.069,1.4540107379219426e-15,8420.530024968904,0.14558185133752488,-2.6193447411060332e-12,3.376859643575821e-12,20,20

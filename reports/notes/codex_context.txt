@@ -1,0 +1,76 @@
+Condensed Context (High-Level, Recent-Focused)
+
+Primary Objective
+- Reproduce MATLAB `cex_structured_new.m` behavior in Python (`main.py`) while making the reduced optimizer practical.
+- Ground-truth reproduction remains `cex_structured_new_py.py`.
+- `--cex-replicate` / full row-space-style settings are for matching cex/MATLAB, not necessarily for fast routine runs.
+
+Core Understanding
+
+1) Main Accuracy Drivers
+- Subspace truncation was the dominant gap.
+- Residual expansion fixed the old failure mode where Krylov expansion from `v_best` added no new directions.
+- With residual expansion, small `q0=5` can reach near high-budget quality.
+
+2) Optimizer Mechanics
+- cex-style optimizer is implemented:
+  - raw tangent-gradient step
+  - Armijo on score
+  - direct score objective
+- `float64` is required for exact first-block optimizer matching / cex-replication diagnostics.
+- `float32` is acceptable for routine runs; high-budget `float32` is very close to high-budget `float64`.
+
+3) Iteration Cost Diagnosis
+- Reduced line search really is on small matrices (`B_gain`, `B_block`, `C_prev`).
+- Per-operation costs are microseconds; the bottleneck is many tiny NumPy calls, many optimizer iterations, and repeated solve batches after expansion.
+- Armijo almost always accepts on the first trial, so backtracking itself is not the issue.
+- Previous code recomputed the accepted score/gradient after line search; this is now optimized.
+
+Recent Optimizations Implemented
+- Reuse accepted Armijo trial score/gradient:
+  - `reuse_line_search_grad=True`
+  - exact same final objective in tested runs
+  - reduced optimizer speedup about `1.75x`; total reduced-solve speedup about `1.25x`
+- Expansion warm-start:
+  - `expansion_warm_start=True`
+  - after expansion, use lifted previous reduced optimum before regenerating cex SVD starts
+  - much larger speedup than line-search reuse
+- Optional post-expansion iteration cap:
+  - `post_expansion_maxit`
+  - useful because full `maxit` after every expansion is wasteful
+
+Current Practical Recommendation
+- Routine fast/balanced setting:
+  - `q0=5`
+  - `qmax=200`
+  - `expansion_maxit=64`
+  - `expansion_direction=residual`
+  - `num_restarts=2`
+  - `maxit=120`
+  - `reduced_optimizer=cex`
+  - `work_dtype=float32`
+  - `reuse_line_search_grad=True`
+  - `expansion_warm_start=True`
+  - `post_expansion_maxit=60`
+- This was close to high-budget `float32` quality while much faster in the minimal harness.
+- Important caveat: reported `~2.85s` is summed internal reduced-solver time in the minimal harness, not full `main.py` wall time.
+
+Reference Commands
+- Fast practical:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2 --q0 5 --qmax 200 --expansion-maxit 64 --expansion-direction residual --num-restarts 2 --maxit 120 --reduced-optimizer cex --work-dtype float32 --reuse-line-search-grad --expansion-warm-start --post-expansion-maxit 60`
+- Full cex-style replication:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2 --cex-replicate`
+- Literal Python reference:
+  - `python3 -u cex_structured_new_py.py --mat-input matlab/cex1_input.mat`
+
+Remaining Caveats / Next Steps
+- Measure actual full `main.py` wall time separately from reduced-solver time.
+- Validate the fast `float32` setting on broader matrices/cases before making residual expansion or warm-start defaults.
+- Cache cex restart SVD per window for `num_restarts > 1`; setup is still a major cost.
+- Track `main.py` normalization by `S_exact[0]` when comparing against literal cex units.
+- RNG still differs across global `np.random` and `default_rng`.
+
+---
+
+All technical details, experiments, commands, and numerical results are preserved in:
+SEE: condensed_context_technical.txt

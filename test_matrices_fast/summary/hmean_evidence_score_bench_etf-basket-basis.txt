@@ -1,0 +1,33 @@
+== block 2  matrix=etf-basket-basis  N_sk=32  union_dim=66 ==
+  c_sk=6.7182e-01  c_g1=6.9138e-01  c_g2=5.5347e-01
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          5.5651   4.7793   2.1245  2.9841e+00  0.8452  2.5222e+00 4.9381e+01     0.0015    0.0000
+  hm_triplet_norm_best           4.7251   4.5232   3.0543  3.6718e+00  0.8621  3.1655e+00 4.4411e+01     0.0000    0.1377
+  hm_triplet_raw_best            4.6539   4.5210   3.0961  3.6989e+00  0.8619  3.1882e+00 4.4023e+01     0.0000    0.1495
+  hm_triplet_evidence_best       1.8521   4.4862   4.3155  4.2232e+00  0.8454  3.5704e+00 2.8120e+01     0.0032    0.6469
+  oracle_v1_proj_S+G1+G2        14.3141  14.5002  18.4970  1.6190e+01  0.8694  1.4076e+01 1.3973e+02     0.9959    0.0000
+  oracle_v2_proj_S+G1+G2         0.5065   4.7448   4.4649  3.6954e+00  0.8632  3.1897e+00 2.4507e+01     0.0000    0.9798
+
+== block 6  matrix=etf-basket-basis  N_sk=160  union_dim=66 ==
+  c_sk=6.4022e-01  c_g1=5.4055e-01  c_g2=5.7721e-01
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2         17.9399   3.1242   4.4188  3.7509e+00  0.8467  3.1758e+00 6.6537e+01     0.0000    0.0009
+  hm_triplet_norm_best          16.9715   3.0457   4.5518  3.7384e+00  0.8828  3.3001e+00 6.4382e+01     0.0000    0.0213
+  hm_triplet_raw_best           10.7331   3.6380   4.2786  4.0094e+00  0.9092  3.6455e+00 4.9024e+01     0.0000    0.4290
+  hm_triplet_evidence_best       5.9290   3.6816   4.1951  3.9623e+00  0.9575  3.7940e+00 3.5095e+01     0.0000    0.6874
+  oracle_v1_proj_S+G1+G2        82.0602  19.3108  16.5774  1.8273e+01  0.9374  1.7129e+01 3.5308e+02     0.9988    0.0000
+  oracle_v2_proj_S+G1+G2         0.1082   3.3633   4.1921  1.8526e+00  0.8846  1.6388e+00 1.3122e+01     0.0000    0.9771
+
+== block 12  matrix=etf-basket-basis  N_sk=352  union_dim=66 ==
+  c_sk=6.2174e-01  c_g1=5.0361e-01  c_g2=6.6521e-01
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2         40.0537   3.9049   3.4951  3.7930e+00  0.8641  3.2775e+00 1.0802e+02     0.0000    0.0033
+  hm_triplet_norm_best          38.6276   3.9508   3.6285  3.8891e+00  0.8779  3.4143e+00 1.0528e+02     0.0000    0.0248
+  hm_triplet_raw_best           15.9625   3.7393   4.3221  4.1027e+00  0.9214  3.7802e+00 5.1805e+01     0.0001    0.5293
+  hm_triplet_evidence_best       8.3468   3.7363   4.4734  4.1359e+00  0.9421  3.8963e+00 3.2908e+01     0.0001    0.7102
+  oracle_v1_proj_S+G1+G2       181.7546  17.9616  16.1013  1.7460e+01  0.8681  1.5157e+01 5.1023e+02     0.9995    0.0000
+  oracle_v2_proj_S+G1+G2         0.0389   3.4086   4.5720  9.7348e-01  0.8484  8.2588e-01 1.0204e+01     0.0000    0.9729
+

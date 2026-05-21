@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:599: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999503 mean_relerr_sval=0.29204498
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999982 mean_relerr_sval=0.01456444
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.999609 mean_relerr_sval=0.29204545
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.999988 mean_relerr_sval=0.01455269
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.999516 mean_relerr_sval=0.29221964
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999974 mean_relerr_sval=0.01474201
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999587 mean_relerr_sval=0.29200256
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999973 mean_relerr_sval=0.01449312
+wrote_json=summary/bench_matrix_sweep/etf-basket-basis_win64.json wrote_csv=summary/bench_matrix_sweep/etf-basket-basis_win64.csv wrote_text=summary/bench_matrix_sweep/etf-basket-basis_win64.txt elapsed=398.137

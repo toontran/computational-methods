@@ -1,0 +1,187 @@
+Outside-direction rotation diagnostic
+=====================================
+
+Date: 2026-04-22
+
+Question
+--------
+Check the temporal change of the outside/tail direction itself:
+
+  Do the outside directions rotate a lot more from block to block than the
+  oracle directions?
+
+This is different from the previous handoff diagnostic. The handoff diagnostic
+asked whether selected and carried subspaces differ. This diagnostic asks
+whether the normalized outside residual of the second selected/carried direction
+changes rapidly across windows.
+
+
+Diagnostic
+----------
+Added:
+
+  outside_rotation_change_diagnostic.py
+
+Raw output:
+
+  summary/outside_rotation_mixed_static_raw.txt
+
+For each block, decompose the second selected/carried direction relative to the
+fixed exact top-r subspace:
+
+  v2_in  = P_exact v2
+  v2_out = (I - P_exact) v2
+
+Then normalize nonzero components and compute consecutive absolute cosines.
+
+Measures:
+
+  sel2_out_cos:
+    consecutive cosine of normalized outside residual of selected v2.
+
+  car2_out_cos:
+    consecutive cosine of normalized outside residual of carried v2.
+
+  sel2_in_cos:
+    consecutive cosine of normalized exact-subspace component of selected v2.
+
+  q1_cos, q2_cos:
+    consecutive cosine of projected QR oracle columns.
+
+  q2_out_cos:
+    consecutive cosine of the outside residual of projected QR oracle column 2.
+
+Important caveat:
+
+  `q2_cos` is a columnwise QR-oracle measure, not a subspace measure. In
+  near-degenerate/projected settings, the QR oracle columns can rotate
+  substantially even when the underlying target span is meaningful. Use it as a
+  diagnostic of the frame being compared, not as an invariant property of the
+  true exact SVD subspace.
+
+
+Aggregate Results
+-----------------
+Consecutive-block averages over blocks 2-32:
+
+  matrix             metric          mean_cos  min_cos   mean_angle_deg
+  mixed-tail-sharp   sel2_out_cos    0.871029  0.015515  24.411061
+  mixed-tail-sharp   car2_out_cos    0.854871  0.008698  26.313258
+  mixed-tail-sharp   sel2_in_cos     0.920902  0.547580  16.154694
+  mixed-tail-sharp   q1_cos          0.845291  0.136682  27.357680
+  mixed-tail-sharp   q2_cos          0.103448  0.006415  84.046901
+  mixed-tail-sharp   q2_out_cos      0.074677  0.007403  85.708544
+
+  static-cex         sel2_out_cos    0.885708  0.046091  25.676364
+  static-cex         car2_out_cos    0.892464  0.498969  25.712917
+  static-cex         sel2_in_cos     0.967164  0.005095   4.201728
+  static-cex         q1_cos          0.920686  0.612596  20.086662
+  static-cex         q2_cos          0.936807  0.712098  18.261637
+  static-cex         q2_out_cos      0.889206  0.698767  26.324043
+
+
+Mixed-Tail-Sharp Readout
+------------------------
+Representative blocks:
+
+  block 3:
+    sel2_out_cos = 0.817549  angle = 35.159773 deg
+    car2_out_cos = 0.777080  angle = 39.006027 deg
+    q2_cos       = 0.022996
+    q2_out_cos   = 0.016871  angle = 89.033344 deg
+
+  block 8:
+    sel2_out_cos = 0.935347  angle = 20.715650 deg
+    car2_out_cos = 0.926455  angle = 22.111156 deg
+    q2_cos       = 0.105800
+    q2_out_cos   = 0.065194  angle = 86.261986 deg
+
+  block 16:
+    sel2_out_cos = 0.957403  angle = 16.783470 deg
+    car2_out_cos = 0.956765  angle = 16.909597 deg
+    q2_cos       = 0.238017
+    q2_out_cos   = 0.201616  angle = 78.368499 deg
+
+  block 32:
+    sel2_out_cos = 0.993451  angle = 6.560741 deg
+    car2_out_cos = 0.993579  angle = 6.496153 deg
+    q2_cos       = 0.020509
+    q2_out_cos   = 0.017742  angle = 88.983408 deg
+
+Interpretation:
+
+  The outside residual of the selected/carried second slot is not rotating more
+  than the projected oracle-2 frame. It is much more stable. After the early
+  handoff, sel2_out and car2_out usually have high consecutive cosine and become
+  very stable late in the stream.
+
+  The projected QR oracle-2 column is the unstable object in this diagnostic:
+  its consecutive cosine is often near zero. This reinforces the earlier
+  frame/orthogonalization concern. The projected oracle basis, especially the
+  second QR column, can swing substantially from block to block. Meanwhile the
+  selected outside/tail direction is a stable basin that the sketch keeps
+  carrying.
+
+
+Static-CEX Readout
+------------------
+Representative blocks:
+
+  block 3:
+    sel2_out_cos = 0.805545  angle = 36.337082 deg
+    car2_out_cos = 0.807890  angle = 36.109731 deg
+    q2_cos       = 0.738171
+    q2_out_cos   = 0.714952  angle = 44.360745 deg
+
+  block 8:
+    sel2_out_cos = 0.917422  angle = 23.447933 deg
+    car2_out_cos = 0.890899  angle = 27.013627 deg
+    q2_cos       = 0.920681
+    q2_out_cos   = 0.899856  angle = 25.860839 deg
+
+  block 16:
+    sel2_out_cos = 0.938853  angle = 20.140173 deg
+    car2_out_cos = 0.897914  angle = 26.114743 deg
+    q2_cos       = 0.967909
+    q2_out_cos   = 0.939168  angle = 20.087746 deg
+
+  block 32:
+    sel2_out_cos = 0.843466  angle = 32.492075 deg
+    car2_out_cos = 0.809314  angle = 35.971079 deg
+    q2_cos       = 0.985349
+    q2_out_cos   = 0.799658  angle = 36.902545 deg
+
+Interpretation:
+
+  Static-cex does not show outside residuals rotating wildly more than oracle
+  directions either. The outside residual and q2_out have comparable temporal
+  movement. The full projected oracle columns, especially q2, are much more
+  stable than in mixed-tail-sharp.
+
+  Static-cex succeeds because the oracle component of selected v2 is extremely
+  stable once established. Its `sel2_in_cos` average is 0.967164, and most of
+  its instability is concentrated in the early block-2 transition where the
+  selected second vector is still tail-heavy.
+
+
+Answer
+------
+No: the outside/tail direction does not rotate a lot more than the oracle
+direction in the failing mixed-tail-sharp case. It is the opposite for the
+projected QR oracle-2 column: the selected/carried outside residual is more
+temporally stable, while oracle-2 as represented by the projected QR frame
+rotates dramatically.
+
+The revised picture is:
+
+  - mixed-tail-sharp selects a stable outside/tail basin for the second slot;
+  - the carried sketch reinforces that stable outside direction;
+  - the projected oracle-2 frame is comparatively unstable and weakly retained;
+  - static-cex also has outside residual movement, but its projected oracle
+    directions are stable enough and already present enough for the selected
+    frame to converge to the oracle span.
+
+So the tail is not winning because it is rotating faster and exploring more.
+It is winning because it is stable enough to be carried, while the second oracle
+direction is not stable/competitive enough under the projected QR frame and
+combined objective to dislodge it.

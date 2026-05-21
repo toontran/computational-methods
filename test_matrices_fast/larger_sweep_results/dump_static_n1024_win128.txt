@@ -1,0 +1,175 @@
+# mean_align converted to projection-norm convention; higher is better.
+Input: generated structured cex (n=1024, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand), row_shuffled(seed=0): A=(1024, 1024), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=fast, q0=8, qmax=48, krylov_depth=2, residual_tol=0.01, expansion_maxit=8, num_restarts=8, maxit=120, carry=left, reduced_optimizer=cex, dtype=float32, basis_selection=greedy, joint_warm_start_greedy=False, joint_warm_start_oracle=False, joint_warm_start_rotations=0, joint_warm_start_rotation_angle=0.7853981633974483, joint_warm_start_perturbations=0, joint_warm_start_perturb_scale=0.01, joint_default_svd_start=True, joint_oversample=0, joint_oversample_rotate=svd, joint_solver=riemannian, row_concentration_lambda=0.0, row_leverage_lambda=0.0, row_leverage_mode=none, row_leverage_rank=2, score_variant=combined, rownorm_seed_first_block=True, rownorm_seed_all_blocks=True, old_memory_size=128, debug_mode=off, oracle_candidate_check=True, oracle_sketch_all_seen_rows=False, dump_score_components=True, dump_oracle_old_row_responses=False, dump_oracle_old_row_response_block=3, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=80
+
+===== block rows 1:128 (initial restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.912665672057 gain2=0.843487687363 phi=1.082014219923 pooled_y2=0.843487687363 pooled_y4=0.005558370928 pooled_H=4.852030263920 pooled_rel_H=1.000000000000 combined_c=-0.016245637044 rows_entropy=128 rows_seen=128 new_y2=0.843487687363 new_y4=0.005558370928 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=nan old_y4=nan old_H=nan old_rel_H=nan old_rows=0
+  oracle_raw_v2: total=0.912072984842 gain2=0.842939924493 phi=1.082014219923 pooled_y2=0.842939924493 pooled_y4=0.005551154034 pooled_H=4.852030263920 pooled_rel_H=1.000000000000 combined_c=-0.016245637044 rows_entropy=128 rows_seen=128 new_y2=0.842939924493 new_y4=0.005551154034 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=nan old_y4=nan old_H=nan old_rel_H=nan old_rows=0
+  optimizer_v1: total=0.914256282217 gain2=0.914238894419 phi=1.000019018877 pooled_y2=0.914238894419 pooled_y4=0.834854822856 pooled_H=0.001170695632 pooled_rel_H=0.000241279540 combined_c=-0.016245637044 rows_entropy=128 rows_seen=128 new_y2=0.914238894419 new_y4=0.834854822856 new_H=0.001170695632 new_rel_H=0.000241279540 old_y2=nan old_y4=nan old_H=nan old_rel_H=nan old_rows=0
+  optimizer_v2: total=0.916360098279 gain2=0.852016492382 phi=1.075519202353 pooled_y2=0.852016492382 pooled_y4=0.008215613407 pooled_H=4.481420070965 pooled_rel_H=0.923617501789 combined_c=-0.016245637044 rows_entropy=128 rows_seen=128 new_y2=0.852016492382 new_y4=0.008215613407 new_H=4.481420070965 new_rel_H=0.923617501789 old_y2=nan old_y4=nan old_H=nan old_rel_H=nan old_rows=0
+rows 1:128
+s:  0.9562  0.9232
+H:  0.0012  4.4814
+scores:  0.9143  0.9164
+oracle_candidate_check: rejected optimizer_sum=1.830616440308 candidate_sum=1.824575939367
+oracle_raw_projection_scores:  0.9127  0.9121 sum=1.824738767022
+oracle_qr_projection_scores:  0.9127  0.9119 sum=1.824575939367
+optimizer_score_sum: 1.830616440308
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.130355  0.954839
+principal_cosines(V_score, Q_oracle):  0.955301  0.107481
+raw_oracle_projection_overlap: 0.046461980275
+subspace_dims: [14, 26]
+grad_perp_ratio:  0.000395  0.000919
+old_row_memory_rows: 128
+
+===== block rows 129:256 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.866694562710 gain2=0.844119799618 phi=1.026743553583 pooled_y2=0.844601214057 pooled_y4=0.005453513288 pooled_H=4.873713839834 pooled_rel_H=0.878910348430 combined_c=-0.005415212348 rows_entropy=256 rows_seen=256 new_y2=0.829332590781 new_y4=0.005373379267 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.015268623276 old_y4=0.000080134022 old_H=1.067899408531 old_rel_H=0.220093311551 old_rows=128
+  oracle_raw_v2: total=0.890762532728 gain2=0.865317699036 phi=1.029405192706 pooled_y2=0.865355563731 pooled_y4=0.003549199684 pooled_H=5.351803541829 pooled_rel_H=0.965127553701 combined_c=-0.005415212348 rows_entropy=256 rows_seen=256 new_y2=0.452430324922 new_y4=0.001599165616 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.412925238809 old_y4=0.001950034067 old_H=4.470930991811 old_rel_H=0.921455710006 old_rows=128
+  optimizer_v1: total=0.979815891053 gain2=0.979815626049 phi=1.000000270463 pooled_y2=0.979815741563 pooled_y4=0.959990939376 pooled_H=0.000049945098 pooled_rel_H=0.000009006943 combined_c=-0.005415212348 rows_entropy=256 rows_seen=256 new_y2=0.979807712665 new_y4=0.959990939315 new_H=0.000033556506 new_rel_H=0.000006915972 old_y2=0.000008028898 old_y4=0.000000000061 old_H=0.059891591056 old_rel_H=0.012343614487 old_rows=128
+  optimizer_v2: total=0.914588833431 gain2=0.912584253872 phi=1.002196596698 pooled_y2=0.912584645549 pooled_y4=0.555360143875 pooled_H=0.405189596638 pooled_rel_H=0.073070627711 combined_c=-0.005415212348 rows_entropy=256 rows_seen=256 new_y2=0.191225289795 new_y4=0.036150088618 new_H=0.011469842372 new_rel_H=0.002363926387 old_y2=0.721359355755 old_y4=0.519210055258 old_H=0.002211041172 old_rel_H=0.000455694019 old_rows=128
+rows 129:256
+s:  0.9899  0.9553
+H:  0.0001  0.4052
+scores:  0.9798  0.9146
+oracle_candidate_check: rejected optimizer_sum=1.894405110966 candidate_sum=1.757446944403
+oracle_raw_projection_scores:  0.8667  0.8908 sum=1.757457269708
+oracle_qr_projection_scores:  0.8667  0.8908 sum=1.757446944403
+optimizer_score_sum: 1.894405110966
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.165874  0.133126
+principal_cosines(V_score, Q_oracle):  0.212167  0.004783
+raw_oracle_projection_overlap: 0.004538654328
+subspace_dims: [12, 14]
+grad_perp_ratio:  0.001376  0.000123
+old_row_memory_rows: 128
+
+===== block rows 257:384 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.863363336408 gain2=0.847426311348 phi=1.018806384516 pooled_y2=0.847796922398 pooled_y4=0.005554328416 pooled_H=4.862949460010 pooled_rel_H=0.876969133756 combined_c=-0.003831364270 rows_entropy=256 rows_seen=384 new_y2=0.822152162380 new_y4=0.005280735766 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.025644760019 old_y4=0.000273592650 old_H=0.877038205182 old_rel_H=0.180756952755 old_rows=128
+  oracle_raw_v2: total=0.863432443920 gain2=0.847530718584 phi=1.018762417676 pooled_y2=0.847825083636 pooled_y4=0.005617618786 pooled_H=4.851685540827 pooled_rel_H=0.874937833713 combined_c=-0.003831364270 rows_entropy=256 rows_seen=384 new_y2=0.818014409059 new_y4=0.005227715417 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.029810674578 old_y4=0.000389903369 old_H=0.823834136762 old_rel_H=0.169791631946 old_rows=128
+  optimizer_v1: total=0.979949990144 gain2=0.979943492729 phi=1.000006630398 pooled_y2=0.979941955721 pooled_y4=0.958625848193 pooled_H=0.001730552241 pooled_rel_H=0.000312082392 combined_c=-0.003831364270 rows_entropy=256 rows_seen=384 new_y2=0.000838898543 new_y4=0.000000687290 new_H=0.023667674559 new_rel_H=0.004877890959 old_y2=0.979103057179 old_y4=0.958625160903 old_H=0.000018396671 old_rel_H=0.000003791541 old_rows=128
+  optimizer_v2: total=0.926349386407 gain2=0.926341409525 phi=1.000008611168 pooled_y2=0.926342605275 pooled_y4=0.856184153051 pooled_H=0.002247536580 pooled_rel_H=0.000405313735 combined_c=-0.003831364270 rows_entropy=256 rows_seen=384 new_y2=0.926262457744 new_y4=0.856184149238 new_H=0.002074492749 new_rel_H=0.000427551486 old_y2=0.000080147531 old_y4=0.000000003813 old_H=0.521619994913 old_rel_H=0.107505511413 old_rows=128
+rows 257:384
+s:  0.9899  0.9625
+H:  0.0017  0.0022
+scores:  0.9800  0.9263
+oracle_candidate_check: rejected optimizer_sum=1.906300297067 candidate_sum=1.725090445324
+oracle_raw_projection_scores:  0.8634  0.8634 sum=1.726795768205
+oracle_qr_projection_scores:  0.8634  0.8617 sum=1.725090445324
+optimizer_score_sum: 1.906300297067
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.125666  0.126226
+principal_cosines(V_score, Q_oracle):  0.168673  0.000486
+raw_oracle_projection_overlap: 0.115086979228
+subspace_dims: [12, 16]
+grad_perp_ratio:  0.002458  0.001776
+old_row_memory_rows: 128
+
+===== block rows 385:512 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.857485396678 gain2=0.846257040445 phi=1.013268257393 pooled_y2=0.846706025218 pooled_y4=0.005511364156 pooled_H=4.868139663806 pooled_rel_H=0.877905118916 combined_c=-0.002707606174 rows_entropy=256 rows_seen=512 new_y2=0.831113233751 new_y4=0.005396478182 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.015592791468 old_y4=0.000114885974 old_H=0.749677341647 old_rel_H=0.154507969009 old_rows=128
+  oracle_raw_v2: total=0.856991472242 gain2=0.845769967428 phi=1.013267797682 pooled_y2=0.846199042434 pooled_y4=0.005505688511 pooled_H=4.867972101929 pooled_rel_H=0.877874901330 combined_c=-0.002707606174 rows_entropy=256 rows_seen=512 new_y2=0.830430492477 new_y4=0.005387615647 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.015768549956 old_y4=0.000118072864 old_H=0.744732971695 old_rel_H=0.153488937864 old_rows=128
+  optimizer_v1: total=0.979948852361 gain2=0.979944285878 phi=1.000004659941 pooled_y2=0.979939740645 pooled_y4=0.958630621790 pooled_H=0.001721051790 pooled_rel_H=0.000310369110 combined_c=-0.002707606174 rows_entropy=256 rows_seen=512 new_y2=0.000009511149 new_y4=0.000000000037 new_H=0.905449256570 new_rel_H=0.186612450319 old_y2=0.979930229496 old_y4=0.958630621754 old_H=0.001701640033 old_rel_H=0.000350706805 old_rows=128
+  optimizer_v2: total=0.935302024057 gain2=0.935301485840 phi=1.000000575447 pooled_y2=0.935314207617 pooled_y4=0.874626762923 pooled_H=0.000212529847 pooled_rel_H=0.000038326970 combined_c=-0.002707606174 rows_entropy=256 rows_seen=512 new_y2=0.935292337727 new_y4=0.874626762731 new_H=0.000165764723 new_rel_H=0.000034163992 old_y2=0.000021869889 old_y4=0.000000000191 old_H=0.915505372315 old_rel_H=0.188685008650 old_rows=128
+rows 385:512
+s:  0.9899  0.9671
+H:  0.0017  0.0002
+scores:  0.9799  0.9353
+oracle_candidate_check: rejected optimizer_sum=1.915250638262 candidate_sum=1.714337963032
+oracle_raw_projection_scores:  0.8575  0.8570 sum=1.714476893188
+oracle_qr_projection_scores:  0.8575  0.8569 sum=1.714337963032
+optimizer_score_sum: 1.915250638262
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.120021  0.121654
+principal_cosines(V_score, Q_oracle):  0.168314  0.000423
+raw_oracle_projection_overlap: 0.030887529078
+subspace_dims: [10, 14]
+grad_perp_ratio:  0.004082  0.000002
+old_row_memory_rows: 128
+
+===== block rows 513:640 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.853728973731 gain2=0.846131825139 phi=1.008978682005 pooled_y2=0.846605568683 pooled_y4=0.005507223673 pooled_H=4.868653906923 pooled_rel_H=0.877997855915 combined_c=-0.001835951677 rows_entropy=256 rows_seen=640 new_y2=0.832339556197 new_y4=0.005412415131 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.014266012485 old_y4=0.000094808542 old_H=0.763900408060 old_rel_H=0.157439332920 old_rows=128
+  oracle_raw_v2: total=0.853254637364 gain2=0.845661871895 phi=1.008978488592 pooled_y2=0.846118558836 pooled_y4=0.005501463812 pooled_H=4.868549497044 pooled_rel_H=0.877979026963 combined_c=-0.001835951677 rows_entropy=256 rows_seen=640 new_y2=0.831498256484 new_y4=0.005401479301 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.014620302351 old_y4=0.000099984511 old_H=0.759806985093 old_rel_H=0.156595681347 old_rows=128
+  optimizer_v1: total=0.979947833543 gain2=0.979944726972 phi=1.000003170149 pooled_y2=0.979937724646 pooled_y4=0.958621259517 pooled_H=0.001726703596 pooled_rel_H=0.000311388339 combined_c=-0.001835951677 rows_entropy=256 rows_seen=640 new_y2=0.000006840603 new_y4=0.000000000010 new_H=1.582415209858 new_rel_H=0.326134653698 old_y2=0.979930884043 old_y4=0.958621259508 old_H=0.001712742257 old_rel_H=0.000352994966 old_rows=128
+  optimizer_v2: total=0.935311137836 gain2=0.935310454421 phi=1.000000730682 pooled_y2=0.935313320411 pooled_y4=0.874462914748 pooled_H=0.000397985232 pooled_rel_H=0.000071771415 combined_c=-0.001835951677 rows_entropy=256 rows_seen=640 new_y2=0.000098213811 new_y4=0.000000000207 new_H=3.843389133565 new_rel_H=0.792119777600 old_y2=0.935215106600 old_y4=0.874462914541 old_H=0.000187961799 old_rel_H=0.000038738794 old_rows=128
+rows 513:640
+s:  0.9899  0.9671
+H:  0.0017  0.0004
+scores:  0.9799  0.9353
+oracle_candidate_check: rejected optimizer_sum=1.915259098545 candidate_sum=1.706432949434
+oracle_raw_projection_scores:  0.8537  0.8533 sum=1.706983654092
+oracle_qr_projection_scores:  0.8537  0.8527 sum=1.706432949434
+optimizer_score_sum: 1.915259098545
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.123643  0.126218
+principal_cosines(V_score, Q_oracle):  0.170500  0.000481
+raw_oracle_projection_overlap: 0.073913931291
+subspace_dims: [14, 16]
+grad_perp_ratio:  0.000474  0.005955
+old_row_memory_rows: 128
+
+===== block rows 641:768 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.852697017288 gain2=0.848044887940 phi=1.005485711209 pooled_y2=0.848456988712 pooled_y4=0.005533649874 pooled_H=4.868235894628 pooled_rel_H=0.877922472882 combined_c=-0.001123758096 rows_entropy=256 rows_seen=768 new_y2=0.833432765499 new_y4=0.005426641989 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.015024223213 old_y4=0.000107007885 old_H=0.746425035356 old_rel_H=0.153837670986 old_rows=128
+  oracle_raw_v2: total=0.852259711255 gain2=0.847610312370 phi=1.005485302405 pooled_y2=0.847995168030 pooled_y4=0.005529627759 pooled_H=4.867874096173 pooled_rel_H=0.877857227278 combined_c=-0.001123758096 rows_entropy=256 rows_seen=768 new_y2=0.832390412519 new_y4=0.005413076554 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.015604755510 old_y4=0.000116551205 old_H=0.736820708607 old_rel_H=0.151858226047 old_rows=128
+  optimizer_v1: total=0.980101156715 gain2=0.980097090576 phi=1.000004148711 pooled_y2=0.980086898336 pooled_y4=0.957030622285 pooled_H=0.003691810879 pooled_rel_H=0.000665769656 combined_c=-0.001123758096 rows_entropy=256 rows_seen=768 new_y2=0.000943496372 new_y4=0.000000890035 new_H=0.000169442561 new_rel_H=0.000034921992 old_y2=0.979143401964 old_y4=0.957029732250 old_H=0.001766481477 old_rel_H=0.000364070581 old_rows=128
+  optimizer_v2: total=0.941448405027 gain2=0.941446021644 phi=1.000002531620 pooled_y2=0.941460304332 pooled_y4=0.884352977009 pooled_H=0.002252812928 pooled_rel_H=0.000406265255 combined_c=-0.001123758096 rows_entropy=256 rows_seen=768 new_y2=0.941138516219 new_y4=0.884352882681 new_H=0.001569209153 new_rel_H=0.000323412895 old_y2=0.000321788113 old_y4=0.000000094328 old_H=0.093254058394 old_rel_H=0.019219595370 old_rows=128
+rows 641:768
+s:  0.9900  0.9703
+H:  0.0037  0.0023
+scores:  0.9801  0.9414
+oracle_candidate_check: rejected optimizer_sum=1.921550465159 candidate_sum=1.704555046267
+oracle_raw_projection_scores:  0.8527  0.8523 sum=1.704956755205
+oracle_qr_projection_scores:  0.8527  0.8519 sum=1.704555046267
+optimizer_score_sum: 1.921550465159
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.121470  0.121688
+principal_cosines(V_score, Q_oracle):  0.122457  0.120560
+raw_oracle_projection_overlap: 0.071394513849
+subspace_dims: [14, 16]
+grad_perp_ratio:  0.004266  0.007008
+old_row_memory_rows: 128
+
+===== block rows 769:896 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.849613675625 gain2=0.847458794544 phi=1.002542756173 pooled_y2=0.847907831374 pooled_y4=0.005524127752 pooled_H=4.868663239888 pooled_rel_H=0.877999538993 combined_c=-0.000521607002 rows_entropy=256 rows_seen=896 new_y2=0.833296958425 new_y4=0.005424873601 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.014610872949 old_y4=0.000099254151 old_H=0.765848201560 old_rel_H=0.157840771781 old_rows=128
+  oracle_raw_v2: total=0.849035836968 gain2=0.846882593175 phi=1.002542552899 pooled_y2=0.847311392250 pooled_y4=0.005518503600 pooled_H=4.868274521430 pooled_rel_H=0.877929438719 combined_c=-0.000521607002 rows_entropy=256 rows_seen=896 new_y2=0.832687785431 new_y4=0.005416944906 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.014623606819 old_y4=0.000101558693 old_H=0.744637365190 old_rel_H=0.153469233431 old_rows=128
+  optimizer_v1: total=0.980098854415 gain2=0.980096967487 phi=1.000001925247 pooled_y2=0.980087887577 pooled_y4=0.957033342550 pooled_H=0.003690987160 pooled_rel_H=0.000665621109 combined_c=-0.000521607002 rows_entropy=256 rows_seen=896 new_y2=0.000000861884 new_y4=0.000000000000 new_H=0.428490381087 new_rel_H=0.088311563980 old_y2=0.980087025693 old_y4=0.957033342550 old_H=0.003689228371 old_rel_H=0.000760347354 old_rows=128
+  optimizer_v2: total=0.949206574812 gain2=0.949206295864 phi=1.000000293875 pooled_y2=0.949233647038 pooled_y4=0.900537007893 pooled_H=0.000563403634 pooled_rel_H=0.000101602454 combined_c=-0.000521607002 rows_entropy=256 rows_seen=896 new_y2=0.949026002412 new_y4=0.900536974418 new_H=0.000125893442 new_rel_H=0.000025946549 old_y2=0.000207644626 old_y4=0.000000033475 old_H=0.253094538046 old_rel_H=0.052162604988 old_rows=128
+rows 769:896
+s:  0.9900  0.9743
+H:  0.0037  0.0006
+scores:  0.9801  0.9492
+oracle_candidate_check: rejected optimizer_sum=1.929304679529 candidate_sum=1.698162987651
+oracle_raw_projection_scores:  0.8496  0.8490 sum=1.698649546191
+oracle_qr_projection_scores:  0.8496  0.8485 sum=1.698162987651
+optimizer_score_sum: 1.929304679529
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.118060  0.118544
+principal_cosines(V_score, Q_oracle):  0.173804  0.004678
+raw_oracle_projection_overlap: 0.074169537329
+subspace_dims: [10, 12]
+grad_perp_ratio:  0.004901  0.005883
+old_row_memory_rows: 128
+
+===== block rows 897:1024 (streaming restricted score) =====
+combined_score_components:
+  oracle_raw_v1: total=0.846915705685 gain2=0.846915705685 phi=1.000000000000 pooled_y2=0.847320408924 pooled_y4=0.005517110578 pooled_H=4.868548263642 pooled_rel_H=0.877978804536 combined_c=0.000000000000 rows_entropy=256 rows_seen=1024 new_y2=0.833463421706 new_y4=0.005427041213 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.013856987218 old_y4=0.000090069365 old_H=0.756999104931 old_rel_H=0.156016979235 old_rows=128
+  oracle_raw_v2: total=0.846396495691 gain2=0.846396495691 phi=1.000000000000 pooled_y2=0.846781995839 pooled_y4=0.005511030675 pooled_H=4.868379615277 pooled_rel_H=0.877948391016 combined_c=0.000000000000 rows_entropy=256 rows_seen=1024 new_y2=0.832858771066 new_y4=0.005419169785 new_H=4.852030263920 new_rel_H=1.000000000000 old_y2=0.013923224773 old_y4=0.000091860889 old_H=0.746841225370 old_rel_H=0.153923447453 old_rows=128
+  optimizer_v1: total=0.980097139286 gain2=0.980097139286 phi=1.000000000000 pooled_y2=0.980091073669 pooled_y4=0.957040061930 pooled_H=0.003690467770 pooled_rel_H=0.000665527444 combined_c=0.000000000000 rows_entropy=256 rows_seen=1024 new_y2=0.000000523089 new_y4=0.000000000000 new_H=0.597780073233 new_rel_H=0.123202049599 old_y2=0.980090550580 old_y4=0.957040061930 old_H=0.003689400340 old_rel_H=0.000760382796 old_rows=128
+  optimizer_v2: total=0.960393272423 gain2=0.960393272423 phi=1.000000000000 pooled_y2=0.960424903499 pooled_y4=0.921563325097 pooled_H=0.000924815389 pooled_rel_H=0.000166778322 combined_c=0.000000000000 rows_entropy=256 rows_seen=1024 new_y2=0.960029436612 new_y4=0.921563192505 new_H=0.000101264821 new_rel_H=0.000020870608 old_y2=0.000395466887 old_y4=0.000000132592 old_H=0.165100916462 old_rel_H=0.034027181918 old_rows=128
+rows 897:1024
+s:  0.9900  0.9800
+H:  0.0037  0.0009
+scores:  0.9801  0.9604
+oracle_candidate_check: rejected optimizer_sum=1.940490424633 candidate_sum=1.693365454674
+oracle_raw_projection_scores:  0.8469  0.8464 sum=1.693312168121
+oracle_qr_projection_scores:  0.8469  0.8464 sum=1.693365454674
+optimizer_score_sum: 1.940490424633
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.116910  0.116876
+principal_cosines(V_score, Q_oracle):  0.116974  0.116809
+raw_oracle_projection_overlap: 0.016722597892
+subspace_dims: [12, 28]
+grad_perp_ratio:  0.003623  0.523859
+old_row_memory_rows: 128
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.044866      0.00101058      3.974
+

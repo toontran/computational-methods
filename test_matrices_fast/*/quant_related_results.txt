@@ -1,0 +1,349 @@
+### 1) Metrics (what “good” means)
+
+* **Alignment (mean_align)** ≈ projected exact-vector norm; higher is better
+  → **1 is perfect**, higher is better
+* **Relative singular value error (mean_relerr_sval)**
+  → measures spectral accuracy (scale)
+* You explicitly care about **alignment**, so focus there
+
+---
+
+# 2) Quant-relevant matrix concepts
+
+Below are the main **quant analogues** of your test matrices and what they represent:
+
+---
+
+## Factor / risk model structure
+
+* Examples: `factor-model`, `correlated-alphas`, `mixture-covariances`
+* Interpretation:
+
+  * Latent risk factors (market, sector, style)
+  * Stable low-rank covariance structure
+
+**Observed**
+
+* restricted ≈ iSVD (alignment ~1)
+
+
+**Conclusion**
+
+* Both methods solve classical factor models equally well
+* No advantage from restricted structure
+
+---
+
+## Spiked covariance / weak signal
+
+* Example: `spiked-isotropic`
+
+* Interpretation:
+
+  * Weak alpha embedded in noise
+  * Classic PCA detection regime
+
+**Observed**
+
+* restricted ≈ iSVD (both near optimal)
+
+
+**Conclusion**
+
+* No meaningful difference
+
+---
+
+## Sector / block structure
+
+* Example: `block-sector`
+
+* Interpretation:
+
+  * Correlated clusters (industries)
+  * Competing subspaces of similar strength
+
+**Observed**
+
+* iSVD slightly better alignment (0.997 vs 0.996)
+
+
+**Conclusion**
+
+* iSVD handles **competing structured directions** slightly better
+* Restricted likely over-commits early
+
+---
+
+## Heavy tails / leverage / outliers
+
+* Examples:
+
+  * `heavy-tailed`
+  * `leverage-spikes`
+  * `outliers-microstructure`
+
+* Interpretation:
+
+  * Microstructure noise, rare events, fat tails
+
+**Observed**
+
+* Most cases: restricted ≈ iSVD
+* Exception: `outliers-microstructure`
+
+  * restricted better alignment (0.990 vs 0.987)
+
+
+**Conclusion**
+
+* Restricted can be slightly more robust to structured outliers
+* Likely due to **windowed accumulation + compression**
+
+---
+
+## Time variation / nonstationarity
+
+* Examples:
+
+  * `time-varying-spectrum`
+  * `regime-switching`
+  * `subspace-drift`
+
+* Interpretation:
+
+  * Changing alphas, regime shifts
+
+**Observed**
+
+* restricted ≈ iSVD (very close)
+
+
+**Conclusion**
+
+* Both track evolving subspaces similarly
+
+---
+
+## Rare events / jumps
+
+* Example: `rare-jumps`
+
+* Interpretation:
+
+  * Sparse alpha bursts
+
+**Observed**
+
+* restricted slightly better (both near 1.000)
+
+
+**Conclusion**
+
+* Restricted mildly better at capturing **rare but structured signals**
+
+---
+
+# 3) Critical separator regimes (important)
+
+These are the **only places where behavior diverges meaningfully**
+
+---
+
+## (A) CEX / near-multiplicity structure
+
+* Example: `static-cex`
+
+* Interpretation:
+
+  * Nearly equal singular values
+  * Dense signal + structured tail (hard separation)
+  * Matches your constructed adversarial matrix 
+
+**Observed**
+
+* restricted: **0.94 (good)**
+* iSVD: **0.14 (catastrophic)**
+
+
+**Conclusion**
+
+* iSVD **fails completely**
+* Restricted **preserves correct subspace**
+
+**Reason (core insight)**
+
+* iSVD relies on:
+
+  * variance dominance
+* CEX destroys:
+
+  * separation in singular values
+* Restricted exploits:
+
+  * **structure across windows (entropy-like stability)**
+
+---
+
+## (B) Anisotropic tail / structured noise
+
+* Example: `anisotropic-tail`
+
+**Observed**
+
+* restricted better (0.77 vs 0.45)
+
+
+**Conclusion**
+
+* Both struggle, but restricted degrades less
+* Advantage when:
+
+  * tail is **structured, not isotropic noise**
+
+---
+
+## (C) Flat spectrum (degeneracy)
+
+* Example: `flat-top`
+
+**Observed**
+
+* all methods bad (projection alignment is low because the top vector is not identifiable)
+
+
+**Conclusion**
+
+* Not meaningful:
+
+  * subspace is not identifiable
+* Alignment metric is inherently harsh here
+
+---
+
+## (D) Time + CEX (hardest case)
+
+* Example: `time-cex-hard`
+
+**Observed**
+
+* restricted: 0.56
+* iSVD: 0.51
+
+
+**Conclusion**
+
+* Both struggle heavily
+* Restricted still slightly better
+
+---
+
+# 4) Core algorithmic difference (why this happens)
+
+## iSVD (Incremental SVD)
+
+* Tracks dominant directions via:
+
+  * variance accumulation
+* Assumes:
+
+  * **spectral gap exists**
+* Fails when:
+
+  * eigenvalues are close
+  * signal is “distributed” (not concentrated)
+
+---
+
+## Restricted method (your method)
+
+* Works via:
+
+  * compressed representation:
+    [
+    M_{\text{gain}} = \begin{bmatrix} S_{\text{prev}} V_{\text{prev}}^\top \ A_{\text{block}} \end{bmatrix}
+    ]
+  * iterative refinement in reduced space 
+
+* Implicitly exploits:
+
+  * **consistency across windows**
+  * not just magnitude
+
+---
+
+## Key conceptual difference
+
+| Property                  | iSVD           | Restricted           |
+| ------------------------- | -------------- | -------------------- |
+| Signal criterion          | large variance | persistent structure |
+| Needs spectral gap        | yes            | no                   |
+| Handles degeneracy        | poor           | strong               |
+| Robust to structured tail | weak           | better               |
+
+---
+
+# 5) Overall ranking (alignment-focused)
+
+### Easy (all methods good)
+
+* factor-model
+* correlated-alphas
+* leverage-spikes
+* heavy-tailed
+* time-varying-spectrum
+
+→ restricted ≈ iSVD
+
+---
+
+### Moderate (slight differences)
+
+* block-sector → iSVD slightly better
+* rare-jumps → restricted slightly better
+* outliers-microstructure → restricted better
+
+---
+
+### Hard (true separators)
+
+1. **static-cex → restricted >> iSVD**
+2. **anisotropic-tail → restricted > iSVD**
+3. **time-cex-hard → restricted > iSVD**
+
+---
+
+# 6) Bottom line (quant perspective)
+
+* If your data behaves like:
+
+  * **classical factor models / PCA regimes**
+    → use iSVD (faster, same accuracy)
+
+* If your data has:
+
+  * **weak spectral gaps**
+  * **structured tails**
+  * **distributed signals across time**
+  * **near-degenerate eigenvalues**
+
+→ restricted is strictly better
+
+---
+
+# 7) Most important takeaway
+
+The difference is not “streaming vs streaming” — both are.
+
+The difference is:
+
+> **variance-based tracking (iSVD)**
+> vs
+> **structure-consistency tracking (restricted)**
+
+This only shows up when:
+
+* eigenvalues don’t separate
+* signal is not concentrated in magnitude
+
+That is exactly the regime your CEX construction targets.

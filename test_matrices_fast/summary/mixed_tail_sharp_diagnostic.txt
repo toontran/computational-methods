@@ -1,0 +1,204 @@
+Mixed-tail-sharp diagnostic dump
+================================
+
+Date: 2026-04-21
+
+Purpose
+-------
+Explain why `mixed-tail-sharp` was surprising in the medium benchmark:
+
+  mixed-tail-sharp, n=1024, win=32, rank=2, seed=0, shuffle_rows=True
+  combined/greedy mean_align = 0.029628
+  hybrid-half mean_align     = 0.041800
+  iSVD mean_align            = 0.042769
+  FD mean_align              = 0.055584
+
+This looked odd because the designed tail is strongly localized:
+
+  signal rel_H mean       1.000
+  first-50 tail rel_H     0.304 mean
+  first-50 tail top1 mass 0.751 mean
+  first-50 tail top32     0.800 mean
+  first-50 tail r80       32 rows mean
+
+So one might expect combined to behave like static-cex.
+
+
+Command
+-------
+Used the diagnostic workflow from `summary/diagnostic_dumps_howto.txt`:
+
+  python cex_restricted_space_probe.py \
+    --matrix mixed-tail-sharp --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --mode restricted --score-variant combined \
+    --basis-selection greedy --reduced-optimizer cex \
+    --rownorm-seed-first-block --rownorm-seed-all-blocks \
+    --q0 8 --qmax 48 --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --expansion-direction residual \
+    --reuse-line-search-grad --expansion-warm-start \
+    --dtype float32 --old-memory-size 32 \
+    --oracle-candidate-check --dump-score-components
+
+Old-row raw response vectors were not dumped because the score-component dump
+was enough to identify the mechanism.
+
+
+Headline
+--------
+The failure is not that row-normalized seeding was off; it was on.
+
+The failure is also not a simple "tail is too diffuse" case. The designed tail
+is localized, but the streaming blockwise projected oracle frame is not scored
+well enough after orthogonalization. The combined objective repeatedly prefers
+optimizer frames that have higher pooled entropy and/or higher local gain than
+the QR oracle candidate.
+
+Most important: `oracle_candidate_check` rejected the oracle candidate on every
+block. That means, under the deployed candidate rule, this is objective/frame
+selection behavior, not an optimizer failing to accept a better-scoring oracle
+candidate.
+
+
+Block 1: Raw Oracle Looks Good, QR Oracle Loses
+-----------------------------------------------
+First block, no old memory:
+
+  oracle_raw_v1: total=4.6881 gain2=0.8288 phi=5.6569 rel_H=1.000000
+  oracle_raw_v2: total=4.6989 gain2=0.8307 phi=5.6569 rel_H=1.000000
+  optimizer_v1:  total=4.6805 gain2=0.8277 phi=5.6548 rel_H=0.999789
+  optimizer_v2:  total=4.6884 gain2=0.8291 phi=5.6552 rel_H=0.999829
+
+Raw projected oracle sum:
+
+  oracle_raw_projection_scores sum = 9.3871
+  optimizer_score_sum             = 9.3690
+
+So the two raw projected oracle directions individually look slightly better
+than the optimizer's two directions.
+
+But the oracle candidate check scores the orthonormalized QR oracle frame:
+
+  oracle_qr_projection_scores sum = 8.8683
+  optimizer_score_sum             = 9.3690
+  oracle_candidate_check          = rejected
+
+The raw projected oracle directions are not orthogonal enough in the current
+block row space:
+
+  raw_oracle_projection_overlap = 0.2469
+  principal_cosines(V_score, Q_oracle) = 0.6356, 0.2571
+
+Interpretation:
+
+  The rank-2 projected oracle span is feasible, but the particular QR frame
+  scores poorly after orthogonalization. Sequential greedy combined can find a
+  different orthonormal frame with a higher combined-score sum, while still
+  badly missing the oracle span.
+
+
+Early Streaming Blocks: Optimizer Maximizes Pooled Uniformity
+-------------------------------------------------------------
+Block 2:
+
+  oracle_raw_v1: gain2=0.8289 phi=3.3958 pooled_rel_H=0.8819 total=2.8149
+  oracle_raw_v2: gain2=0.8310 phi=3.7712 pooled_rel_H=0.9575 total=3.1340
+  optimizer_v1:  gain2=0.8301 phi=3.9989 pooled_rel_H=0.9998 total=3.3196
+  optimizer_v2:  gain2=0.8269 phi=3.9933 pooled_rel_H=0.9988 total=3.3021
+
+Candidate check:
+
+  oracle_qr_projection_scores sum = 5.8431
+  optimizer_score_sum             = 6.6217
+  oracle_candidate_check          = rejected
+
+Block 3:
+
+  oracle_raw_v1: gain2=0.8316 phi=2.7832 pooled_rel_H=0.8649 total=2.3146
+  oracle_raw_v2: gain2=0.8341 phi=3.1494 pooled_rel_H=0.9693 total=2.6270
+  optimizer_v1:  gain2=0.8281 phi=3.2509 pooled_rel_H=0.9961 total=2.6920
+  optimizer_v2:  gain2=0.8280 phi=3.2610 pooled_rel_H=0.9987 total=2.7000
+
+Candidate check:
+
+  oracle_qr_projection_scores sum = 4.5964
+  optimizer_score_sum             = 5.3920
+  oracle_candidate_check          = rejected
+
+Interpretation:
+
+  The optimizer is choosing directions that are almost perfectly uniform over
+  the pooled current+old row set. The projected oracle directions retain full
+  current-window entropy but have lower pooled entropy because their old-row
+  memory responses are uneven. The combined objective therefore prefers the
+  pooled-uniform optimizer frame.
+
+
+Late Blocks: One Oracle Direction Is Captured, the Other Is Not
+---------------------------------------------------------------
+By late blocks the entropy coefficient is small, and at the final block it is
+zero because rows_seen = rows_ref = 1024:
+
+  final block combined_c = 0
+  phi = 1 for all directions
+
+Final block:
+
+  oracle_raw_v1: total=gain2=0.8346
+  oracle_raw_v2: total=gain2=0.9482
+  optimizer_v1:  total=gain2=0.9484
+  optimizer_v2:  total=gain2=0.9316
+
+Overlap diagnostics:
+
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2): 0.1516, 0.9999
+  principal_cosines(V_score, Q_oracle): 0.9999, 0.1471
+
+Interpretation:
+
+  The optimizer essentially captures the second oracle direction / high-gain
+  local direction, but misses the first oracle direction. With combined_c=0,
+  the final block is pure gain. In that row sketch, the first oracle direction
+  has much lower local gain than the second, while a non-oracle direction has
+  gain between them. This keeps the carried rank-2 frame rotated away from the
+  exact target.
+
+
+Why This Is Not Static-CEX
+--------------------------
+`mixed-tail-sharp` has a low-entropy tail in the designed global basis, but it
+is not equivalent to static-cex under the streaming objective.
+
+Static-cex has extreme coordinate-like tail directions. Mixed-tail-sharp uses a
+QR-orthonormalized blend of diffuse and localized tail bases. Its global tail
+entropy is low, but there are still enough tail combinations to produce
+pooled-uniform responses on small current+old row sets.
+
+So the blockwise combined objective sees:
+
+  - projected oracle directions that can have uneven old-memory response after
+    QR / projection into the current gain row space;
+  - optimizer directions that are nearly pooled-uniform and have comparable
+    local gain;
+  - tail/high-gain alternatives that remain competitive because the spectrum is
+    near-tied.
+
+This is closer to a pooled-uniformity degeneracy than to the clean static-cex
+"diffuse signal vs coordinate-spike tail" separation.
+
+
+Takeaway
+--------
+The mixed-tail ladder is still useful, but `mixed-tail-sharp` revealed a second
+threshold:
+
+  Global tail localization is not sufficient. The combined objective needs the
+  target span to stay competitive after projection and orthonormalization in
+  each block's gain row space. If the QR oracle frame loses too much score, the
+  objective can prefer a non-oracle frame even when the designed tail is
+  low-entropy globally.
+
+This strengthens the case for adding a rank-2 subspace metric and for comparing
+raw oracle projected directions versus QR oracle frames in future diagnostics.

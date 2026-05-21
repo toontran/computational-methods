@@ -1,0 +1,22 @@
+# n=1024, rank=2, win=64, matrix_preset=fast, seed=0, shuffle_rows=True, row_shuffle_seed=0
+# medium params: q0=8, qmax=48, restarts=8, maxit=120, expansion_maxit=8, post_expansion_maxit=80, dtype=float32
+# Higher mean_align and lower mean_relerr_sval are better.
+matrix	method	mean_align	mean_relerr_sval	elapsed
+static-cex	greedy-medium	0.044866	0.00101082	23.625
+static-cex	isvd	0.044621	0.00101130	1.611
+static-cex	fd	0.048668	0.84847277	1.355
+risk-residual-panel	greedy-medium	0.526070	0.04903815	29.065
+risk-residual-panel	isvd	0.575103	0.04488601	3.048
+risk-residual-panel	fd	0.157086	0.82362725	2.627
+etf-basket-basis	greedy-medium	0.999995	0.00014132	20.315
+etf-basket-basis	isvd	0.999994	0.00015742	1.452
+etf-basket-basis	fd	0.999989	0.13110120	1.334
+realized-vol-corr	greedy-medium	1.000000	0.00000450	17.070
+realized-vol-corr	isvd	1.000000	0.00000471	0.717
+realized-vol-corr	fd	0.999998	0.05998401	0.785
+execution-cost-slippage	greedy-medium	0.999996	0.00003013	11.156
+execution-cost-slippage	isvd	0.999997	0.00002059	0.511
+execution-cost-slippage	fd	0.999994	0.10264760	0.555
+stat-arb-spreads	greedy-medium	0.999976	0.00003435	9.669
+stat-arb-spreads	isvd	0.999973	0.00003868	0.636
+stat-arb-spreads	fd	0.999964	0.26555092	0.582

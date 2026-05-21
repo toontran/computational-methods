@@ -1,0 +1,121 @@
+\paragraph{Setting.}
+At window $w$ carry the sketch $B$ and old raw-row sample $R$. Let
+\begin{align}
+N_w:=\begin{pmatrix}A_1\\ \vdots\\ A_w\end{pmatrix},
+\qquad
+C_w:=\begin{pmatrix}R\\ A_w\end{pmatrix}.
+\end{align}
+For a nonzero vector $y$, define the raw concentration ratio
+\begin{align}
+\rho(y)^2:=\frac{\|y\|_4^2}{\|y\|_2^2}
+=
+\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)^{1/2}.
+\end{align}
+
+\paragraph{Assumptions.}
+Keep the combined-sketch energy approximation
+\begin{align}
+\|Bv\|_2^2+\|A_wv\|_2^2
+\;\approx\;
+\|N_wv\|_2^2.
+\tag{A1}
+\end{align}
+Instead of comparing normalized entropies, assume only that the raw L4/L2
+ratio measured on the row subset is representative of the full vector:
+\begin{align}
+\rho(C_wv)\;\approx\;\rho(N_wv)\;\approx\;\rho(Av).
+\tag{A2-L4/L2}
+\end{align}
+
+\paragraph{Raw L4/L2 score.}
+The identity
+\begin{align}
+\|Av\|_2^2=\frac{\|Av\|_4^2}{\rho(Av)^2}
+\end{align}
+shows that, for fixed fourth-norm scale, smaller raw L4/L2 ratio supports
+larger full two-norm. Substituting the subset estimate from (A2-L4/L2) gives
+the reciprocal concentration correction
+\begin{align}
+\frac{1}{\rho(C_wv)^2}
+=
+\frac{\|C_wv\|_2^2}{\|C_wv\|_4^2}
+=
+\left(
+\frac{\|C_wv\|_4^4}{\|C_wv\|_2^4}
+\right)^{-1/2}.
+\end{align}
+Using (A1) for the old-plus-current energy term yields the score
+\begin{align}
+\operatorname{score}^{\mathrm{L4/L2}}_w(v)
+:=
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)
+\frac{\|C_wv\|_2^2}{\|C_wv\|_4^2}.
+\end{align}
+Equivalently, with
+\begin{align}
+y:=C_wv,\qquad
+\theta_w(v):=\|y\|_2^2\|y\|_4^{-2},
+\end{align}
+the score is
+\begin{align}
+\operatorname{score}^{\mathrm{L4/L2}}_w(v)
+=
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)\theta_w(v).
+\end{align}
+
+\paragraph{Expanded row-sample form.}
+The correction uses the pooled raw rows:
+\begin{align}
+\theta_w(v)
+=
+\frac{\|Rv\|_2^2+\|A_wv\|_2^2}
+{\left(\|Rv\|_4^4+\|A_wv\|_4^4\right)^{1/2}}.
+\end{align}
+If no old row sample is available, take $R=\varnothing$. If no old sketch is
+available, take $B=0$.
+
+\paragraph{Gradient.}
+Let
+\begin{align}
+E(v):=\|Bv\|_2^2+\|A_wv\|_2^2,\qquad y:=C_wv.
+\end{align}
+Then
+\begin{align}
+\nabla E(v)=2B^\top Bv+2A_w^\top A_wv,
+\end{align}
+and
+\begin{align}
+\nabla\log\theta_w(v)
+=
+2\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-2\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4}.
+\end{align}
+Thus
+\begin{align}
+\nabla\operatorname{score}^{\mathrm{L4/L2}}_w(v)
+=
+\theta_w(v)\nabla E(v)
++E(v)\theta_w(v)
+\left[
+2\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-2\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4}
+\right].
+\end{align}
+
+\paragraph{Relation to the combined entropy score.}
+The combined entropy score uses
+\begin{align}
+\left(\frac{\|C_wv\|_4^4}{\|C_wv\|_2^4}\right)^{c_w},
+\qquad
+c_w=\frac{\log(\mathrm{row}(N_w)/n)}{2\log\mathrm{row}(C_w)}.
+\end{align}
+The L4/L2 score removes the row-count entropy normalization and fixes the raw
+exponent at $-1/2$:
+\begin{align}
+\theta_w(v)
+=
+\left(\frac{\|C_wv\|_4^4}{\|C_wv\|_2^4}\right)^{-1/2}.
+\end{align}
+So it is a stronger pooled-diffuseness correction whenever
+$c_w>-1/2$, and equals the combined multiplier only in the special case
+$c_w=-1/2$.

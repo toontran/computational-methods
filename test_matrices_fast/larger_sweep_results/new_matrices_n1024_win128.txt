@@ -1,0 +1,10 @@
+# n=1024, rank=2, win=128, matrix_preset=fast, seed=0, shuffle_rows=True, row_shuffle_seed=0
+# medium params: q0=8, qmax=48, restarts=8, maxit=120, expansion_maxit=8, post_expansion_maxit=80, dtype=float32
+# Higher mean_align and lower mean_relerr_sval are better.
+matrix	method	mean_align	mean_relerr_sval	elapsed
+diffuse-diffuse	greedy-medium	0.991886	0.00145096	20.198
+diffuse-diffuse	isvd	0.707220	0.00512144	1.059
+diffuse-diffuse	fd	0.175334	0.91002592	1.227
+residual-spiky-shocks	greedy-medium	0.927279	0.10321258	24.041
+residual-spiky-shocks	isvd	0.927861	0.09904954	1.787
+residual-spiky-shocks	fd	0.926600	0.48408314	1.136

@@ -1,0 +1,194 @@
+Joint-span polish on top of future_hmean_online — synthesis
+============================================================
+
+Date: 2026-04-23
+
+
+Question
+--------
+Use the greedy second-slot pick (`future_hmean_online`) as an initial rank-2
+frame V_selected, then polish it by joint ascent on
+
+    J_span(W) = HM( ||A_current W||_F^2 , ||A_future W||_F^2 ) * relH_cur(W)
+
+where relH_cur(W) is the row-energy entropy of A_current W (row-wise squared
+norms). Check whether this subspace-level objective, rotation-invariant over
+W's columns, fixes the slot-swap failure of the per-slot objective on
+`mixed-tail-sharp`.
+
+
+Patch
+-----
+`half_window_sliding_hmean_experiment.py`:
+
+- `span_objective(W, A_cur, A_fut)` computes J_span.
+- `joint_span_polish(W_init, A_cur, A_fut, candidates, ...)` does projected
+  Riemannian ascent on J_span, but **in the span of the candidate pool**, not
+  in the full n-dim Stiefel:
+
+    1. Build B = QR([V_init | candidate vectors]) — orthonormal basis of
+       span({v_1, v_2_greedy} ∪ candidate pool), n × d, d ≤ 6.
+    2. Parametrize W = B @ C, C ∈ R^{d × r} Stiefel.
+    3. Ascend J_span over C with projected-tangent update + QR retraction +
+       backtracking line search.
+    4. Return W* = B @ C*.
+
+- New policy `future_hmean_online_joint` = greedy `future_hmean_online`
+  + joint polish.
+
+Reason for the span constraint: a first, unconstrained polish (full n-dim
+Stiefel) found spurious maxima far from signal — it boosted J_span by ~3
+orders of magnitude but drove W into row-dense tail directions with
+`mean_align` dropping to 0.05 and `oracle_proj_norm[0]` stuck near 0.28.
+Restricting search to the 6-dim candidate span eliminates those spurious
+directions.
+
+
+Runs (`mixed-tail-sharp`, n=1024, rank=2, heavy optimizer defaults)
+-------------------------------------------------------------------
+- `summary/half_window_joint_span_win32.{json,csv,txt}`   half_win=16
+- `summary/half_window_joint_span_win64.{json,csv,txt}`   half_win=32
+- `summary/half_window_joint_span_win128.{json,csv,txt}`  half_win=64
+
+Each run compares `future_hmean_online` (greedy) vs
+`future_hmean_online_joint` (greedy + span-constrained polish).
+
+
+Results
+-------
+Columns:
+  steps  = number of decisions
+  q2,mg,op2 = counts of q2-like / mgain-like / opt2-like winners
+  ex1,ex2 = time-averaged principal cosines of span(V_selected) vs V_exact[:,:2]
+  cos1,cos2 = same vs Q_oracle (projected-true-span)
+  om     = mean winner oracle_mass
+  align  = final ||P_{V_r} V_exact[:,:1]|| (first-oracle-direction capture)
+  dJ_med = median (J_after - J_before) across polished steps
+
+         size         mode                     policy  steps  q2  mg op2    ex1    ex2   cos1   cos2     om  align     dJ_med
+  half_win=16  split_probe        future_hmean_online     32  16   0  16   0.470  0.065  0.988  0.369  0.663  0.024        nan
+  half_win=16      sliding        future_hmean_online     63  20   2  41   0.609  0.198  0.993  0.638  0.785  0.017        nan
+  half_win=16  split_probe  future_hmean_online_joint     32  16   1  15   0.498  0.144  0.994  0.601  0.879  0.363  1.05e-07
+  half_win=16      sliding  future_hmean_online_joint     63  12   2  49   0.647  0.362  0.994  0.835  0.905  0.699  6.30e-07
+  half_win=32  split_probe        future_hmean_online     16  15   0   1   0.518  0.092  1.000  0.422  0.956  0.185        nan
+  half_win=32      sliding        future_hmean_online     31   8   1  22   0.687  0.386  0.999  0.857  0.905  0.739        nan
+  half_win=32  split_probe  future_hmean_online_joint     16  15   0   1   0.515  0.074  0.999  0.369  0.944  0.166  6.64e-07
+  half_win=32      sliding  future_hmean_online_joint     31  13   1  17   0.689  0.222  1.000  0.685  0.832  0.076  1.39e-06
+  half_win=64  split_probe        future_hmean_online      8   8   0   0   0.540  0.067  1.000  0.253  1.000  0.156        nan
+  half_win=64      sliding        future_hmean_online     15  12   0   3   0.695  0.231  1.000  0.616  0.979  0.492        nan
+  half_win=64  split_probe  future_hmean_online_joint      8   8   0   0   0.542  0.104  1.000  0.365  1.000  0.282  3.08e-06
+  half_win=64      sliding  future_hmean_online_joint     15  10   0   5   0.696  0.268  1.000  0.576  0.995  0.679  4.39e-06
+
+
+Sliding-only summary (first-direction capture is the problem we wanted to fix)
+-----------------------------------------------------------------------------
+  half_win   online_align   joint_align   online_ex2   joint_ex2   online_cos2   joint_cos2
+     16          0.017         0.699         0.198        0.362         0.638         0.835
+     32          0.739         0.076         0.386        0.222         0.857         0.685
+     64          0.492         0.679         0.231        0.268         0.616         0.576
+
+Split-probe summary:
+
+  half_win   online_align   joint_align   online_ex2   joint_ex2
+     16          0.024         0.363         0.065        0.144
+     32          0.185         0.166         0.092        0.074
+     64          0.156         0.282         0.067        0.104
+
+
+Observations
+------------
+1. The polish DOES polish.
+   dJ_med is strictly positive at every size (1e-7 to 4e-6). Span-constrained
+   ascent finds a higher J_span than the greedy init. So the optimization is
+   working.
+
+2. The effect on subspace alignment is non-monotone.
+
+   - half_win=16 sliding: polish is a big win. mean_align 0.017 -> 0.699, the
+     greedy was stuck in a one-direction basin (cos1=0.99, cos2=0.64); polish
+     rotated it into a two-direction basin (cos1=0.99, cos2=0.83) and
+     recovered V_exact[:,0] capture (0.02 -> 0.70).
+   - half_win=64 sliding: polish is a moderate win. mean_align 0.492 -> 0.679.
+     Similar story: greedy missed V_exact[:,0]; polish recovered it.
+   - half_win=32 sliding: polish HURTS. mean_align 0.739 -> 0.076. The
+     greedy already captured both directions; polish rotated to a basin that
+     drops V_exact[:,0], even though it still has non-trivial oracle_mass and
+     high cos1 = 1.000.
+
+3. Split-probe mode shows consistent-ish improvement at win=16 and win=64, no
+   change at win=32. Pattern matches sliding.
+
+4. The magnitude of improvement in J_span is tiny (dJ_med ~ 1e-6 against
+   J_span ~ 0.5–1.0). That flat landscape is what lets the polish land far
+   from the greedy basin in subspace terms even when moving only a tiny
+   amount in J_span. J_span is not discriminative enough on its own in this
+   regime.
+
+
+Why the win=32 sliding regression
+---------------------------------
+At half_win=32 sliding the greedy end-state already captures both oracle
+directions (final_exact_cos = [0.977, 0.739]). The polish then finds a
+nearby higher-J_span direction which happens to trade subspace alignment for
+HM energy. J_span does not penalize losing V_exact[:,0] specifically; it
+only rewards total HM energy + row diffuseness. So when the local basin has
+multiple nearly-flat maxima, the polish can choose the one with slightly
+higher HM energy at the cost of V_exact[:,0] capture.
+
+This is the same mechanism that plagued the unconstrained polish, just
+happening at a smaller scale because of the span constraint.
+
+
+Bottom line
+-----------
+- Span-constrained polish on J_span(W) = HM(gain_cur, gain_fut) * relH is a
+  correct rank-2 ascent: it strictly improves J_span at every size.
+
+- It gives a large boost to subspace recovery when the greedy initialization
+  misses V_exact[:,0] (half_win=16 and half_win=64 sliding on
+  `mixed-tail-sharp`), moving mean_align from 0.017 to 0.699 and from 0.492
+  to 0.679 respectively.
+
+- It can hurt when the greedy initialization already captures both oracle
+  directions and sits near a J_span local-max (half_win=32 sliding here),
+  because J_span has other nearby basins that trade signal fidelity for
+  energy balance.
+
+- J_span's flatness in the candidate span (dJ ~ 1e-6) lets small changes in
+  the objective correspond to large swings in signal alignment. That is the
+  central limitation: the rank-2 HM objective is not sharp enough on
+  `mixed-tail-sharp` to pin down the correct subspace on its own.
+
+
+Implications for the objective
+------------------------------
+To make the polish robustly useful on this matrix, the objective needs to be
+sharpened so that signal fidelity is rewarded more strongly than
+row-response balance. Candidate modifications:
+
+- Normalize HM terms by candidate-pool maxima (candidate-share HM in 2D),
+  so J_span aligns with the greedy scoring and does not reward raw
+  tail-energy.
+- Add a guard factor that rewards low `top_k` row concentration on BOTH
+  halves simultaneously (pair-entropy), not just current-half relH.
+- Add a soft anchor term `+ lambda * ||V_selected^T W||_F^2` that prefers
+  subspaces close to the greedy init; the polish then only rotates when the
+  J_span gain is large enough to overcome the anchor.
+- Replace J_span with a rank-2 version of the benchmark's
+  `obj_future_complement_penalty` (which was the best offline conservative
+  objective): explicitly reject the projected block_svd complement at the
+  subspace level.
+
+At fixed J_span, a span-constrained polish is the right shape of move, but
+the ingredient J_span itself is the weak link.
+
+
+Artifacts
+---------
+- Script: `half_window_sliding_hmean_experiment.py`
+  - `span_objective`
+  - `_candidate_span_basis`
+  - `joint_span_polish`
+  - policy `future_hmean_online_joint`
+  - row fields `joint_J_before`, `joint_J_after`
+- JSON/CSV/TXT per size: see Runs section above.

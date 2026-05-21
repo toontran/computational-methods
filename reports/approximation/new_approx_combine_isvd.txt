@@ -1,0 +1,319 @@
+\paragraph{Combined score plus top singular directions.}
+This variant of the combined-score method splits the retained sketch budget
+$r$ into two parts,
+\begin{align}
+r=r_1+r_2,\qquad r_1,r_2\ge0.
+\end{align}
+The first $r_1$ retained directions are obtained by sequentially maximizing the
+combined score of the previous note. The remaining $r_2$ directions are the
+top right singular vectors of the stacked operator
+\begin{align}
+M_w:=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix},
+\end{align}
+restricted to the orthogonal complement of the score-selected directions.
+This gives a hybrid basis: the combined score targets entropy-corrected
+leverage, while the singular-value part guarantees coverage of the leading
+quadratic energy of $M_w$.
+
+\paragraph{Setup and notation.}
+Let $A\in\mathbb R^{m\times d}$ be the full data matrix, let $A_w\in
+\mathbb R^{k\times d}$ be the current window with $k=\mathrm{row}(A_w)$, let
+$B\in\mathbb R^{r\times d}$ be the sketch carried from the previous window,
+and let $R\in\mathbb R^{s\times d}$ be the old row memory. Write
+\begin{align}
+n_{\mathrm{seen}}&:=\text{\# raw rows represented by $B$ and $R$ before this window},
+\\
+n&:=\text{total \# rows in the full matrix or stream},
+\\
+p_w&:=\frac{n_{\mathrm{seen}}+k}{n},
+\\
+c_w&:=\frac{\log p_w}{2\log(s+k)},
+\\
+E_w(v)&:=\|Bv\|_2^2+\|A_wv\|_2^2,
+\\
+C_w&:=
+\begin{pmatrix}
+R\\
+A_w
+\end{pmatrix}\in\mathbb R^{(s+k)\times d}.
+\end{align}
+The combined score of the previous note is defined by
+\begin{align}
+\operatorname{score}_w(v)
+:=
+E_w(v)\,p_w^{-h_2^{(R,w)}(v)/(2\log(s+k))},
+\end{align}
+with pooled entropy proxy
+\begin{align}
+h_2^{(R,w)}(v)
+=
+-\log\left(\frac{\|C_wv\|_4^4}{\|C_wv\|_2^4}\right).
+\end{align}
+Assume $s+k>1$ and $0<p_w\le1$ when the correction is used. If no row memory
+or previous sketch is available, take $R=\varnothing$, $s=0$, and $B=0$.
+
+\paragraph{Closed-form rewrite of the entropy multiplier.}
+The entropy multiplier can be turned into a pure monomial in the
+$\ell_2$ and $\ell_4$ norms of $C_wv$. Write $y:=C_wv$. Substituting
+$h_2^{(R,w)}(v)=-\log(\|y\|_4^4/\|y\|_2^4)$ into the multiplier gives
+\begin{align}
+p_w^{-h_2^{(R,w)}(v)/(2\log(s+k))}
+&=
+\exp\!\left(
+-\frac{h_2^{(R,w)}(v)}{2\log(s+k)}\log p_w
+\right)
+\\
+&=
+\exp\!\left(
+-c_w\,h_2^{(R,w)}(v)
+\right)
+\\
+&=
+\exp\!\left(
+c_w\log\!\frac{\|y\|_4^4}{\|y\|_2^4}
+\right)
+\\
+&=
+\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)^{c_w},
+\end{align}
+where the second line uses $c_w=\log p_w/(2\log(s+k))$ and the third line
+uses $-h_2^{(R,w)}(v)=\log(\|y\|_4^4/\|y\|_2^4)$.
+
+Because $y=C_wv$ is the stacked vector $(Rv;A_wv)$,
+\begin{align}
+\|y\|_2^2=\|Rv\|_2^2+\|A_wv\|_2^2,
+\qquad
+\|y\|_4^4=\|Rv\|_4^4+\|A_wv\|_4^4,
+\end{align}
+so the entropy multiplier admits the explicit form
+\begin{align}
+\phi_w(v)
+:=
+p_w^{-h_2^{(R,w)}(v)/(2\log(s+k))}
+=
+\left(\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}\right)^{c_w}.
+\end{align}
+The combined score is therefore
+\begin{align}
+\operatorname{score}_w(v)
+=
+E_w(v)\,\phi_w(v)
+=
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)
+\left(\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}\right)^{c_w}.
+\end{align}
+This is the form used in Step 1 below. Note $c_w\le0$ since $p_w\le1$ and
+$s+k>1$, so $\phi_w(v)$ increases as the pooled responses become more
+entropic (less concentrated).
+
+\paragraph{Budget split.}
+Fix integers $r_1,r_2\ge0$ with $r_1+r_2=r$. The allocation can be a fixed
+ratio (for example $r_1=\lceil r/2\rceil$) or data-driven. A natural
+data-driven rule is to set $r_1$ equal to the number of combined-score local
+maxima whose relative score gain exceeds a tolerance, and to set
+$r_2=r-r_1$. The construction below does not depend on how the split is made;
+it requires only that $r_1+r_2=r$.
+
+\paragraph{Step 1: combined-score directions.}
+Compute $r_1$ orthonormal directions $v_1,\dots,v_{r_1}$ sequentially by
+solving, for $j=1,\dots,r_1$,
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v=0\ \forall i<j}
+\operatorname{score}_w(v).
+\end{align}
+Use the projected full-gradient ascent of the previous note: with
+$Q_j:=[v_1,\dots,v_{j-1}]$ and tangent projection
+$(I-Q_jQ_j^\top-vv^\top)$, take backtracking gradient steps on
+$\operatorname{score}_w$ and re-project onto the feasible sphere. Collect the
+result as
+\begin{align}
+V_1:=[v_1,\dots,v_{r_1}]\in\mathbb R^{d\times r_1}.
+\end{align}
+If $r_1=0$, set $V_1$ to the empty matrix.
+
+\paragraph{Step 2: top right singular vectors of sketch plus window, orthogonal to $V_1$.}
+Let $P_1:=I-V_1V_1^\top$ be the orthogonal projector onto the complement of
+$\operatorname{span}(V_1)$. Consider the restricted operator
+\begin{align}
+M_wP_1=M_w-M_wV_1V_1^\top.
+\end{align}
+Compute the top $r_2$ right singular vectors of $M_wP_1$:
+\begin{align}
+V_2:=[u_{r_1+1},\dots,u_{r_1+r_2}]\in\mathbb R^{d\times r_2},
+\end{align}
+where $u_{r_1+1},\dots,u_{r_1+r_2}$ are unit-norm, mutually orthogonal, and
+orthogonal to every column of $V_1$, and where the ordering is by
+non-increasing singular value of $M_wP_1$. If $r_2=0$, set $V_2$ to the empty
+matrix.
+
+Equivalently, $V_2$ is the solution of
+\begin{align}
+\max_{V\in\mathbb R^{d\times r_2}}\|M_wV\|_F^2
+\quad\text{subject to}\quad
+V^\top V=I_{r_2},\ V_1^\top V=0.
+\end{align}
+Because the columns of $V_2$ live in $\operatorname{range}(P_1)$, they are
+already orthogonal to $V_1$ by construction, so the full hybrid basis
+\begin{align}
+\widehat V_w:=[V_1,V_2]\in\mathbb R^{d\times r}
+\end{align}
+satisfies $\widehat V_w^\top\widehat V_w=I_r$.
+
+\paragraph{Practical computation of Step 2.}
+The top $r_2$ right singular vectors of $M_wP_1$ can be computed without
+forming $M_wP_1$ explicitly. Let
+\begin{align}
+G:=M_w^\top M_w=B^\top B+A_w^\top A_w.
+\end{align}
+Since $P_1=I-V_1V_1^\top$ and $V_1^\top V_1=I_{r_1}$,
+\begin{align}
+(M_wP_1)^\top(M_wP_1)
+=
+P_1GP_1.
+\end{align}
+The right singular vectors of $M_wP_1$ are the eigenvectors of $P_1GP_1$
+corresponding to its largest eigenvalues. Two implementations are convenient.
+
+\emph{Projected Lanczos.} Apply Lanczos or block-Lanczos iteration to the
+implicit operator $x\mapsto P_1(Gx)$ starting from a random
+$\operatorname{range}(P_1)$-vector. Each matvec uses two matvecs with $M_w$
+(one with $A_w$ and one with $B$, or alternatively one with $B$ stored in
+the form $\Sigma V^\top$) and one rank-$r_1$ correction by $V_1$. Extract
+the top $r_2$ Ritz pairs.
+
+\emph{Deflated direct SVD.} When $(s+k)+r$ is small enough to form $M_w$
+explicitly, compute the thin SVD of $M_w$, project the right singular vectors
+by $P_1$, and orthonormalize. This is simpler to implement but costlier in
+the streaming regime.
+
+\paragraph{Assembling the retained right basis.}
+The hybrid retained right basis is
+\begin{align}
+\widehat V_w=[V_1,V_2]\in\mathbb R^{d\times r},
+\qquad
+\widehat V_w^\top\widehat V_w=I_r.
+\end{align}
+The combined-score columns $V_1$ cover entropy-corrected leverage
+directions; the singular columns $V_2$ cover the largest remaining
+quadratic-energy directions of the sketch-plus-window.
+
+\paragraph{Operator extraction from $\widehat V_w$.}
+The remaining extraction is identical to the combined-score method. Form
+\begin{align}
+Y_w:=M_w\widehat V_w=[M_wV_1,\ M_wV_2],
+\qquad
+U_{\hat{},w}:=\operatorname{orth}(Y_w),
+\end{align}
+and compute the SVD of the left-projected restricted operator:
+\begin{align}
+U_{\hat{},w}^\top M_w
+=
+U_{\mathrm{small},w}\Sigma_wV_w^\top.
+\end{align}
+The sketch carried into the next window is
+\begin{align}
+B^{(w)}:=\Sigma_wV_w^\top\in\mathbb R^{r\times d}.
+\end{align}
+The row memory $R^{(w)}$ is updated from raw rows seen through window $w$,
+not from sketch rows, exactly as in the combined-score method.
+
+\paragraph{Step-2 efficiency in the stored-basis form.}
+If the previous sketch is carried as
+\begin{align}
+B=SV^\top,\qquad V=[v_1,\dots,v_r],\qquad S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+then
+\begin{align}
+B^\top B=VS^2V^\top,
+\qquad
+G=VS^2V^\top+A_w^\top A_w.
+\end{align}
+A matvec with $G$ costs one matvec with $A_w$, one matvec with $A_w^\top$,
+and two rank-$r$ inner products with $V$. Composing with the projection
+$P_1$ adds one rank-$r_1$ inner product per matvec. Hence one Lanczos step
+on $P_1GP_1$ has cost dominated by the two matvecs with $A_w$.
+
+\paragraph{First-window special case.}
+If $B=0$, $R=\varnothing$, $s=0$, and $n_{\mathrm{seen}}=0$, then
+$M_w=A_w$, $G=A_w^\top A_w$, and the hybrid basis is
+\begin{align}
+V_1:=[v_1,\dots,v_{r_1}],\qquad
+V_2:=\text{top $r_2$ right singular vectors of }A_w(I-V_1V_1^\top),
+\end{align}
+where the $v_j$ solve the first-window combined-score problem
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v=0\ \forall i<j}
+\|A_1v\|_2^2
+\|A_1v\|_4^{4c_1}
+\|A_1v\|_2^{-4c_1},
+\qquad
+c_1=\frac{\log(k/n)}{2\log k}.
+\end{align}
+The retained basis is again $\widehat V_1=[V_1,V_2]$, and the extraction
+uses $Y_1=A_1\widehat V_1$, $U_{\hat{},1}=\operatorname{orth}(Y_1)$,
+$U_{\hat{},1}^\top A_1=U_{\mathrm{small},1}\Sigma_1V_1^\top$, and
+$B^{(1)}=\Sigma_1V_1^\top$.
+
+\paragraph{Why orthogonalize the singular vectors against $V_1$.}
+The combined-score directions in $V_1$ already lie in $\mathbb R^d$ and are
+not in general singular vectors of $M_w$. Taking the raw top right singular
+vectors of $M_w$ would typically produce columns that overlap with
+$\operatorname{span}(V_1)$, wasting budget and making $\widehat V_w$
+near-singular. Projecting $M_w$ by $P_1=I-V_1V_1^\top$ before taking its
+top singular vectors ensures the two parts of $\widehat V_w$ are orthogonal
+and that $V_2$ captures energy not already represented by $V_1$.
+
+Projecting $M_w$ on the right (that is, restricting to
+$\operatorname{range}(P_1)$) rather than on the left preserves the
+interpretation: $\|M_wV_2\|_F^2$ is the largest Frobenius energy that can
+be collected by $r_2$ right directions orthogonal to $V_1$. This is the
+right quantity to maximize when the sketch $B^{(w)}=\Sigma_wV_w^\top$ is
+meant to preserve $\|M_wv\|_2$ along retained directions.
+
+\paragraph{Relation to pure variants.}
+If $r_1=r$ and $r_2=0$, the method reduces to the combined-score method of
+the previous note. If $r_1=0$ and $r_2=r$, the method reduces to the
+standard Frequent Directions / incremental-SVD carry: the retained sketch
+is the top-$r$ right singular factor of $M_w$, with no entropy correction.
+Intermediate splits interpolate between these two extremes and let the
+sketch simultaneously track leverage-heavy directions and leading-energy
+directions.
+
+\paragraph{Choosing the split adaptively.}
+A simple adaptive rule is as follows. After solving for each combined-score
+direction $v_j$, record the relative score gain
+\begin{align}
+\Delta_j
+:=
+\frac{\operatorname{score}_w(v_j)}
+{\max_{i<j}\operatorname{score}_w(v_i)}.
+\end{align}
+Stop the score phase at the first $j$ with $\Delta_j\le\tau$ for a prescribed
+tolerance $\tau\in(0,1)$, set $r_1:=j-1$ and $r_2:=r-r_1$. This keeps only
+the combined-score directions that are noticeably distinct from the earlier
+ones and lets the remaining budget go to singular directions, which are
+cheap to compute.
+
+\paragraph{Practical remarks.}
+The combined-score step remains nonconvex, so multiple restarts are useful
+for each $v_j$. The singular-direction step is convex in the
+eigenvector-of-$P_1GP_1$ sense and usually converges in a handful of
+Lanczos iterations. Numerically tiny denominators inside the score
+(when $\|C_wv\|_2$, $\|C_wv\|_4$, or $E_w(v)$ is close to zero) should be
+guarded as in the combined-score method. When $r_2>0$, the sketch
+$B^{(w)}=\Sigma_wV_w^\top$ retains at least the top $r_2$ singular energy
+of the sketch-plus-window minus any energy already in
+$\operatorname{span}(V_1)$, so the hybrid method inherits the Frequent
+Directions tail-error guarantee on the projected operator, while the
+entropy-corrected $V_1$ part targets the sampling problems that a pure
+singular-value sketch ignores.

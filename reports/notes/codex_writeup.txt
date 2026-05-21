@@ -1,0 +1,104 @@
+Summary of the recent writeup/documentation changes
+===================================================
+
+Files updated
+-------------
+
+- `entropy_scores_summary.txt`
+- `new_approx_simple.txt`
+- `old_approx.txt`
+- wrapper TeX files:
+  - `new_approx_simple.tex`
+  - `old_approx.tex`
+
+Compiled outputs
+----------------
+
+- `new_approx_simple.pdf`
+- `old_approx.pdf`
+
+Main documentation changes
+--------------------------
+
+1. `entropy_scores_summary.txt`
+
+- Added a self-contained technical summary of the EntropyScore family in `utils.py`.
+- Described, for each method family, the inputs, objective, gradient, outputs, and window-to-window state propagation.
+- Included the main variants:
+  - exact / streaming EntropyScore,
+  - reduced / fast / expansion variants,
+  - forget variant.
+- Added a discussion of refinements and why they were introduced.
+- Corrected the forget-version interpretation so its normalization is based on a row-count quantity rather than the number of columns.
+
+2. `new_approx_simple.txt`
+
+- Treated as the theory note corresponding to `entropyscore_forget`.
+- Made the note self-contained:
+  - introduced `A`, `A_w`, `B`, `\mathrm{row}(X)`,
+  - defined the current-window row scale `n_w`,
+  - defined the forget objective explicitly in the opening algorithm overview.
+- Added an algorithm overview at the beginning that states mathematically:
+  - the first-window objective,
+  - the later-window objective,
+  - the sequential optimization problem
+    `arg max` over unit vectors orthogonal to previously accepted vectors,
+  - what sketch is carried to the next window.
+- Added the justification for the carry sketch in forget mode:
+  - the carried object is not the raw optimized right basis,
+  - it is the left-projected operator sketch `\Sigma V^\top`.
+- Enforced the notation convention that uppercase letters are used only for matrices.
+  Examples:
+  - `n_w`, `h_2`, `h_j`, `\psi_w` are lowercase,
+  - matrices remain uppercase: `A`, `A_w`, `B`, `M`, `S`, `V`, `U`, `Q`.
+
+3. `old_approx.txt`
+
+- Rewritten in the same template/style as `new_approx_simple.txt`, but for the standard streamed EntropyScore / `entropyscore_expansion` path.
+- Made the note self-contained:
+  - introduced `A`, `A_w`, `B`, `M_w`, `\mathrm{row}(X)`,
+  - stated the exact first-window objective explicitly,
+  - stated the later-window streamed objective explicitly via `e_w`, `q_w`, and `\widehat h_{2,w}`.
+- Added an opening algorithm overview that states mathematically:
+  - first-window optimization,
+  - subsequent-window optimization,
+  - orthogonality constraints across accepted directions,
+  - and the carried sketch `B^{(w)} = S_w V_w^\top`.
+- Kept the writeup self-contained without referring to the forget version.
+- Enforced the same notation rule that uppercase letters are reserved for matrices only.
+
+Notation changes applied across the theory notes
+------------------------------------------------
+
+Uppercase non-matrix symbols were converted to lowercase. In particular:
+
+- `R_w -> r_w`
+- `N_w -> n_w`
+- `E_w -> e_w`
+- `Q_w -> q_w`
+- `H_2 -> h_2`
+- `H_j -> h_j`
+- `\widehat H_{2,w} -> \widehat h_{2,w}`
+- `\Psi_w -> \psi_w`
+- `F_1, F_w -> f_1, f_w`
+
+Also:
+
+- `\rho(X)` was removed in favor of `\mathrm{row}(X)`.
+
+Code/implementation changes connected to the writeup
+----------------------------------------------------
+
+- The forget implementation in `utils.py` was updated so its normalization uses a row-count reference
+  `rows_ref`
+  rather than the number of columns.
+- In the current implementation,
+  `rows_ref` is computed as the number of rows from the current window onward:
+  `total_rows - start_idx`.
+- The forget derivation note and the summary note were aligned to that interpretation.
+
+Build status
+------------
+
+- Both PDFs compile successfully with `latexmk -pdf`.
+- The builds still emit overfull-line warnings, but there are no compilation errors.

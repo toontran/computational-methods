@@ -1,0 +1,75 @@
+== matrix=static-cex half_win=32 seed=0 ==
+Comparing S7 with-peek (32/32) vs no-peek (64/1). Same streaming carry.
+
+-- block 1  N_sk=0  cur_F2(32)=26.523  fut_F2(32)=26.392  sk_F2_low=0.000 --
+  reachable mass: ||proj_B_with_def(oracle_v2_proj)||=0.6654  ||proj_B_no_def(oracle_v2_proj)||=0.9634
+  reachable mass: ||proj_B_with_def(oracle_v1_proj)||=0.0130  ||proj_B_no_def(oracle_v1_proj)||=0.7058
+  S7 score @ oracle_v2_proj (full, in B_union):    8.36275e-01  raw_g1=4.1814e-01  raw_g2=4.1814e-01  relH=1.0000
+  S7 score @ oracle_v1_proj (full, in B_union):    8.36517e-01  raw_g1=4.1826e-01  raw_g2=4.1826e-01  relH=1.0000
+  rowspace(A_cur) vs rowspace(A_fut): top-5 principal cos²: 0.000 0.000 0.000 0.000 0.000  (max=0.000)
+  S7 score @ oracle_v2_proj projected→B_with_def: 6.21636e-01  raw_g1=8.1384e-01  raw_g2=8.9607e-04  relH=0.7630
+  S7 score @ oracle_v1_proj projected→B_with_def: 3.04069e-01  raw_g1=5.1306e-01  raw_g2=9.3305e-03  relH=0.5821
+  S7 score @ oracle_v2_proj projected→B_no_def  (64/1 frame): 8.05855e-01  raw_g1=8.3753e-01  relH=0.9622
+  S7 score @ oracle_v1_proj projected→B_no_def  (64/1 frame): 6.88801e-01  raw_g1=8.2923e-01  relH=0.8307
+  Anchor V_default[:,0] cos²(o1p)=0.5018  cos²(o2p)=0.0719
+  v_wp[:5]=+0.000 -0.049 +0.001 -0.001 +0.001  top5_by_|v|: v[8]=+0.203, v[43]=-0.191, v[36]=-0.189, v[68]=-0.184, v[135]=-0.183
+  v_np[:5]=-0.043 -0.070 +0.004 -0.001 +0.004  top5_by_|v|: v[8]=-0.143, v[43]=+0.138, v[36]=-0.134, v[54]=-0.133, v[99]=-0.132
+  with-peek v2:  score=6.91250e-01  cos²(o1p)=0.0000  cos²(o2p)=0.0315
+   components(32/32 frame): raw_sk=0.0000e+00  raw_g1=8.3101e-01  raw_g2=2.6422e-06  relH=0.8318  raw_total=8.3101e-01
+  no-peek  v2:   score=8.24765e-01  cos²(o1p)=0.0249  cos²(o2p)=0.0672
+   components(64/1 frame):  raw_sk=0.0000e+00  raw_g1=8.2925e-01  raw_g2=0.0000e+00  relH=0.9946
+   components(32/32 frame): raw_sk=0.0000e+00  raw_g1=4.1883e-01  raw_g2=4.1042e-01  relH=0.9983
+  cos²(v_wp, v_np) = 0.0669
+
+-- block 2  N_sk=2  cur_F2(32)=26.392  fut_F2(32)=26.320  sk_F2_low=1.667 --
+  reachable mass: ||proj_B_with_def(oracle_v2_proj)||=0.7449  ||proj_B_no_def(oracle_v2_proj)||=0.9692
+  reachable mass: ||proj_B_with_def(oracle_v1_proj)||=0.0168  ||proj_B_no_def(oracle_v1_proj)||=0.5755
+  S7 score @ oracle_v2_proj (full, in B_union):    7.49834e-01  raw_g1=3.2352e-01  raw_g2=3.2352e-01  relH=0.8964
+  S7 score @ oracle_v1_proj (full, in B_union):    7.23271e-01  raw_g1=2.8009e-01  raw_g2=2.8009e-01  relH=0.8608
+  rowspace(A_cur) vs rowspace(A_fut): top-5 principal cos²: 0.000 0.000 0.000 0.000 0.000  (max=0.000)
+  S7 score @ oracle_v2_proj projected→B_with_def: 6.01001e-01  raw_g1=5.6709e-01  raw_g2=4.0138e-05  relH=0.7217
+  S7 score @ oracle_v1_proj projected→B_with_def: 1.76267e-01  raw_g1=2.4058e-01  raw_g2=4.2974e-07  relH=0.7165
+  S7 score @ oracle_v2_proj projected→B_no_def  (64/1 frame): 7.71827e-01  raw_g1=6.7893e-01  relH=0.9234
+  S7 score @ oracle_v1_proj projected→B_no_def  (64/1 frame): 6.81455e-01  raw_g1=8.2622e-01  relH=0.8248
+  Anchor V_default[:,0] cos²(o1p)=0.6688  cos²(o2p)=0.0607
+  v_wp[:5]=-0.001 +0.074 -0.002 +0.002 -0.002  top5_by_|v|: v[54]=+0.182, v[99]=+0.181, v[121]=+0.180, v[94]=+0.178, v[210]=-0.177
+  v_np[:5]=-0.025 -0.072 +0.003 -0.001 +0.003  top5_by_|v|: v[35]=-0.139, v[25]=+0.138, v[54]=-0.135, v[121]=-0.134, v[106]=+0.133
+  with-peek v2:  score=6.95052e-01  cos²(o1p)=0.0000  cos²(o2p)=0.0581
+   components(32/32 frame): raw_sk=5.0623e-02  raw_g1=7.7588e-01  raw_g2=3.5815e-06  relH=0.8410  raw_total=8.2651e-01
+  no-peek  v2:   score=8.21743e-01  cos²(o1p)=0.0055  cos²(o2p)=0.0551
+   components(64/1 frame):  raw_sk=2.4006e-02  raw_g1=8.0211e-01  raw_g2=0.0000e+00  relH=0.9947
+   components(32/32 frame): raw_sk=2.4006e-02  raw_g1=4.0191e-01  raw_g2=4.0019e-01  relH=0.9983
+  cos²(v_wp, v_np) = 0.0084
+
+-- block 6  N_sk=2  cur_F2(32)=26.440  fut_F2(32)=26.431  sk_F2_low=1.679 --
+  reachable mass: ||proj_B_with_def(oracle_v2_proj)||=0.8006  ||proj_B_no_def(oracle_v2_proj)||=0.9955
+  reachable mass: ||proj_B_with_def(oracle_v1_proj)||=0.0252  ||proj_B_no_def(oracle_v1_proj)||=0.3725
+  S7 score @ oracle_v2_proj (full, in B_union):    7.13039e-01  raw_g1=2.9661e-01  raw_g2=2.9661e-01  relH=0.8506
+  S7 score @ oracle_v1_proj (full, in B_union):    3.82411e-01  raw_g1=1.2289e-01  raw_g2=1.2289e-01  relH=0.4447
+  rowspace(A_cur) vs rowspace(A_fut): top-5 principal cos²: 0.000 0.000 0.000 0.000 0.000  (max=0.000)
+  S7 score @ oracle_v2_proj projected→B_with_def: 5.25229e-01  raw_g1=4.6853e-01  raw_g2=4.9832e-05  relH=0.6302
+  S7 score @ oracle_v1_proj projected→B_with_def: 4.69956e-02  raw_g1=2.7146e-02  raw_g2=2.1020e-05  relH=0.0686
+  S7 score @ oracle_v2_proj projected→B_no_def  (64/1 frame): 7.15105e-01  raw_g1=6.0243e-01  relH=0.8530
+  S7 score @ oracle_v1_proj projected→B_no_def  (64/1 frame): 6.86350e-01  raw_g1=8.2660e-01  relH=0.8273
+  Anchor V_default[:,0] cos²(o1p)=0.8612  cos²(o2p)=0.0089
+  v_wp[:5]=+0.002 -0.051 +0.002 -0.002 +0.002  top5_by_|v|: v[56]=+0.186, v[48]=-0.182, v[69]=+0.181, v[73]=+0.181, v[110]=+0.181
+  v_np[:5]=-0.056 -0.079 +0.004 -0.001 +0.004  top5_by_|v|: v[48]=+0.141, v[56]=+0.140, v[110]=+0.136, v[122]=+0.135, v[69]=+0.134
+  with-peek v2:  score=6.95910e-01  cos²(o1p)=0.0000  cos²(o2p)=0.0257
+   components(32/32 frame): raw_sk=4.6939e-02  raw_g1=7.8090e-01  raw_g2=1.7054e-06  relH=0.8406  raw_total=8.2784e-01
+  no-peek  v2:   score=8.24392e-01  cos²(o1p)=0.0127  cos²(o2p)=0.0604
+   components(64/1 frame):  raw_sk=2.0616e-02  raw_g1=8.0834e-01  raw_g2=0.0000e+00  relH=0.9945
+   components(32/32 frame): raw_sk=2.0616e-02  raw_g1=4.0590e-01  raw_g2=4.0244e-01  relH=0.9981
+  cos²(v_wp, v_np) = 0.0187
+
+== Divergence block: 1 ==
+  ||residual|| = 0.9660  (residual = v_wp - <v_wp,v_np> v_np)
+  cos²(residual_unit, V_exact[:,0]) = 0.0001
+  cos²(residual_unit, V_exact[:,1]) = 0.0010
+  cos²(residual_unit, oracle_v1_proj) = 0.0019
+  cos²(residual_unit, oracle_v2_proj) = 0.0131
+  top-5 cos²(residual_unit, A_cur32 rows): row18=0.061, row19=0.054, row16=0.047, row21=0.046, row30=0.046
+  top-5 cos²(residual_unit, A_fut32 rows): row6=0.001, row24=0.001, row27=0.001, row0=0.001, row20=0.001
+  cos²(residual_unit, V_exact[:,2]) = 0.0000
+  cos²(residual_unit, V_exact[:,3]) = 0.0000
+  cos²(residual_unit, V_exact[:,4]) = 0.0000
+  cos²(residual_unit, V_exact[:,5]) = 0.0000

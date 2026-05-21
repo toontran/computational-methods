@@ -1,0 +1,9 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:869: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.112528 mean_relerr_sval=0.20183450
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.351669 mean_relerr_sval=0.14604543
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.612471 mean_relerr_sval=0.14907833
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.929796 mean_relerr_sval=0.03693890
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.323679 mean_relerr_sval=0.20898281
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.402218 mean_relerr_sval=0.15311576
+wrote_json=summary/bench_matrix_sweep_r_sk_g_S6/residual-spiky-shocks_win64.json wrote_csv=summary/bench_matrix_sweep_r_sk_g_S6/residual-spiky-shocks_win64.csv wrote_text=summary/bench_matrix_sweep_r_sk_g_S6/residual-spiky-shocks_win64.txt elapsed=76.895

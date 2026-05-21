@@ -1,0 +1,357 @@
+r_sk_g (S4) score — block-1→block-2 transition failure: context and fixes
+==========================================================================
+
+Date: 2026-04-27
+Audience: someone fixing the slot-2 carry regression caused when the S4
+score (`HM3(r_sk, raw_g1, raw_g2) · relH1`) takes over from its block-1
+fall-through (`HM2(raw_g1, raw_g2) · relH1`).
+
+Background reading (mandatory):
+  - summary/r_sk_score_implementation_context.txt — the original spec
+    (S1/S2/S3 variants and the r_sk + raw_g motivation).
+  - summary/hmean_evidence_redesign_context.txt — failure modes of the
+    earlier HM-of-u_k score family. §6 / §10 are the relevant parts.
+  - summary/r_sk_g_score_synthesis (do not exist yet — write this once
+    a working fix passes the bench acceptance below).
+  - summary/bench_matrix_sweep_evidence/synthesis.txt — the streaming
+    bench harness used for acceptance.
+
+
+1. Where we are
+---------------
+
+S4 is implemented in `r_sk_g_score.py`:
+
+    score(v) = HM(r_sk, raw_g1, raw_g2) · relH1(A_cur v)
+        with score := 0 (and grad := 0) whenever r_sk ≤ 0.
+
+    HM(a, b, c) = 3 / (1/a + 1/b + 1/c)        (unweighted 3-arg HM)
+    r_sk(v)    = 1 - c_sk · ||A_sketch v||²
+    A_sketch   = state["s"][:, None] * state["V"].T  (rank-r compression
+                                                       of the past)
+    c_sk       = N_sk_total_rows / ||A_sk_total||_F²   (normalization
+                                                        from FULL past)
+
+A block-1 fall-through has been added: when `A_sk is None`, the score
+collapses to `HM2(raw_g1, raw_g2) · relH1` (matches `combined`'s slot-2
+score on the first block). FD-checked at rel ≈ 3e-10.
+
+S4 is wired into `half_window_sliding_hmean_experiment.py` as policy
+`future_hmean_r_sk_g`. Streaming bench output:
+  summary/bench_matrix_sweep_r_sk_g/{static-cex, mixed-tail-sharp,
+                                     diffuse-diffuse}_win64.{txt,csv,json}
+
+Diagnostic outputs:
+  summary/r_sk_g_score{,_streaming_init}.{csv,json,txt}
+  summary/r_sk_g_oracle_init_probe{,_b1,_b2}.{txt,json}
+
+
+2. Diagnosis (the actual failure mode)
+---------------------------------------
+
+S4's per-block ranking acceptance passes (oracle_v2_proj outranks
+hm_triplet_raw on score_S4 on ≥1 block per matrix), but streaming
+slot-2 alignment is poor: `final_exact_cos² ≈ 0` on static-cex and
+mixed-tail-sharp; only diffuse-diffuse gets traction.
+
+Two structural problems compound:
+
+A. **The score has the wrong global maximum.** HM3 is a 66-D → 3-scalar
+   reduction; its level sets are 62-dim manifolds in the union row-space.
+   The actual maximum sits on a *plateau* at `(1/r_sk, 1/r_g1, 1/r_g2)`
+   ≈ `(1.0, 2.4, 2.4)`, `hm3 ≈ 0.52`. **Many** directions reach this
+   plateau; the slot-2 oracle is *not* one of them. Confirmed empirically
+   by:
+     - the rank-2 deflated diagnostic (v1_full / v2_deflate both at
+       hm3 = 0.52, deflation costs zero score);
+     - oracle-init ascent (initializing at oracle_v_proj and running
+       gradient ascent: every non-clipped run climbs *away* from the
+       oracle to the plateau, with cos²(start, end) typically 0.1–0.5).
+
+   The *content* of the plateau direction on counterexample matrices is
+   a single dominant row of `A_fut` — `‖A_fut v‖²` is maximized over
+   the unit sphere by the top right singular vector of `A_fut`, which
+   on sharp-tailed matrices is dominated by ONE row (e.g. static-cex
+   block 12: row#21 of A_fut absorbs `cos² = 0.518` of the v_outside
+   mass; mixed-tail-sharp b31: row#12 absorbs 0.636). Diffuse matrices
+   don't have this dominant-row, which is why diffuse-diffuse is the
+   only one of the three where S4 streaming partially works.
+
+B. **The block-1 → block-2 transition is a discontinuous jump in the
+   score function.** At block 1 the fall-through gives HM2 (no r_sk
+   term), and S4's rank-2 frame captures `oracle_v2_proj` well on
+   static-cex (sub_v2pr = 0.767) and diffuse-diffuse (0.813). At block
+   2 the `1/r_sk` term enters the HM denominator and immediately drives
+   the optimizer toward `r_sk → 1` (sketch-orthogonal). On the SAME
+   snapshots `oracle_v2_proj` has `r_sk = 0.83` (static-cex), `0.83`
+   (mixed-tail-sharp), `0.98` (diffuse-diffuse) — i.e. it is NOT
+   sketch-orthogonal. The gradient explicitly points away from the
+   oracle.
+
+   sub_v2pr trajectory (S4, streaming-init only):
+     static-cex:        0.767 → 0.528 → 0.226 → 0.144 → 0.009  (b1..b31)
+     diffuse-diffuse:   0.813 → 0.250 → 0.899 → 0.812 → 0.243
+     mixed-tail-sharp:  0.061 → 0.080 → 0.042 → 0.164 → 0.002
+
+   For comparison, the existing combined optimizer:
+     static-cex:        0.206 → 0.438 → 0.770 → 0.889 → 0.969
+     diffuse-diffuse:   0.016 → 0.017 → 0.009 → 0.010 → 0.220
+     mixed-tail-sharp:  0.201 → 0.423 → 0.492 → 0.865 → 0.966
+
+   So combined dominates on structured/counterexample matrices from b6
+   onward; S4 is competitive only on diffuse-diffuse, and ONLY when its
+   block-1 (HM2) signal is what's driving things.
+
+
+3. Why r_sk specifically does the damage
+-----------------------------------------
+
+`A_sketch` after block 1 is the rank-`r` SVD compression of all
+previously seen rows: `B_top = state["s"][:, None] * state["V"].T`,
+shape `(r, n)` with `r = rank = 2`. So `raw_sk(v) = ||B_top v||²` is
+v's energy along the rank-2 carry.
+
+But `c_sk = N_sk_total_rows / ||A_sk_total||_F²` is computed from the
+FULL past data (`A[:sk_end]`). That is a normalization for "typical
+row energy of past rows" — a number that has nothing to do with what
+the rank-2 compression carries. So:
+
+  r_sk(v) = 1 - c_sk · ||B_top v||²
+          = 1 - (N_full / ||A_full||²_F) · ||B_top v||²
+
+The `r_sk = 0` setpoint corresponds to v capturing *typical full-past
+row energy* through the rank-2 compression. This is impossible for any
+v not aligned with the carried subspace — most full-past energy is
+discarded by the rank-2 SVD by construction. So `r_sk → 1` for almost
+every v outside the carry, and the optimizer trivially achieves it.
+
+In short: `c_sk` is calibrated for the FULL past, but `raw_sk` measures
+energy through the COMPRESSED past. The two are mismatched.
+
+
+4. Two fix proposals
+--------------------
+
+F1. **c_sk on compressed sketch.** Replace
+        c_sk = N_sk_total_rows / ||A_sk_total||_F²
+    with
+        c_sk = rank / ||B_top||_F²
+    so that `r_sk = 0` corresponds to v capturing typical *carried*
+    row energy. This aligns the normalization with what `raw_sk`
+    actually measures. Pros: small, mechanical change; preserves the
+    "shortfall against the carry" interpretation. Cons: changes the
+    meaning of the score (vs the original spec); needs FD recheck and
+    a fresh streaming bench.
+
+F2. **Warm-up window.** Use the HM2 (block-1) fall-through for the
+    first K blocks, then switch to HM3. Switching trigger: e.g.
+    `N_sk_full >= K * half_win` for some K (suggest K = 2 or 4).
+    Pros: zero analytical risk, just delays HM3 until the rank-r
+    sketch has enough underlying data. Cons: the streaming benchmark
+    is mostly post-warmup blocks anyway; doesn't help on long runs
+    if HM3 is fundamentally wrong (and §10 of the redesign doc says
+    it might be).
+
+Try **F1 first**: it directly addresses the diagnosed mismatch and is
+cheap to test. If F1 still fails, F2 is a useful baseline (and can
+stack with F1).
+
+If both fail to bring static-cex / mixed-tail-sharp `final_exact_cos²`
+above ~0.5, the §10 prescription stands: drop scalar-per-v scoring
+and move to a Stiefel-rank-2 joint score where `raw_g(V) =
+||A_fut V||_F²` for a 2-frame V — that breaks the angular degeneracy
+and the row-of-A_fut cheat in one move.
+
+
+5. How to test (in order)
+--------------------------
+
+For each candidate fix, run the same gauntlet:
+
+T1. **FD check.** Run `python r_sk_g_score.py --gradient-check
+    --matrix mixed-tail-sharp --blocks 1 2 6 12 --dtype float64`.
+    Acceptance: rel err < 1e-7 on each variant at each block (S4
+    matters most; ignore S1/S2/S3 unless the code path is shared).
+
+T2. **Per-block oracle alignment, streaming-init.** Run
+        python r_sk_g_score.py \
+          --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+          --blocks 1 2 6 12 31 --no-oracle-warmstart \
+          --out-prefix summary/<descriptive_name>
+    Inspect the rank-2 sub_v_pr metric (col 1 + col 2 squared cosines
+    against oracle_v_pr). Acceptance: `sub_v2pr ≥ 0.4` on static-cex
+    at blocks 6+ and at b31; same on mixed-tail-sharp.
+
+T3. **Streaming benchmark.** Run
+        export OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2
+        for M in static-cex mixed-tail-sharp diffuse-diffuse; do
+          python half_window_sliding_hmean_experiment.py \
+            --matrix "$M" \
+            --policies combined hybrid isvd future_hmean_online \
+                       future_hmean_evidence future_hmean_r_sk_g \
+            --half-win 32 --rsk-variant S4 \
+            --json-out summary/<dir>/${M}_win64.json \
+            --csv-out  summary/<dir>/${M}_win64.csv \
+            --text-out summary/<dir>/${M}_win64.txt \
+            > summary/<dir>/${M}_win64.log 2>&1 &
+        done; wait
+    Acceptance for S4: sliding-mode `final_exact_cos[1]² ≥ 0.6` on
+    static-cex and mixed-tail-sharp, `≥ 0.7` on diffuse-diffuse,
+    wall-clock budget ≤ 200 s per matrix (with all 6 policies).
+
+T4. **Oracle-init landscape probe.** Run
+        python r_sk_g_oracle_init_probe.py \
+          --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+          --blocks 1 2 6 12 31 \
+          --out-prefix summary/<dir>/oracle_init_probe
+    Two diagnostic checks:
+      a) Score gain Δ from oracle_v_proj should be small (oracle is
+         close to a critical point).
+      b) `cos²(start, end) ≥ 0.7` (the optimizer doesn't run away).
+    If both hold across blocks 2+ on ≥2 matrices, the score is no
+    longer a row-of-A_fut magnet.
+
+
+6. Files to touch / not touch
+------------------------------
+
+EDIT (for F1 or F2):
+  r_sk_g_score.py
+      For F1: change `per_block_constants` so the block-2+ branch
+              computes c_sk from B_top (the rank-r compressed sketch).
+              The block-1 branch (sk_end == 0) stays as-is.
+              Make sure `optimize_r_sk_g_in_basis` and `make_r_sk_g_optimizer`
+              still receive the same `c_sk` value (they do — just
+              compute it differently inside `per_block_constants` and
+              also recompute it in the streaming wiring at
+              `half_window_sliding_hmean_experiment.py:578-583`).
+      For F2: in the S4 branch of `r_sk_g_value_grad`, gate the
+              HM3-vs-HM2 selection on `N_sk_full < K * half_win`
+              passed in via a new arg, plus the existing `A_sk is None`
+              fall-through.
+
+EDIT (mirror in streaming wiring):
+  half_window_sliding_hmean_experiment.py
+      For F1: at the spot where c_sk is computed for the policy
+              (around line 528), use `B_top.size` and `||B_top||_F²`
+              instead of the full-past constants.
+      For F2: pass the warm-up threshold through CLI (`--rsk-warmup`)
+              and into `optimize_r_sk_g_in_basis`.
+
+DO NOT MODIFY:
+  future_hmean_optimizer_diagnostic.py  (sphere ascent core)
+  hmean_evidence_score.py               (kept as a comparison baseline)
+  hmean_combinations_optimizer_diagnostic.py
+  cex_restricted_space_probe.py
+  the existing combined / hybrid / isvd / online policy code paths
+  in half_window_sliding_hmean_experiment.py
+
+
+7. Snapshot of relevant numbers (for sanity-checking after a fix)
+------------------------------------------------------------------
+
+Plateau hm3 value (current S4): ~0.52 on every block of every matrix.
+A successful fix should make hm3 of the plateau either:
+  - lower than hm3(oracle_v2_proj) on at least one block per matrix
+    (so the score actually prefers the oracle), OR
+  - the same but with the plateau geometry now centered on the oracle.
+
+Oracle hm3 values (current S4 score, streaming-init diagnostic):
+  static-cex      b6: hm3(oracle_v1) = 0.169, hm3(oracle_v2) = 0.201
+  static-cex     b12: hm3(oracle_v1) = 0.083, hm3(oracle_v2) = 0.116
+  static-cex     b31: hm3(oracle_v1) = 0.000 (clipped, r_sk < 0)
+                      hm3(oracle_v2) = 0.000 (clipped)
+  mixed-sharp     b6: hm3(oracle_v1) = 0.441, hm3(oracle_v2) = 0.345
+  mixed-sharp    b12: hm3(oracle_v1) = 0.500, hm3(oracle_v2) = 0.143
+  mixed-sharp    b31: hm3(oracle_v1) = 0.504, hm3(oracle_v2) = 0.000
+  diffuse         b6: hm3(oracle_v1) = 0.434, hm3(oracle_v2) = 0.508
+  diffuse        b12: hm3(oracle_v1) = 0.307, hm3(oracle_v2) = 0.515
+  diffuse        b31: hm3(oracle_v1) = 0.115, hm3(oracle_v2) = 0.426
+
+Compare against current plateau ~0.52: oracle_v2 only beats the
+plateau on diffuse-diffuse — the matrix where streaming partially
+works. F1 (c_sk on compressed sketch) should bring this closer to
+parity on static-cex and mixed-tail-sharp by un-pinning `r_sk` from
+"shortfall against full past".
+
+
+8. Open questions
+------------------
+
+Q1. Does F1 introduce a new failure mode at block 1 (where there's no
+    sketch and the fall-through bypasses c_sk entirely)? Probably no —
+    the block-1 branch should remain as-is. But verify by running
+    T2/T3 with --blocks 1 explicitly and checking it matches the
+    current (post-fix) block-1 numbers (sub_v2pr ≈ 0.81 on diffuse,
+    0.77 on static-cex, 0.06 on mixed-tail-sharp).
+
+Q2. Does the row-of-A_fut cheat survive F1? Run T4 after F1 — if the
+    `cos²(SVD_fut #0)` of v_outside is still ≥ 0.4 on static-cex /
+    mixed-tail-sharp, the cheat persists and we need either F2 on top,
+    or the §10 Stiefel rank-2 score.
+
+Q3. Mixed-tail-sharp at block 1: S4 already does badly (sub_v2pr =
+    0.061) even though the score is HM2 there. Why? Likely because
+    the oracle's energy at block 1 is concentrated in just 32 rows and
+    the scoring landscape in HM2 already has the row-of-A_fut cheat
+    on this counterexample matrix. Worth checking if a HM2-with-spread
+    penalty (e.g. `||A_fut v||² - max_i (A_fut[i] · v)²`) helps even
+    at block 1. If it does, the same modification on HM3 might be the
+    real fix — not c_sk renormalization.
+
+Q4. The plateau height ~0.52 is suspiciously close to the upper bound
+    of HM3 when r_sk = 1 and raw_g1 = raw_g2. Specifically, with
+    raw_g1 = raw_g2 = 0.42, HM3 = 3 / (1 + 1/0.42 + 1/0.42) ≈ 0.53.
+    So the plateau IS the analytical maximum modulo the row-of-A_fut
+    structure. Any fix that doesn't change the score's analytic form
+    (i.e. F2) will not lower the plateau — it will just delay reaching
+    it. F1 lowers `c_sk` (since `||B_top||_F² < ||A_sk||_F²`), which
+    raises `1 - c_sk · raw_sk = r_sk` for the same v — but in the
+    direction of LARGER r_sk, which probably makes the cheat stronger,
+    not weaker. THIS NEEDS CAREFUL THOUGHT BEFORE TESTING F1.
+
+    Worked sketch (revisit before implementing F1):
+      Old: c_sk = N_full / ||A_full||² = ~1.21 in observed data.
+      New: c_sk = r / ||B_top||² = 2 / ||B_top||²_F.
+      For static-cex b2: ||B_top||²_F ≈ trace(s²) where s are top-2
+      singvals of past 32 rows. If s_1 ≈ 1, s_2 ≈ 0.5, then ||B_top||²_F
+      ≈ 1.25, so new c_sk ≈ 1.6 — LARGER than old. So r_sk would be
+      smaller (less shortfall) and HM3's `1/r_sk` term would be even
+      MORE dominant. This argues F1 might make things WORSE, not
+      better. Sanity-check this with a printout in a notebook before
+      committing to F1.
+
+    A safer reformulation: replace r_sk with r_sk_relative =
+      1 - ||B_top v||² / ||A_full v projected onto past||²
+    which measures shortfall *within* the achievable past energy.
+    But this needs derivation and FD verification.
+
+
+9. Why this might still fail (echoing §10)
+-------------------------------------------
+
+The structural diagnosis (point 2A above) — that HM3 has a 62-dim
+plateau and the oracle is one specific point inside or below it —
+is independent of any specific c_sk choice. No scalar-per-v score
+that depends only on (raw_sk, raw_g1, raw_g2) can break this
+degeneracy: those three numbers don't pin down the direction.
+
+If F1, F2, and the spread-penalty variant all fail T2/T3 acceptance,
+DO NOT keep iterating on per-v scalar scores. Move to the rank-2
+Stiefel score:
+
+    score(V) = HM(r_sk_subspace(V), ||A_cur V||²_F, ||A_fut V||²_F) · ...
+
+where V is an n×2 orthonormal frame. This is invariant only under
+SO(2) within-frame rotations, not under the 62-dim rotation that
+fools HM3, and `||A_fut V||²_F` cannot be cheated by aligning with
+a single row.
+
+Implementation pointers for the Stiefel branch:
+  - Optimizer: project gradient onto the Stiefel manifold (Cayley
+    retraction or QR-based; scipy/pymanopt both work).
+  - Warm starts: V_default[:, :2] (combined's frame), oracle frame
+    V_exact[:, :2] projected onto union span.
+  - Diagnostic: replace `align_v1_proj/align_v2_proj` with the
+    principal-angle² between the candidate frame and span(oracle_v1_proj,
+    oracle_v2_proj).

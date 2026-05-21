@@ -1,0 +1,96 @@
+matrix=mixed-tail-sharp internal_rank=2 final_rank=2
+  final internal_oracle2_projection=0.999570
+  final internal_subspace_cos2=0.998883
+  final compressed_oracle2_projection=0.999570
+  final compressed_subspace_cos2=0.998883
+  final compressed_opt2_vs_oracle2=0.515383
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=diffuse-diffuse internal_rank=2 final_rank=2
+  final internal_oracle2_projection=0.999437
+  final internal_subspace_cos2=0.999365
+  final compressed_oracle2_projection=0.999438
+  final compressed_subspace_cos2=0.999365
+  final compressed_opt2_vs_oracle2=0.999220
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=static-cex internal_rank=2 final_rank=2
+  final internal_oracle2_projection=0.999935
+  final internal_subspace_cos2=0.999929
+  final compressed_oracle2_projection=0.999935
+  final compressed_subspace_cos2=0.999929
+  final compressed_opt2_vs_oracle2=0.983621
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=mixed-tail-sharp internal_rank=4 final_rank=2
+  final internal_oracle2_projection=0.999759
+  final internal_subspace_cos2=0.999307
+  final compressed_oracle2_projection=0.999739
+  final compressed_subspace_cos2=0.999299
+  final compressed_opt2_vs_oracle2=0.405401
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=diffuse-diffuse internal_rank=4 final_rank=2
+  final internal_oracle2_projection=0.999857
+  final internal_subspace_cos2=0.999214
+  final compressed_oracle2_projection=0.999762
+  final compressed_subspace_cos2=0.999061
+  final compressed_opt2_vs_oracle2=0.148033
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=static-cex internal_rank=4 final_rank=2
+  final internal_oracle2_projection=0.999981
+  final internal_subspace_cos2=0.999981
+  final compressed_oracle2_projection=0.999980
+  final compressed_subspace_cos2=0.999980
+  final compressed_opt2_vs_oracle2=0.999978
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=mixed-tail-sharp internal_rank=8 final_rank=2
+  final internal_oracle2_projection=0.999668
+  final internal_subspace_cos2=0.999123
+  final compressed_oracle2_projection=0.999513
+  final compressed_subspace_cos2=0.997638
+  final compressed_opt2_vs_oracle2=0.754255
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=diffuse-diffuse internal_rank=8 final_rank=2
+  final internal_oracle2_projection=0.999938
+  final internal_subspace_cos2=0.998864
+  final compressed_oracle2_projection=0.997882
+  final compressed_subspace_cos2=0.993445
+  final compressed_opt2_vs_oracle2=0.138692
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=static-cex internal_rank=8 final_rank=2
+  final internal_oracle2_projection=0.999741
+  final internal_subspace_cos2=0.999098
+  final compressed_oracle2_projection=0.999725
+  final compressed_subspace_cos2=0.999089
+  final compressed_opt2_vs_oracle2=0.999717
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=mixed-tail-sharp internal_rank=16 final_rank=2
+  final internal_oracle2_projection=0.999752
+  final internal_subspace_cos2=0.999700
+  final compressed_oracle2_projection=0.998158
+  final compressed_subspace_cos2=0.990297
+  final compressed_opt2_vs_oracle2=0.992666
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=diffuse-diffuse internal_rank=16 final_rank=2
+  final internal_oracle2_projection=0.999952
+  final internal_subspace_cos2=0.999882
+  final compressed_oracle2_projection=0.993989
+  final compressed_subspace_cos2=0.988787
+  final compressed_opt2_vs_oracle2=0.156012
+  verdict=oracle2_present_and_final_rank2_recovers
+
+matrix=static-cex internal_rank=16 final_rank=2
+  final internal_oracle2_projection=0.999883
+  final internal_subspace_cos2=0.999878
+  final compressed_oracle2_projection=0.994927
+  final compressed_subspace_cos2=0.994919
+  final compressed_opt2_vs_oracle2=0.994737
+  verdict=oracle2_present_and_final_rank2_recovers
+

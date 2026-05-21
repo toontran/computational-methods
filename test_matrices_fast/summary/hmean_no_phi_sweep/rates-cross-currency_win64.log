@@ -1,0 +1,13 @@
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476690
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443588
+half_window_run mode=split_probe policy=future_hmean_online_no_phi half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476725
+half_window_run mode=sliding policy=future_hmean_online_no_phi half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443513
+half_window_run mode=split_probe policy=future_hmean_triplet_online_no_phi half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476686
+half_window_run mode=sliding policy=future_hmean_triplet_online_no_phi half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443528
+half_window_run mode=split_probe policy=future_hmean_nested_online_no_phi half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476690
+half_window_run mode=sliding policy=future_hmean_nested_online_no_phi half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443502
+half_window_run mode=split_probe policy=future_hmean_pairwise_online_no_phi half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476693
+half_window_run mode=sliding policy=future_hmean_pairwise_online_no_phi half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443519
+half_window_run mode=split_probe policy=future_hmean_weighted_online_no_phi half_win=32 mean_align=0.999722 mean_relerr_sval=0.29476705
+half_window_run mode=sliding policy=future_hmean_weighted_online_no_phi half_win=32 mean_align=0.999991 mean_relerr_sval=0.01443519
+wrote_json=summary/hmean_no_phi_sweep/rates-cross-currency_win64.json wrote_csv=summary/hmean_no_phi_sweep/rates-cross-currency_win64.csv wrote_text=summary/hmean_no_phi_sweep/rates-cross-currency_win64.txt elapsed=58.301

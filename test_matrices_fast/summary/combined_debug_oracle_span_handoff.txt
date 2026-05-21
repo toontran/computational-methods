@@ -1,0 +1,218 @@
+Combined debug oracle-span handoff
+==================================
+
+Date: 2026-04-19
+
+Purpose
+-------
+This note records the current state of debugging combined mode in
+cex_restricted_space_probe.py. The key issue is now isolated to the first-block
+rank-2 span selection: the oracle projected top-2 span is feasible and gives
+the expected near-one final alignment when accepted, but the deployable
+optimizer-only combined path still misses it.
+
+
+Implemented debug workflow
+--------------------------
+cex_restricted_space_probe.py now has:
+
+  --debug-mode combined
+
+This bundled mode:
+
+  - selects --mode combined by default unless --mode is explicitly passed;
+  - selects --score-variant combined by default unless --score-variant is
+    explicitly passed;
+  - enables oracle candidate checks unless --no-oracle-candidate-check is
+    explicitly passed;
+  - enables score-component dumps;
+  - enables oracle old-row response dumps for every block.
+
+The older flag
+
+  --dump-oldcorrected-score-components
+
+is kept as a compatibility alias for the generic
+
+  --dump-score-components
+
+The component dump now supports both oldcorrected and combined. For combined it
+prints gain2, pooled entropy terms, current-window terms, old-row-memory terms,
+rows_entropy, rows_seen, and combined_c.
+
+
+Expected passing debug/oracle-control run
+-----------------------------------------
+Run:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --debug-mode combined
+
+Observed first block:
+
+  oracle_candidate_check: accepted optimizer_sum=2.048518805263 candidate_sum=2.082683124339
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2):  1.000000  1.000000
+  principal_cosines(V_score, Q_oracle):  1.000000  1.000000
+
+Observed final line:
+
+  sigma1    mean_align    mean_relerr_sval    elapsed
+  0.991      1.000000           0.00000006          ...
+
+Interpretation:
+
+  With the oracle candidate replacement enabled, combined debug behaves as
+  expected. The selected first-block space overlaps the oracle projected top-2
+  space essentially perfectly, and the final mean_align is near one.
+
+
+Expected failing optimizer-only run
+-----------------------------------
+Run:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 \
+    --mode restricted --score-variant combined \
+    --debug-mode combined --no-oracle-candidate-check
+
+Observed first block:
+
+  optimizer_score_sum: 2.048518805263
+  oracle_qr_projection_scores:  1.0497  1.0329 sum=2.082683124339
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.357744  0.828605
+  principal_cosines(V_score, Q_oracle):  0.830052  0.269138
+
+Observed final line:
+
+  0.991      0.902359           0.00625037          ...
+
+Interpretation:
+
+  The optimizer-only combined trajectory still fails. The first block is the
+  first clear divergence: the selected rank-2 space has a lower score than the
+  feasible QR oracle projected frame and a poor second principal cosine against
+  Q_oracle.
+
+
+Additional non-oracle experiments
+---------------------------------
+Greedy combined on n=32 with one block:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 32 --rank 2 --win 32 \
+    --preset small --seed 0 --mode combined --no-oracle-candidate-check
+
+This is not the same failing n=128 first block because the generated matrix is
+different. It can end near one even though the second oracle projected
+direction is missed:
+
+  principal_cosines(V_score, Q_oracle):  1.000000  0.000003
+  mean_align about 1.000000
+
+High-budget n=128 joint Riemannian attempt:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --mode combined \
+    --basis-selection joint --joint-warm-start-greedy \
+    --joint-warm-start-rotations 16 --joint-warm-start-perturbations 16 \
+    --num-restarts 40 --qmax 128 --expansion-maxit 16 --maxit 120 \
+    --no-oracle-candidate-check
+
+First block improved but did not fully recover the oracle span:
+
+  principal_cosines(V_score, Q_oracle):  0.992008  0.905707
+  optimizer_score_sum: 2.097474862728
+  oracle_qr_projection_scores sum: 2.082683124339
+
+Final was not near one:
+
+  mean_align about 0.967142
+
+High-budget n=128 joint SLSQP attempt:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --mode combined \
+    --basis-selection joint --joint-warm-start-greedy \
+    --joint-solver slsqp --num-restarts 20 --qmax 128 \
+    --expansion-maxit 16 --maxit 200 \
+    --no-oracle-candidate-check
+
+First block:
+
+  principal_cosines(V_score, Q_oracle):  0.950694  0.880617
+  optimizer_score_sum: 2.098469710710
+  oracle_qr_projection_scores sum: 2.082683124339
+
+Final:
+
+  mean_align about 0.966360
+
+Greedy with oracle warm-start but no oracle candidate replacement:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --mode combined \
+    --joint-warm-start-oracle --no-oracle-candidate-check
+
+This was not enough. The reduced-basis projection of the oracle warm start can
+still walk to a wrong local/objective choice:
+
+  first-block principal_cosines(V_score, Q_oracle):  0.950895  0.700623
+  final mean_align about 0.959813
+
+
+Current diagnosis
+-----------------
+The passing behavior is established for the debug/oracle-control variant.
+The remaining deployable failure is in optimizer-only rank-2 selection.
+
+Important facts:
+
+  - The first-block oracle projected QR frame is feasible and has higher score
+    than the greedy optimizer frame in the failing run.
+
+  - Replacing with the oracle candidate in the first blocks gives near-perfect
+    oracle-span containment and near-one final mean_align.
+
+  - Adding oracle warm starts alone is not sufficient, because they are first
+    projected into the current reduced basis and then optimized under the
+    current search/objective path.
+
+  - High-budget joint optimization improves first-block overlap, but still
+    does not reliably produce final mean_align near one. It can even select a
+    higher combined objective than the oracle QR frame while remaining
+    meaningfully rotated away from the oracle span.
+
+Likely next debugging target:
+
+  Determine whether combined score objective itself prefers a non-oracle span,
+  or whether the optimizer/reduced-basis expansion is still failing to solve
+  the intended rank-2 problem. The first block of the n=128 run is the cleanest
+  place to investigate.
+
+
+Suggested next steps
+--------------------
+1. Add a first-block oracle-overlap pass/fail line under --debug-mode combined,
+   for example requiring both principal cosines against Q_oracle to exceed a
+   threshold such as 0.99.
+
+2. For the first n=128 block only, evaluate the combined objective over
+   rotations inside span(Q_oracle) and compare it to the best joint optimizer
+   span. This will separate basis-dependent score effects from pure search
+   failure.
+
+3. Add a diagnostic that reports the best optimizer frame's principal vectors
+   relative to Q_oracle, not only the cosines, so the direction of the miss is
+   visible.
+
+4. Consider adding Q_oracle directly to the reduced basis as a debug-only
+   search-subspace expansion, distinct from the current oracle warm start. This
+   would test whether reduced-basis containment is the blocker.
+
+5. Keep --no-oracle-candidate-check runs as the optimizer-only reproduction and
+   --debug-mode combined without that flag as the oracle-control/pass run.

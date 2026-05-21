@@ -1,0 +1,336 @@
+Second-slot tail-bias verification
+==================================
+
+Date: 2026-04-21
+
+Question
+--------
+Verify the theory:
+
+  The second rank slot is captured early by a tail/high-entropy competitor.
+  The carried sketch then gives that tail-ish direction old-energy credit, so
+  later windows are biased toward keeping the tail slot and away from the
+  missing second oracle direction.
+
+This report extends `summary/consecutive_tail_conspiracy_diagnostic.txt`.
+
+
+New Diagnostic Driver
+---------------------
+Added:
+
+  second_slot_tail_bias_diagnostic.py
+
+Raw outputs:
+
+  summary/second_slot_interventions_all_raw.txt
+  summary/second_slot_scores_failures_raw.txt
+
+The driver reuses `cex_restricted_space_probe.py`'s combined-score optimizer and
+logs:
+
+  - normal trajectory;
+  - force block 1 to projected QR oracle;
+  - force blocks 1 and 2 to projected QR oracle;
+  - force only the second block-1 slot toward the oracle residual;
+  - previous second-slot survival in the next selected frame;
+  - second-slot candidate scores under actual sketch B, zero sketch, and an
+    oracle-forced sketch context.
+
+Important caveat:
+
+  This is a diagnostic harness, not the benchmark runner. Use comparisons
+  within this harness as intervention evidence. The earlier raw dump remains
+  the benchmark-aligned trajectory record.
+
+
+Intervention Results
+--------------------
+Selected summary lines from `summary/second_slot_interventions_all_raw.txt`.
+
+Mixed-tail-sharp:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.045486          0.999936, 0.167467    0.561206
+  force-b1          0.026017          0.999968, 0.056239    0.536511
+  force-b1b2        0.967036          0.999924, 0.155109    0.531968
+  force-second-b1   0.026787          0.999888, 0.103950    0.555335
+
+Diffuse-diffuse:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.900378          0.999759, 0.186017    0.593975
+  force-b1          0.991745          0.999989, 0.999468    0.182056
+  force-b1b2        0.996661          0.999995, 0.999782    0.096417
+  force-second-b1   0.707408          0.999974, 0.998759    0.273291
+
+Static-cex control:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.988981          0.999999, 0.999976    0.050119
+  force-b1          0.989474          0.999999, 0.999915    0.071166
+  force-b1b2        0.980263          0.999996, 0.999995    0.043400
+  force-second-b1   0.980447          0.999998, 0.999995    0.037184
+
+Readout:
+
+  1. Diffuse-diffuse strongly supports the early-sketch-capture theory.
+     Forcing block 1 or blocks 1-2 into the oracle span changes the final second
+     oracle cosine from 0.186017 to about 0.9995-0.9998.
+
+  2. Static-cex is insensitive to the interventions because its normal
+     trajectory already converges to the oracle span.
+
+  3. Mixed-tail-sharp is harder. Forcing blocks 1-2 greatly improves top-1
+     mean_align, but the final second oracle cosine remains low. This means
+     mixed-tail-sharp is not only an early-seeding problem; even after an oracle
+     early state, the second slot can be evicted later.
+
+
+Does the Winning Tail Slot Survive?
+-----------------------------------
+The driver logs:
+
+  prev_opt2_in_curr_subspace = ||V_current V_current' prev_opt2||
+  prev_opt2_dot_curr_opt2    = |curr_opt2' prev_opt2|
+  prev2_score_ratio          = score_current(prev_opt2) / score_current(curr_opt2)
+
+Mixed-tail-sharp normal trajectory:
+
+  block  prev_opt2_in_curr_subspace  prev_opt2_dot_curr_opt2  prev2_score_ratio
+  2      0.708592                    0.022141                0.797293
+  3      0.814834                    0.814741                0.820774
+  5      0.886635                    0.886624                0.854846
+  8      0.933067                    0.927770                0.888422
+  12     0.949932                    0.949787                0.914175
+  16     0.959564                    0.958855                0.941426
+  24     0.970770                    0.970770                0.973977
+  32     0.993838                    0.992592                0.998780
+
+Diffuse-diffuse normal trajectory:
+
+  block  prev_opt2_in_curr_subspace  prev_opt2_dot_curr_opt2  prev2_score_ratio
+  2      0.707691                    0.707691                0.793557
+  3      0.822936                    0.822935                0.827726
+  5      0.880204                    0.880203                0.843428
+  8      0.923653                    0.923632                0.879163
+  12     0.930864                    0.930764                0.911498
+  16     0.950572                    0.950548                0.933381
+  24     0.969360                    0.969330                0.969374
+  32     0.928507                    0.928465                0.994271
+
+Readout:
+
+  Yes, the winning second-slot direction generally survives into the next
+  window. After the first handoff, previous opt2 has high projection into the
+  current selected frame and a score close to the newly optimized opt2. This is
+  direct evidence of path dependence. The next window is not starting from an
+  unbiased competition between oracle-2 and tail; it inherits a high-scoring
+  previous tail-ish second slot.
+
+
+Second-Slot Score Decomposition
+-------------------------------
+Candidate labels:
+
+  opt2:
+    optimizer's second selected direction.
+
+  q2_vs_v1opt:
+    projected oracle-2 direction orthogonalized against optimizer v1.
+
+  q2_vs_q1oracle:
+    projected oracle-2 direction orthogonalized against projected oracle-1.
+
+  prev_opt2:
+    previous block's selected second direction, scored under the current block.
+
+  svd_complement:
+    high-gain SVD-like complement against optimizer v1.
+
+
+Mixed-Tail-Sharp: Representative Blocks
+---------------------------------------
+Block 3:
+
+  actual_B:
+    opt2 score=2.696395, relH=0.999480
+    q2_vs_v1opt score=1.783492, relH=0.650740
+    q2_vs_q1oracle score=2.285385, relH=0.853726
+    prev_opt2 score=2.213130, relH=0.832056
+
+  zero_B:
+    opt2 score=0.897058
+    q2_vs_v1opt score=1.716136
+    q2_vs_q1oracle score=1.307932
+
+  oracle_B:
+    opt2 score=0.977876
+    q2_vs_v1opt score=1.747909
+    q2_vs_q1oracle score=1.771598
+
+Block 12:
+
+  actual_B:
+    opt2 score=1.350237, relH=0.999385
+    q2_vs_v1opt score=0.821233, relH=0.095416
+    q2_vs_q1oracle score=1.312085, relH=0.857437
+    prev_opt2 score=1.234354
+
+  zero_B:
+    opt2 score=0.125208
+    q2_vs_v1opt score=0.815590
+    q2_vs_q1oracle score=0.241812
+
+  oracle_B:
+    opt2 score=0.126837
+    q2_vs_v1opt score=0.816055
+    q2_vs_q1oracle score=0.926283
+
+Block 24:
+
+  actual_B:
+    opt2 score=0.957164
+    q2_vs_v1opt score=0.563805
+    q2_vs_q1oracle score=1.037080
+    prev_opt2 score=0.932255
+
+  zero_B:
+    opt2 score=0.053723
+    q2_vs_v1opt score=0.219817
+    q2_vs_q1oracle score=0.097092
+
+  oracle_B:
+    opt2 score=0.065362
+    q2_vs_v1opt score=0.227697
+    q2_vs_q1oracle score=0.883454
+
+Mixed-tail-sharp readout:
+
+  The actual sketch B is the reason opt2 is competitive. Under zero_B or
+  oracle_B, opt2 usually collapses, while oracle-like second-slot candidates
+  become competitive or win. However, the exact winner depends on the
+  orthogonalization context:
+
+    - q2_vs_v1opt can be weak if the optimizer's first direction blocks it.
+    - q2_vs_q1oracle is often much stronger under oracle_B.
+    - later blocks can still show actual_B favoring a high-gain/tail opt2 even
+      when q2_vs_q1oracle would win under oracle_B.
+
+  This verifies both sketch contamination and frame/orthogonalization effects.
+
+
+Diffuse-Diffuse: Representative Blocks
+--------------------------------------
+Block 3:
+
+  actual_B:
+    opt2 score=2.684044, relH=0.995644
+    q2_vs_v1opt score=2.289927, relH=0.856824
+    q2_vs_q1oracle score=2.051106, relH=0.764817
+    prev_opt2 score=2.221654
+
+  zero_B:
+    opt2 score=0.815470
+    q2_vs_v1opt score=1.962041
+    q2_vs_q1oracle score=1.930128
+
+  oracle_B:
+    opt2 score=1.254627
+    q2_vs_v1opt score=2.036199
+    q2_vs_q1oracle score=1.956283
+
+Block 12:
+
+  actual_B:
+    opt2 score=1.350097, relH=0.992150
+    q2_vs_v1opt score=1.247202, relH=0.833378
+    q2_vs_q1oracle score=1.247194, relH=0.833363
+    prev_opt2 score=1.230611
+
+  zero_B:
+    opt2 score=0.159979
+    q2_vs_v1opt score=1.246482
+    q2_vs_q1oracle score=1.246538
+
+  oracle_B:
+    opt2 score=0.160928
+    q2_vs_v1opt score=1.246906
+    q2_vs_q1oracle score=1.246957
+
+Block 24:
+
+  actual_B:
+    opt2 score=0.971999
+    q2_vs_v1opt score=0.937390
+    q2_vs_q1oracle score=0.937389
+    prev_opt2 score=0.942230
+
+  zero_B:
+    opt2 score=0.059757
+    q2_vs_v1opt score=0.925024
+    q2_vs_q1oracle score=0.924886
+
+  oracle_B:
+    opt2 score=0.061130
+    q2_vs_v1opt score=0.927209
+    q2_vs_q1oracle score=0.927346
+
+Diffuse-diffuse readout:
+
+  This is the cleanest support for the theory. Under actual_B, opt2 wins.
+  Under zero_B or oracle_B, opt2 collapses and oracle-like second-slot
+  candidates win. The only reason the optimizer's second slot remains dominant
+  is the old sketch energy attached to that previously retained direction.
+
+
+Conclusions
+-----------
+1. The previous winning second-slot tail direction usually survives into the
+   next window.
+
+   The survival metrics become very high after the first few windows. The
+   previous second slot is not discarded and rediscovered from scratch; it is
+   carried forward as a high-scoring candidate.
+
+2. The sketch B is causally responsible for much of the second-slot tail bias.
+
+   In the second-slot score decomposition, opt2 often wins under actual_B but
+   loses badly under zero_B and oracle_B. This is exactly the expected signature
+   if the carried sketch is biasing the second slot toward the tail.
+
+3. Diffuse-diffuse is mostly an early sketch-capture problem.
+
+   Forcing block 1 or blocks 1-2 into the oracle span makes the second oracle
+   direction converge. The normal trajectory retains a tail-biased second slot
+   because early B gives the wrong second direction old-energy credit.
+
+4. Mixed-tail-sharp has an additional frame/orthogonalization issue.
+
+   Forcing blocks 1-2 improves top-1 recovery, and oracle_B often makes the
+   oracle-like second slot competitive. But the second oracle cosine can still
+   be lost later. The likely reason is that the optimizer's first direction and
+   the QR/orthogonalized oracle frame can make the second oracle residual score
+   poorly, so a high-gain/tail complement can still occupy the second slot.
+
+5. The binary "same tail direction" vs "fresh tail mixtures" is too narrow.
+
+   The evidence supports a path-dependent second-slot mechanism:
+
+     early weak oracle-2 retention
+     -> tail-biased second slot stored in B
+     -> previous opt2 remains high-scoring in the next block
+     -> opt2 beats oracle-2 under actual_B
+     -> zero_B/oracle_B removes or reverses the advantage
+
+   The tail direction is not necessarily identical forever, but the winning
+   second-slot tail region survives strongly enough to bias the next window.
+
+
+Next Check
+----------
+The remaining open question is whether keeping an internal rank larger than 2
+would prevent early deletion of oracle-2. The next experiment should run
+internal ranks 4, 8, and 16, then evaluate the top-2 exact subspace projection
+after final compression. If internal rank fixes the failures, the method needs
+oversampled candidate retention rather than a sharper rank-2 objective.

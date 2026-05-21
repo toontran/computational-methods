@@ -1,0 +1,19 @@
+# FAM-01-DIAG: frame-level oracle-vs-winner gap (S-2 screen)
+# block=31
+# Δ > 0 (winner > oracle) on a regression matrix → evidence model insufficient at rank-2
+
+matrix                   ablation         anchor       oracle     winner          Δ   pa²[0]   pa²[1]
+diffuse-diffuse          hm_x_energy      free         0.0487     0.0627    +0.0140    0.986    0.098
+diffuse-diffuse          hm_x_crosscorr   free         0.0269     0.0372    +0.0103    0.178    0.001
+residual-spiky-shocks    hm_x_energy      free         0.0520     0.0587    +0.0067    0.960    0.868
+residual-spiky-shocks    hm_x_crosscorr   free         0.0304     0.0403    +0.0098    0.952    0.906
+mixed-tail-soft          hm_x_energy      free         0.0402     0.0636    +0.0234    0.279    0.001
+mixed-tail-soft          hm_x_crosscorr   free         0.0219     0.0374    +0.0155    0.242    0.004
+mixed-tail-sharp         hm_x_energy      free         0.0447     0.0649    +0.0202    0.296    0.007
+mixed-tail-sharp         hm_x_crosscorr   free         0.0246     0.0373    +0.0127    0.216    0.004
+static-cex               hm_x_energy      free         0.0074     0.0667    +0.0593    0.298    0.038
+static-cex               hm_x_crosscorr   free         0.0038     0.0375    +0.0337    0.227    0.029
+mixed-tail-balanced      hm_x_energy      free         0.0457     0.0641    +0.0185    0.979    0.347
+mixed-tail-balanced      hm_x_crosscorr   free         0.0252     0.0373    +0.0120    0.177    0.031
+etf-basket-basis         hm_x_energy      free       551.7962   693.1385  +141.3424    1.000    0.001
+etf-basket-basis         hm_x_crosscorr   free         0.6476     0.6839    +0.0363    0.995    0.006

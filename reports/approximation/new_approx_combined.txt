@@ -1,0 +1,595 @@
+\paragraph{Setting.}
+At window $w$ the state carried from earlier windows is the sketch $B$ and
+the row sample (reservoir) $R$. Let
+\begin{align}
+N_w:=\begin{pmatrix}A_1\\ \vdots\\ A_w\end{pmatrix},
+\qquad
+C_w:=\begin{pmatrix}R\\ A_w\end{pmatrix},
+\end{align}
+and, for a nonzero $y$,
+\begin{align}
+h_2(y):=-\log\!\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)=4\log\|y\|_2-4\log\|y\|_4.
+\end{align}
+Throughout $v\in\mathbb S^{d-1}$ and $A\in\mathbb R^{n\times d}$; assume
+$\mathrm{row}(C_w)>1$ and $\mathrm{row}(N_w)\le n$.
+
+\paragraph{Assumptions.}
+Assume
+\begin{align}
+\|Bv\|_2^2+\|A_wv\|_2^2
+&\;\approx\;
+\|N_wv\|_2^2,
+\tag{A1}
+\\
+\frac{h_2(C_wv)}{\log\mathrm{row}(C_w)}
+\;\approx\;
+\frac{h_2(N_wv)}{\log\mathrm{row}(N_w)}
+&\;\approx\;
+\frac{h_2(Av)}{\log n}.
+\tag{A2}
+\end{align}
+
+\paragraph{Resulting inequality.}
+Under (A2) and $\|N_wv\|_4\le\|Av\|_4$,
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\|N_wv\|_2^2
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(N_wv)/(2\log\mathrm{row}(N_w))}.
+\tag{$\star$}
+\end{align}
+
+\paragraph{The combined score.}
+Substituting (A1) and (A2) into $(\star)$ gives
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(C_wv)/(2\log\mathrm{row}(C_w))}
+\;=:\;\operatorname{score}_w(v),
+\end{align}
+with
+\begin{align}
+h_2(C_wv)
+=
+-\log\!\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right).
+\end{align}
+If no old row sample is available, take $R=\varnothing$. If no old sketch
+is available, take $B=0$.
+
+\paragraph{Algorithm overview.}
+Process one row-window at a time.
+
+For the first window, there is no previous sketch and no old row sample, so
+\begin{align}
+B=0,\qquad R=\varnothing,
+\end{align}
+and $C_1=A_1$, so
+\begin{align}
+\operatorname{score}_1(v)
+=
+\|A_1v\|_2^2
+\left(\frac{\mathrm{row}(A_1)}{n}\right)^{-\frac{h_2(A_1v)}{2\log\mathrm{row}(A_1)}}.
+\end{align}
+Compute retained directions $v_1,\dots,v_r$ sequentially by solving
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v=0\ \forall i<j}
+\operatorname{score}_1(v).
+\end{align}
+Collecting them gives a retained right basis
+\begin{align}
+V_{\mathrm{hat}}=[v_1,\dots,v_r].
+\end{align}
+With the current carried operator $M=A_1$, form
+\begin{align}
+Y=MV_{\mathrm{hat}},
+\qquad
+U_{\hat{}}=\operatorname{orth}(Y),
+\end{align}
+compute the SVD of
+\begin{align}
+U_{\hat{}}^\top M=U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+and carry the sketch
+\begin{align}
+B_{\mathrm{next}}=\Sigma V_{\mathrm{new}}^\top.
+\end{align}
+Also update the row sample $R_{\mathrm{next}}$ from the rows seen so far.
+
+For a later window $w$, the input state is the carried sketch
+$B^{(w-1)}=\Sigma_{w-1}V_{w-1}^\top$ and the row sample $R^{(w-1)}$. Optimize
+the combined objective $\operatorname{score}_w(v)$ above and compute
+orthonormal retained directions sequentially by solving
+\begin{align}
+v_j^{(w)}
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ (v_i^{(w)})^\top v=0\ \forall i<j}
+\operatorname{score}_w(v).
+\end{align}
+After selecting the new right space, convert that space into the
+left-projected carry sketch. With
+\begin{align}
+\widehat V_w=[v_1^{(w)},\dots,v_r^{(w)}],
+\qquad
+M_w:=
+\begin{pmatrix}
+B^{(w-1)}\\
+A_w
+\end{pmatrix},
+\end{align}
+form
+\begin{align}
+Y_w:=M_w\widehat V_w,
+\qquad
+U_{\hat{},w}:=\operatorname{orth}(Y_w),
+\end{align}
+and compute
+\begin{align}
+U_{\hat{},w}^\top M_w=U_{\mathrm{small},w}\Sigma_wV_w^\top.
+\end{align}
+The sketch passed to the next window is
+\begin{align}
+B^{(w)}=\Sigma_wV_w^\top.
+\end{align}
+The row sample is updated so that $R^{(w)}$ is drawn from the raw rows seen
+through window $w$, not from the sketch rows.
+
+\paragraph{Why this is the sketch carried into the next window.}
+Consider the naive alternative of carrying $V_{\hat{}}$ together with the
+column norms $s_i:=\|M_wv_i\|_2$. With
+\begin{align}
+M_w=\begin{pmatrix}1&1\\0&0\end{pmatrix},
+\qquad
+V_{\hat{}}=[e_1,e_2],
+\end{align}
+one has $s_1=s_2=1$, so $B_{\mathrm{diag}}:=\operatorname{diag}(s)V_{\hat{}}^\top=I$
+gives $\|B_{\mathrm{diag}}v\|_2^2=1$ uniformly on $\mathbb S^1$, whereas
+\begin{align}
+\|M_wv\|_2^2=v^\top\begin{pmatrix}1&1\\1&1\end{pmatrix}v
+\end{align}
+vanishes at $v=(1,-1)/\sqrt{2}$ (outputs cancel) and equals $2$ at
+$v=(1,1)/\sqrt{2}$ (outputs reinforce). Column norms drop the cross
+correlations $(M_wv_i)^\top(M_wv_j)$, which are generically nonzero because the
+combined score pulls $V_{\hat{}}$ away from the right singular directions of
+$M_w$. The window therefore receives
+\begin{align}
+B_{\mathrm{next}}:=\Sigma V_{\mathrm{new}}^\top,
+\qquad
+U_{\hat{}}^\top M_w=U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+the norm-preserving right-action form of $P_UM_w=U_{\hat{}}U_{\hat{}}^\top M_w$,
+where $P_U:=U_{\hat{}}U_{\hat{}}^\top$ is the orthogonal projector onto the
+retained left space. For any $v$,
+$\|B_{\mathrm{next}}v\|_2=\|P_UM_wv\|_2$, and for $v\in\operatorname{span}(V_{\hat{}})$
+this equals $\|M_wv\|_2$ exactly since $M_wv\in\operatorname{span}(U_{\hat{}})$.
+Hence $B_{\mathrm{next}}^\top B_{\mathrm{next}}$ reproduces the full Gram
+$V_{\hat{}}^\top M_w^\top M_wV_{\hat{}}$ on the retained right span, all
+off-diagonals included. The row sample $R_{\mathrm{next}}$ enters the pooled
+entropy in the next window.
+
+\paragraph{Combined entropy.}
+With $y:=C_wv$, the definition of $h_2$ gives
+\begin{align}
+h_2(C_wv)=4\log\|y\|_2-4\log\|y\|_4.
+\end{align}
+This is the same formula as in the single-block case, applied to the stacked
+vector combining the old row sample $Rv$ with the current window $A_wv$. The
+entropy is computed from the pooled vector, so rare large entries in either
+$Rv$ or $A_wv$ affect the same correction factor.
+
+\paragraph{Simplified form.}
+Let
+\begin{align}
+c_w:=\frac{\log(\mathrm{row}(N_w)/n)}{2\log\mathrm{row}(C_w)},
+\qquad
+y:=C_wv.
+\end{align}
+Since
+\begin{align}
+h_2(C_wv)
+=
+-\log\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right),
+\end{align}
+the entropy multiplier is
+\begin{align}
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(C_wv)/(2\log\mathrm{row}(C_w))}
+=
+\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)^{c_w}
+=
+\|C_wv\|_4^{4c_w}\|C_wv\|_2^{-4c_w}.
+\end{align}
+Thus
+\begin{align}
+\operatorname{score}_w(v)
+=
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)\phi_w(v),
+\end{align}
+where
+\begin{align}
+\phi_w(v)
+:=
+\|C_wv\|_4^{4c_w}\|C_wv\|_2^{-4c_w}.
+\end{align}
+When $\mathrm{row}(N_w)<n$, $c_w<0$, and high-entropy pooled vectors are
+boosted by the combined correction.
+
+\paragraph{Exact gradient.}
+Let
+\begin{align}
+y_B:=Bv,\qquad z:=A_wv,\qquad y:=C_wv,
+\end{align}
+and assume the denominators below are nonzero. The gradient of
+$\|Bv\|_2^2+\|A_wv\|_2^2$ is
+\begin{align}
+\nabla\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)
+=
+2B^\top Bv+2A_w^\top A_wv.
+\end{align}
+For the entropy multiplier,
+\begin{align}
+\log\phi_w(v)
+=
+4c_w\log\|C_wv\|_4-4c_w\log\|C_wv\|_2.
+\end{align}
+Differentiating gives
+\begin{align}
+\nabla\log\phi_w(v)
+=
+4c_wC_w^\top\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}.
+\end{align}
+Hence
+\begin{align}
+\nabla\phi_w(v)
+=
+\phi_w(v)
+\left[
+4c_wC_w^\top\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+\right].
+\end{align}
+The full Euclidean gradient is therefore
+\begin{align}
+\nabla\operatorname{score}_w(v)
+=
+\phi_w(v)\left(2B^\top Bv+2A_w^\top A_wv\right)
+\\
++\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)\phi_w(v)
+\left[
+4c_wC_w^\top\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+\right].
+\end{align}
+Equivalently,
+\begin{align}
+\nabla\operatorname{score}_w(v)
+=
+\operatorname{score}_w(v)
+\left[
+\frac{2B^\top Bv+2A_w^\top A_wv}{\|Bv\|_2^2+\|A_wv\|_2^2}
++4c_wC_w^\top\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+\right],
+\end{align}
+provided $\|Bv\|_2^2+\|A_wv\|_2^2>0$.
+
+\paragraph{Expanded row-sample form.}
+Because
+\begin{align}
+C_w^\top C_wv=R^\top Rv+A_w^\top A_wv,
+\end{align}
+and
+\begin{align}
+C_w^\top(C_wv)^{\odot 3}
+=
+R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3},
+\end{align}
+the entropy-gradient part can be evaluated without explicitly forming $C_w$:
+\begin{align}
+C_w^\top\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+=
+\frac{
+R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3}
+}{
+\|Rv\|_4^4+\|A_wv\|_4^4
+},
+\end{align}
+and
+\begin{align}
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+=
+\frac{R^\top Rv+A_w^\top A_wv}
+{\|Rv\|_2^2+\|A_wv\|_2^2}.
+\end{align}
+Likewise,
+\begin{align}
+\phi_w(v)
+=
+\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right)^{c_w}.
+\end{align}
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+B=SV^\top,
+\qquad
+V=[v_1,\dots,v_r],
+\qquad
+S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+then
+\begin{align}
+\|Bv\|_2^2
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2,
+\qquad
+B^\top Bv
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)v_j.
+\end{align}
+Thus the energy-gradient part of the combined score is
+\begin{align}
+2B^\top Bv+2A_w^\top A_wv
+=
+2\sum_{j=1}^r s_j^2(v_j^\top v)v_j
++2A_w^\top A_wv.
+\end{align}
+
+\paragraph{Optimization problem.}
+To extract a direction, solve
+\begin{align}
+\max_{v\in\mathbb S^{d-1},\ Q^\top v=0}\operatorname{score}_w(v),
+\end{align}
+where the columns of $Q$ are the previously accepted directions.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the combined score. Project it onto the feasible
+tangent space:
+\begin{align}
+g_{\mathrm{tan}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w(v).
+\end{align}
+Then take
+\begin{align}
+\widetilde v^+=v+\eta\,g_{\mathrm{tan}}(v),
+\qquad
+v^+=\frac{(I-QQ^\top)\widetilde v^+}
+{\|(I-QQ^\top)\widetilde v^+\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on the true combined score.
+
+\paragraph{Basis-expansion interpretation.}
+If one is building a local search subspace rather than taking a pure
+steepest-ascent step, the new direction added to the basis is the projected
+full gradient
+\begin{align}
+g_{\mathrm{basis}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w(v).
+\end{align}
+Thus the basis is enlarged by the actual gradient direction of the combined
+score. The old sketch energy, current-window energy, and pooled row entropy
+are already combined inside this single full-gradient vector.
+
+In a reduced-subspace version, suppose the current local right search basis is
+\begin{align}
+Z\in\mathbb R^{d\times q},
+\qquad
+Z^\top Z=I.
+\end{align}
+After solving the score problem inside $\operatorname{span}(Z)$, the relevant
+expansion residual is the part of the feasible tangent gradient that is not
+already represented by this local basis:
+\begin{align}
+r_Z(v)
+:=
+\left(I-ZZ^\top\right)
+\left(I-QQ^\top-vv^\top\right)
+\nabla\operatorname{score}_w(v).
+\end{align}
+The local basis should be expanded only when this residual is non-negligible.
+A natural stopping rule is
+\begin{align}
+\frac{\|r_Z(v)\|_2}
+{\left\|\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w(v)\right\|_2}
+\le\tau,
+\end{align}
+where $\tau$ is a prescribed tolerance. If the ratio is larger than $\tau$, the
+new basis direction should be the normalized residual $r_Z(v)/\|r_Z(v)\|_2$,
+optionally followed by Krylov refinements generated from this residual
+direction.
+
+\paragraph{Operator extraction from the retained right subspace.}
+After the scored directions and any auxiliary directions are assembled into an
+orthonormal right basis
+\begin{align}
+V\in\mathbb R^{d\times r},
+\end{align}
+with row-wise representation $V^\top=V_t$, form
+\begin{align}
+M_w:=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix},
+\qquad
+Y:=M_wV.
+\end{align}
+Orthonormalize the image:
+\begin{align}
+U_{\hat{}}:=\operatorname{orth}(Y)=\operatorname{orth}(M_wV).
+\end{align}
+Equivalently, this defines the orthogonal projector onto the left image of the
+retained right space,
+\begin{align}
+P_U:=U_{\hat{}}U_{\hat{}}^\top.
+\end{align}
+Compress $M_w$ to this left subspace:
+\begin{align}
+\widetilde M:=U_{\hat{}}^\top M_w,
+\end{align}
+which is the coordinate form of $P_UM_w$. Then compute
+\begin{align}
+\widetilde M=U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+and store
+\begin{align}
+U_{\mathrm{proj}}=U_{\hat{}}U_{\mathrm{small}},
+\qquad
+S=\Sigma,
+\qquad
+V^\top=V_{\mathrm{new}}^\top.
+\end{align}
+The carried singular values and right singular vectors are not merely the
+raw scored-plus-auxiliary basis; they are the singular factors of the
+left-projected operator $P_UM_w$ restricted to the retained right span.
+
+\paragraph{First-window special case.}
+If $B=0$ and $R=\varnothing$, then
+\begin{align}
+c_1=\frac{\log(\mathrm{row}(A_1)/n)}{2\log\mathrm{row}(A_1)},
+\end{align}
+and
+\begin{align}
+\operatorname{score}_1(v)
+=
+\|A_1v\|_2^2
+\|A_1v\|_4^{4c_1}
+\|A_1v\|_2^{-4c_1}.
+\end{align}
+The full gradient reduces to
+\begin{align}
+\nabla\operatorname{score}_1(v)
+=
+\phi_1(v)2A_1^\top A_1v
+\\
++\|A_1v\|_2^2\phi_1(v)
+\left[
+4c_1A_1^\top\left(\frac{(A_1v)^{\odot 3}}{\|A_1v\|_4^4}\right)
+-4c_1\frac{A_1^\top A_1v}{\|A_1v\|_2^2}
+\right],
+\end{align}
+where
+\begin{align}
+\phi_1(v)=\|A_1v\|_4^{4c_1}\|A_1v\|_2^{-4c_1}.
+\end{align}
+
+\paragraph{Practical remarks.}
+The objective is nonconvex, so multiple restarts are useful. One should reject
+or regularize steps when $\|C_wv\|_2$, $\|C_wv\|_4$, or
+$\|Bv\|_2^2+\|A_wv\|_2^2$ is numerically tiny in a formula that divides by
+that quantity. The expanded gradient form avoids forming $C_w$ explicitly,
+but the pooled norms must still include both $Rv$ and $A_wv$.
+
+The row sample should not be interpreted as a replacement for the old sketch.
+The sketch $B$ supplies retained old energy, while $R$ supplies raw old rows
+for the pooled entropy. A pure reservoir gives coverage, but it can miss rare
+large rows that dominate $\ell_4$ terms. A practical row sample should
+therefore combine a uniform reservoir with a small set of rows having large
+entries on current sketch directions.
+
+\paragraph{Proof of the lower bound from (A1) and (A2).}
+Fix a nonzero $v$. By the definition
+\begin{align}
+h_2(y)=-\log\!\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right),
+\end{align}
+applied to $y=N_wv$ and to $y=Av$, one has
+\begin{align}
+\|N_wv\|_4^4=\|N_wv\|_2^4\,e^{-h_2(N_wv)},
+\qquad
+\|Av\|_4^4=\|Av\|_2^4\,e^{-h_2(Av)}.
+\end{align}
+The hypothesis $\|N_wv\|_4\le\|Av\|_4$ then gives
+\begin{align}
+\|N_wv\|_2^4\,e^{-h_2(N_wv)}
+\;\le\;
+\|Av\|_2^4\,e^{-h_2(Av)},
+\end{align}
+hence, after taking the square root,
+\begin{align}
+\|Av\|_2^2
+\;\ge\;
+\|N_wv\|_2^2\,
+\exp\!\left(\tfrac{1}{2}\bigl(h_2(Av)-h_2(N_wv)\bigr)\right).
+\tag{$\dagger$}
+\end{align}
+
+Use the $N_w$/$A$ half of (A2),
+\begin{align}
+\frac{h_2(N_wv)}{\log\mathrm{row}(N_w)}
+\;\approx\;
+\frac{h_2(Av)}{\log n},
+\end{align}
+to write
+\begin{align}
+h_2(Av)-h_2(N_wv)
+\;\approx\;
+h_2(N_wv)\,
+\frac{\log n-\log\mathrm{row}(N_w)}{\log\mathrm{row}(N_w)}
+\;=\;
+-\,h_2(N_wv)\,
+\frac{\log(\mathrm{row}(N_w)/n)}{\log\mathrm{row}(N_w)}.
+\end{align}
+Substituting into $(\dagger)$ and using $e^{a\log x}=x^{a}$,
+\begin{align}
+\exp\!\left(\tfrac{1}{2}\bigl(h_2(Av)-h_2(N_wv)\bigr)\right)
+\;\approx\;
+\exp\!\left(
+-\,\frac{h_2(N_wv)}{2\log\mathrm{row}(N_w)}\,
+\log(\mathrm{row}(N_w)/n)
+\right)
+\\
+\;=\;
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(N_wv)/(2\log\mathrm{row}(N_w))}.
+\end{align}
+Combining,
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\|N_wv\|_2^2
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(N_wv)/(2\log\mathrm{row}(N_w))},
+\end{align}
+which is $(\star)$.
+
+To pass from $(\star)$ to the combined score, apply the two halves of the
+state-side approximation. By (A1),
+\begin{align}
+\|N_wv\|_2^2\;\approx\;\|Bv\|_2^2+\|A_wv\|_2^2,
+\end{align}
+and by the $C_w$/$N_w$ half of (A2),
+\begin{align}
+\frac{h_2(N_wv)}{\log\mathrm{row}(N_w)}
+\;\approx\;
+\frac{h_2(C_wv)}{\log\mathrm{row}(C_w)},
+\end{align}
+so the exponent in the correction factor satisfies
+\begin{align}
+\frac{h_2(N_wv)}{2\log\mathrm{row}(N_w)}
+\;\approx\;
+\frac{h_2(C_wv)}{2\log\mathrm{row}(C_w)}.
+\end{align}
+Substituting both replacements into $(\star)$,
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\bigl(\|Bv\|_2^2+\|A_wv\|_2^2\bigr)
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(C_wv)/(2\log\mathrm{row}(C_w))}
+\;=\;\operatorname{score}_w(v),
+\end{align}
+which is the combined-score lower bound. The role of (A1) is to make the
+energy on the carried state ($B$ together with the current window $A_w$)
+match the energy on the full prefix $N_w$; the role of (A2) is to let the
+pooled entropy on $C_w$ stand in for the prefix entropy on $N_w$, and to let
+the prefix entropy in turn stand in for the global entropy on $A$. The
+inequality $\|N_wv\|_4\le\|Av\|_4$, used in $(\dagger)$, holds for any $v$
+because the rows of $N_w$ form a subset of the rows of $A$ and the $\ell_4^4$
+norm is a sum of nonnegative row contributions.

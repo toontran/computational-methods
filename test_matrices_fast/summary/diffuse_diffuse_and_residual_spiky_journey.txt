@@ -1,0 +1,446 @@
+Journey: from residual-panel failure to the diffuse-entropy-degeneracy diagnosis
+================================================================================
+
+Date: 2026-04-21
+
+Purpose
+-------
+Self-contained technical trace of how the investigation moved from "combined
+objective fails on risk-residual-panel" to the refined diagnosis that the
+combined score's entropy term is a sample-efficient-degenerate discriminator
+in the "both signal and noise are row-diffuse" regime. Captures the hypothesis
+chain, the two new test matrices that pinned the failure axis, the
+benchmark-naming pitfall that temporarily inverted the conclusion, and the
+final score-component evidence that reframed the failure mode.
+
+
+Starting point
+--------------
+Two prior artifacts defined the state entering this investigation:
+
+  summary/combined_rownorm_allblocks_benchmark_handoff.txt
+  summary/oracle_greedy_large_window_diagnostic.txt
+  larger_sweep_results/{n512_win32,n1024_win32,...,n1024_win128}.txt
+
+The combined-score variant with greedy rank-by-rank selection, row-normalized
+SVD init on every block (rownorm_seed_all_blocks=True), old_memory_size=win,
+q0=8, qmax=48, restarts=8, maxit=120, dtype=float32 was the deployed method.
+
+In the post-bugfix sweep at n=1024 the method produced:
+
+  matrix                   win=32      win=64      win=128
+  static-cex               ~0.978      ~0.984      ~0.990  (high = good)
+  risk-residual-panel      ~0.24       ~0.20       ~0.28   (low = bad)
+  others                   near 1 (good)
+
+Under the old residual-error scoring convention (mean_align measured subspace
+error, lower was better) combined crushed iSVD on static-cex and most of the quant
+catalog, but lost to iSVD on risk-residual-panel at every window.
+
+
+Initial hypothesis: "diffuse noise defeats entropy"
+---------------------------------------------------
+Score-component dumps on risk-residual-panel n=1024 w=128 (block 1) showed the
+combined optimizer selecting a non-signal direction with simultaneously higher
+gain2 AND higher rel_H than the oracle signal direction. Specifically:
+
+  optimizer_v1:    gain2=1.057, phi=2.204, rel_H=0.760, y4/y2^2=0.025
+  oracle_raw_v1:   gain2=0.958, phi=1.762, rel_H=0.545, y4/y2^2=0.071
+
+Interpretation at the time:
+
+  - risk-residual-panel's bulk heavy-tailed heteroskedastic noise creates a
+    dense, row-diffuse competing direction.
+  - combined's entropy term penalizes row-concentrated directions (signal) and
+    rewards row-diffuse ones (noise bulk).
+  - So "noise diffuseness" was named as the failure mechanism.
+
+Contrast with static-cex (known combined win): the non-signal competitor
+there is a spike-localized tail column (one large coordinate + small shared
+mass on last r_sig rows). Low row-entropy. Entropy term penalizes it, signal
+wins.
+
+
+The 2x2 factorial probe
+-----------------------
+The catalog at that moment covered only three cells of a 2x2:
+
+                          diffuse tail       localized / spiky tail
+    diffuse signal        (missing)          static-cex and most catalog
+    residualized signal   risk-residual-panel (missing)
+
+If "noise diffuseness" was truly the failure axis, the two missing cells
+should resolve which variable matters:
+
+  (A) diffuse signal + diffuse tail with close sigma      -> diffuse-diffuse
+  (B) residualized signal + spiky idiosyncratic noise     -> residual-spiky-shocks
+
+If (A) breaks combined, entropy-term-degeneracy is the culprit independent of
+residualization. If (B) recovers combined, it confirms that risk-residual-
+panel's failure is specifically about noise diffuseness rather than the
+residual-panel factor construction itself.
+
+The two matrices were added to:
+
+  matrix_concepts.txt   (dialog section framing the 2x2 and predictions)
+  matrices.txt          (catalog entries #10 and #11 in existing format)
+  cex_restricted_space_probe.py
+                       generate_diffuse_diffuse_input(...)
+                       generate_residual_spiky_shocks_input(...)
+                       and added to the --matrix choices and to the
+                       MATRICES list in run_joint_warmstart_benchmarks.py
+
+
+Matrix constructions
+--------------------
+
+(A) diffuse-diffuse. Minimal perturbation of static-cex:
+
+    U0[:, 0:r_sig] = hadamard(n)[:, 0:r_sig] / sqrt(n)    # keep Hadamard signal
+    G              = randn(n, n - r_sig)
+    G             -= U0[:, :r_sig] @ (U0[:, :r_sig]' @ G) # orthogonalize against signal
+    U0[:, r_sig:]  = qr(G)                                 # diffuse tail basis
+    U, _           = qr(U0)
+
+Spectrum is identical to static-cex:
+
+    svec = [sigma1 * j^(-alpha_sig), tail_scale * j^(-alpha_tail)]
+    sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99
+
+So sigma_signal ~ 0.991, sigma_tail starts at 0.99. Close-sigma regime preserved;
+only the tail geometry is changed from "spike-localized" to "row-diffuse."
+
+(B) residual-spiky-shocks. Risk-residual-panel's U, V, svec construction is
+preserved verbatim (same crowding/liquidity residual modes, same sector-
+grouped V, same close-sigma gap). Only the additive noise model is swapped:
+
+    risk-residual-panel:
+        A = vol[t] * (U * svec) V' + idio_scale * t5_noise(n, n)
+
+    residual-spiky-shocks:
+        A = (U * svec) V'
+        pick n_spike_rows ~ 2% of rows, random column support of size n/64,
+        shared random unit direction, per-row amplitude spike_amp:
+            for row in spike_rows:
+                A[row, spike_support] += spike_amp * spike_direction
+        A += noise_floor * randn(n, n)
+        A -= A.mean(axis=0)
+
+This replaces bulk diffuse heavy-tailed heteroskedastic noise with a rank-1
+row-localized perturbation (same unit direction across 20 random rows) of
+amplitude spike_amp.
+
+
+Spike amplitude tuning
+----------------------
+Initial spike_amp=0.14 with per-row Student-t(df=4) scaling produced a single
+extreme row (|t|~2, row norm 1.14) whose rank-1 direction had sigma=1.42,
+pushing it above the factor signal (sigma~1.0). SVD top-2 of A then became
+[spike, signal_1] instead of [signal_1, signal_2], making the benchmark's
+V_exact target incoherent. All methods reported similar mean_align ~0.925
+under the projection-norm convention.
+
+Moving to a shared unit spike direction across spike rows (no per-row
+Student-t amplification) and sweeping amplitude showed a nonlinear mapping
+amp -> sigma_spike due to alignment with the factor signal column space.
+Empirically:
+
+    amp=0.050  -> sigma_spike ~ 0.22 (buried in tail, no visible competitor)
+    amp=0.100  -> sigma_spike ~ 1.05 (spike overtakes signal)
+    amp=0.140  -> sigma_spike ~ 1.17 (worse)
+    amp=0.220  -> sigma_spike ~ 1.42
+
+Final setting: spike_amp = 0.10. Spike is the top SVD direction with sigma=1.05
+(slightly above signal) but not by enough to destroy the factor subspace; the
+methods can still encounter it as a near-top row-localized competitor.
+
+
+Benchmark-direction confusion
+-----------------------------
+The first benchmark pass at n=1024, win=32/64/128 on both new matrices
+produced:
+
+    matrix                   win   combined  iSVD    fd
+    diffuse-diffuse          32    0.973     0.626   0.990
+    diffuse-diffuse          64    0.342     0.483   0.993
+    diffuse-diffuse         128    0.127     0.707   0.985
+    residual-spiky-shocks    32    0.898     0.269   0.926
+    residual-spiky-shocks    64    0.849     0.282   0.896
+    residual-spiky-shocks   128    0.824     0.404   0.828
+
+An initial misread treated mean_align as alignment-quality (higher=better),
+yielding the conclusion:
+
+  - combined wins big on residual-spiky-shocks  -> spiky noise rescues it
+  - combined loses on diffuse-diffuse at larger win  -> diffuse tail breaks it
+
+which seemed to confirm "noise diffuseness = failure axis" exactly.
+
+Current correction: mean_align is now an alignment-quality quantity; higher = better.
+This flipped the reading to:
+
+  - combined LOSES to iSVD on residual-spiky-shocks at every window
+  - combined WINS vs iSVD on diffuse-diffuse at w=64 and w=128, loses at w=32
+
+Revised implications:
+
+  1. Replacing residual-panel's diffuse noise with a row-localized spike did
+     NOT rescue combined. So "noise diffuseness" is not sufficient to explain
+     the risk-residual-panel failure. The residual-panel factor construction
+     itself has something combined mishandles: both U_signal and U_tail
+     columns are already time-concentrated (event windows, narrow Gaussian
+     pulses), giving signal and non-signal similar row-entropy signatures.
+
+  2. On diffuse-diffuse, combined's failure is confined to small win; it
+     IMPROVES with window size. That is not consistent with "entropy is
+     misleading"; it is more consistent with an in-block sample-noise issue
+     that averages out as w grows.
+
+
+Score-component investigation on diffuse-diffuse
+------------------------------------------------
+Ran diag_score_components.py diffuse-diffuse 1024 32 (dump_score_components=
+True, oracle_candidate_check=True, score_variant=combined).
+
+Relevant extracts:
+
+Block 1 (rows 1:32, first block, no old memory yet):
+
+    oracle_raw_v1:   gain2=0.8306, phi=5.657, rel_H=1.000000
+    oracle_raw_v2:   gain2=0.8308, phi=5.657, rel_H=1.000000
+    optimizer_v1:    gain2=0.8295, phi=5.657, rel_H=0.999997
+    optimizer_v2:    gain2=0.8283, phi=5.657, rel_H=0.999988
+
+phi is numerically identical across all four candidates (sqrt(32) = 5.657).
+rel_H differences are at the 10^-6 level. At block 1 combined is IDENTICAL to
+argmax gain^2 for all practical purposes. The gain^2 gap between the signal
+(0.8306) and the optimizer's chosen direction (0.8295) is 0.001 - well within
+the sample noise of 32 rows. There are many tail directions tied with signal
+on gain^2 in a single 32-row block; the iterative Krylov search settles on a
+near-tied non-signal direction. This matches the intuition "entropies equal ->
+only norms matter -> argmax norm," but argmax-norm over 32 noisy rows is a
+lottery among near-tied directions.
+
+Block 2 onward (rows 33:64, block + 32 old-memory rows pooled):
+
+    oracle_raw_v1:   gain2=0.832,  phi=3.615, rel_H=0.927
+    optimizer_v1:    gain2=0.832,  phi=4.000, rel_H=0.99998
+
+This is where the theory breaks. rel_H is NO LONGER equal across candidates.
+The oracle's pooled rel_H falls to 0.927 because the Hadamard signal is
+uniform only over the original n=1024 rows; its projection onto a
+64-row pool (32 current + 32 sketched old) is Gaussian-ish with rel_H < 1.
+
+The optimizer, which has 1024-dim freedom against only ~64 "be uniform over
+these pooled rows" constraints, can construct a direction in the span of tail
+singular vectors that IS exactly uniform over the 64 pooled rows. Such a
+direction gets rel_H ~ 1.0, phi ~ 4.0, and beats the oracle on total even
+when gain^2 is matched.
+
+pooled-entropy degeneracy, not noise-entropy signature, is the failure
+mechanism in diffuse-diffuse.
+
+Pre-factor:
+
+    c = log(rows_seen / rows_ref) / (2 * log(rows_entropy))
+    log_phi = c * log(y4 / y2^2)
+    phi = exp(log_phi)
+    score = gain^2 * phi
+
+log(y4/y2^2) is 0 for fully concentrated, -log(rows_entropy) for fully
+uniform. c is negative during warmup (rows_seen < rows_ref), so log_phi is
+positive for diffuse directions and phi >> 1. The entropy term rewards
+pooled-uniformity, and in diffuse-diffuse, pooled-uniformity is a HUGE
+submanifold of non-signal directions.
+
+Why combined improves as w grows on diffuse-diffuse: larger pooled sets give
+gain^2 less sample noise, so the signal's advantage (even though small in
+absolute terms) starts accumulating reliably. At the same time, the
+pooled-uniform submanifold is constrained more by a larger number of rows,
+though it never vanishes. Empirically combined beats iSVD at w=64 and w=128.
+
+
+Score-component investigation on residual-spiky-shocks
+------------------------------------------------------
+Ran diag_score_components.py residual-spiky-shocks 1024 32 with the same
+flags as the diffuse-diffuse dump.
+
+Block 1 (rows 1:32, first block):
+
+    oracle_raw_v1:   gain2=0.664, phi=1.402, rel_H=0.195   total=0.931
+    oracle_raw_v2:   gain2=0.654, phi=2.928, rel_H=0.620   total=1.914
+    optimizer_v1:    gain2=0.649, phi=5.655, rel_H=0.9998  total=3.671
+    optimizer_v2:    gain2=0.648, phi=5.655, rel_H=0.9999  total=3.665
+
+Oracle sum = 2.845. Optimizer sum = 7.336. Optimizer beats oracle by ~2.6x.
+principal_cosines(V_opt, Q_oracle) = 0.40, 0.29.
+
+Two concrete observations that reframe the residual-panel story:
+
+  (a) V_exact[:, 0] IS the spike. oracle_v1 has rel_H = 0.195, which is only
+      achievable by a direction with support on ~20 of 1024 rows - exactly the
+      rank-1 spike I injected (20 spike rows, shared column direction).
+
+  (b) V_exact[:, 1] is a factor signal (oracle_v2 rel_H = 0.620). The
+      crowding_event pulse lands on ~half of rows in a shuffled 32-row block,
+      giving moderate row-concentration.
+
+Combined's phi values then land exactly where the mechanism predicts:
+
+  - spike direction: phi = 1.40 (heavy penalty - 4x below maximum 5.66)
+  - signal direction: phi = 2.93 (2x below maximum)
+  - optimizer's uniform-mix: phi = 5.655 (maximum)
+
+gain^2 is basically tied across all four (0.648-0.664), so phi dominates the
+total. Combined picks maximally-uniform tail-mix directions over BOTH spike
+and signal. It is not just missing the target - it is actively maximally far
+from V_exact because the entropy term points the wrong way on both oracle
+columns simultaneously.
+
+This is qualitatively different from static-cex:
+
+  static-cex            residual-spiky-shocks
+  ----------------------------------------------------
+  V_exact[:, :2] = Hadamard signal  [spike, signal]
+  signal rel_H:  ~1.0   signal rel_H: ~0.6
+  tail   rel_H:  ~0     spike  rel_H: ~0.2, bulk tail rel_H: ~0.6
+  entropy gap:   1.0    entropy gap (signal vs closest non-target): ~0
+
+On static-cex the entropy term's preference for uniformity aligns with V_exact.
+On residual-spiky-shocks the entropy term actively fights V_exact on both
+columns, and - because the factor pulses make signal already non-uniform - even
+the signal direction is substantially penalized.
+
+So the answer to "isn't residual-spiky-shocks like static-cex?" is no:
+
+  - In static-cex, the spike is in the non-signal tail and the signal is
+    Hadamard-uniform. Entropy aligns with the target.
+  - In residual-spiky-shocks, adding the rank-1 spike pushed sigma_spike
+    slightly above sigma_signal, so the spike becomes V_exact[:, 0]. The
+    entropy term now penalizes the target. And the remaining target column
+    (the signal pulse) is also moderately concentrated, so it loses phi to
+    tail-mixture uniform directions. Two-way loss.
+
+This is consistent with the flipped-direction benchmark reading that combined
+LOSES to iSVD on residual-spiky-shocks at every window. iSVD just follows
+sigma and recovers the spike naturally; combined refuses to even consider it.
+
+
+Revised diagnosis
+-----------------
+The original "noise diffuseness" framing conflated three separate effects.
+The corrected picture, now informed by both score-component dumps:
+
+  1. On residual-spiky-shocks, the failure has a two-way mechanism:
+
+     (1a) V_exact[:, 0] is the rank-1 spike (sigma_spike = 1.05 > sigma_signal
+          = 1.00). Its row-entropy rel_H ~ 0.2 is LOW. The entropy term
+          penalizes it by 4x (phi=1.40 vs maximum 5.66). So combined cannot
+          recover the top V_exact column even in principle, because its
+          objective points away from it.
+
+     (1b) V_exact[:, 1] is a factor signal pulse. Its rel_H ~ 0.6 is also
+          below the maximum, so any "tail-mix that is uniform over the
+          current 32-row block" direction beats it on phi while tying on
+          gain^2.
+
+     Both V_exact columns are actively penalized by the entropy term. The
+     optimizer's subspace lands at principal-cosine ~0.4 from the oracle -
+     maximally far, not near-miss. Replacing residual-panel's bulk noise
+     with a spike did NOT rescue combined; it moved the failure point from
+     (diffuse competitor wins phi) to (target columns both lose phi).
+
+  2. On diffuse-diffuse, the failure is pooled-entropy degeneracy: a large
+     submanifold of tail-direction combinations is exactly pooled-uniform
+     over any given ~w+old_memory rows, so the entropy bonus does not select
+     for Hadamard structure globally - it selects for "uniform over this
+     particular pooled subset," which is non-unique and unrelated to signal
+     alignment. Failure is strongest at small w (gain^2 sample noise is large
+     and degenerate submanifold is relatively underconstrained) and
+     diminishes as w grows.
+
+  3. static-cex works because the tail columns are spike-localized AND
+     V_exact[:, :2] is the Hadamard signal (spike tail at sigma=0.99 sits
+     just below signal at 0.991). So the target has maximal row-entropy and
+     the top competitor has near-zero row-entropy. Entropy aligns with gain
+     on both target columns. Combined exploits a genuine, aligned
+     signal-noise asymmetry.
+
+The actual failure axis is "do the V_exact columns have maximal pooled row-
+entropy compared to the tail-mixture submanifold the optimizer can reach."
+Not "is noise diffuse." Failures occur when either (a) V_exact columns have
+row-entropy lower than reachable tail mixtures (residual-spiky-shocks,
+either column), or (b) V_exact columns tie with reachable tail mixtures on
+entropy (diffuse-diffuse at small w).
+
+
+Artifacts
+---------
+New catalog entries and concept section:
+
+    matrix_concepts.txt     (appended dialog on the 2x2 and the two matrices)
+    matrices.txt            (entries #10 diffuse-diffuse, #11 residual-spiky-shocks)
+
+New generators (in cex_restricted_space_probe.py):
+
+    generate_diffuse_diffuse_input(...)
+    generate_residual_spiky_shocks_input(...)
+
+Registered in:
+
+    generate_matrix_input dispatch
+    --matrix CLI choices
+    MATRICES list in run_joint_warmstart_benchmarks.py
+
+Benchmark outputs:
+
+    larger_sweep_results/new_matrices_tuned_n1024_win32.txt
+    larger_sweep_results/new_matrices_tuned_n1024_win64.txt
+    larger_sweep_results/new_matrices_tuned_n1024_win128.txt
+
+Score-component dumps:
+
+    (generated by diag_score_components.py; full output discussed inline
+     above; key per-block rows saved in this narrative, not persisted as
+     files)
+
+      diag_score_components.py diffuse-diffuse 1024 32
+      diag_score_components.py residual-spiky-shocks 1024 32
+
+
+Open questions
+--------------
+
+  - Is the pooled-entropy degeneracy fixable by changing what rows we pool
+    over? Evaluating entropy over the FULL stream-so-far (oracle_sketch_all_
+    seen_rows-like mode) instead of current_block + old_memory would shrink
+    the degenerate submanifold back toward "uniform over all n rows," which
+    only Hadamard-like directions satisfy. Cheap to try - would resolve the
+    diffuse-diffuse small-w failure but would NOT help residual-spiky-shocks
+    or risk-residual-panel: on those, V_exact columns themselves have below-
+    maximum pooled rel_H regardless of which rows we pool over, because the
+    factor construction's signal is time-concentrated and the spike is 20-row
+    concentrated. The entropy term penalizes V_exact intrinsically.
+
+  - Is the residual-panel failure curable by a different objective entirely?
+    With V_exact columns intrinsically non-uniform in rows, gain^2 * pooled_
+    entropy cannot align with the target. Candidate discriminators that do
+    not depend on row-entropy of the target direction: column-side structure,
+    temporal persistence across blocks, subspace-Rayleigh-quotient on the
+    growing sketch without entropy weighting (which is basically iSVD - hence
+    why iSVD wins here), or an entropy computed over something other than
+    pooled rows.
+
+  - Should spike_amp on residual-spiky-shocks be re-tuned so sigma_spike sits
+    BELOW sigma_signal? Currently spike becomes V_exact[:, 0]. Lowering
+    spike_amp below ~0.08 would push it below signal; then V_exact[:, :2]
+    becomes [signal_1, signal_2] and the dump would test a different
+    question: can combined at least recover the signal modes when the spike
+    is a tail competitor (as originally intended)? Probably still fails
+    because signal rel_H ~ 0.6 still loses to pooled-uniform tail mixtures,
+    but worth confirming.
+
+  - Does the diffuse-diffuse small-w failure also affect static-cex at very
+    small w/n ratios? Worth a one-shot check; the Hadamard vs spike-tail
+    entropy asymmetry should keep combined winning, but 32-row gain^2 noise
+    alone could still hurt.

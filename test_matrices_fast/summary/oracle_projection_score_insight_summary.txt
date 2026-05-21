@@ -1,0 +1,329 @@
+Oracle-projected top-subspace and entropy-score insight summary
+===============================================================
+
+Context
+-------
+Main optimizer file:
+  cex_restricted_space_probe.py
+
+Main geometry/debug helper added:
+  init_geometry_probe.py
+
+Problem setting for the results below:
+  --matrix static-cex
+  --mode restricted
+  --dtype float64
+  --carry left
+  --reduced-optimizer cex
+  --expansion-direction residual
+  --n 128
+  --win 32
+  --rank 2
+  --preset cex-replicate
+  --q0 4
+  --qmax 32
+  --krylov-depth 2
+  --residual-tol 1e-4
+  --expansion-maxit 8
+  --reuse-line-search-grad
+  --expansion-warm-start
+  --basis-selection joint
+  --joint-solver riemannian
+  seed = 0
+
+
+Best non-oracle configuration
+-----------------------------
+The best real, non-oracle configuration found so far is high-random joint
+Stiefel with residual expansion:
+
+  python cex_restricted_space_probe.py \
+    --matrix static-cex --mode restricted --dtype float64 --carry left \
+    --reduced-optimizer cex --expansion-direction residual \
+    --n 128 --win 32 --rank 2 --preset cex-replicate \
+    --q0 4 --qmax 32 --krylov-depth 2 --residual-tol 1e-4 \
+    --expansion-maxit 8 --num-restarts 64 --maxit 1000 --tol 1e-10 \
+    --post-expansion-maxit 500 --reuse-line-search-grad --expansion-warm-start \
+    --basis-selection joint --joint-solver riemannian --verbose
+
+Observed result:
+  mean_align    0.999259
+  rel_err_sval  0.00005185
+  elapsed       about 53.5 seconds
+
+This improvement is path-dependent: earlier carried states become much better,
+not because the final-block optimizer alone finds a better basin from the old
+greedy state.
+
+
+Key geometric target
+--------------------
+Let
+
+  M_gain = current window+sketch matrix
+  V_exact[:, :2] = exact full-matrix top-2 right singular subspace
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :2])
+
+where P_row(M_gain) is projection onto the current M_gain row space.
+
+The found high-random rank-2 carried subspace is extremely close to Q_oracle:
+
+  block    found_vs_Q_oracle principal cosines
+  ------------------------------------------------
+  1:32     0.999099, 0.806759
+  33:64    0.999722, 0.990456
+  65:96    0.999879, 0.998463
+  97:128   0.999977, 0.999518
+
+By contrast, closeness to the top-2 right singular subspace of M_gain itself is
+much weaker in the second direction until the last block:
+
+  block    found_vs_top2(M_gain)
+  ------------------------------
+  1:32     0.503144, 0.186707
+  33:64    0.758955, 0.222245
+  65:96    0.996579, 0.281224
+  97:128   0.999978, 0.999792
+
+Interpretation:
+  The successful trajectory is not simply following top2(M_gain) early.
+  It is tracking the projection of the global exact top-2 right singular
+  subspace into the currently available row space.
+
+
+Winning initialization geometry
+-------------------------------
+For the high-random run, the winning initial seeds were:
+
+  block    initial_best       final_best
+  ------------------------------------------
+  1:32     random-17#18       expansion-warm#1
+  33:64    random-33#35       expansion-warm#1
+  65:96    prior-carried#1    expansion-warm#1
+  97:128   random-40#42       expansion-warm#1
+
+The "final_best = expansion-warm" label means that after subspace expansion,
+the optimizer mostly continues from its previous expansion-stage solution.
+The more meaningful origin of the basin is the initial_best label.
+
+The initial winning seeds were often close to the local M_gain SVD structure
+and row-like early in the stream. But the final found carried subspace after
+optimization/expansion is much closer to Q_oracle than to top2(M_gain).
+
+
+Oracle projected-exact initialization experiment
+------------------------------------------------
+Diagnostic experiment:
+  On each block, set the joint optimizer's initial frame to Q_oracle.
+
+Results:
+
+  budget                         final_align_v1   final_relerr
+  ----------------------------------------------------------------
+  oracle init, 1 restart          0.999533         0.00004754
+  oracle init, 8 restarts         0.999491         0.00005141
+  high-random non-oracle          0.999259         0.00005185
+  old greedy baseline             0.978499         0.00023944
+
+Per-block for the cheap oracle-init run:
+
+  block    found_vs_Q_oracle      found_vs_exact_top2    align_v1
+  ----------------------------------------------------------------
+  1:32     0.998928,0.930368      0.569909,0.429657      0.520729
+  33:64    0.999421,0.997897      0.749869,0.677170      0.725787
+  65:96    0.999904,0.999724      0.880958,0.854683      0.876930
+  97:128   0.999993,0.999955      0.999579,0.984525      0.999533
+
+Important comparison:
+  If Q_oracle is used directly without entropy-score joint optimization, the
+  diagnostic/oracle trajectory reaches
+
+    final_align = 1.000000
+    final_relerr = 0.00000000
+
+Interpretation:
+  The entropy score optimizer improves greatly over greedy and high-random can
+  approximate the oracle projection target. But when started exactly at the
+  oracle projection, the entropy objective nudges the frame slightly away from
+  the perfect SVD target.
+
+
+Objective mismatch test
+-----------------------
+Hypothesis tested:
+  Maybe the global entropy-score maximizer lies inside Q_oracle, and the
+  optimizer only needs to rotate within that subspace.
+
+Test:
+  Fix Q_oracle for each block, optimize only the 2D rotation inside Q_oracle,
+  and compare the best in-subspace score against unrestricted joint
+  optimization initialized from Q_oracle.
+
+Results:
+
+  block    best score inside Q_oracle   unrestricted score   unrestricted - oracle
+  ------------------------------------------------------------------------------
+  1:32     1.796559106                  1.801291644          +4.73e-03
+  33:64    1.852910035                  1.855684956          +2.77e-03
+  65:96    1.906110404                  1.906261965          +1.52e-04
+  97:128   1.957572691                  1.957604883          +3.22e-05
+
+Conclusion:
+  The hypothesis is nearly true geometrically but false as a score
+  maximization statement. The unrestricted score optimizer can increase the
+  entropy score slightly by leaving Q_oracle. The outward incentive is largest
+  in early blocks and becomes tiny by the final block.
+
+
+Block-1 deviation direction
+---------------------------
+For block 1, define:
+
+  Q = Q_oracle = orth(P_row(M_gain) V_exact[:, :2])
+  V* = best found joint score frame
+  R = (I - Q Q') V*
+
+The singular values of R show that the deviation from Q is mostly
+one-dimensional:
+
+  score_sum                         1.802403323994946
+  best initial seed                 random-17#18
+  principal cosines V* vs Q          0.999544, 0.815666
+  outside singular values            0.578524, 0.030187
+
+Dominant outside direction comparisons:
+
+  projection onto span(projected exact v3:v10 residuals)    0.571
+  projection onto projected exact v3 residual alone          0.571
+  projection onto span(block right svecs 1:2)                0.748
+  projection onto span(block right svecs 1:5)                0.896
+  projection onto span(block right svecs 3:5)                0.493
+
+Absolute cosines with block right singular vectors 1:12:
+
+  v1   0.547516
+  v2   0.510067
+  v3   0.194132
+  v4   0.052883
+  v5   0.450267
+  v6   0.413211
+  v7   0.002518
+  v8   0.040977
+  v9   0.039108
+  v10  0.080930
+  v11  0.001299
+  v12  0.048339
+
+Top normalized rows by absolute cosine with the dominant outside direction:
+
+  row 27   0.556444
+  row 32   0.522701
+  row 13   0.518696
+  row 25   0.111173
+  row 9    0.102599
+
+Projection onto span(rows 27,32,13,25,9):
+  0.935687
+
+Interpretation:
+  The block-1 entropy-score maximizer deviates from Q_oracle mostly along a
+  block-local direction. It is better explained by current-window singular
+  vectors and a few high-leverage rows than by the projected global exact third
+  right singular vector.
+
+
+What is special about rows 27, 32, 13, 25, 9?
+---------------------------------------------
+For static-cex, A is generated as
+
+  A_unpermuted = U diag(s) V'
+  A = A_unpermuted[p, :]
+
+The first two left singular vectors are global Hadamard directions. Each tail
+left singular vector has one large row coordinate. Tail singular values decay
+slowly. Therefore rows corresponding to early tail coordinates are high-norm
+and high-leverage when they appear in an early streaming window.
+
+For the selected first-block rows:
+
+  stream row   original row   row norm rank   outside-dir cos rank   block top2 leverage rank
+  -------------------------------------------------------------------------------------------
+  27           1              1               1                      1
+  32           9              2               2                      2
+  13           11             3               3                      3
+  25           15             5               4                      4
+  9            29             6               5                      5
+
+All have the same sign in the first two top-left Hadamard/global directions:
+
+  Utop1 = +0.088388
+  Utop2 = +0.088388
+
+Interpretation:
+  These are not arbitrary rows. They are high-energy, high-leverage tail rows
+  that landed in the first window under the row permutation. The entropy score
+  is reacting to this local row-energy structure and tilting away from the
+  oracle projected top-2 subspace.
+
+
+Current working interpretation
+------------------------------
+1. The target that explains successful streaming behavior is not top2(M_gain)
+   itself, but Q_oracle = orth(P_row(M_gain) V_exact[:, :2]).
+
+2. High-random joint succeeds because some random starts land in a basin that
+   tracks Q_oracle through the stream.
+
+3. The entropy objective is close to aligned with this oracle-projection target
+   but is not exactly aligned. It rewards small outward deviations, especially
+   in early blocks with high-leverage local tail rows.
+
+4. Direct use of Q_oracle is perfect by construction as a diagnostic, but not
+   available in production because it uses V_exact.
+
+5. A better practical objective/optimizer should probably:
+     - preserve the oracle-projection-like subspace when found,
+     - reduce early-block attraction to local high-leverage tail rows,
+     - or regularize the entropy score against local row/leverage artifacts.
+
+
+Recommended next experiments
+----------------------------
+1. Gradient decomposition at Q_oracle:
+     Compute entropy-score gradient at Q_oracle and project it onto:
+       - Q_oracle tangent rotations,
+       - orthogonal complement of Q_oracle,
+       - projected exact v3/v4,
+       - block right singular vectors,
+       - top-row span.
+     Goal: confirm that the outward deviation is already a first-order ascent
+     direction and identify its source.
+
+2. Score tradeoff table:
+     Compare score and alignment for:
+       - direct Q_oracle,
+       - best rotation inside Q_oracle,
+       - unrestricted joint from Q_oracle,
+       - unrestricted high-random joint,
+       - old greedy.
+     Do this block by block on the same carried state.
+
+3. Local-row regularization:
+     Try modifying the score objective to penalize concentration on a few rows
+     or to discount high-leverage first-window tail rows.
+
+4. Projected-target proxy:
+     Seek a production proxy for Q_oracle. Candidate ideas:
+       - use carried state plus residual expansion to approximate row-space
+         projection of a stable global subspace,
+       - stabilize across blocks using previous V rather than pure local M_gain
+         top singular vectors,
+       - add a selection rule that prefers candidates whose carried subspace is
+         stable under row-space projection across adjacent blocks.
+
+5. Formalize diagnostics:
+     Add command-line flags for:
+       - oracle projected-exact initialization,
+       - fixed-Q_oracle rotation-only optimization,
+       - score-gradient decomposition at Q_oracle,
+       - per-block row-leverage/outside-direction reporting.

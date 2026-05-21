@@ -1,0 +1,248 @@
+Combined rownorm-all-blocks benchmark handoff
+=============================================
+
+Date: 2026-04-20
+
+Concept reference
+-----------------
+See also:
+
+  /home/ttran02/pj/quant_research/core/concept.md
+
+This note preserves the current working combined-objective method, the latest
+small shuffled benchmark, and the next benchmark steps for larger matrices.
+
+
+Current promoted method
+-----------------------
+Use the combined score variant with greedy rank-by-rank selection and
+row-normalized SVD initialization on every block.
+
+Current deployable settings:
+
+  score_variant: combined
+  basis_selection: greedy
+  joint_warm_start_oracle: False
+  oracle_candidate_check: False
+  rownorm_seed_all_blocks: True
+  row_concentration_lambda: 0
+  old_memory_size: win
+
+For n=128, win=32 this means:
+
+  current block rows: 32
+  retained old rows: up to 32
+  entropy rows after warmup: up to 64
+
+The retained old-row memory is selected from rows seen so far using half
+uniform rows and half high-response rows under the current carried subspace.
+
+
+Implementation changes made
+---------------------------
+cex_restricted_space_probe.py:
+
+  - Added row_norm_seed(A_block, rank).
+  - Added --rownorm-seed-first-block.
+  - Added --rownorm-seed-all-blocks.
+  - Changed --old-memory-size default to --win when omitted.
+
+run_joint_warmstart_benchmarks.py:
+
+  - Added greedy-medium method using combined greedy, no oracle, no joint.
+  - Enabled rownorm_seed_all_blocks for greedy-medium.
+  - Defaulted old_memory_size to win.
+  - Added isvd and fd benchmark methods.
+  - Added --methods filter.
+
+test_rownorm_seed_stream.py:
+
+  - Added rownorm_seed_all_blocks support.
+  - Added a rownorm-all variant for static-CEX diagnostics.
+
+
+Decision log
+------------
+Promoted:
+
+  combined + greedy + rownorm_seed_all_blocks + old_memory_size=win
+
+Reason:
+
+  This is deployable, uses no oracle information, preserves the combined
+  objective, and improves/static-stabilizes static-CEX relative to iSVD and FD
+  under the shuffled small benchmark.
+
+Refined:
+
+  old_memory_size changed from 64 to win.
+
+Reason:
+
+  With win=32, old_memory_size=64 used 32 current rows plus 64 retained old rows
+  in the entropy term after warmup. The current refinement uses a symmetric
+  current/old row budget of 32 + 32. Static-CEX top-1 metric improved slightly
+  under explicit shuffle:
+
+    old_memory_size=64: align 0.979077, relerr 0.00034025
+    old_memory_size=32: align 0.981618, relerr 0.00033069
+
+Rejected for default:
+
+  row_concentration_lambda=0.1
+
+Reason:
+
+  Under global row shuffling and rownorm seeding on all blocks, lambda=0.1 gave
+  only tiny wins on a few easy cases and materially worsened risk-residual-panel:
+
+    lambda=0:   risk-residual-panel align 0.280023, relerr 0.01205599
+    lambda=0.1: risk-residual-panel align 0.338375, relerr 0.01674531
+
+Rejected for this benchmark path:
+
+  joint optimization after greedy
+
+Reason:
+
+  It can chase a higher combined objective that does not reliably improve the
+  target alignment. The current benchmark path is intentionally plain greedy.
+
+Rejected for deployable comparisons:
+
+  oracle warm starts and oracle candidate replacement
+
+Reason:
+
+  They use V_exact and are diagnostic only.
+
+
+Latest small benchmark: combined lambda=0 vs PCA baselines
+----------------------------------------------------------
+Benchmark command:
+
+  python run_joint_warmstart_benchmarks.py \
+    --shuffle-rows \
+    --methods greedy-medium,isvd,fd \
+    --row-concentration-lambda 0.0
+
+Common settings:
+
+  n=128, win=32, rank=2, matrix_preset=small, seed=0
+  shuffle_rows=True, row_shuffle_seed=0
+
+Here iSVD and FD are the PCA-style baselines. Higher `*_align` and lower `*_relerr` are better.
+
+  matrix                      combined_align  isvd_align  fd_align   combined_relerr  isvd_relerr  fd_relerr
+  static-cex                  0.981618        0.146139    0.214832   0.00033069       0.00143234   0.84323005
+  alternative-data-signals    0.999998        0.999998    0.999999   0.00005780       0.00005926   0.05086975
+  futures-term-structure      1.000000        1.000000    1.000000   0.00000393       0.00000412   0.01050301
+  crowded-strategy            0.999564        0.999617    0.999901   0.00195011       0.00188220   0.32235274
+  rates-cross-currency        1.000000        1.000000    0.999999   0.00000929       0.00000869   0.03509055
+  options-vol-surface         0.999967        0.999972    0.999997   0.00012724       0.00011007   0.13605925
+  risk-residual-panel         0.960121        0.962656    0.339220   0.01205560       0.01107784   0.71167636
+  macro-factor-panel          1.000000        1.000000    1.000000   0.00000282       0.00000266   0.02529789
+  realized-vol-corr           1.000000        1.000000    0.999999   0.00000232       0.00000255   0.04738889
+  etf-basket-basis            0.999964        0.999953    0.999990   0.00017879       0.00022987   0.12408651
+  execution-cost-slippage     0.999999        0.999998    0.999996   0.00003151       0.00003527   0.07913755
+  stat-arb-spreads            0.999948        0.999956    0.999989   0.00014375       0.00013910   0.22510894
+  intraday-liquidity-shape    0.999998        0.999999    0.999999   0.00003086       0.00002510   0.05315869
+
+
+Current interpretation
+----------------------
+Static-CEX:
+
+  Combined is clearly better than iSVD and FD on both top-1 alignment and
+  singular-value error under the small shuffled benchmark. However, static-CEX
+  should also be reported with a rank-2 subspace metric because the current
+  mean_align is top-1 only and can understate the quality of a correct rank-2
+  subspace when the leading pair rotates.
+
+FD:
+
+  FD often has competitive top-1 alignment on some easy/smooth cases, but its
+  singular-value shrinkage is too large for this benchmark family.
+
+iSVD:
+
+  The easy/smooth cases mostly saturate the top-1 projection metric near 1, so
+  tiny ordering differences should not be overread. Combined remains
+  competitive and has the clear top-1 alignment win on static-cex, while FD's
+  singular-value shrinkage remains the main baseline failure mode.
+
+
+Known metric issue
+------------------
+Current benchmark output reports:
+
+  mean_align = ||V_r V_r^T V_exact[:, :1]||_F
+
+This is a top-1 metric. For rank=2 near-tie cases, especially static-CEX, it
+can be misleading because the selected rank-2 subspace can be nearly correct
+while the compressed first vector rotates within that subspace.
+
+Add a rank-r subspace metric before drawing strong conclusions on larger
+static-CEX-like matrices:
+
+  rank_r_subspace_align = ||V_r[:, :r] V_r[:, :r]^T V_exact[:, :r]||_F / sqrt(r)
+
+Keep the old top-1 metric as a secondary diagnostic.
+
+
+Next larger-matrix benchmark plan
+---------------------------------
+First larger smoke test:
+
+  python run_joint_warmstart_benchmarks.py \
+    --n 512 \
+    --win 64 \
+    --rank 2 \
+    --matrix-preset fast \
+    --shuffle-rows \
+    --methods greedy-medium,isvd,fd \
+    --row-concentration-lambda 0.0
+
+Then run a stronger size point if the smoke test is sane:
+
+  python run_joint_warmstart_benchmarks.py \
+    --n 1024 \
+    --win 128 \
+    --rank 2 \
+    --matrix-preset fast \
+    --shuffle-rows \
+    --methods greedy-medium,isvd,fd \
+    --row-concentration-lambda 0.0
+
+For stability, repeat at multiple row-shuffle seeds:
+
+  --row-shuffle-seed 0
+  --row-shuffle-seed 1
+  --row-shuffle-seed 2
+  --row-shuffle-seed 3
+  --row-shuffle-seed 4
+
+Priority matrices for larger runs:
+
+  1. static-cex
+  2. risk-residual-panel
+  3. etf-basket-basis
+  4. realized-vol-corr
+  5. execution-cost-slippage
+  6. stat-arb-spreads
+
+Run all matrices after the priority set is understood.
+
+
+Open questions
+--------------
+1. Does combined + rownorm_seed_all_blocks beat iSVD on rank-2 subspace error
+   even when iSVD wins slightly on top-1 alignment?
+
+2. Does the static-CEX advantage grow with n under true random row blocks?
+
+3. Is risk-residual-panel a true objective mismatch, or does it need a
+   different memory sample rule rather than a concentration penalty?
+
+4. Should old memory remain exactly win, or should larger n use a small
+   multiple such as 2*win after the rank-r metric is added?

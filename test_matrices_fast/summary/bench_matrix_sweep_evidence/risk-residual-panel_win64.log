@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_evidence half_win=32 mean_align=0.309610 mean_relerr_sval=0.17488888
+half_window_run mode=sliding policy=future_hmean_evidence half_win=32 mean_align=0.284305 mean_relerr_sval=0.11226049
+wrote_json=summary/bench_matrix_sweep_evidence/risk-residual-panel_win64.json wrote_csv=summary/bench_matrix_sweep_evidence/risk-residual-panel_win64.csv wrote_text=summary/bench_matrix_sweep_evidence/risk-residual-panel_win64.txt elapsed=83.840

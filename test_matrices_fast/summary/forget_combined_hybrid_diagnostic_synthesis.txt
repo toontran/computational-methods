@@ -1,0 +1,297 @@
+Forget vs combined/hybrid diagnostic synthesis
+==============================================
+
+Date: 2026-04-21
+
+Purpose
+-------
+Compile the benchmark comparison and the diagnostic-dump evidence behind two
+current conclusions:
+
+1. The forget / old-corrected family can overweight the carried sketch or
+   current sketch energy in ways that are not aligned with exact SVD recovery.
+2. The combined objective fixes one class of forget-score scaling problem, but
+   can be misled by diffuse or pooled-uniform tail directions.
+
+
+Config Compared
+---------------
+Common benchmark setting:
+
+  n=1024, rank=2, win=32, matrix_preset=fast
+  seed=0, shuffle_rows=True, row_shuffle_seed=0
+  q0=8, qmax=48, num_restarts=8, maxit=120
+  expansion_maxit=8, post_expansion_maxit=80, dtype=float32
+
+Methods:
+
+  forget       score_variant=legacy, basis_selection=greedy,
+               rownorm_seed_first_block=True, rownorm_seed_all_blocks=True
+
+  combined     table label greedy-medium:
+               score_variant=combined, basis_selection=greedy,
+               no combined_rank override, so r1=2, r2=0
+
+  hybrid       table label hybrid-half:
+               score_variant=combined, combined_rank_ratio=0.5,
+               so rank=2 resolves to r1=1 combined-greedy direction plus
+               r2=1 deflated-SVD complement direction
+
+  iSVD / FD    PCA-style streaming baselines from run_joint_warmstart_benchmarks.py
+
+Metric:
+
+  mean_align is the norm of the top-1 exact vector projected into the recovered subspace. Higher is better.
+
+
+Benchmark Table: mean_align, Higher Is Better
+--------------------------------------------
+
+  matrix                       forget    combined  hybrid    iSVD      FD        best
+  static-cex                   0.229912  0.209535  0.152362  0.999018  0.998890  hybrid
+  diffuse-diffuse              0.556982  0.973475  0.485102  0.625548  0.989994  hybrid
+  residual-spiky-shocks        0.859578  0.898135  0.568191  0.268817  0.925667  iSVD
+  alternative-data-signals     0.002826  0.003068  0.003062  0.002628  0.001577  FD
+  futures-term-structure       0.000142  0.000164  0.000137  0.000123  0.000858  iSVD
+  crowded-strategy             0.013130  0.009978  0.009863  0.017565  0.014128  hybrid
+  rates-cross-currency         0.000143  0.000832  0.000743  0.000361  0.001693  forget
+  options-vol-surface          0.002530  0.002646  0.001609  0.002028  0.002949  hybrid
+  risk-residual-panel          0.943481  0.969219  0.968925  0.854484  0.994089  iSVD
+  macro-factor-panel           0.000134  0.000228  0.000236  0.000218  0.000801  forget
+  realized-vol-corr            0.000474  0.000236  0.000267  0.000815  0.002265  combined
+  etf-basket-basis             0.005185  0.003532  0.003057  0.006003  0.005015  hybrid
+  execution-cost-slippage      0.004114  0.005515  0.005519  0.003111  0.003712  iSVD
+  stat-arb-spreads             0.017570  0.007381  0.016009  0.022845  0.008868  combined
+  intraday-liquidity-shape     0.001686  0.002590  0.002570  0.001321  0.001642  iSVD
+
+Readout:
+
+  - Hybrid is strongest on the near-tie / entropy-informative synthetic cases:
+    static-cex and diffuse-diffuse. It also wins crowded-strategy,
+    options-vol-surface, and etf-basket-basis.
+
+  - iSVD wins when gain-only already identifies the desired direction or when
+    entropy points away from the exact top singular vectors:
+    residual-spiky-shocks, risk-residual-panel, execution-cost-slippage,
+    intraday-liquidity-shape, futures-term-structure.
+
+  - FD can win the top-1 mean_align on alternative-data-signals, but its
+    singular-value relative errors are usually much larger. It should not be
+    treated as the best overall recovery method from top-1 mean_align alone.
+
+
+Diagnostic Evidence: Forget / Old-Corrected Overweights Sketch Terms
+--------------------------------------------------------------------
+
+Source summaries:
+
+  summary/oldcorrected_score_patch_summary.txt
+  summary/oldcorrected_projection_entropy_conversation_summary.txt
+
+Original old-corrected scaling bug:
+
+  The first old-corrected implementation used the old sketch rank as the old
+  correction base. On n=128, win=32, rank=2, this made c_old = -4 in the second
+  window. The old entropy multiplier became about 16x to 25x on projected
+  oracle directions, and the old term dominated the new term by roughly 6x to
+  13x.
+
+  That is the cleanest diagnostic evidence for "forget unfairly weighs the
+  sketch too high": the score was not balancing old sketch evidence against
+  current-window evidence; the carried sketch term was numerically inflated by
+  the wrong correction base.
+
+Patch:
+
+  The old rows should be treated as an old-row fraction of the full matrix.
+  The row sample estimates normalized entropy, but the sketch rank k_old should
+  not be part of the old entropy correction. After the correction, the
+  second-window oracle split became comparable:
+
+    oracle v1: old/new = 0.683
+    oracle v2: old/new = 0.623
+    c_old = -0.4
+
+  So the explosive old-sketch overweighting was fixed.
+
+Remaining forget-family issue after the patch:
+
+  Block 3 in the optimizer-only old-corrected trajectory shows a different but
+  related imbalance. The projected oracle directions preserve much more old
+  energy and have perfect current-window entropy:
+
+    v1_proj: old E=0.575, old score=0.679, new E=0.376, new score=0.531, rel_new=1.000
+    v2_proj: old E=0.578, old score=0.681, new E=0.364, new score=0.515, rel_new=1.000
+
+  The optimizer instead discards most old energy and wins by much larger
+  current-window energy:
+
+    opt1: old E=0.148, old score=0.175, new E=0.774, new score=1.054, rel_new=0.890
+    opt2: old E=0.072, old score=0.085, new E=0.831, new score=1.143, rel_new=0.921
+
+  Interpretation: after fixing the old-term blow-up, the additive forget score
+  can still be energy-dominated by the current sketch/window. It may prefer
+  directions that abandon old projected target energy when they gain enough
+  current-window ||A_block v||^2.
+
+
+Diagnostic Evidence: Combined Can Be Fooled by Diffuse / Pooled-Uniform Tails
+-----------------------------------------------------------------------------
+
+Source summaries:
+
+  summary/combined_debug_oracle_span_handoff.txt
+  summary/diffuse_diffuse_and_residual_spiky_journey.txt
+  summary/kernel_stocks_lengthscale_sweep_findings.txt
+
+Combined static-cex debug:
+
+  In the n=128 static-cex debug run, oracle candidate replacement gave
+  near-perfect recovery:
+
+    optimizer_sum=2.0485
+    oracle candidate sum=2.0827
+    principal_cosines(V_score, Q_oracle) = [1, 1]
+    final mean_align ~= 1
+
+  Without oracle candidate replacement, the optimizer-only first block selected
+  a lower-score and badly rotated rank-2 frame:
+
+    optimizer_score_sum=2.0485
+    oracle_qr_projection sum=2.0827
+    principal_cosines(V_score, Q_oracle) = [0.830, 0.269]
+    final mean_align ~= 0.431
+
+  This initially showed a search/span-selection failure. Later large-window
+  oracle-greedy diagnostics showed that when the objective itself prefers the
+  non-oracle frame, oracle replacement is not accepted; in those cases the
+  issue is objective-level, not only optimizer-level.
+
+Diffuse-diffuse diagnostic:
+
+  On diffuse-diffuse n=1024, win=32, block 1, oracle and optimizer directions
+  had essentially identical entropy multipliers:
+
+    oracle_raw_v1: gain2=0.8306, phi=5.657, rel_H=1.000000
+    oracle_raw_v2: gain2=0.8308, phi=5.657, rel_H=1.000000
+    optimizer_v1:  gain2=0.8295, phi=5.657, rel_H=0.999997
+    optimizer_v2:  gain2=0.8283, phi=5.657, rel_H=0.999988
+
+  Combined was effectively gain^2-only in that first block. With 32 rows and a
+  close spectrum, the gain2 gaps are within sample noise, so the choice is a
+  lottery among near-tied signal and tail directions.
+
+  From block 2 onward, with 32 current rows plus 32 old-memory rows pooled, the
+  failure becomes sharper:
+
+    oracle_raw_v1: gain2=0.832, phi=3.615, rel_H=0.927
+    optimizer_v1:  gain2=0.832, phi=4.000, rel_H=0.99998
+
+  The exact signal is globally diffuse, but its projection onto the small
+  pooled row set is not perfectly uniform. The optimizer has enough ambient
+  freedom to build tail combinations that are uniform over just that pooled
+  subset. The combined score rewards pooled-uniformity, not global signal
+  identity, so these tail mixes can beat the oracle even when gain2 is tied.
+
+  Diagnosis: pooled-entropy degeneracy. Diffuse tails create a large subspace
+  of directions that can look maximally uniform on the current pooled rows.
+
+Residual-spiky-shocks diagnostic:
+
+  Structure clarification:
+
+    residual-spiky-shocks starts from the same residual-panel factor geometry
+    as risk-residual-panel: crowding / liquidity residual U columns,
+    sector-grouped V columns, structured residual tail, and a close signal
+    gap. It then replaces the dense heavy-tailed heteroskedastic noise with a
+    sparse row-localized shock on about 2% of rows, column support about n/64,
+    spike_amp=0.10, plus a tiny dense Gaussian floor. The final benchmark
+    target V_exact is recomputed from this completed A.
+
+    Empirically, at the tuned amplitude the spike is not merely a bad tail
+    below the target. It rises to the leading exact singular direction:
+
+      top target:      V_exact[:, 0] = spiky row-localized shock
+      second target:   V_exact[:, 1] = residual/event factor signal
+      lower directions: structured residual tail plus small diffuse noise floor
+
+    So the useful shorthand is "spiky top, residual/event second, diffuse and
+    structured tail below." This is the opposite of static-cex, where the top
+    target is diffuse Hadamard signal and the localized spike is a non-target
+    competitor.
+
+  On residual-spiky-shocks n=1024, win=32, block 1:
+
+    oracle_raw_v1: gain2=0.664, phi=1.402, rel_H=0.195, total=0.931
+    oracle_raw_v2: gain2=0.654, phi=2.928, rel_H=0.620, total=1.914
+    optimizer_v1:  gain2=0.649, phi=5.655, rel_H=0.9998, total=3.671
+    optimizer_v2:  gain2=0.648, phi=5.655, rel_H=0.9999, total=3.665
+
+  Here gain2 is roughly tied, so phi dominates. The combined objective rejects
+  both exact target columns:
+
+    - V_exact[:, 0] is the injected spike. Its row entropy is low, so combined
+      penalizes it heavily.
+    - V_exact[:, 1] is a factor pulse. Its row entropy is moderate, so it also
+      loses to maximally uniform tail mixtures.
+
+  This explains why iSVD beats combined/hybrid on residual-spiky-shocks in the
+  benchmark table. iSVD follows the singular values and recovers the spike;
+  combined treats that spike as an entropy-bad direction even though it is part
+  of the exact top subspace.
+
+
+Consolidated Insight
+--------------------
+
+The two score families fail in opposite ways.
+
+Forget / old-corrected:
+
+  The original bug literally overweighted the old sketch term by using the old
+  sketch rank in the correction base, producing 16x-25x old entropy multipliers.
+  After that fix, the additive score can still be dominated by whichever sketch
+  energy term is largest. In block 3 of the old-corrected static-cex diagnostic,
+  the optimizer gave up old target energy and lower entropy because the current
+  window energy gain was large enough.
+
+Combined:
+
+  The combined score avoids the additive old/new blow-up by using a pooled
+  entropy correction, but that makes it sensitive to the geometry of row
+  entropy. It works when the desired signal is row-diffuse and the competing
+  tail is row-concentrated, as in static-cex. It fails or weakens when:
+
+    - both signal and tail are diffuse enough that pooled entropy cannot
+      discriminate globally; or
+    - the exact top singular vectors themselves are row-concentrated, so the
+      entropy multiplier penalizes the true target.
+
+Hybrid:
+
+  The r1=1, r2=1 hybrid partially hedges this by taking one combined-score
+  direction and one deflated-SVD direction. That is why it improves over full
+  combined on static-cex, diffuse-diffuse, and residual-spiky-shocks at the
+  n=1024 win=32 setting. But it does not remove the objective mismatch: when
+  entropy points away from the target, the combined half still contributes a
+  biased direction.
+
+
+Practical Guidance
+------------------
+
+1. Report combined/hybrid wins primarily in regimes where the target signal is
+   row-diffuse and the dangerous competitors are row-localized or entropy-poor.
+
+2. Treat combined/hybrid losses on residual/event/spike targets as expected,
+   not optimizer accidents. If V_exact itself is row-concentrated, iSVD is the
+   more faithful objective.
+
+3. Do not use top-1 mean_align alone for near-tied rank-2 cases. Add the
+   rank-r subspace metric before making final claims about static-cex-like
+   spectra.
+
+4. If continuing objective work, the natural next probe is an entropy term that
+   distinguishes global target persistence from pooled-row uniformity, or a
+   gating rule that downweights entropy when the top singular vector is itself
+   row-concentrated.

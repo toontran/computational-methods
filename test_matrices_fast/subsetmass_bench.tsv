@@ -1,0 +1,15 @@
+static-cex	combined-greedy	0.417326	0.00435132	0.516
+static-cex	subsetmass-greedy	0.989538	0.00102718	0.248
+static-cex	isvd	0.989538	0.00102704	0.019
+static-cex	combined-greedy	0.419778	0.00701260	0.464
+static-cex	subsetmass-greedy	0.983370	0.00141620	0.279
+static-cex	isvd	0.983370	0.00141626	0.006
+static-cex	combined-greedy	0.436472	0.00656512	0.464
+static-cex	subsetmass-greedy	0.990021	0.00102381	0.248
+static-cex	isvd	0.990021	0.00102389	0.011
+static-cex	combined-greedy	0.403755	0.00139316	0.467
+static-cex	subsetmass-greedy	0.992086	0.00141794	0.232
+static-cex	isvd	0.992086	0.00141796	0.012
+static-cex	combined-greedy	0.416681	0.00547515	0.491
+static-cex	subsetmass-greedy	0.982933	0.00172908	0.241
+static-cex	isvd	0.982933	0.00172907	0.019

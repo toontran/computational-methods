@@ -1,0 +1,96 @@
+Block-only oracle-vs-fake recheck
+=================================
+
+Date: 2026-04-22
+
+Scope
+-----
+I reran the second-slot comparison with the updated rule:
+
+  - gain / energy uses `A_block` only
+  - entropy still pools the current block with `old_row_memory`
+
+I used an inline Python harness over `probe.entropy_iter_basis_forget` and
+`probe.combined_score_component_details`, with `old_row_memory` selected from
+the seen rows at each step.
+
+Run settings
+------------
+  - `n=256`, `win=32`, `rank=2`
+  - `old_memory_size=32`
+  - `preset="fast"`
+  - `dtype=float32`
+  - matrices: `static-cex`, `diffuse-diffuse`, `mixed-tail-sharp`,
+    `residual-spiky-shocks`
+  - row shuffling: off for `static-cex`, on for the other three
+
+Commands run
+------------
+  python3 - <<'PY' ... inline block-only comparison harness ...
+
+Key results
+-----------
+Each matrix has 8 blocks. The table below reports wins against `opt2`.
+
+  matrix                 score wins vs opt2        gain wins vs opt2         best score winner(s)   best gain winner(s)
+  static-cex             q2_q1oracle 1/8, q2_v1 0/8, prev 0/7, svd 0/8   q2_q1oracle 1/8, q2_v1 1/8, prev 0/7, svd 7/8   opt2 7/8              svd_complement 7/8
+  diffuse-diffuse        q2_q1oracle 1/8, q2_v1 0/8, prev 0/7, svd 1/8   q2_q1oracle 2/8, q2_v1 1/8, prev 0/7, svd 8/8   opt2 6/8              svd_complement 8/8
+  mixed-tail-sharp       q2_q1oracle 3/8, q2_v1 3/8, prev 0/7, svd 0/8   q2_q1oracle 4/8, q2_v1 4/8, prev 0/7, svd 7/8   opt2 5/8              svd_complement 7/8
+  residual-spiky-shocks  q2_q1oracle 0/8, q2_v1 0/8, prev 0/7, svd 0/8   q2_q1oracle 2/8, q2_v1 2/8, prev 0/7, svd 7/8   opt2 8/8              svd_complement 7/8
+
+Mean phi / pooled relH
+----------------------
+`q2_vs_q1oracle` still carries the highest pooled entropy signal on the first
+three matrices, but that does not turn into a score win under block-only gain.
+
+  static-cex:
+    opt2 phi 1.470841, relH 0.652733
+    q2_q1oracle phi 1.475126, relH 0.831578
+    q2_v1opt phi 1.379226, relH 0.736399
+    prev_opt2 phi 1.258074, relH 0.629429
+    svd_complement phi 1.010444, relH 0.042779
+
+  diffuse-diffuse:
+    opt2 phi 1.480336, relH 0.812381
+    q2_q1oracle phi 1.466297, relH 0.831579
+    q2_v1opt phi 1.393210, relH 0.639037
+    prev_opt2 phi 1.257067, relH 0.708959
+    svd_complement phi 1.303367, relH 0.609649
+
+  mixed-tail-sharp:
+    opt2 phi 1.476449, relH 0.736762
+    q2_q1oracle phi 1.465904, relH 0.831529
+    q2_v1opt phi 1.264456, relH 0.666479
+    prev_opt2 phi 1.257211, relH 0.703005
+    svd_complement phi 1.016980, relH 0.049360
+
+  residual-spiky-shocks:
+    opt2 phi 1.475503, relH 0.754039
+    q2_q1oracle phi 1.289945, relH 0.614789
+    q2_v1opt phi 1.296898, relH 0.607527
+    prev_opt2 phi 1.257565, relH 0.688568
+    svd_complement phi 1.188380, relH 0.392058
+
+Interpretation
+--------------
+1. The prior "oracle-like second slot wins gain immediately" conclusion does
+   not survive this stricter scoring rule. On these reruns, `q2_vs_q1oracle`
+   and `q2_vs_v1opt` rarely beat `opt2` on score, and their gain wins are only
+   occasional.
+
+2. `svd_complement` is the main block-only gain challenger. It wins the gain
+   comparison most often on every matrix, and dominates best-gain counts on the
+   first three matrices.
+
+3. Entropy patterns still matter, but they are no longer enough to flip the
+   outcome. `q2_vs_q1oracle` usually has higher pooled relative entropy than
+   `opt2`, yet `opt2` keeps the better block-only score.
+
+4. `prev_opt2` remains a weak comparator on both score and gain.
+
+Bottom line
+-----------
+Under block-only gain with pooled current-block+memory entropy, the main
+change is that the oracle-like second-slot candidates are less competitive than
+before. The strongest gain competitor is now `svd_complement`, while `opt2`
+still usually wins the score comparison.

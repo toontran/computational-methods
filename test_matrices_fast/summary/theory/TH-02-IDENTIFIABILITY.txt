@@ -1,0 +1,232 @@
+\title{TH-02: Frame-Level Identifiability of HM3 on $\mathrm{St}(d,r)$}
+\author{Score-design line, slot-2 / rank-r decision}
+\date{2026-04-28}
+\maketitle
+
+\section*{1. Problem statement}
+
+Let $A \in \mathbb{R}^{N \times d}$ be the underlying matrix whose
+top-$r$ right singular subspace $V_r := V_{\mathrm{exact}}[:, :r]$ we
+are trying to recover online. At a given streaming block we have access
+to three row-blocks of $A$:
+\begin{itemize}
+\item $A_{\mathrm{sketch}} = s \cdot V_{\mathrm{state}}^{\top}
+       \in \mathbb{R}^{r \times d}$, the rank-$r$ carry of the prefix;
+\item $A_{\mathrm{cur}} \in \mathbb{R}^{m \times d}$, the half-window
+      of new rows;
+\item $A_{\mathrm{fut}} \in \mathbb{R}^{m \times d}$, the peek
+      half-window after that.
+\end{itemize}
+Define the magnitude-only frame energies
+\[
+   u_X(V) \;=\; \frac{\lVert A_X V \rVert_F^2}{\lVert A_X \rVert_F^2},
+   \qquad X \in \{\mathrm{sketch},\, g_1,\, g_2\},
+\]
+and the rank-$r$ frame score
+\[
+   Z(V) \;=\; \mathrm{HM3}\bigl(u_{\mathrm{sk}}(V),\, u_{g_1}(V),\,
+     u_{g_2}(V)\bigr)
+   \;=\; \frac{3}{u_{\mathrm{sk}}(V)^{-1} + u_{g_1}(V)^{-1}
+       + u_{g_2}(V)^{-1}},
+   \qquad V \in \mathrm{St}(d,r).
+\]
+Let $\Pi := \Pi_{\mathrm{row}(B_\cup)}$ denote orthogonal projection
+onto the union row span $B_\cup = \mathrm{row}(A_{\mathrm{sketch}})
+\cup \mathrm{row}(A_{\mathrm{cur}}) \cup \mathrm{row}(A_{\mathrm{fut}})$.
+
+\paragraph{The question.} Characterise the conditions under which
+\begin{equation}
+   \arg\max_{V \in \mathrm{St}(d,r)}\, Z(V)
+   \;=\; \Pi V_r
+   \tag{$\star$}
+\end{equation}
+holds, or construct an explicit counterexample family showing $(\star)$
+fails for any reasonable A1-style assumption on
+$(A_{\mathrm{sketch}}, A_{\mathrm{cur}}, A_{\mathrm{fut}})$.
+
+\paragraph{Why this matters.} The empirical kill/continue gate
+(\texttt{FAM-01-DIAG}) tests whether $Z_{\mathrm{oracle}} \ge
+Z_{\mathrm{winner}}$ on a handful of \S6 matrices and blocks. A
+theoretical characterisation says \emph{when} it must hold (or when
+it cannot), and this is what decides the score-design path at the
+limit. The two gates are complementary, not redundant.
+
+\section*{2. Three target deliverables}
+
+A landed result on $(\star)$ takes one of the following forms; each
+changes the next action of the project.
+
+\paragraph{(D1) Positive theorem.} A statement of the form
+\begin{quote}
+\emph{Under (A1), a spectral-spread condition $C(\Sigma,\,r,\,m)$, and
+mild moment regularity on the row distribution, $(\star)$ holds with
+$Z_{\mathrm{oracle}} - \sup_{V \perp \Pi V_r} Z(V) \ge \delta(C)$.}
+\end{quote}
+Then $C$ becomes a value-only certifiable side condition: a window in
+which $C$ holds gets the score-family ship; a window in which $C$
+fails falls back to iSVD. This is the missing TH-02 (HM3 as a
+population lower bound), upgraded to argmax-correctness on
+$\mathrm{St}(d,r)$.
+
+\paragraph{(D2) Counterexample family.} A parametric construction of
+$(A_{\mathrm{sketch}}, A_{\mathrm{cur}}, A_{\mathrm{fut}})$ on which
+\[
+   \sup_{V \in \mathrm{St}(d,r)} Z(V)
+   \;>\; Z(\Pi V_r) + \eta
+\]
+for some $\eta > 0$, parametrised by $(d,\,r,\,m,\,\text{tail
+shape})$, such that the construction is not pathological (it satisfies
+A1 and a row-population assumption that holds on \S6 matrices). This
+is Q12 sharpened to rank-$r$ frames, and it kills the entire
+magnitude-only path \emph{permanently} (not just for the current
+suite). The pivot to Q13 / Q14 evidence features becomes the only
+remaining option.
+
+\paragraph{(D3) Sharp boundary.} A separation showing magnitude-only
+frame scores cannot identify $V_r$ when the visible-window covariance
+$\widehat\Sigma_w$ has sub-leading eigengap below threshold
+$\delta(\Sigma,\,m,\,r)$. This matches the empirical
+\texttt{mixed-tail-sharp} pathology and motivates cross-window
+consistency (Q13) as the load-bearing reliability feature, with a
+quantified condition for when it is needed.
+
+\section*{3. Block-1 noise-free reduction (entry point)}
+
+The cleanest sub-question, in which $A_{\mathrm{sketch}} = 0$ so HM3
+reduces to the two-term harmonic mean
+$\mathrm{HM2}\bigl(u_{g_1},\,u_{g_2}\bigr)$. Consider an i.i.d.\ row
+model
+\[
+   A_{\mathrm{cur}},\ A_{\mathrm{fut}} \overset{\mathrm{iid}}{\sim}
+   P_\Sigma,\qquad
+   \mathbb{E}_{a \sim P}\bigl[a a^{\top}\bigr] = \Sigma,\qquad
+   \mathrm{rank}(\Sigma) \ge r,
+\]
+and ask:
+
+\begin{quote}
+\emph{Does $\arg\max_{V \in \mathrm{St}(d,r)}
+  \mathrm{HM2}(u_{g_1}(V),\, u_{g_2}(V)) \to V_r$ in probability as
+  $m \to \infty$, and what is the finite-$m$ leak?}
+\end{quote}
+
+\paragraph{What is already known empirically.}
+On \texttt{diffuse-diffuse} block 1, the optimizer of S6 (which
+reduces to HM2 under no-carry) recovers
+$V_{\mathrm{exact}}[:,1]$ at $\cos^2 \approx 0.999$ and
+$V_{\mathrm{exact}}[:,2]$ at $\cos^2 \approx 0.982$ (overview \S1bis,
+M3 verification); on the same block of \texttt{mixed-tail-sharp},
+DIAG-05 records a $4\%$ HM-evi gap in favour of a non-oracle
+direction. The theoretical question is whether the $4\%$ is
+\begin{itemize}
+\item a finite-sample artifact that vanishes as $m \to \infty$
+      (in which case the population-level $\mathrm{HM2}$ identifies
+      $V_r$ and only finite-$m$ stability matters --- direction (D1)),
+      or
+\item a structural identifiability failure of the magnitude-only
+      population score on the heavy-tail family
+      (in which case it persists at every $m$, and the construction
+      generalises to (D2)).
+\end{itemize}
+
+Either answer is informative, and the question is one paragraph wide.
+
+\paragraph{A natural ansatz for (D2).} Take
+$P_\Sigma$ to be a mixture
+\[
+   P_\Sigma \;=\; (1-\varepsilon)\,\mathcal{N}(0,\,\Sigma_{\mathrm{bulk}})
+                 + \varepsilon\,\mathcal{N}(0,\,\Sigma_{\mathrm{tail}}),
+\]
+with $\Sigma_{\mathrm{tail}}$ rank-deficient on
+$\mathrm{span}(V_r)^{\perp}$ and supported on a direction
+$v_{\mathrm{conspiracy}}$ that has high response in both windows by
+correlated tail events but vanishing population correlation with $V_r$.
+The empirical \S1ter ``tail-conspiracy'' framing is exactly this
+construction; what is missing is a closed-form proof that
+$Z(v_{\mathrm{conspiracy}}) > Z(V_r)$ at the population level for
+some $\varepsilon, \Sigma_{\mathrm{tail}}$ choice.
+
+\section*{4. Why this is the highest-value theoretical problem now}
+
+\begin{itemize}
+
+\item It is the limit-case version of the empirical kill/continue
+gate. \texttt{FAM-01-DIAG} answers ``does HM3 identify the oracle
+frame on \emph{these} matrices and blocks?''\ \, $(\star)$ answers
+``under what conditions \emph{must} it?''\ The empirical and
+theoretical gates jointly decide the score-design path: a positive
+theory result + a passing empirical gate justifies shipping with a
+value-only certifiable side condition; an impossibility result +
+a failing empirical gate kills the family permanently rather than
+matrix-by-matrix.
+
+\item It subsumes three currently open / underpowered theoretical
+items: Q12 (scalar-score impossibility), TH-02 (HM3 as a population
+lower bound), and FB-006 (the underpowered codim-1 plateau argument).
+The plateau geometry is a corollary of $(\star)$'s failure mode, not
+an independent statement.
+
+\item Q9 (entropy proxy theory) and TH-01 (HM3 max-min stability
+surrogate) are already correctly bounded in the docs and do not
+change the next action. Tail-conspiracy formalisation (\S1ter) is
+informal and depends on $(\star)$ to land.
+
+\item The block-1 reduction is a one-paragraph question whose answer
+either way is publishable and decision-relevant.
+
+\end{itemize}
+
+\section*{5. Success criteria}
+
+A landed result must include:
+
+\begin{enumerate}
+
+\item A precise statement of $(\star)$ at the population level
+($A_{\mathrm{cur}}, A_{\mathrm{fut}}$ from a stated row distribution),
+not just at the empirical-row level. The score family is an
+\emph{inductive bias}, not an estimator of $\lVert A v \rVert^2$;
+identifiability must be stated for the bias's intended population
+target.
+
+\item Either: (D1) a sufficient condition $C$ that holds on at least
+3 of \{\texttt{mixed-tail-soft}, \texttt{diffuse-diffuse},
+\texttt{etf-basket-basis}\} and fails on \{\texttt{mixed-tail-sharp},
+\texttt{static-cex}\}, with a value-only test of $C$;
+or (D2) a counterexample family parametrised by interpretable
+quantities ($\varepsilon$, tail rank, eigengap), with explicit
+$Z(V_{\mathrm{cex}}) - Z(V_r) > \eta(\varepsilon)$ and a numerical
+verification on a synthetic instance.
+
+\item A statement of the relationship to TH-01 (max-min surrogate)
+and to the rank-$r$ Stiefel lift: $(\star)$ at $r=1$ vs.\ $r \ge 2$
+should differ in a way that explains the empirical \texttt{etf-basket-
+basis} gap (S6 cos1${}^2 = 0.807$ vs.\ online${}_{\mathrm{VO}}\,
+\cos1^2 = 0.969$, a $-0.162$ gap that is the only live operational
+target after FB-001).
+
+\end{enumerate}
+
+\section*{6. Out of scope}
+
+\begin{itemize}
+\item Optimizer convergence on $\mathrm{St}(d,r)$
+(this is INFRA-02 / FAM-01 implementation, not a theoretical
+identifiability statement).
+\item Per-row leverage-aware weightings (Q4) --- bias-axis-orthogonal
+to identifiability and only matters after $(\star)$ is settled.
+\item Sample-complexity bounds for fixed $\delta$ --- nice to have
+but the qualitative identifiability question is more decision-
+relevant first.
+\end{itemize}
+
+\section*{7. Relation to current backlog}
+
+\begin{itemize}
+\item Resolves: Q12 (scalar-score impossibility), TH-02 (population
+lower bound), FB-006 (plateau-dimension motivation).
+\item Complements: FB-004 / FAM-01-DIAG (empirical gate), Q13
+(cross-window consistency, the natural follow-up if (D2) lands).
+\item Independent of: FB-002, FB-003, FB-005 (documentation/data
+rigor); FAM-02 (row-concentration regime).
+\end{itemize}

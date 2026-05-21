@@ -1,0 +1,206 @@
+\paragraph{Gradient Ascent in \texttt{entropyscore}, \texttt{entropyscore\_fast}, and \texttt{entropyscore\_expansion}}
+
+Let $v \in \mathbb{R}^n$ denote one right singular-vector candidate, with the feasibility constraints
+\begin{align}
+\|v\|_2 = 1,
+\qquad
+Q^\top v = 0,
+\end{align}
+where the columns of $Q$ are the previously accepted basis vectors. The code enforces these constraints by
+\begin{align}
+\Pi_Q(x) = x - Q(Q^\top x),
+\qquad
+\mathcal{R}(x) = \frac{\Pi_Q(x)}{\|\Pi_Q(x)\|_2},
+\end{align}
+implemented by \texttt{project\_feasible} and \texttt{retract\_feasible}. The tangent-space projection of a gradient $g$ at $v$ is
+\begin{align}
+g_{\mathrm{tan}}
+=
+\Pi_Q(g) - v\bigl(v^\top \Pi_Q(g)\bigr),
+\end{align}
+implemented by \texttt{project\_to\_feasible\_tangent}.
+
+\paragraph{1. \texttt{entropyscore}: exact / streaming projected ascent}
+
+For the initial block, with $y = Mv$, define
+\begin{align}
+E(v) = \|y\|_2^2 = \sum_i y_i^2,
+\qquad
+Q_4(v) = \sum_i y_i^4,
+\qquad
+c = \frac{2\log(\mathrm{rows\_total}/n_{\mathrm{cols}})}{\log(\mathrm{rows\_total})}.
+\end{align}
+The optimized log-score is
+\begin{align}
+\log f(v)
+=
+\frac{1-c}{2}\log E(v)
++
+\frac{c}{4}\log Q_4(v).
+\end{align}
+The code gradient is
+\begin{align}
+\nabla \log f(v)
+=
+(1-c)\frac{M^\top y}{E(v)}
++
+c\frac{M^\top(y^{\circ 3})}{Q_4(v)},
+\end{align}
+where $y^{\circ 3}$ is the entrywise cube of $y$. It also records the entropy surrogate
+\begin{align}
+H(v) = -\bigl(\log Q_4(v) - 2\log E(v)\bigr)
+= -\log\left(\frac{Q_4(v)}{E(v)^2}\right).
+\end{align}
+
+For later windows, the method uses a streaming approximation. Write the new block as $A_{\mathrm{block}}$, the previous basis as $V_{\mathrm{old}}$, and let
+\begin{align}
+a = V_{\mathrm{old}}^\top v,
+\qquad
+y = A_{\mathrm{block}}v,
+\qquad
+\gamma = \frac{\log(\mathrm{rows\_total}/n_{\mathrm{cols}})}{2\log(\mathrm{rows\_total})}.
+\end{align}
+Using stored history
+\begin{align}
+s_{\mathrm{old},i}^2,\qquad q_{\mathrm{old},i}=s_{\mathrm{old},i}^4 e^{-H_i},
+\end{align}
+the code forms
+\begin{align}
+E(v) = \sum_i a_i^2 s_{\mathrm{old},i}^2 + \sum_j y_j^2,
+\qquad
+Q(v) = \sum_i a_i^4 q_{\mathrm{old},i} + \sum_j y_j^4.
+\end{align}
+It also defines a gain matrix $M_{\mathrm{gain}}$ and $z=M_{\mathrm{gain}}v$, with objective
+\begin{align}
+\log f(v)
+=
+\frac{1}{2}\log \|z\|_2^2
++
+\gamma \log Q(v)
+- 2\gamma \log E(v).
+\end{align}
+Its gradient is
+\begin{align}
+\nabla \log f(v)
+=
+\frac{M_{\mathrm{gain}}^\top z}{\|z\|_2^2}
++
+\gamma \frac{g_Q}{Q(v)}
+- 2\gamma \frac{g_E}{E(v)},
+\end{align}
+with
+\begin{align}
+g_E = 2V_{\mathrm{old}}\bigl(s_{\mathrm{old}}^2 \odot a\bigr) + 2A_{\mathrm{block}}^\top y,
+\end{align}
+\begin{align}
+g_Q = 4V_{\mathrm{old}}\bigl(q_{\mathrm{old}} \odot a^{\circ 3}\bigr) + 4A_{\mathrm{block}}^\top (y^{\circ 3}).
+\end{align}
+
+The ascent loop in both exact and streaming cases is the same:
+\begin{align}
+g_{\mathrm{tan}} = \text{projected tangent gradient},
+\qquad
+\text{if } \|g_{\mathrm{tan}}\|_2 \le \texttt{tol}, \text{ stop.}
+\end{align}
+Otherwise, starting from $\alpha=1$, the code tries
+\begin{align}
+v_{\mathrm{trial}} = \mathcal{R}(v + \alpha g_{\mathrm{tan}})
+\end{align}
+and accepts it if the Armijo condition holds:
+\begin{align}
+\log f(v_{\mathrm{trial}})
+\ge
+\log f(v) + 10^{-4}\alpha \|g_{\mathrm{tan}}\|_2^2.
+\end{align}
+If not, it halves $\alpha$ up to $20$ times. It stops on gradient tolerance, insufficient progress, line-search failure, or \texttt{maxit}. After each accepted vector, the basis is expanded by appending the new $v$ to $Q$.
+
+\paragraph{2. \texttt{entropyscore\_fast}: reduced-space projected ascent}
+
+This variant first builds a reduced subspace $V_{\mathrm{red}} \in \mathbb{R}^{n\times q}$ from a truncated SVD or Lanczos basis of $M_{\mathrm{gain}}$. It then writes
+\begin{align}
+v = V_{\mathrm{red}} z,
+\qquad
+\|z\|_2=1,
+\qquad
+Q_z^\top z = 0,
+\end{align}
+where $Q_z$ contains the already chosen reduced coefficients.
+
+The same entropy objective is optimized, but in reduced coordinates using
+\begin{align}
+B_{\mathrm{red}} = M_{\mathrm{gain}}V_{\mathrm{red}},
+\end{align}
+and, in the streaming case,
+\begin{align}
+B_{\mathrm{block}} = A_{\mathrm{block}}V_{\mathrm{red}},
+\qquad
+C_{\mathrm{prev}} = V_{\mathrm{old}}^\top V_{\mathrm{red}}.
+\end{align}
+The reduced gradients are exactly the chain-rule versions of the full gradients. For example, in the initial block,
+\begin{align}
+\nabla_z \log f(z)
+=
+(1-c)\frac{B_{\mathrm{red}}^\top(B_{\mathrm{red}}z)}{\|B_{\mathrm{red}}z\|_2^2}
++
+c\frac{B_{\mathrm{red}}^\top\bigl((B_{\mathrm{red}}z)^{\circ 3}\bigr)}{\sum_i (B_{\mathrm{red}}z)_i^4}.
+\end{align}
+The algorithm performs projected ascent on $z$, using
+\begin{align}
+z_{\mathrm{trial}} = \frac{\Pi_{Q_z}(z+\alpha d)}{\|\Pi_{Q_z}(z+\alpha d)\|_2},
+\end{align}
+with $d$ the reduced tangent gradient. The line search accepts any strict improvement,
+\begin{align}
+\log f(z_{\mathrm{trial}}) > \log f(z),
+\end{align}
+rather than the Armijo test used in the full solver. The final vector is lifted back by
+\begin{align}
+v = V_{\mathrm{red}} z.
+\end{align}
+The diagnostic
+\begin{align}
+\frac{\|\nabla \log f(v) - V_{\mathrm{red}}V_{\mathrm{red}}^\top \nabla \log f(v)\|_2}{\|\nabla \log f(v)\|_2}
+\end{align}
+measures how much true gradient lies outside the reduced subspace.
+
+\paragraph{3. \texttt{entropyscore\_expansion}: adaptive reduced-space ascent}
+
+This method starts like \texttt{entropyscore\_fast}, but with an initial reduced basis $V_{\mathrm{basis}}$ of rank $q_0$. It solves the same reduced optimization problem for $z$, forms
+\begin{align}
+v = V_{\mathrm{basis}}z,
+\end{align}
+then evaluates the full gradient $g_{\mathrm{full}} = \nabla \log f(v)$ and its component orthogonal to the current subspace:
+\begin{align}
+r_k
+=
+g_{\mathrm{full}} - V_{\mathrm{basis}}V_{\mathrm{basis}}^\top g_{\mathrm{full}}.
+\end{align}
+If
+\begin{align}
+\frac{\|r_k\|_2}{\|g_{\mathrm{full}}\|_2} \le \texttt{residual\_tol},
+\end{align}
+the current subspace is deemed sufficient and the vector is accepted.
+
+Otherwise the basis is expanded. The first new direction is $r_k$; then, for Krylov depth $p$, the code appends
+\begin{align}
+r_k,\quad
+(M^\top M)r_k,\quad
+(M^\top M)^2 r_k,\quad \dots
+\end{align}
+up to depth $\texttt{krylov\_depth}-1$, followed by orthonormalization and truncation at rank $\texttt{qmax}$. The reduced optimization is then repeated in the enlarged subspace. Expansion stops when the gradient residual is small enough, the rank cap is reached, no new independent direction can be added, or \texttt{expansion\_maxit} is exceeded.
+
+In short:
+\begin{align}
+\texttt{entropyscore}
+=
+\text{full projected gradient ascent on the entropy score},
+\end{align}
+\begin{align}
+\texttt{entropyscore\_fast}
+=
+\text{the same ascent restricted to a fixed reduced subspace},
+\end{align}
+\begin{align}
+\texttt{entropyscore\_expansion}
+=
+\text{the same reduced ascent with adaptive subspace enrichment from the full gradient residual.}
+\end{align}

@@ -1,0 +1,44 @@
+Held-out within-window-pair element-drift probe
+============================================================
+half_win=32  pair=2*half_win=64  n_blocks=16  n_perm=200
+matrices=['diffuse-diffuse', 'mixed-tail-sharp', 'mixed-tail-soft', 'static-cex']  seeds=[0, 1, 2]
+
+Statistic (per held-out window pair):
+  mag, ent, prefix_drift, null_drift, drift_ratio.
+Aggregates: mean over held-out blocks, then mean over seeds.
+
+=== diffuse-diffuse ===
+  candidate                  n_held  mean_mag_held  med_mag_held  max_mag_held  mean_ratio  med_ratio  max_ratio   frac>1.3
+  v_oracle                       16      6.138e-02     6.138e-02     6.138e-02       1.000      1.000      1.000      0.000
+  v_random                       16      5.160e-02     5.104e-02     7.150e-02       0.880      0.739      2.542      0.125
+  v_lock_pairs_0to0              15      1.296e-04     1.317e-04     1.729e-04       0.988      0.817      3.019      0.111
+  v_lock_pairs_0to11              4      1.047e-03     1.032e-03     1.225e-03       0.820      0.663      1.537      0.083
+  v_lock_pairs_0to3              12      4.040e-04     3.901e-04     4.978e-04       0.902      0.762      2.024      0.139
+  v_lock_pairs_0to7               8      7.650e-04     7.394e-04     1.007e-03       0.990      0.785      2.387      0.167
+
+=== mixed-tail-sharp ===
+  candidate                  n_held  mean_mag_held  med_mag_held  max_mag_held  mean_ratio  med_ratio  max_ratio   frac>1.3
+  v_oracle                       16      6.138e-02     6.138e-02     6.138e-02       1.000      1.000      1.000      0.000
+  v_random                       16      5.160e-02     5.028e-02     6.944e-02       1.330      0.807      4.760      0.271
+  v_lock_pairs_0to0              15      3.335e-04     3.240e-04     4.730e-04       1.107      0.802      4.036      0.156
+  v_lock_pairs_0to11              4      4.116e-04     4.106e-04     4.931e-04       0.797      0.692      1.392      0.083
+  v_lock_pairs_0to3              12      3.627e-04     3.531e-04     4.796e-04       1.109      0.779      3.468      0.167
+  v_lock_pairs_0to7               8      3.942e-04     3.749e-04     5.058e-04       0.785      0.696      1.435      0.083
+
+=== mixed-tail-soft ===
+  candidate                  n_held  mean_mag_held  med_mag_held  max_mag_held  mean_ratio  med_ratio  max_ratio   frac>1.3
+  v_oracle                       16      6.138e-02     6.138e-02     6.138e-02       1.000      1.000      1.000      0.000
+  v_random                       16      5.160e-02     5.125e-02     6.847e-02       1.042      0.742      3.784      0.188
+  v_lock_pairs_0to0              15      3.716e-04     3.682e-04     5.088e-04       1.307      0.789      6.274      0.178
+  v_lock_pairs_0to11              4      8.922e-04     8.982e-04     1.056e-03       0.816      0.704      1.416      0.083
+  v_lock_pairs_0to3              12      4.950e-04     4.891e-04     6.275e-04       0.967      0.740      2.863      0.167
+  v_lock_pairs_0to7               8      7.256e-04     6.939e-04     9.832e-04       0.848      0.725      1.574      0.125
+
+=== static-cex ===
+  candidate                  n_held  mean_mag_held  med_mag_held  max_mag_held  mean_ratio  med_ratio  max_ratio   frac>1.3
+  v_oracle                       16      6.138e-02     6.138e-02     6.138e-02       1.000      1.000      1.000      0.000
+  v_random                       16      5.170e-02     5.195e-02     7.259e-02       0.938      0.788      2.408      0.229
+  v_lock_pairs_0to0              15      1.652e-06     9.113e-07     9.025e-06       0.857      0.874      1.429      0.111
+  v_lock_pairs_0to11              4      2.827e-05     2.862e-05     3.317e-05       0.965      0.871      1.312      0.167
+  v_lock_pairs_0to3              12      1.890e-06     7.393e-07     1.464e-05       0.910      0.953      1.458      0.083
+  v_lock_pairs_0to7               8      4.191e-06     2.864e-06     1.379e-05       0.926      0.920      1.298      0.042

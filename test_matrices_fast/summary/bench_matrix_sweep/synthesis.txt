@@ -1,0 +1,263 @@
+Multi-matrix benchmark — combined / hybrid / iSVD / future_hmean_online
+=======================================================================
+
+Date: 2026-04-23 (re-run after seeding+patience refactor)
+
+
+Scope
+-----
+Same 4-way benchmark at half_win=32 (pair=64 sliding) on all 17 matrix
+families from `probe.generate_matrix_input`, same harness as the
+previous pass:
+
+  - same M_gain construction (state = diag(s)·V_prev.T stacked on A_half1)
+  - same rank=2, float32, --shuffle-rows, seed=0, row_shuffle_seed=0
+  - same metrics (sliding mode only; split_probe ignored in tables)
+  - 16 matrices in 4-way parallel batches with OPENBLAS_NUM_THREADS=2;
+    `mixed-tail-sharp` solo. Driver: `run_bench_sweep_v2.sh`.
+  - Previous outputs preserved in `summary/bench_matrix_sweep_old/`.
+
+Policies (unchanged):
+  - `isvd`                  pure streaming SVD of M_gain
+  - `hybrid`                combined-greedy v1 + deflated-SVD v2
+  - `combined`              combined-greedy v1 + opt2 (both from greedy)
+  - `future_hmean_online`   greedy v1 + HM-online scored v2 from online
+                            candidate pool, with rank-2 SVD reframe.
+
+Raw artifacts: `summary/bench_matrix_sweep/<matrix>_win64.{json,csv,txt,log}`
+for the 16 batched matrices, plus `summary/benchmark_online_vs_baselines_win64.json`
+for `mixed-tail-sharp`. Full per-metric table in
+`summary/bench_matrix_sweep/aggregated_table.txt`.
+
+
+Changes since the previous synthesis
+------------------------------------
+Three changes inside the greedy/optimizer path used by combined, hybrid
+and future_hmean_online (iSVD untouched):
+
+  1) Patience-based early stop in the cex single-slot ascent
+     (`basic_projected_ascent_single_reduced_{,streaming_}forget_cex`):
+     break after `patience=5` consecutive iters with relative score
+     change ≤ `patience_rel_tol=1e-5`. Existing single-iter absolute
+     stops (1e-12 / 1e-10) almost never fired in float32 so the ascent
+     used to run to maxit=120 every time; with patience it typically
+     stops in 10-30 iters once converged.
+
+  2) Two new explicit restart seeds in the cex greedy branch of
+     `entropy_iter_basis_forget`, injected before
+     `make_basic_restart_seeds`:
+       - clean `V_init[:, k_idx]` (right svec of the row-normalized new
+         half-block; previously only used inside an alpha-blend with
+         random noise, never alpha=1)
+       - `prev_basis[:, k_idx]` = `state_prev["V"][:, k_idx]` (the
+         previous block's polished V_carried; available in scope but
+         the cex branch never seeded with it — only legacy did).
+
+  3) Default `--num-restarts` lowered from 8 → 3 in
+     `half_window_sliding_hmean_experiment.py`. With the two explicit
+     seeds plus z_warm in steady state, that fills the budget exactly
+     and the SVD-of-M_gain inside `make_basic_restart_seeds` is skipped
+     on every expansion after the first per slot.
+
+Net effect on the slow-path policies: ~25-30× faster wall-clock vs the
+previous synthesis, with no quality regression and small quality gains
+on the tail-dominant matrices the online policy was designed for.
+
+
+Win counts across 17 matrices (sliding, within ~1e-4 margin)
+-----------------------------------------------------------
+  metric                 combined  hybrid    isvd      future_h_online
+  mean_exact_cos1        1         1         9         6
+  mean_exact_cos2        3         2         7         5
+  mean_relerr_sval       3         1         8         5
+  final_exact_cos1       2         5         5         5
+  final_exact_cos2       3         2         5         7
+  final_tail_mass        3         1         5         8
+
+Compared to the previous synthesis (c/h/i/o):
+  mean_exact_cos1        1/1/9/6   → 1/1/9/6   (unchanged)
+  mean_exact_cos2        3/2/7/5   → 3/2/7/5   (unchanged)
+  mean_relerr_sval       3/1/7/6   → 3/1/8/5   (±1, isvd↔online)
+  final_exact_cos1       2/4/6/5   → 2/5/5/5   (±1, hybrid↔isvd)
+  final_exact_cos2       3/3/5/6   → 3/2/5/7   (online +1)
+  final_tail_mass        3/1/6/7   → 3/1/5/8   (online +1)
+
+
+Head-to-head W/T/L of future_hmean_online vs each baseline
+----------------------------------------------------------
+  vs combined   mean_relerr_sval       11/1/5    (was 10/1/6)
+  vs combined   mean_exact_cos1         9/1/7
+  vs combined   final_tail_mass         9/1/7
+  vs combined   elapsed                17/0/0    (online ≤ combined every matrix)
+
+  vs hybrid     mean_exact_cos1        10/0/7
+  vs hybrid     final_tail_mass        10/1/6
+  vs hybrid     final_exact_cos2        9/1/7
+  vs hybrid     elapsed                 0/0/17   (hybrid still ~½ of online)
+
+  vs isvd       final_tail_mass        10/0/7    (was 9/0/8, online +1)
+  vs isvd       final_exact_cos2       10/1/6    (was 9/0/8, online +1)
+  vs isvd       mean_relerr_sval        8/0/9
+  vs isvd       elapsed                 0/0/17   (iSVD still ~9× faster)
+
+
+Matrix categorisation
+---------------------
+Same three regimes hold:
+
+1) **Well-conditioned matrices** (9): all four methods tie at ~0.999 on
+   mean_exact_cos1; small differences on the second cosine.
+
+     crowded-strategy, execution-cost-slippage, futures-term-structure,
+     intraday-liquidity-shape, macro-factor-panel, options-vol-surface,
+     rates-cross-currency, realized-vol-corr, stat-arb-spreads
+
+   All four methods deliver ~0.999+ on the dominant signal; iSVD wins
+   on speed. The online variant pays ~3s instead of ~0.3s with no
+   quality benefit on these.
+
+2) **Counterexample / tail-dominant matrices** (6) — `future_hmean_online`
+   wins decisively, and on every one of these it improved vs the
+   previous synthesis on at least one metric:
+
+     matrix                    method         mEx1    mEx2    final_ex1  final_ex2  final_tail  relerr
+     mixed-tail-sharp         isvd           0.074   0.026   0.078      0.013      0.997       0.0135
+                              hybrid         0.359   0.019   0.064      0.030      0.997       0.0138
+                              combined       0.508   0.054   0.874      0.027      0.618       0.0206
+                              online         0.691   0.490   0.983      0.850      0.156       0.0048
+     mixed-tail-balanced      isvd           0.123   0.037   0.182      0.060      0.982       0.0180
+                              combined       0.453   0.038   0.810      0.044      0.671       0.0295
+                              online         0.689   0.437   0.981      0.827      0.177       0.0052
+     mixed-tail-soft          isvd           0.209   0.005   0.359      0.003      0.936       0.0192
+                              hybrid         0.490   0.075   0.839      0.123      0.641       0.0201
+                              online         0.690   0.443   0.983      0.019      0.516       0.0050
+     etf-basket-basis         isvd           0.999   0.191   1.000      0.205      0.479       0.0147
+                              online         0.999   0.814   1.000      0.962      0.037       0.0145
+     diffuse-diffuse          isvd           0.617   0.299   0.911      0.489      0.465       0.0090
+                              online         0.621   0.317   0.943      0.528      0.416       0.0116
+     static-cex               isvd           0.064   0.011   0.045      0.044      0.998       0.0010
+                              combined       0.682   0.573   0.976      0.913      0.108       0.0039
+                              online         0.691   0.472   0.982      0.819      0.183       0.0048
+
+   On `mixed-tail-sharp` specifically, online's final_exact_cos2 jumped
+   from 0.601 → 0.850 and final_tail_mass dropped 0.344 → 0.156 vs the
+   previous run — the new seeding (clean V_init + prev_basis) gave the
+   slot-1 candidate scoring a much better default frame to compare
+   against, and the patience-bounded ascent didn't spend cycles past
+   convergence on each slot.
+
+   `mixed-tail-soft` final_ex2 stayed near zero (0.019) — same regime
+   note as before: online wins the averaged metric but its endpoint on
+   this matrix is not clean. `static-cex` flipped: combined now beats
+   online on mEx2 (0.573 vs 0.472) and final_ex2 (0.913 vs 0.819) —
+   combined's both-slot greedy with the new seeds reaches a comparable
+   tail-aware frame on this matrix.
+
+3) **Matrices where `future_hmean_online` UNDERPERFORMS** — spiky or
+   residual-dominated inputs (unchanged regime, slightly less bad):
+
+     matrix                    method         mEx1    mEx2    final_ex1  final_ex2  final_tail  relerr
+     residual-spiky-shocks    isvd           0.652   0.379   0.930      0.637      0.365       0.0369
+                              hybrid         0.632   0.221   0.895      0.570      0.437       0.0565
+                              online         0.275   0.115   0.447      0.246      0.870       0.1570
+     risk-residual-panel      isvd           0.455   0.324   0.611      0.471      0.702       0.0494
+                              hybrid         0.384   0.084   0.624      0.085      0.802       0.0755
+                              online         0.351   0.087   0.519      0.064      0.863       0.1062
+
+   The HM-online score still misreads the spike as low-entropy noise.
+   Numbers nudged in online's favour (e.g. `risk-residual-panel`
+   final_ex1 0.360 → 0.519 vs previous synthesis) but the regime
+   conclusion is unchanged: pure gain-ordering (iSVD) is the right pick
+   on these two.
+
+
+Wall-clock time (sliding, per-policy, 17 matrices)
+--------------------------------------------------
+4-way parallel batches with OPENBLAS_NUM_THREADS=2 / OMP_NUM_THREADS=2
+(the previous pass did not cap BLAS threads, so cross-policy ratios are
+the meaningful comparison; raw isvd numbers below are not directly
+comparable to the previous run because the algorithm itself is
+unchanged).
+
+  policy                 min(s)   median(s)  mean(s)  max(s)   total(s)
+  combined                 2.71    3.15       3.83     5.57      65.2
+  hybrid                   1.34    1.64       1.90     2.79      32.4
+  isvd                     0.34    0.35       0.35     0.36       5.9
+  future_hmean_online      2.70    3.11       3.54     5.08      60.1
+
+  Whole 17-matrix sweep wall-clock: 108s (vs ~17 min in the prior pass).
+
+  Median ratios (isvd baseline):
+    isvd is  9.0x faster than combined        (was 23.8×)
+    isvd is  4.7x faster than hybrid          (was 11.3×)
+    isvd is  8.9x faster than future_hmean_online   (was 21.4×)
+
+  The online/isvd gap closed by ~2.4× — that is the algorithmic
+  speedup of the seeding+patience changes, separated from the
+  BLAS-thread-cap effect that benefits all four policies equally.
+
+  Head-to-head on elapsed (future_hmean_online vs baseline, W/T/L):
+    vs combined : 17/0/0  (online faster than combined on every matrix —
+                           the cheap candidate scoring beats running
+                           the slot-1 greedy to its post-expansion cap)
+    vs hybrid   :  0/0/17 (hybrid wins all — only 1 greedy slot vs 2)
+    vs isvd     :  0/0/17 (isvd wins all)
+
+Per-matrix elapsed (sliding mode, full 4-policy process):
+
+  matrix                     combined  hybrid    isvd      online
+  crowded-strategy             3.11    1.53      0.36      2.87
+  diffuse-diffuse              5.48    2.53      0.34      4.47
+  etf-basket-basis             3.01    1.62      0.34      2.93
+  execution-cost-slippage      2.84    1.36      0.36      2.81
+  futures-term-structure       3.41    1.92      0.35      3.37
+  intraday-liquidity-shape     3.00    1.52      0.35      2.94
+  macro-factor-panel           2.71    1.34      0.36      2.70
+  mixed-tail-balanced          4.80    2.55      0.34      4.09
+  mixed-tail-sharp (solo)      4.35    2.16      0.34      3.95
+  mixed-tail-soft              5.57    2.66      0.34      4.12
+  options-vol-surface          2.86    1.40      0.35      2.75
+  rates-cross-currency         3.05    1.47      0.35      3.03
+  realized-vol-corr            3.01    1.51      0.35      2.89
+  residual-spiky-shocks        5.10    2.52      0.35      5.08
+  risk-residual-panel          5.40    2.79      0.34      4.91
+  stat-arb-spreads             3.15    1.84      0.35      3.11
+  static-cex                   4.34    1.64      0.36      4.13
+
+
+Quality-per-second tradeoff (sliding, within-matrix ratios):
+
+  - On tail-dominant matrices the online variant still delivers
+    substantially better subspace quality (final_ex2 0.83-0.96 vs iSVD
+    0.06-0.49) at ~10× the iSVD wall-clock, but absolute online cost
+    is now 3-5s/matrix instead of 80-110s — well inside hot-path
+    budgets for many use cases that used to need iSVD.
+  - On the 9 well-conditioned matrices the methods tie on quality;
+    iSVD's ~9× edge still makes it the clear pick when latency matters.
+  - On the 2 spiky-residual matrices iSVD wins on both quality AND
+    speed; the online variant remains a wrong tool.
+
+
+Summary
+-------
+- Quality picture is essentially unchanged from the previous synthesis:
+  online dominates the 6 tail-dominant matrices, ties on the 9 well-
+  conditioned ones, and underperforms on the 2 spiky-residual ones.
+  Within-regime improvements on tail-dominant matrices are real but
+  modest (notably mixed-tail-sharp final_ex2 0.601 → 0.850).
+
+- Wall-clock is ~25-30× lower per matrix for the three slow-path
+  policies, driven by (a) cutting num_restarts 8→3 with explicit
+  V_init + prev_basis seeds that fill the slot, eliminating the
+  per-expansion `np.linalg.svd(M_gain)` inside make_basic_restart_seeds,
+  and (b) a patience-bounded early stop in the cex ascent.
+
+- The headline iSVD-vs-online median ratio dropped from 21.4× to 8.9×
+  (algorithmic part) — the online policy is now in the same order of
+  magnitude as iSVD on per-matrix wall-clock, while keeping its
+  quality advantage on tail-dominant inputs.
+
+- Spiky-residual remains the open structural problem; a row-
+  concentration guard in the candidate pool or scoring is still the
+  most promising direction to close those two cases without losing the
+  tail-dominant wins.

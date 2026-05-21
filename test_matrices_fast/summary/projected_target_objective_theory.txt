@@ -1,0 +1,210 @@
+Projected-target objective: theoretical fix for oracle-span convergence
+=======================================================================
+
+Date: 2026-04-19
+
+Context
+-------
+Investigating why the combined objective on static-cex (n=128, win=32, rank=2,
+seed=0) does not converge to the oracle projected span Q_oracle, even with
+oracle-warm start and greedy rank-by-rank selection.
+
+Baseline first block under `test_rownorm_seed_stream.py`:
+
+  greedy oraclewarm-ON:   score_sum=2.09367, cos_min=0.904,
+                          outside_2=0.4248, v3_out_2=0.9402,
+                          final_align=0.9963
+
+The argmax of the current objective sits outside span(Q_oracle); its second
+column is ~42% outside the oracle plane, pointing at global v3 via original
+row 1 (a high-leverage tail row that lands in block 1 under the seed-0 row
+permutation).
+
+
+Framing
+-------
+Q_oracle is defined as the orthonormalized projection of V_exact onto
+range(M_gain^T). V_exact is global information. Therefore no objective
+computable purely from M_gain can have Q_oracle as its exact argmax in
+general.
+
+Exceptions (where block-only data does give Q_oracle):
+
+  1. rank(M_gain) = r exactly. Then range(M_gain^T) = span(Q_oracle) and
+     block-SVD trivially hits it.
+
+  2. Block rows are exchangeable / unbiased samples of A_full. Then block
+     top-r SVD converges to V_exact as block size grows.
+
+For static-cex block 1, neither holds: the block has 32 rows, rank >> 2, and
+row 1 is a high-leverage spike.
+
+
+Gap decomposition for the current objective
+-------------------------------------------
+  score(v) = ||M_gain v||^2 * exp(c * H(v))
+  H(v)     = - sum_i p_i * log(p_i),  p_i = y_i^2 / ||y||^2,  y = M_gain v
+  c        = log(rows_seen / rows_ref) / log(rows_seen)
+
+Two separable failure modes:
+
+  (F1) Entropy-sign bias.
+       For block 1, rows_seen=32 < rows_ref=128, so c<0. exp(c*H) with c<0
+       rewards LOW entropy, i.e. directions with concentrated row response.
+       The v3 spike direction has concentrated response (dominated by row 1),
+       so the entropy factor actively pulls the optimizer toward the spike.
+       Removing this term is unavoidable if we want an argmax that is not
+       spike-biased.
+
+  (F2) Leverage bias of block SVD.
+       Even pure ||M v||^2 is biased when one block row dominates. Block top-r
+       SVD maximizes sum_{i in block} <a_i, v>^2 which is not the same as
+       global top-r SVD when row-leverage deviates from its global mean. This
+       is a fundamental limit of per-block objectives.
+
+
+Theorem (the actionable handle)
+-------------------------------
+For any fixed r-frame V_target, define
+
+  J(V; M, V_target) = || V_target^T M V ||_F^2
+
+on orthonormal r-frames V. Let B = V_target^T M (size r x d). Then
+J(V) = ||B V||_F^2, so argmax over orthonormal V is the top-r right singular
+vectors of B, which equal:
+
+  orthonormalized projection of V_target onto range(M^T)
+
+When V_target = V_exact this argmax IS exactly Q_oracle.
+
+Consequence: to make the per-block argmax lie inside span(Q_oracle), V_target
+must appear inside the objective itself. Warm-starting with V_target only pulls
+the optimizer into a neighborhood; putting V_target in the objective reshapes
+the objective so Q_oracle is its fixed point.
+
+
+Three regimes depending on where V_target comes from
+----------------------------------------------------
+  V_target             objective                      fixed point         cost
+  --------             ---------                      -----------         ----
+  V_exact (oracle)     ||V_exact^T M V||^2            Q_oracle (exact)    unusable
+  V_{k-1} (state)      ||V_{k-1}^T M_k V||^2          Q_oracle approx.,   usable
+                                                       -> V_exact as k->inf
+  V_0 (init seed)      ||V_0^T M_1 V||^2 at k=1       proj(V_0,range(M^T)) usable
+
+Middle row is the practical proposal: use the streaming state subspace V_{k-1}
+as V_target at each block. The resulting optimization is projected power
+iteration / streaming Grassmannian ascent, known to converge to V_exact under
+standard mixing / bounded-leverage assumptions.
+
+First block k=1: V_target must come from outside state. Candidates already
+shown to be reasonable:
+
+  - row-L2-normalized SVD seed (rownorm seed): principal cosines 0.993/0.957
+    to Q_oracle, no oracle info required.
+  - top-r right SVD of A_block (current OFF init): biased toward leverage
+    spike, poor (52% v3 alignment on col 0).
+
+
+How the projected objective defeats the spike
+---------------------------------------------
+Under J(V) = ||V_target^T M V||^2, components of M V that lie orthogonal to
+span(V_target) contribute zero score. The v3 spike is (approximately)
+orthogonal to V_target when V_target is aligned with (v1, v2). So its
+contribution to the objective is suppressed, not rewarded. This is the
+structural difference from the current combined objective which rewards
+concentration regardless of direction.
+
+Entropy term is no longer needed once V_target carries the direction prior and
+can be dropped.
+
+
+Implementation sketch
+---------------------
+Location: combined_score_grad_reduced in cex_restricted_space_probe.py.
+
+  Current per-column gain:
+    g2(v) = ||B v||^2 / ||v||^2          where B = reduced M_gain
+
+  Projected version:
+    g2_proj(v) = ||V_target^T B v||^2 / ||v||^2
+
+Equivalent to running the same optimizer on M_tilde = V_target^T M_gain (an
+r x d matrix) instead of M_gain. No new optimizer machinery required.
+
+Streaming wiring:
+
+  - block 1:  V_target = rownorm_seed(A_block) (or any M_gain-only estimate)
+  - block k>=2: V_target = state["V"]   (current rank-r streaming subspace)
+
+Suggested new flag: score_variant = "projected" (alongside "combined",
+"gain2"). Drop entropy term unconditionally under this variant.
+
+
+Theoretical guarantees (informal)
+---------------------------------
+Under:
+
+  - rows in each block are exchangeable and have bounded leverage,
+  - low-rank-plus-bounded-noise generative model for A,
+
+the recursion
+
+  V_k = argmax_{V orthonormal} || V_{k-1}^T M_gain,k V ||^2
+  state_k update = incremental SVD of [diag(s_{k-1}) V_{k-1}^T ; A_block_k]
+
+converges to V_exact (top-r right SVD of A_full) as k -> infinity. First-block
+bias enters only through the transient, not the fixed point.
+
+Contrast: under the current combined objective, the fixed point is not
+V_exact even in the infinite-stream limit, because the entropy term biases
+every block's argmax away from the Rayleigh quotient maximum.
+
+
+Open questions
+--------------
+1. First-block V_target. Rownorm seed is cheap and reasonable but is not the
+   only choice. Worth testing:
+     - truncated block SVD with noise-level thresholding
+     - block SVD of row-reweighted M with w_i = 1/(row_norm^alpha) for
+       alpha in {0.5, 1, 2}
+
+2. Convergence rate. The recursion with projected objective is a variant of
+   subspace iteration with noisy-block multiply. Expect rate ~ (sigma_r / sigma_{r+1})^2
+   per block; in leverage-heavy blocks this degrades. Quantify.
+
+3. Interaction with the streaming forget mechanism. Current state update uses
+   [diag(s) V^T; A_block]. Projected objective compatible unchanged; verify
+   numerically.
+
+4. When does rownorm seed fail? In static-cex it matched oracle-warm's
+   first-block geometry but gave worse final_align (0.972 vs 0.996) due to
+   column-swap / basin selection inside the optimizer. Under the projected
+   objective the argmax is unique up to orthogonal rotation within
+   span(Q_oracle), so column-swap should not propagate bad state. Verify.
+
+
+Relation to prior experiments
+-----------------------------
+  - Row concentration lambda ~ 0.1-0.2 (leverage_compensation_result.txt):
+    heuristic penalty that partially suppresses F1. Final_align improves from
+    0.9963 to 0.9971. Projected objective should dominate this.
+
+  - Row leverage top-SVD: made things worse in streaming. Projected objective
+    does not rely on leverage weighting at all.
+
+  - Joint refinement after greedy (basis_selection=joint, greedy-warm seeds):
+    climbed to higher combined objective (+0.005) but final_align worsened to
+    ~0.973. Confirms combined objective's near-global optimum is NOT at Q_oracle.
+    Projected objective eliminates this pathology by construction.
+
+
+Next action
+-----------
+Wire score_variant="projected" into cex_restricted_space_probe.py and run
+test_rownorm_seed_stream.py with the new variant. Expect:
+
+  - first block: score_sum will be a DIFFERENT quantity (not comparable to
+    combined). Report ||V_target^T M V_out||^2 instead.
+  - cos_min vs oracle should be near 1.0 from block 1 if V_target is rownorm.
+  - final_align should rise smoothly to near 1 as blocks accumulate.

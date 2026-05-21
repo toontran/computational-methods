@@ -1,0 +1,180 @@
+future_hmean online variant — patch-and-rerun synthesis
+========================================================
+
+Date: 2026-04-23
+
+
+Patch
+-----
+`half_window_sliding_hmean_experiment.py` was modified to add a new policy,
+`future_hmean_online`, that mirrors `obj_future_hmean` from the oracle-free
+benchmark in online form:
+
+1. Candidate pool drops `half2_complement`, because it is built from the
+   future half (A_half2) and so is not a legal online candidate. The remaining
+   candidates are
+   {opt2, q2_vs_q1oracle, q2_raw_projected, mgain_deflated_svd, opt2_outside}.
+
+2. Objective uses **current-half** entropy (relH1), not second-half:
+       obj_future_online(v) = HM(gain1_share, gain2_share) * relH1(v)
+   No alignment guard.
+
+3. Each step also logs `winner_oracle_mass =
+   ||Q_oracle^T v_winner||^2` using the projected-true-span Q_oracle
+   (same definition as the benchmark's oracle_mass).
+
+The other policies (`combined`, `half_hmean`, `half_hmean_guard`) are
+unchanged. In sliding mode, `future_hmean_online` is online-deployable with a
+half_win-row lookahead lag.
+
+
+Runs
+----
+Matrix `mixed-tail-sharp`, n=1024, rank=2, heavy optimizer defaults (q0=8,
+qmax=48, maxit=120, expansion_maxit=8, post_expansion_maxit=80, num_restarts=8),
+float32, --shuffle-rows.
+
+- `summary/half_window_online_win32.{json,csv,txt}`   half_win=16  pair=32
+- `summary/half_window_online_win64.{json,csv,txt}`   half_win=32  pair=64
+- `summary/half_window_online_win128.{json,csv,txt}`  half_win=64  pair=128
+
+
+Winner / cosine / alignment table (mixed-tail-sharp)
+----------------------------------------------------
+Columns:
+  steps    = number of decisions in this mode
+  q2       = q2_vs_q1oracle + q2_raw_projected (oracle-like winners)
+  mgain    = mgain_deflated_svd + half2_complement (complement-like winners)
+  opt2     = opt2 + opt2_outside
+  ex1,ex2  = time-averaged principal cosines of (selected 2D) vs V_exact[:,:2]
+  cos1,cos2= time-averaged principal cosines vs Q_oracle (projected-true-span)
+  om       = time-averaged winner_oracle_mass   = ||Q_oracle^T v_winner||^2
+  align    = mean_align from script (final Frobenius alignment of V_r to V_exact[:,0])
+  relerr   = time-averaged relerr_sval (top-singular value error)
+
+Reference (benchmark obj_future_hmean on mixed-tail-sharp, win=32 blocks,
+H=1 future block):
+   q2=30/31, opt2=1, block_svd=0, mean_winner_oracle_mass = 0.970097
+
+Half-window experiment results:
+
+               size         mode                 policy  steps  q2 mgain opt2    ex1    ex2   cos1   cos2     om   align    relerr
+ ------------------ ------------ ---------------------- ------ --- ----- ---- ------ ------ ------ ------ ------ ------- ---------
+  win=16 (pair=32)  split_probe               combined     32   0     0   32 0.2425 0.1308 0.8254 0.6193 0.5140  0.2634  0.073368
+  win=16 (pair=32)      sliding               combined     63   0     0   63 0.5777 0.2007 0.9709 0.6280 0.5485  0.0237  0.051694
+  win=16 (pair=32)  split_probe             half_hmean     32  25     6    1 0.3954 0.0389 0.9060 0.2219 0.8201  0.0599  0.058047
+  win=16 (pair=32)      sliding             half_hmean     63  12    45    6 0.3972 0.0656 0.8840 0.3804 0.2730  0.7606  0.032784
+  win=16 (pair=32)  split_probe       half_hmean_guard     32   0    32    0 0.1728 0.0369 0.7017 0.2550 0.1077  0.3592  0.026095
+  win=16 (pair=32)      sliding       half_hmean_guard     63   0    55    8 0.5789 0.0295 0.9747 0.2089 0.0714  0.9062  0.025917
+  win=16 (pair=32)  split_probe    future_hmean_online     32  11     0   21 0.4887 0.1229 0.9861 0.5801 0.7516  0.2296  0.062485
+  win=16 (pair=32)      sliding    future_hmean_online     63  17     2   44 0.6497 0.2865 0.9969 0.7297 0.8588  0.1210  0.045225
+
+  win=32 (pair=64)  split_probe               combined     16   0     0   16 0.3285 0.0408 0.8825 0.1837 0.0872  0.1445  0.071477
+  win=32 (pair=64)      sliding               combined     31   0     0   31 0.5012 0.1265 0.9234 0.4816 0.3421  0.8491  0.057094
+  win=32 (pair=64)  split_probe             half_hmean     16   5    11    0 0.2130 0.0260 0.6983 0.1298 0.3565  0.0690  0.042872
+  win=32 (pair=64)      sliding             half_hmean     31   0    28    3 0.5166 0.0284 0.9202 0.1451 0.0370  0.8630  0.026050
+  win=32 (pair=64)  split_probe       half_hmean_guard     16   6    10    0 0.2573 0.0565 0.7635 0.2728 0.4168  0.2506  0.043875
+  win=32 (pair=64)      sliding       half_hmean_guard     31  21    10    0 0.4990 0.0879 0.8993 0.3257 0.6925  0.2549  0.042217
+  win=32 (pair=64)  split_probe    future_hmean_online     16  15     0    1 0.5049 0.0893 0.9955 0.4228 0.9489  0.1835  0.061618
+  win=32 (pair=64)      sliding    future_hmean_online     31  21     0   10 0.6911 0.1776 0.9996 0.6071 0.8978  0.1860  0.041031
+
+ win=64 (pair=128)  split_probe               combined      8   0     0    8 0.2790 0.0291 0.7335 0.1019 0.0457  0.5047  0.073953
+ win=64 (pair=128)      sliding               combined     15   0     0   15 0.4370 0.1207 0.8108 0.3707 0.2241  0.1037  0.060761
+ win=64 (pair=128)  split_probe             half_hmean      8   4     4    0 0.2739 0.0269 0.7195 0.0954 0.5100  0.0012  0.048272
+ win=64 (pair=128)      sliding             half_hmean     15   6     9    0 0.3318 0.0416 0.7128 0.1512 0.4205  0.0591  0.036436
+ win=64 (pair=128)  split_probe       half_hmean_guard      8   4     4    0 0.2565 0.0420 0.6777 0.1477 0.5125  0.0655  0.045488
+ win=64 (pair=128)      sliding       half_hmean_guard     15   6     9    0 0.3491 0.0366 0.7461 0.1339 0.4207  0.0554  0.036743
+ win=64 (pair=128)  split_probe    future_hmean_online      8   8     0    0 0.5409 0.0342 1.0000 0.1432 1.0000  0.0957  0.058043
+ win=64 (pair=128)      sliding    future_hmean_online     15  12     0    3 0.6966 0.2192 0.9999 0.5815 0.9751  0.4252  0.041901
+
+
+`future_hmean_online` sliding, summary by window size
+-----------------------------------------------------
+  half_win  steps  q2  mgain  opt2  mean_cos1  mean_cos2  mean_exact_cos1  mean_exact_cos2  mean_oracle_mass
+  16         63    17     2    44     0.9969     0.7297           0.6497           0.2865           0.8588
+  32         31    21     0    10     0.9996     0.6071           0.6911           0.1776           0.8978
+  64         15    12     0     3     0.9999     0.5815           0.6966           0.2192           0.9751
+
+Monotone improvement with window size. At half_win=64 the online variant
+matches/exceeds the benchmark's `obj_future_hmean` result on this matrix
+(0.9751 vs 0.970097 mean winner oracle_mass).
+
+
+Compared with the existing half-HM policies (same sizes)
+--------------------------------------------------------
+At the size that matches the benchmark block (half_win=32, pair=64,
+sliding mode):
+
+  policy                         q2   mgain   opt2   mean_exact_cos1   mean_oracle_mass
+  half_hmean                      0      28      3            0.5166             0.0370
+  half_hmean_guard               21      10      0            0.4990             0.6925
+  future_hmean_online            21       0     10            0.6911             0.8978
+  benchmark obj_future_hmean     30       0      1                 -             0.9701
+
+Key observations:
+
+1. The patch fully eliminates `mgain`-like (complement) wins: 0/31 at
+   half_win=32 and 0/15 at half_win=64 sliding. That matches the benchmark's
+   "0 block_svd wins" property.
+
+2. The subspace quality jumps dramatically vs the previous `half_hmean` /
+   `half_hmean_guard` variants:
+     mean_cos1        0.920 -> 1.000  (vs Q_oracle)
+     mean_exact_cos1  0.517 -> 0.691  (vs V_exact[:,0])
+     mean_oracle_mass 0.037 -> 0.898
+   This is the biggest quality swing from any single change to the half-HM
+   stack we have tested.
+
+3. At the matching window size (half_win=32), online falls short of the
+   benchmark mainly via `opt2` wins (10 vs 1). The mgain channel is already
+   closed. The residual gap is therefore about `opt2` winning when q2 should
+   — presumably because the candidate pool and max-normalization denominators
+   differ between the two setups (see "Remaining gap" below).
+
+4. Widening to half_win=64 closes the gap in sliding mode (0.975 >= 0.970),
+   although with only 15 decisions the sample is small. Split-probe at
+   half_win=64 is 8/8 oracle-like with mean_oracle_mass = 1.000 (also small).
+
+
+Remaining gap at matching size
+------------------------------
+Candidate pools differ:
+
+  benchmark     = {opt2, q2_vs_q1oracle, svd_complement_mgain,
+                   block_svd_complement, prev_opt2}
+  online variant= {opt2, q2_vs_q1oracle, q2_raw_projected,
+                   mgain_deflated_svd, opt2_outside}
+
+  - online has `q2_raw_projected` and `opt2_outside` that the benchmark does
+    not; benchmark has `prev_opt2` and `block_svd_complement` that online
+    does not.
+  - The max-normalization denominators `max_block_gain`, `max_future_gain` are
+    therefore different across the two pools. When `opt2_outside` has high
+    current-block gain, it can inflate `max_gain1`, shrinking shares for the
+    oracle candidate and occasionally letting `opt2` win the HM.
+
+This is consistent with the win-count pattern (online picks `opt2` 10/31
+times; benchmark picks `opt2` 1/31 times). Aligning the candidate pool to
+the benchmark's five-candidate set should further close the gap; that is a
+small additional patch.
+
+
+Bottom line
+-----------
+- Dropping `half2_complement` from candidates and scoring with relH on the
+  current half turns the sliding half-HM into an effective online analogue
+  of `obj_future_hmean`. This is the first half-HM variant on
+  `mixed-tail-sharp` that picks 0 complement-like winners.
+
+- `mean_winner_oracle_mass` for sliding `future_hmean_online` grows with
+  window size: 0.859 (half_win=16), 0.898 (half_win=32), 0.975 (half_win=64).
+  The benchmark `obj_future_hmean` on the same matrix is 0.970. So at
+  half_win=64 we meet or slightly exceed it online; at half_win=32 we sit
+  ~7 points below, mostly from residual `opt2` wins.
+
+- The window-size knob is no longer needed just to make the guard work, but
+  it still affects mean oracle mass: wider halves give smoother future-gain
+  signals and cleaner oracle recovery.
+
+- All runs on `mixed-tail-sharp` used heavy-optimizer defaults; matching
+  the benchmark's pool would shave more of the residual gap.

@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_evidence half_win=32 mean_align=0.999847 mean_relerr_sval=0.28825557
+half_window_run mode=sliding policy=future_hmean_evidence half_win=32 mean_align=0.999977 mean_relerr_sval=0.01272938
+wrote_json=summary/bench_matrix_sweep_evidence/stat-arb-spreads_win64.json wrote_csv=summary/bench_matrix_sweep_evidence/stat-arb-spreads_win64.csv wrote_text=summary/bench_matrix_sweep_evidence/stat-arb-spreads_win64.txt elapsed=76.087

@@ -1,0 +1,31 @@
+AB-03 phase 1 (T3) — F-norm vs per-direction-sigma² (S6 vs S6_E2)
+Sliding, half_win=32, block 31. Reference: bench_matrix_sweep_r_sk_g_S6.
+============================================================================================================================
+matrix                   S6_HM3 cos0/cos1/tail        S6_E2  cos0/cos1/tail        online cos0/cos1       iSVD cos0/cos1        
+----------------------------------------------------------------------------------------------------------------------------
+static-cex               0.9673 0.1572 0.5198         0.9731 0.0755 0.5237         0.9827 0.8473          0.0448 0.0442         
+mixed-tail-sharp         0.8564 0.1118 0.6270         0.8608 0.0405 0.6287         0.7630 0.0482          0.0785 0.0128         
+mixed-tail-balanced      0.8290 0.0195 0.6562         0.6655 0.0737 0.7758         0.7653 0.0592          0.1816 0.0596         
+mixed-tail-soft          0.9204 0.1467 0.5657         0.9089 0.3229 0.5348         0.7589 0.0002          0.3585 0.0025         
+diffuse-diffuse          0.8655 0.0705 0.6230         0.4715 0.0412 0.8880         0.4001 0.0498          0.9114 0.4892         
+etf-basket-basis         1.0000 0.8073 0.1741         1.0000 0.7280 0.2350         1.0000 0.9689          1.0000 0.2051         
+residual-spiky-shocks    0.5774 0.5159 0.7002         0.6570 0.0903 0.7801         0.3518 0.1920          0.9298 0.6375         
+============================================================================================================================
+
+Per-matrix deltas (S6_E2 − S6_HM3):
+  static-cex                Δcos0²=+0.0058  Δcos1²=-0.0817  Δtail=+0.0039
+  mixed-tail-sharp          Δcos0²=+0.0044  Δcos1²=-0.0713  Δtail=+0.0016  [DIAG-04b: predicted slot-2 regression]
+  mixed-tail-balanced       Δcos0²=-0.1634  Δcos1²=+0.0542  Δtail=+0.1196
+  mixed-tail-soft           Δcos0²=-0.0115  Δcos1²=+0.1762  Δtail=-0.0309
+  diffuse-diffuse           Δcos0²=-0.3940  Δcos1²=-0.0292  Δtail=+0.2650  [DIAG-04b: balance hit]
+  etf-basket-basis          Δcos0²=+0.0000  Δcos1²=-0.0793  Δtail=+0.0609
+  residual-spiky-shocks     Δcos0²=+0.0797  Δcos1²=-0.4257  Δtail=+0.0799  [DIAG-04b: balance hit]
+
+Acceptance (AB-03 phase 1 T3 ship-screen):
+  diffuse-diffuse Δcos1² = -0.0292  (DIAG-04b predicted simultaneous balance; need > +0.005)
+  catastrophic regressions (Δcos1² < -0.05):
+    static-cex: Δcos1² = -0.0817
+    mixed-tail-sharp: Δcos1² = -0.0713
+    etf-basket-basis: Δcos1² = -0.0793
+    residual-spiky-shocks: Δcos1² = -0.4257
+VERDICT: KILL — DIAG-04b prediction did not translate to operational cos1² gain.

@@ -1,0 +1,778 @@
+%% Streaming iSVD / FD / WindowScore experiments over varying sigma1
+% WindowScore uses the additive objective
+%   score(v) = ||B v||_2^2
+%              + (k/n)^(1/4) * ||A_w v||_2^2
+%                * (k/n)^(-H_2(A_w v / ||A_w v||_2) / (4 log k)),
+% where k = rows(A_w).
+%
+% Writing
+%   c_k = log(k / n) / log(k),
+% the corrected current-window term becomes
+%   psi(v) = (k/n)^(1/4) * ||A_w v||_2^(2-c_k) * ||A_w v||_4^(c_k).
+%
+% Therefore
+%   score(v) = ||B v||_2^2 + psi(v),
+% with gradient
+%   grad score(v)
+%     = 2 B'B v
+%       + psi(v) * ( (2-c_k) * A_w' A_w v / ||A_w v||_2^2
+%                    + c_k * A_w'((A_w v).^3) / ||A_w v||_4^4 ).
+%
+% For block 1, B is empty, so the objective is just psi(v) on A_1.
+%
+
+clear; clc;
+rng(0);
+
+tic
+%% Basic parameters
+n    = 1024;
+r    = 2;               % target rank to keep in streaming
+l    = 1;               % # true right singular vectors to track (must satisfy l <= r)
+win  = 100;             % window / block size
+mode = "WindowScore";   % "iSVD", "FD", or "WindowScore"
+V_type = "rand";          % "id", "U", or "rand"
+r_sig = 2;              % true signal-block rank used in U,S construction
+
+format compact;
+alpha_sig  = 0.003;
+alpha_tail = 0.0145;
+tail_scale = 0.99;
+
+coarse_svals = [0.991];
+first_svals  = coarse_svals;
+
+num_svals = numel(first_svals);
+num_exper = 1;
+
+%% --- Consistent low-rank ground truth setup ---
+k = n;
+
+U0 = zeros(n, n);
+
+if mod(n,2) ~= 0
+    error('Hadamard construction requires n to be even (typically a power of 2).');
+end
+H = hadamard(n);
+U0(:, 1:r_sig) = H(:, 1:r_sig) / sqrt(n);
+
+a_tail = sqrt(1 - r_sig/n);
+b_tail = 1/sqrt(n);
+for j = r_sig+1:n
+    col = zeros(n,1);
+    idx_large = j - r_sig;
+    if idx_large <= n - r_sig
+        col(idx_large) = a_tail;
+    else
+        error('Tail index out of range; reduce r_sig or adjust construction.');
+    end
+    col(n-r_sig+1:n) = b_tail;
+    U0(:, j) = col;
+end
+
+[Qtmp, ~] = qr(U0, 0);
+for j = 1:r_sig
+    if dot(Qtmp(:, j), U0(:, j)) < 0
+        Qtmp(:, j) = -Qtmp(:, j);
+    end
+end
+U = Qtmp(:, 1:k);
+
+switch V_type
+    case "id"
+        V = eye(n, k);
+    case "U"
+        V = U;
+    case "rand"
+        [V, ~] = qr(randn(n, k), 0);
+    otherwise
+        error('Unknown V_type. Use "id", "U", or "rand".');
+end
+
+%% Allocate storage for results
+alignment_results   = zeros(num_svals, num_exper);
+relerr_sval_results = zeros(num_svals, num_exper);
+Delta_results       = zeros(num_svals, num_exper);
+DeltaComp_results   = zeros(num_svals, num_exper);
+low_sval_indicator  = zeros(num_svals, num_exper);
+
+%% Outer loop over sigma1 values
+for i = 1:num_svals
+    sigma1 = first_svals(i);
+
+    sig_block  = sigma1 * (1:r_sig).^(-alpha_sig);
+    tail_block = tail_scale * (1:(k-r_sig)).^(-alpha_tail);
+
+    svec = [sig_block, tail_block];
+    svec(1) = sigma1;
+    S = diag(svec);
+
+    if r < k
+        E_opt = sum(svec(r+1:end).^2);
+    else
+        E_opt = 0;
+    end
+
+    Delta_comp = sum(svec(1:r).^2) - sum(svec(r+1:2*r).^2);
+    DeltaComp_results(i, :) = Delta_comp;
+
+    for e = 1:num_exper
+        p = randperm(n);
+        A = U * S * V';
+        A = A(p, :);
+
+        [mA, ~] = size(A);
+
+        % Streaming state
+        state = [];
+        V_r = [];
+        S_r = [];
+        H_r = [];
+        score_r = [];
+
+        % Streaming over row blocks
+        for start_row = 1:win:mA
+            end_row = min(start_row + win - 1, mA);
+            A_block = A(start_row:end_row, :);
+
+            switch mode
+                case "WindowScore"
+                    if isempty(state)
+                        fprintf('\n===== block rows %d:%d (initial exact block score) =====\n', start_row, end_row);
+                    else
+                        fprintf('\n===== block rows %d:%d (streaming additive block score) =====\n', start_row, end_row);
+                    end
+
+                    [V_hat, s_new, H_new, score_new, state_new] = ...
+                        window_iter_basis_streaming( ...
+                            A_block, r, n, state, V_r, ...
+                            8, ...      % num_restarts
+                            200, ...    % maxit
+                            1e-8);      % tol
+
+                    if isempty(V_r) || isempty(S_r)
+                        state_new.prev_sketch = [];
+                    else
+                        state_new.prev_sketch = S_r * V_r';
+                    end
+
+                    if isempty(state_new.prev_sketch)
+                        current_block = A_block;
+                    else
+                        current_block = [state_new.prev_sketch; A_block];
+                    end
+                    [V_hat, s_new] = projected_subspace_svd(current_block, V_hat);
+                    state_new.V = V_hat;
+                    state_new.s = s_new;
+                    state_new.s2 = s_new.^2;
+
+                    V_r = V_hat;
+                    S_r = diag(s_new);
+                    H_r = H_new;
+                    score_r = score_new;
+                    state = state_new;
+
+                    fprintf('rows %d:%d\n', start_row, end_row);
+                    fprintf('s: ');      disp(s_new(:)');
+                    fprintf('H: ');      disp(H_new(:)');
+                    fprintf('scores: '); disp(score_new(:)');
+
+                    if start_row == 1
+                        [~, ~, vtmp] = svd(A_block, "econ");
+                        e1_proj = vtmp*vtmp' * V(:,1);
+                        e2_proj = vtmp*vtmp' * V(:,2);
+                        e1_proj_norm = norm(e1_proj);
+                        e2_proj_norm = norm(e2_proj);
+                        if e1_proj_norm > 1e-14
+                            e1_proj = e1_proj / e1_proj_norm;
+                        end
+                        if e2_proj_norm > 1e-14
+                            e2_proj = e2_proj / e2_proj_norm;
+                        end
+                        if e1_proj_norm > 1e-14
+                            score_e1_proj = window_score_fast(A_block, e1_proj, n);
+                            score_vhat1 = window_score_fast(A_block, V_hat(:,1), n);
+                            fprintf('score of v1 projection onto window space: '); disp(score_e1_proj);
+                            fprintf('actual score: '); disp(score_new);
+                            fprintf('V(1,1)=%.5f\n', V_hat(1,1));
+                            fprintf('should be: %.5f\n', e1_proj(1));
+                            if size(V_hat,2) >= 2 && e2_proj_norm > 1e-14
+                                score_e2_proj = window_score_fast( ...
+                                    A_block, e2_proj, n);
+                                score_vhat2 = window_score_fast( ...
+                                    A_block, V_hat(:,2), n);
+                                fprintf('approx score of v2 projection onto sketch+window space: '); disp(score_e2_proj);
+                                fprintf('approx score of V_hat(:,2): '); disp(score_vhat2);
+                                fprintf('reported score_new(2): '); disp(score_new(2));
+                                fprintf('V_hat(2,:)\n'); disp(V_hat(2,:));
+                                fprintf('should be: %.5f\n', e2_proj(2));
+                            end
+                            % break;
+                            align = norm(V_r * V_r' * V(:,1), 'fro');
+                            disp(align);
+                            fprintf("Projection norms:\n"); disp(vecnorm(V_r*V_r'*[e1_proj e2_proj], 2));
+                        end
+                    else
+                        if ~isempty(state.prev_basis)
+                            a_dbg = state.prev_basis' * V_hat(:,1);
+                            y_dbg = A_block * V_hat(:,1);
+                            E_old_dbg = sum((a_dbg.^2) .* state.prev_s2);
+                            fprintf('debug E_old(first vec)=%.12e\n', E_old_dbg);
+                            fprintf('debug ||A_w v||_2^2(first vec)=%.12e\n', kahan_sum(abs(y_dbg).^2));
+                            fprintf('debug ||A_w v||_4^4(first vec)=%.12e\n', kahan_sum(abs(y_dbg).^4));
+                        end
+                        if isempty(state.prev_sketch)
+                            current_block = A_block;
+                        else
+                            current_block = [state.prev_sketch; A_block];
+                        end
+                        [~, ~, vtmp_stream] = svd(current_block, "econ");
+                        e1_proj = vtmp_stream*vtmp_stream' * V(:,1);
+                        e2_proj = vtmp_stream*vtmp_stream' * V(:,2);
+                        e1_proj_norm = norm(e1_proj);
+                        e2_proj_norm = norm(e2_proj);
+                        if e1_proj_norm > 1e-14
+                            e1_proj = e1_proj / e1_proj_norm;
+                        end
+                        if e2_proj_norm > 1e-14
+                            e2_proj = e2_proj / e2_proj_norm;
+                        end
+                        if e1_proj_norm > 1e-14
+                            score_e1_proj = window_score_fast( ...
+                                A_block, e1_proj, n-start_row-1, ...
+                                state.prev_basis, state.prev_s2);
+                            score_vhat1 = window_score_fast( ...
+                                A_block, V_hat(:,1), n-start_row-1, ...
+                                state.prev_basis, state.prev_s2);
+                            fprintf('approx score of v1 projection onto sketch+window space: '); disp(score_e1_proj);
+                            fprintf('approx score of V_hat(:,1): '); disp(score_vhat1);
+                            fprintf('reported score_new(1): '); disp(score_new(1));
+                            fprintf('V_hat(1,:)\n'); disp(V_hat(1,:));
+                            fprintf('should be: %.5f\n', e1_proj(1));
+                            if size(V_hat,2) >= 2 && e2_proj_norm > 1e-14
+                                score_e2_proj = window_score_fast( ...
+                                    A_block, e2_proj, n-start_row-1, ...
+                                    state.prev_basis, state.prev_s2);
+                                score_vhat2 = window_score_fast( ...
+                                    A_block, V_hat(:,2), n-start_row-1, ...
+                                    state.prev_basis, state.prev_s2);
+                                fprintf('approx score of v2 projection onto sketch+window space: '); disp(score_e2_proj);
+                                fprintf('approx score of V_hat(:,2): '); disp(score_vhat2);
+                                fprintf('reported score_new(2): '); disp(score_new(2));
+                                fprintf('V_hat(2,:)\n'); disp(V_hat(2,:));
+                                fprintf('should be: %.5f\n', e2_proj(2));
+                            end
+                            align = norm(V_r * V_r' * V(:,1), 'fro');
+                            disp(align);
+                            fprintf("Projection norms:\n"); disp(vecnorm(V_r*V_r'*[e1_proj e2_proj], 2));
+                            disp(window_score_fast(A_block, e1_proj, n-start_row-1));
+                            disp(window_score_fast(A_block, e2_proj, n-start_row-1));
+                            disp(window_score_fast(A_block, V_hat(:,1), n-start_row-1));
+                            disp(window_score_fast(A_block, V_hat(:,2), n-start_row-1));
+                            % break;
+                        end
+                    end
+                    
+                    % break;
+
+                case {"iSVD", "FD"}
+                    if isempty(V_r)
+                        M = A_block;
+                    else
+                        B_top = S_r * V_r';
+                        M     = [B_top; A_block];
+                    end
+
+                    [U_hat, S_hat, V_hat] = svd(M, 'econ');
+                    s = diag(S_hat);
+                    rr = min(r, numel(s));
+
+                    switch mode
+                        case "iSVD"
+                            S_r = S_hat(1:rr, 1:rr);
+                            V_r = V_hat(:, 1:rr);
+
+                        case "FD"
+                            if numel(s) > rr
+                                delta = s(rr+1)^2;
+                            else
+                                delta = 0;
+                            end
+                            s1 = s(1:rr);
+                            s1_shr = sqrt(max(s1.^2 - delta, 0));
+                            S_r = diag(s1_shr);
+                            V_r = V_hat(:, 1:rr);
+                    end
+
+                    [~, ~, vtmp] = svd(A_block, "econ");
+                    e1_proj = vtmp*vtmp' * V(:,1); e1_proj = e1_proj / norm(e1_proj);
+                    e2_proj = vtmp*vtmp' * V(:,2); e2_proj = e2_proj / norm(e2_proj);
+                    fprintf("Projection norms:\n"); disp(vecnorm(V_r*V_r'*[e1_proj e2_proj], 2))
+                    % break;
+
+                otherwise
+                    error('Unknown mode. Use "iSVD", "FD", or "WindowScore".');
+            end
+        end
+
+        %% --- Metrics after full pass ---
+        align = norm(V_r * V_r' * V(:,1), 'fro');
+
+        if isempty(S_r)
+            top_sval_est = 0;
+        else
+            top_sval_est = S_r(1,1);
+        end
+
+        rel_err_sval = abs(top_sval_est - sigma1) / sigma1;
+
+        if isempty(V_r)
+            E_alg = norm(A, 'fro')^2;
+        else
+            E_alg = norm(A - A * V_r * V_r', 'fro')^2;
+        end
+        Delta = E_alg - E_opt;
+
+        alignment_results(i, e)   = align;
+        relerr_sval_results(i, e) = rel_err_sval;
+        Delta_results(i, e)       = Delta;
+        low_sval_indicator(i, e)  = double(top_sval_est <= 0.99);
+    end
+end
+
+%% Summaries
+mean_align = mean(alignment_results, 2);
+std_align  = std(alignment_results, 0, 2);
+
+mean_relerr_sval = mean(relerr_sval_results, 2);
+std_relerr_sval  = std(relerr_sval_results, 0, 2);
+
+low_sval_count    = sum(low_sval_indicator, 2);
+low_sval_fraction = low_sval_count / num_exper; %#ok<NASGU>
+
+summary_table = table( ...
+    first_svals(:), ...
+    mean_align, std_align, ...
+    mean_relerr_sval, std_relerr_sval, ...
+    low_sval_count, ...
+    'VariableNames', ...
+    {'sigma1', 'mean_align', 'std_align', ...
+     'mean_relerr_sval', 'std_relerr_sval', ...
+     sprintf('count_sval_le_099_over_%d', num_exper)} ...
+);
+disp(summary_table);
+
+elapsedTime = toc;
+fprintf('Elapsed time: %.3f\n', elapsedTime);
+
+%% ========================= Local helper functions =========================
+
+function [V_out, s_out, H_out, score_out, state_out] = window_iter_basis_streaming( ...
+    A_block, r, n, state_prev, V_init, num_restarts, maxit, tol)
+
+    d = size(A_block, 2);
+    rows_new = size(A_block, 1);
+
+    V_out = zeros(d, r);
+    s_out = zeros(r, 1);
+    H_out = -inf(r, 1);
+    score_out = -inf(r, 1);
+
+    Q = zeros(d, 0);
+
+    is_initial_block = isempty(state_prev);
+
+    if is_initial_block
+        rows_total = rows_new;
+        M_gain = A_block;
+        prev_basis = [];
+        prev_s2 = [];
+    else
+        rows_total = state_prev.rows_seen + rows_new;
+        B_top = diag(state_prev.s) * state_prev.V';
+        M_gain = [B_top; A_block];
+        prev_basis = state_prev.V;
+        prev_s2 = state_prev.s2;
+    end
+
+    for k = 1:r
+        starts = make_basic_restart_seeds(M_gain, Q, k, V_init, num_restarts);
+
+        best_v = [];
+        best_score = -inf;
+        best_s2 = 0;
+        best_H = inf;
+
+        for restart = 1:num_restarts
+            v0 = starts{restart};
+
+            if is_initial_block
+                [v_cand, score_cand, s2_cand, H_cand] = ...
+                    basic_projected_ascent_single_exact( ...
+                        A_block, v0, Q, n, maxit, tol);
+            else
+                [v_cand, score_cand, s2_cand, H_cand] = ...
+                    basic_projected_ascent_single_streaming( ...
+                        A_block, prev_basis, prev_s2, n, v0, Q, maxit, tol);
+            end
+
+            if score_cand > best_score
+                best_score = score_cand;
+                best_v = v_cand;
+                best_s2 = s2_cand;
+                best_H = H_cand;
+            end
+        end
+
+        if isempty(best_v)
+            error('All restarts failed for k=%d.', k);
+        end
+
+        Q = [Q, best_v];
+        V_out(:, k) = best_v;
+        s_out(k) = sqrt(max(best_s2, 0));
+        H_out(k) = best_H;
+        score_out(k) = best_score;
+    end
+
+    s2_out = s_out.^2;
+
+    state_out = struct();
+    state_out.V = V_out;
+    state_out.s = s_out;
+    state_out.s2 = s2_out;
+    state_out.H = H_out;
+    state_out.score = score_out;
+    state_out.rows_seen = rows_total;
+
+    % Keep previous state too for debugging / inspection
+    state_out.prev_basis = prev_basis;
+    state_out.prev_s2 = prev_s2;
+    state_out.prev_sketch = [];
+end
+
+function starts = make_basic_restart_seeds(M, Q, k, V_init, num_restarts)
+    d = size(M,2);
+    starts = cell(num_restarts,1);
+
+    [~, ~, Vsvd] = svd(M, "econ");
+    num_top = min(4, size(Vsvd, 2));
+    alpha_grid = [0.98, 0.9, 0.75, 0.5, 0.25, 0.0];
+
+    for restart = 1:num_restarts
+        if ~isempty(V_init) && size(V_init,2) >= k
+            v_prev = V_init(:,k);
+        else
+            v_prev = [];
+        end
+
+        restart_type = mod(restart - 1, 5) + 1;
+        restart_block = floor((restart - 1) / 5);
+
+        switch restart_type
+            case 1
+                if ~isempty(v_prev)
+                    xi = randn(d,1);
+                    xi = project_feasible(xi, Q);
+                    nxi = sqrt(kahan_sum(abs(xi).^2));
+                    if nxi > 1e-14
+                        xi = xi / nxi;
+                    end
+                    alpha = alpha_grid(mod(restart_block, numel(alpha_grid)) + 1);
+                    v0 = alpha * v_prev + sqrt(max(0, 1 - alpha^2)) * xi;
+                else
+                    v0 = Vsvd(:,1);
+                end
+
+            case 2
+                j = mod(restart_block, num_top) + 1;
+                v0 = Vsvd(:, j);
+
+            case 3
+                j1 = mod(restart_block, num_top) + 1;
+                j2 = mod(restart_block + 1, num_top) + 1;
+                alpha = alpha_grid(mod(restart_block, numel(alpha_grid)) + 1);
+                v0 = alpha * Vsvd(:, j1) + sqrt(max(0, 1 - alpha^2)) * Vsvd(:, j2);
+
+            case 4
+                j = mod(restart_block, num_top) + 1;
+                v0 = Vsvd(:, j) + 1e-2 * randn(d,1);
+
+            otherwise
+                v0 = randn(d,1);
+        end
+
+        v = retract_feasible(v0, Q);
+        if isempty(v)
+            v = retract_feasible(randn(d,1), Q);
+        end
+        if isempty(v)
+            error('Could not generate feasible restart seed.');
+        end
+        starts{restart} = v;
+    end
+end
+
+function [V_proj, s_proj] = projected_subspace_svd(M_gain, V_basis)
+    if isempty(V_basis)
+        V_proj = V_basis;
+        s_proj = zeros(0, 1);
+        return;
+    end
+
+    [Q, ~] = qr(V_basis, 0);
+    B_proj = M_gain * Q;
+    [~, S_proj, R_proj] = svd(B_proj, "econ");
+    V_proj = Q * R_proj;
+    s_proj = diag(S_proj);
+end
+
+function [v, score, s2, H2] = basic_projected_ascent_single_exact( ...
+    M, v0, Q, n, maxit, tol)
+
+    v = retract_feasible(v0, Q);
+    if isempty(v)
+        error('Initial vector infeasible in exact optimizer.');
+    end
+
+    [score, gradE, s2, H2] = window_score_grad_rows(M, v, n);
+
+    progress_f_tol = 1e-12;
+    progress_step_tol = 1e-10;
+
+    for it = 1:maxit %#ok<NASGU>
+        g = project_to_feasible_tangent(gradE, v, Q);
+        gnorm = sqrt(kahan_sum(abs(g).^2));
+        if gnorm <= tol
+            return;
+        end
+
+        accepted = false;
+        alpha = 1.0;
+        score_old = score;
+        v_old = v;
+
+        for ls_it = 1:20 %#ok<NASGU>
+            vt = retract_feasible(v + alpha * g, Q);
+            if ~isempty(vt)
+                [score_trial, ~, ~, ~] = window_score_grad_rows(M, vt, n);
+                rhs = score_old + 1e-4 * alpha * real(g' * g);
+                if score_trial >= rhs
+                    accepted = true;
+                    v = vt;
+                    break;
+                end
+            end
+            alpha = 0.5 * alpha;
+        end
+
+        if ~accepted
+            v = v_old;
+            return;
+        end
+
+        [score, gradE, s2, H2] = window_score_grad_rows(M, v, n);
+
+        step_norm = sqrt(kahan_sum(abs(v - v_old).^2));
+        f_change = abs(score - score_old);
+        f_threshold = progress_f_tol * max(1.0, abs(score_old));
+
+        if f_change <= f_threshold || step_norm <= progress_step_tol
+            return;
+        end
+    end
+end
+
+function [v, score, s2_total, H_curr] = basic_projected_ascent_single_streaming( ...
+    A_block, V_old, s2_old, n, v0, Q, maxit, tol)
+
+    v = retract_feasible(v0, Q);
+    if isempty(v)
+        error('Initial vector infeasible in streaming optimizer.');
+    end
+
+    [score, gradE, s2_total, H_curr] = window_streaming_score_grad( ...
+        A_block, V_old, s2_old, v, n);
+
+    progress_f_tol = 1e-12;
+    progress_step_tol = 1e-10;
+
+    for it = 1:maxit %#ok<NASGU>
+        g = project_to_feasible_tangent(gradE, v, Q);
+        gnorm = sqrt(kahan_sum(abs(g).^2));
+        if gnorm <= tol
+            return;
+        end
+
+        accepted = false;
+        alpha = 1.0;
+        score_old = score;
+        v_old = v;
+
+        for ls_it = 1:20 %#ok<NASGU>
+            vt = retract_feasible(v + alpha * g, Q);
+            if ~isempty(vt)
+                [score_trial, ~, ~, ~] = window_streaming_score_grad( ...
+                    A_block, V_old, s2_old, vt, n);
+                rhs = score_old + 1e-4 * alpha * real(g' * g);
+                if score_trial >= rhs
+                    accepted = true;
+                    v = vt;
+                    break;
+                end
+            end
+            alpha = 0.5 * alpha;
+        end
+
+        if ~accepted
+            v = v_old;
+            return;
+        end
+
+        [score, gradE, s2_total, H_curr] = window_streaming_score_grad( ...
+            A_block, V_old, s2_old, v, n);
+
+        step_norm = sqrt(kahan_sum(abs(v - v_old).^2));
+        f_change = abs(score - score_old);
+        f_threshold = progress_f_tol * max(1.0, abs(score_old));
+
+        if f_change <= f_threshold || step_norm <= progress_step_tol
+            return;
+        end
+    end
+end
+
+function [score, g, y2_sq, H] = window_score_grad_rows(M, v, n)
+    y = M * v;
+
+    abs_y = abs(y);
+    y2_sq = kahan_sum(abs_y.^2);
+    y4_4  = kahan_sum(abs_y.^4);
+    rows_new = size(M, 1);
+
+    if rows_new <= 1 || y2_sq <= 1e-28 || y4_4 <= 1e-28 || any(~isfinite(y))
+        score = 0;
+        g = zeros(size(v));
+        H = inf;
+        return;
+    end
+
+    c_k = log(rows_new / n) / log(rows_new);
+    scale = (rows_new / n)^(1/4);
+    score = scale * exp((1 - 0.5 * c_k) * log(y2_sq) + 0.25 * c_k * log(y4_4));
+
+    My = M' * y;
+    My3 = M' * (y.^3);
+    g = score * ((2 - c_k) * (My / y2_sq) + c_k * (My3 / y4_4));
+
+    H = -(log(y4_4) - 2 * log(y2_sq));
+end
+
+function score = window_score_fast(M_or_Ablock, v, n, varargin)
+    if isempty(varargin)
+        [score, ~, ~, ~] = window_score_grad_rows(M_or_Ablock, v, n);
+        return;
+    end
+
+    if numel(varargin) ~= 2
+        error('window_score_fast expects either 3 inputs (exact) or 5 inputs (streaming).');
+    end
+
+    V_old = varargin{1};
+    s2_old = varargin{2};
+    A_block = M_or_Ablock;
+
+    a = V_old' * v;
+    y = A_block * v;
+    abs_y = abs(y);
+    y2_sq = kahan_sum(abs_y.^2);
+    y4_4  = kahan_sum(abs_y.^4);
+    rows_new = size(A_block, 1);
+
+    P_old = sum((a.^2) .* s2_old);
+
+    if rows_new <= 1 || y2_sq <= 1e-28 || y4_4 <= 1e-28 || any(~isfinite(y))
+        score = P_old;
+        return;
+    end
+
+    c_k = log(rows_new / n) / log(rows_new);
+    scale = (rows_new / n)^(1/4);
+    psi = scale * exp((1 - 0.5 * c_k) * log(y2_sq) + 0.25 * c_k * log(y4_4));
+
+    score = P_old + psi;
+end
+
+function [score, g, P_total, Hcurr] = window_streaming_score_grad( ...
+    A_block, V_old, s2_old, v, n)
+
+    % Old-state coefficients
+    a = V_old' * v;
+
+    % Exact new-window terms
+    y = A_block * v;
+    abs_y = abs(y);
+    y2_sq = kahan_sum(abs_y.^2);
+    y4_4  = kahan_sum(abs_y.^4);
+
+    P_old = sum((a.^2) .* s2_old);
+    g_old = 2 * (V_old * (s2_old .* a));
+    rows_new = size(A_block, 1);
+
+    if rows_new <= 1 || y2_sq <= 1e-28 || y4_4 <= 1e-28 || any(~isfinite(y))
+        score = P_old;
+        g = g_old;
+        P_total = P_old;
+        Hcurr = inf;
+        return;
+    end
+
+    c_k = log(rows_new / n) / log(rows_new);
+    scale = (rows_new / n)^(1/4);
+    psi = scale * exp((1 - 0.5 * c_k) * log(y2_sq) + 0.25 * c_k * log(y4_4));
+
+    Ay = A_block' * y;
+    Ay3 = A_block' * (y.^3);
+    g_psi = psi * ((2 - c_k) * (Ay / y2_sq) + c_k * (Ay3 / y4_4));
+
+    score = P_old + psi;
+    g = g_old + g_psi;
+    P_total = P_old + y2_sq;
+    Hcurr = -(log(y4_4) - 2 * log(y2_sq));
+end
+
+function g_feas = project_to_feasible_tangent(g, v, Q)
+    g_feas = g;
+    if ~isempty(Q)
+        g_feas = g_feas - Q * (Q' * g_feas);
+    end
+    g_feas = g_feas - v * (v' * g_feas);
+end
+
+function x = project_feasible(x, Q)
+    if ~isempty(Q)
+        x = x - Q * (Q' * x);
+    end
+end
+
+function v_new = retract_feasible(x, Q)
+    x = project_feasible(x, Q);
+    nx = sqrt(kahan_sum(abs(x).^2));
+    if nx <= 1e-14
+        v_new = [];
+    else
+        v_new = x / nx;
+    end
+end
+
+function s = kahan_sum(x)
+    x = x(:);
+    s = 0;
+    c = 0;
+    for i = 1:numel(x)
+        y = x(i) - c;
+        t = s + y;
+        c = (t - s) - y;
+        s = t;
+    end
+end

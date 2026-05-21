@@ -1,0 +1,437 @@
+\paragraph{Concentration lower-bound score, stated first.}
+At window $w$, score a candidate right direction $v\in\mathbb S^{d-1}$ by
+\begin{align}
+\operatorname{score}_w^{\mathrm{conc}}(v)
+:=
+\frac{E_w(v)}{p_w}
+\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}\right)_{\!+},
+\end{align}
+where
+\begin{align}
+E_w(v)
+&:=
+\|Bv\|_2^2+\|A_wv\|_2^2,
+\\
+k_{\mathrm{eff}}^{(R,w)}(v)
+&:=
+\frac{\|C_wv\|_2^4}{\|C_wv\|_4^4}
+=
+e^{h_2^{(R,w)}(v)},
+\\
+C_w
+&:=
+\begin{pmatrix}
+R\\
+A_w
+\end{pmatrix}\in\mathbb R^{(s+k)\times d},
+\qquad
+p_w:=\frac{n_{\mathrm{seen}}+k}{n},
+\end{align}
+and $c_\delta>0$ is a confidence multiplier controlling the failure
+probability. The operator $(x)_+:=\max\{x,0\}$ clamps the score at zero when
+the bound is vacuous. If this is the first window and no old row sample is
+available, take $R=\varnothing$ and $s=0$; if no old sketch is available,
+take $B=0$ and $n_{\mathrm{seen}}=0$.
+
+\paragraph{Notation in detail.}
+Let $A\in\mathbb R^{n\times d}$ be the full data matrix, let $A_w$ denote
+the current row-window with $k$ rows, let $B\in\mathbb R^{r\times d}$ denote
+the sketch carried from previous windows, and let $R\in\mathbb R^{s\times d}$
+denote a raw row memory. Write $v\in\mathbb S^{d-1}$, $x:=Av\in\mathbb R^n$,
+$y:=A_wv\in\mathbb R^k$, and $T:=\|x\|_2^2=\|Av\|_2^2$. Denote the number of
+raw rows represented after the current window and the seen-fraction by
+\begin{align}
+m_w:=n_{\mathrm{seen}}+k,
+\qquad
+p_w:=\frac{m_w}{n}.
+\end{align}
+Assume $s+k\ge 2$ so that the pooled participation ratio is well-defined and
+$p_w\in(0,1]$.
+
+\paragraph{Motivation: bound and argmax, simultaneously.}
+The combined lower-bound score
+$E_w(v)\cdot p_w^{-h_2^{(R,w)}(v)/(s+k)}$
+uses entropy as a multiplicative reward, with an exponent $1/(s+k)$ whose
+argmax is empirically dominated by the $E_w$ factor on structured matrices.
+The subset-mass upper-bound score $E_w(v)/(1-\psi_w(v))$ is monotone in the
+wrong direction: its argmax prefers low entropy. Neither is simultaneously a
+tight numerical estimator of $\|Av\|_2^2$ and a selection criterion whose
+argmax approaches the oracle direction.
+
+This note derives an objective that is both a valid (high-probability)
+numerical lower bound on $\|Av\|_2^2$ \emph{and} a selection criterion whose
+argmax favors flat directions where the bound is informative, from the
+standard unbiased plug-in estimator and a one-sided Chebyshev inequality.
+
+\paragraph{Setup: unbiased block estimator.}
+Specialize first to the one-block, no-memory case ($B=0$, $R=\varnothing$,
+$s=0$, $n_{\mathrm{seen}}=0$) for clarity; the pooled form follows at the
+end. Draw the $k$ window rows i.i.d.\ uniformly from the $n$ full rows (with
+replacement; the with-/without-replacement distinction is lower order for
+$k\ll n$). For any row $i$,
+\begin{align}
+\Pr[i\in B]=\frac{k}{n}=p_w.
+\end{align}
+Hence
+\begin{align}
+\mathbb E\!\left[\|A_wv\|_2^2\right]
+=
+\sum_{i=1}^n x_i^2\cdot\Pr[i\in B]
+=
+p_w\,T,
+\end{align}
+so the rescaled block estimator
+\begin{align}
+S:=\frac{\|A_wv\|_2^2}{p_w}
+\end{align}
+satisfies $\mathbb E[S]=T$.
+
+\paragraph{Variance in closed form.}
+Write $\|A_wv\|_2^2=\sum_{j=1}^k\xi_j$ with $\xi_j=x_{I_j}^2$ for
+i.i.d.\ uniform row indices $I_j\in[n]$. Each $\xi_j$ has
+$\mathbb E[\xi_j]=T/n$ and
+\begin{align}
+\operatorname{Var}(\xi_j)
+=\frac{1}{n}\sum_i x_i^4-\left(\frac{T}{n}\right)^2
+=\frac{\|x\|_4^4}{n}-\frac{T^2}{n^2}.
+\end{align}
+Therefore
+\begin{align}
+\operatorname{Var}\!\left(\|A_wv\|_2^2\right)
+=k\cdot\operatorname{Var}(\xi_j)
+=p_w\!\left(\|x\|_4^4-\frac{T^2}{n}\right),
+\end{align}
+and
+\begin{align}
+\operatorname{Var}(S)
+=\frac{1}{p_w^2}\operatorname{Var}\!\left(\|A_wv\|_2^2\right)
+=\frac{1}{p_w}\!\left(\|x\|_4^4-\frac{T^2}{n}\right).
+\end{align}
+Using the full-matrix participation ratio
+$k_{\mathrm{eff}}(x):=T^2/\|x\|_4^4$,
+\begin{align}
+\operatorname{Var}(S)
+=\frac{T^2}{p_w}\!\left(\frac{1}{k_{\mathrm{eff}}(x)}-\frac{1}{n}\right)
+=T^2\cdot\frac{n-k_{\mathrm{eff}}(x)}{k\cdot k_{\mathrm{eff}}(x)}.
+\end{align}
+Sanity checks:
+\begin{itemize}
+\item Flat direction, $k_{\mathrm{eff}}(x)=n$:
+$\operatorname{Var}(S)=0$. The estimator concentrates perfectly, since every
+row contributes identically.
+\item Spike direction, $k_{\mathrm{eff}}(x)=1$:
+$\operatorname{Var}(S)=T^2(n-1)/k\approx T^2/p_w$. The standard deviation is
+on the order of $T$ itself, so single-block estimation is uninformative.
+\end{itemize}
+
+\paragraph{One-sided Chebyshev lower bound.}
+By Chebyshev's inequality,
+\begin{align}
+\Pr[T\ge S+t]
+\le\Pr\!\bigl[|S-T|\ge t\bigr]
+\le\frac{\operatorname{Var}(S)}{t^2}.
+\end{align}
+Setting the right-hand side equal to $\delta$ and solving,
+$t=\operatorname{SD}(S)/\sqrt\delta$. Rearranging the event,
+\begin{align}
+\Pr\!\left[T\ge S-\frac{\operatorname{SD}(S)}{\sqrt\delta}\right]
+\ge 1-\delta.
+\end{align}
+Wait---this is the wrong side; for a lower bound on $T$ we want the upper
+tail $\Pr[S-T\le-t]$. By symmetry of Chebyshev in $|S-T|$, the same
+inequality applies:
+\begin{align}
+\Pr\!\left[T\ge S\cdot\left(1-\frac{\operatorname{SD}(S)/S}{\sqrt\delta}\right)\right]
+\ge 1-\delta,
+\end{align}
+provided the right-hand side is treated as a lower estimate rather than a
+numerical evaluation of $T$. Using the variance formula above,
+\begin{align}
+\frac{\operatorname{SD}(S)}{T}
+=\sqrt{\frac{n-k_{\mathrm{eff}}(x)}{k\cdot k_{\mathrm{eff}}(x)}}.
+\end{align}
+
+\paragraph{Plug-in estimator.}
+Both $T$ and $k_{\mathrm{eff}}(x)$ are unobservable. Replace $T$ by $S$
+(making the confidence width self-referential) and replace
+$k_{\mathrm{eff}}(x)$ by the block participation ratio
+$k_{\mathrm{eff}}(y):=\|y\|_2^4/\|y\|_4^4$ where $y=A_wv$. Under the
+dimension-normalized entropy heuristic
+$h_2(x)/\log n\approx h_2(y)/\log k$, these plug-ins agree to leading order
+for flat directions and both collapse to $1$ for concentrated spike
+directions, so the flat/spike scaling of the confidence width is preserved.
+
+For $k_{\mathrm{eff}}(y)\ll n$, drop the $n-k_{\mathrm{eff}}$ correction
+in the numerator to get the compact form
+\begin{align}
+\frac{\operatorname{SD}(S)}{S}
+\;\approx\;
+\sqrt{\frac{1}{p_w\,k_{\mathrm{eff}}(y)}},
+\end{align}
+and the Chebyshev LB becomes
+\begin{align}
+T
+\;\gtrsim\;
+S\cdot\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}(y)}}\right),
+\qquad
+c_\delta=\frac{1}{\sqrt{p_w\,\delta}}.
+\end{align}
+Clamping at zero to avoid reporting negative lower bounds yields the
+one-block score
+\begin{align}
+\operatorname{score}_1^{\mathrm{conc}}(v)
+=
+\frac{\|A_wv\|_2^2}{p_w}
+\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}(y)}}\right)_{\!+}.
+\end{align}
+
+\paragraph{Interpretation and argmax behavior.}
+The score has three regimes determined entirely by $k_{\mathrm{eff}}(y)$:
+\begin{itemize}
+\item \textbf{Flat direction} ($k_{\mathrm{eff}}(y)\approx k$):
+$c_\delta/\sqrt{k}$ is small, so the multiplicative correction is near $1$
+and $\operatorname{score}^{\mathrm{conc}}\approx\|A_wv\|_2^2/p_w\approx T$.
+The bound is tight and the value agrees with the naive unbiased estimator.
+\item \textbf{Moderately concentrated}
+($c_\delta^2<k_{\mathrm{eff}}(y)<k$): the correction discounts the estimate
+but remains positive. The bound is informative, with width proportional to
+$1/\sqrt{k_{\mathrm{eff}}}$.
+\item \textbf{Spike direction} ($k_{\mathrm{eff}}(y)\le c_\delta^2$):
+$c_\delta/\sqrt{k_{\mathrm{eff}}}\ge 1$, the bracket clamps to $0$, and the
+direction is declared \emph{vacuous}. The single-block data does not
+support any positive lower bound on $T$; the score refuses to commit.
+\end{itemize}
+The argmax of $\operatorname{score}^{\mathrm{conc}}$ therefore selects
+directions on which the block evidence is both high-energy \emph{and}
+sufficiently spread. Spike-like directions are filtered out not by an
+adversarial penalty but by the statistical impossibility of certifying their
+energy from one block.
+
+\paragraph{Fundamental obstruction to single-block tight bounds on spikes.}
+The variance formula $\operatorname{Var}(S)=T^2(n-k_{\mathrm{eff}}(x))/(k\cdot
+k_{\mathrm{eff}}(x))$ shows that the standard deviation of the unbiased
+estimator $S$ is $\Omega(T)$ whenever $k_{\mathrm{eff}}(x)=O(1)$. Any
+estimator formed from one block of size $k<n$ inherits this variance floor,
+so no single-block two-sided bound can be tight on a pure spike direction.
+The concentration score captures this obstruction by design: it is tight
+where Chebyshev is informative and explicitly vacuous where it is not.
+
+\paragraph{Tighter confidence constants via Bernstein.}
+The Chebyshev constant $c_\delta=(p_w\delta)^{-1/2}$ scales polynomially in
+$1/\delta$. For small target failure probabilities, Bernstein's inequality
+for bounded i.i.d.\ summands tightens this to
+\begin{align}
+c_\delta^{\mathrm{Bern}}
+=
+\sqrt{2\log(1/\delta)\cdot\frac{1-p_w}{p_w}}
++
+\frac{\log(1/\delta)}{3}\cdot\frac{\max_i x_i^2/T}{\sqrt{k_{\mathrm{eff}}(y)}},
+\end{align}
+scaling as $O(\sqrt{\log(1/\delta)})$ up to the leverage term
+$\max_i x_i^2/T$. The leverage term can be bounded in practice by the
+block-observed leverage $\max_j y_j^2/\|y\|_2^2$ when the block is large
+enough to contain the dominant row with high probability; otherwise the
+Chebyshev form is preferred because Bernstein becomes dominated by the
+leverage term.
+
+\paragraph{Pooled streaming form with sketch and row memory.}
+Restoring the general window $w$, replace the single-block energy by the
+seen energy surrogate $E_w(v)=\|Bv\|_2^2+\|A_wv\|_2^2$ and the block
+participation ratio by the pooled one,
+\begin{align}
+k_{\mathrm{eff}}^{(R,w)}(v)
+:=
+\frac{\|C_wv\|_2^4}{\|C_wv\|_4^4},
+\qquad
+C_w=
+\begin{pmatrix}
+R\\
+A_w
+\end{pmatrix}.
+\end{align}
+The unbiased estimator becomes $E_w(v)/p_w$; its variance is reduced
+relative to one block because $R$ supplies additional independent row
+samples. Substituting into the Chebyshev LB and plugging in the pooled
+$k_{\mathrm{eff}}$ gives
+\begin{align}
+\operatorname{score}_w^{\mathrm{conc}}(v)
+=
+\frac{E_w(v)}{p_w}
+\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}\right)_{\!+}.
+\end{align}
+
+\paragraph{Exact gradient.}
+Let $y_B:=Bv$, $z:=A_wv$, $y:=C_wv$, and assume $E_w(v)>0$, $\|y\|_2>0$,
+$\|y\|_4>0$, and $c_\delta<\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}$ (bracket
+strictly positive). Write
+\begin{align}
+L(v):=\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}\right).
+\end{align}
+The energy gradient is $\nabla E_w(v)=2B^\top Bv+2A_w^\top A_wv$. The pooled
+entropy gradient is
+\begin{align}
+\nabla h_2^{(R,w)}(v)
+=
+4\,\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-
+4\,\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4},
+\end{align}
+and since $k_{\mathrm{eff}}^{(R,w)}(v)=e^{h_2^{(R,w)}(v)}$,
+\begin{align}
+\nabla\log k_{\mathrm{eff}}^{(R,w)}(v)
+=
+\nabla h_2^{(R,w)}(v).
+\end{align}
+Differentiating $L$,
+\begin{align}
+\nabla L(v)
+=
+\frac{c_\delta}{2\,\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}\,
+\nabla h_2^{(R,w)}(v).
+\end{align}
+Taking logs of the (positive-bracket) score,
+$\log\operatorname{score}_w^{\mathrm{conc}}(v)=\log E_w(v)-\log p_w+\log L(v)$,
+and differentiating,
+\begin{align}
+\nabla\log\operatorname{score}_w^{\mathrm{conc}}(v)
+=
+\frac{\nabla E_w(v)}{E_w(v)}
++
+\frac{1}{L(v)}\,\frac{c_\delta}{2\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}\,
+\nabla h_2^{(R,w)}(v).
+\end{align}
+Equivalently,
+\begin{align}
+\nabla\operatorname{score}_w^{\mathrm{conc}}(v)
+=
+\operatorname{score}_w^{\mathrm{conc}}(v)
+\left[
+\frac{2B^\top Bv+2A_w^\top A_wv}{E_w(v)}
++
+2\lambda_w(v)
+\left(
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-
+\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4}
+\right)
+\right],
+\end{align}
+with direction-dependent coupling
+\begin{align}
+\lambda_w(v)
+:=
+\frac{c_\delta}{L(v)\,\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}}
+=
+\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}^{(R,w)}(v)}-c_\delta}.
+\end{align}
+The sign of the entropy contribution coincides with
+$\nabla h_2^{(R,w)}(v)$, so the gradient pushes $v$ toward \emph{higher}
+pooled entropy. $\lambda_w(v)$ is strictly positive in the feasible region
+$k_{\mathrm{eff}}^{(R,w)}(v)>c_\delta^2$ and diverges as the direction
+approaches the vacuity boundary, so the entropy reward intensifies as the
+confidence width approaches its maximum.
+
+\paragraph{Expanded row-memory form.}
+Because
+$C_w^\top C_wv=R^\top Rv+A_w^\top A_wv$ and
+$C_w^\top(C_wv)^{\odot 3}=R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3}$,
+the pooled gradient can be evaluated without forming $C_w$:
+\begin{align}
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+=
+\frac{R^\top Rv+A_w^\top A_wv}{\|Rv\|_2^2+\|A_wv\|_2^2},
+\end{align}
+\begin{align}
+\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4}
+=
+\frac{R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3}}
+{\|Rv\|_4^4+\|A_wv\|_4^4}.
+\end{align}
+
+\paragraph{Optimization problem and feasibility.}
+Extract directions sequentially by solving
+\begin{align}
+\max_{v\in\mathbb S^{d-1},\ Q^\top v=0,\
+k_{\mathrm{eff}}^{(R,w)}(v)>c_\delta^2}
+\operatorname{score}_w^{\mathrm{conc}}(v),
+\end{align}
+where the columns of $Q$ are previously accepted directions. The feasibility
+constraint $k_{\mathrm{eff}}^{(R,w)}(v)>c_\delta^2$ is equivalent to
+$h_2^{(R,w)}(v)>2\log c_\delta$ and has a meaningful minimum at the
+confidence threshold. For $n=128$, $k=32$, $s=0$, and $\delta=0.1$:
+$c_\delta=(p_w\delta)^{-1/2}=(0.25\cdot 0.1)^{-1/2}=\sqrt{40}\approx 6.32$,
+so $c_\delta^2\approx 40$, requiring
+$k_{\mathrm{eff}}^{(R,w)}(v)\gtrsim 40$. Since the first-window pooled
+pool has only $k=32$ rows, the constraint is unsatisfiable under Chebyshev
+at $\delta=0.1$ on this problem size, and a Bernstein constant must be used
+or $\delta$ relaxed.
+
+\paragraph{Projected full-gradient ascent.}
+Within the feasible set, use the exact gradient projected onto the tangent
+space of the sphere and the column complement of $Q$:
+\begin{align}
+g_{\mathrm{tan}}(v)
+=
+\left(I-QQ^\top-vv^\top\right)
+\nabla\operatorname{score}_w^{\mathrm{conc}}(v).
+\end{align}
+Backtracking Armijo on $\operatorname{score}^{\mathrm{conc}}$ yields a
+monotone-ascent solver. Reject any step that crosses the feasibility
+boundary $k_{\mathrm{eff}}^{(R,w)}(v)=c_\delta^2$: the step either lands in
+the clamped region (where the score is constantly zero) or runs into the
+non-differentiable join.
+
+\paragraph{Frame-level variant.}
+For rank-$r$ extraction, the frame estimator
+$S_{\mathrm{frame}}:=\sum_{j=1}^r\|A_wv_j\|_2^2/p_w$ has variance
+\begin{align}
+\operatorname{Var}(S_{\mathrm{frame}})
+=
+\frac{1}{p_w^2}\,k\,\operatorname{Var}_i
+\!\left(\sum_{j=1}^r(A v_j)_i^2\right),
+\end{align}
+which involves the frame row-response $\sum_j x_{i,j}^2$ instead of the
+single-direction $x_i^2$. When the retained directions share spike rows,
+the inter-direction correlations reduce the frame variance below the sum of
+per-direction variances, so a frame-level concentration LB can be tighter
+than $\sum_j\operatorname{score}^{\mathrm{conc}}(v_j)$. This yields a
+coupled Stiefel objective
+\begin{align}
+\operatorname{score}_w^{\mathrm{frame,conc}}(V)
+=
+\frac{\sum_j E_w(v_j)}{p_w}
+\left(1-\frac{c_\delta}{\sqrt{k_{\mathrm{eff}}^{(R,w,r)}(V)}}\right)_{\!+},
+\end{align}
+with $V=[v_1,\dots,v_r]$ on the Stiefel manifold and frame-level
+participation ratio
+\begin{align}
+k_{\mathrm{eff}}^{(R,w,r)}(V)
+:=
+\frac{\left(\sum_i(\sum_j (C_wV)_{i,j}^2)\right)^2}
+{\sum_i(\sum_j (C_wV)_{i,j}^2)^2}.
+\end{align}
+The derivation is unchanged: Chebyshev on the frame-level unbiased
+estimator, variance via the frame row-response, plug-in using pooled
+quantities.
+
+\paragraph{Practical remarks.}
+The confidence constant $c_\delta$ must be chosen so that the feasible
+region contains plausibly-informative directions; with Chebyshev on small
+pools this can be restrictive, and Bernstein or Hoeffding forms are
+preferable when the block-observed leverage
+$\max_j y_j^2/\|y\|_2^2$ is small. The clamp $(\cdot)_+$ should be treated
+as a soft gate in continuous optimization: replace it by the smoothed
+alternative $(\cdot)\cdot\sigma(\alpha\cdot\cdot)$ with $\sigma$ a sigmoid
+and $\alpha$ large, or carry the pre-clamp score plus a separate feasibility
+flag.
+
+The concentration score is not a replacement for the combined lower-bound
+score; it is a complement. The combined score extracts per-direction
+information from the full window participation-ratio reward; the
+concentration score refuses to commit to directions where the single-window
+evidence is statistically insufficient. A natural two-stage pipeline is
+therefore: (i) use $\operatorname{score}^{\mathrm{conc}}$ to lock flat
+directions where the bound is tight, then (ii) use
+$\operatorname{score}^{\mathrm{comb}}$ (or its oracle-informed variants) on
+the residual operator to hunt spike directions that require pooled
+multi-window evidence.

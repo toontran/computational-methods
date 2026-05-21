@@ -1,0 +1,108 @@
+Block evidence for oracle-vs-fake selection
+===========================================
+
+Date: 2026-04-22
+
+Scope
+-----
+I inspected the existing diagnostics and used the raw harness dumps as the
+main evidence base. I treated the harness `gain2` field as the block-energy
+proxy for `||B_t v||_2` comparisons.
+
+Commands run
+------------
+  python -c "import re, pathlib ... summary/second_slot_scores_failures_raw.txt ..."
+  python -c "import re, pathlib ... summary/static_cex_consecutive_diag_raw.txt ..."
+  python -c "import re, pathlib ... summary/diffuse_diffuse_consecutive_diag_raw.txt ..."
+  rg -n \"oracle_candidate_check: (accepted|rejected)|principal_cosines\\(V_score, Q_oracle\\)|oracle_qr_projection_scores|optimizer_score_sum\" summary/combined_debug_oracle_span_handoff.txt summary/oldcorrected_oracle_projection_debug.txt summary/static_cex_consecutive_diag_raw.txt summary/diffuse_diffuse_consecutive_diag_raw.txt -S
+
+1. Does `||B_t v_oracle||_2` beat `||B_t v_fake||_2`?
+-----------------------------------------------------
+From `summary/second_slot_scores_failures_raw.txt`, using the `actual_B`
+context and comparing the oracle-style second slot `q2_vs_q1oracle` against the
+optimizer second slot `opt2`:
+
+  mixed-tail-sharp segment:
+    gain2 wins 32/32
+    score wins 18/32
+    first score win at block 15
+
+  diffuse-diffuse segment:
+    gain2 wins 32/32
+    score wins 0/32
+
+The weaker oracle comparison `q2_vs_v1opt` only won gain2 in 4/32 and 7/32
+blocks, and score in 1/32 and 0/32 blocks, so orthogonalization context matters.
+
+The consecutive diagnostics agree that the full streaming score is much less
+decisive: on both `summary/static_cex_consecutive_diag_raw.txt` and
+`summary/diffuse_diffuse_consecutive_diag_raw.txt`, the QR oracle candidate was
+rejected in 32/32 blocks.
+
+2. Is block-by-block win rate or variance more useful than raw score change?
+----------------------------------------------------------------------------
+Yes. Raw score change is the least stable scalar.
+
+Observed pattern:
+
+  - block-energy proxy (`gain2`) separates immediately and consistently.
+  - score can lag or flip, even when the oracle candidate has the stronger
+    block response.
+  - the holdout score gap stays positive for the optimizer in the consecutive
+    diagnostics (`+0.138593` mixed-tail-sharp, `+0.211455` diffuse-diffuse,
+    `+0.026465` static-cex), so score alone does not tell you whether the
+    oracle geometry is present.
+
+So for design/debugging, report per-block win rate and variance on `gain2`
+and alignment first; treat raw score deltas as secondary.
+
+3. Earliest reliable separation signal
+--------------------------------------
+The earliest reliable scalar separation is current-block energy (`gain2`).
+It wins 64/64 blocks across the two 32-block segments I parsed, while the
+score only wins 18/32 in mixed-tail-sharp and 0/32 in diffuse-diffuse.
+
+Alignment is the best geometric cross-check, not the earliest scalar:
+
+  - `summary/combined_debug_oracle_span_handoff.txt` shows the first block
+    already has a noticeable span miss even when score differences are small.
+  - `summary/oldcorrected_oracle_projection_debug.txt` shows a similar pattern:
+    the QR oracle span can be materially better aligned even when the score gap
+    is modest.
+
+Rank by itself is not a separator; it is only the capacity being tested.
+
+Bottom line:
+  1. current-block energy
+  2. alignment / principal cosines
+  3. cumulative seen score
+  4. raw score change
+  5. rank
+
+4. Matrix structures that should stress this check
+--------------------------------------------------
+Use a mix of control and adversarial structures:
+
+  - `static-cex`: easy control; alignment should be near-perfect and the check
+    should mostly be a sanity test.
+  - `diffuse-diffuse`: current-block energy should separate immediately even
+    when score does not.
+  - `mixed-tail-sharp`: good for path dependence; the second slot can persist as
+    a tail-ish direction even after oracle interventions.
+  - leverage-heavy / spike-plus-factor matrices: one dominant row or early
+    high-leverage spike entering the first window.
+  - residual-spiky-shocks / risk-residual-panel style matrices: they stress the
+    current-block-vs-carry tradeoff and expose score-vs-geometry mismatch.
+  - near-tied two-factor cases with row permutations and smaller windows
+    (`win=16, 32, 64`) to probe sensitivity to block size and carry memory.
+
+Recommended next check
+----------------------
+For any new matrix, log all three per block:
+
+  - `gain2` win rate for oracle vs fake
+  - principal-cosine alignment vs the oracle span
+  - score win rate
+
+The evidence so far says `gain2` should be the first gate; score should be
+treated as a secondary confirmation, not the primary separator.

@@ -1,0 +1,196 @@
+rotation_handoff_start matrix=mixed-tail-sharp A=(1024, 1024) sigma1=0.991
+matrix=mixed-tail-sharp block=1 kind=subspace sel_oracle_cos=[0.635624 0.257128] car_oracle_cos=[0.633557 0.252133] sel_car_cos=[0.999809 0.999464] sel_tail=0.990438 car_tail=0.990553 s=[0.912355 0.908613]
+matrix=mixed-tail-sharp block=1 kind=coords sel_to_car=[0.640803 0.767184 0.767457 0.640591] oracle_coords_sel=[0.254022 0.249962 0.061895 0.582489] oracle_coords_car=[0.348336 0.029255 0.402948 0.424741]
+matrix=mixed-tail-sharp block=1 kind=survival prev_car_v2_in_sel=nan prev_car_v2_dot_sel2=nan prev_sel_v2_in_sel=nan
+matrix=mixed-tail-sharp block=2 kind=subspace sel_oracle_cos=[0.850178 0.250898] car_oracle_cos=[0.846364 0.251223] sel_car_cos=[0.999801 0.999675] sel_tail=0.979383 car_tail=0.979616 s=[0.911514 0.909437]
+matrix=mixed-tail-sharp block=2 kind=coords sel_to_car=[0.950366 0.310460 0.310497 0.950244] oracle_coords_sel=[0.250048 0.281961 0.800773 0.049903] oracle_coords_car=[0.323566 0.190059 0.772890 0.203146]
+matrix=mixed-tail-sharp block=2 kind=survival prev_car_v2_in_sel=0.717682 prev_car_v2_dot_sel2=0.556888 prev_sel_v2_in_sel=0.708558
+matrix=mixed-tail-sharp block=3 kind=subspace sel_oracle_cos=[0.552599 0.404528] car_oracle_cos=[0.558178 0.402443] sel_car_cos=[0.999804 0.999370] sel_tail=0.985512 car_tail=0.985421 s=[0.911168 0.909505]
+matrix=mixed-tail-sharp block=3 kind=coords sel_to_car=[0.637219 0.770413 0.770003 0.637072] oracle_coords_sel=[0.182861 0.489321 0.440782 0.042973] oracle_coords_car=[0.260256 0.455563 0.311133 0.318508]
+matrix=mixed-tail-sharp block=3 kind=survival prev_car_v2_in_sel=0.818044 prev_car_v2_dot_sel2=0.779217 prev_sel_v2_in_sel=0.808951
+matrix=mixed-tail-sharp block=4 kind=subspace sel_oracle_cos=[0.819607 0.437186] car_oracle_cos=[0.822399 0.439089] sel_car_cos=[0.999792 0.999062] sel_tail=0.974748 car_tail=0.974614 s=[0.911280 0.910447]
+matrix=mixed-tail-sharp block=4 kind=coords sel_to_car=[0.988370 0.150686 0.150509 0.987662] oracle_coords_sel=[0.233562 0.580205 0.672908 0.137454] oracle_coords_car=[0.143585 0.612856 0.645067 0.238370]
+matrix=mixed-tail-sharp block=4 kind=survival prev_car_v2_in_sel=0.844916 prev_car_v2_dot_sel2=0.519389 prev_sel_v2_in_sel=0.858504
+matrix=mixed-tail-sharp block=5 kind=subspace sel_oracle_cos=[0.851696 0.393456] car_oracle_cos=[0.855377 0.395448] sel_car_cos=[0.999813 0.998308] sel_tail=0.967651 car_tail=0.967402 s=[0.912948 0.911184]
+matrix=mixed-tail-sharp block=5 kind=coords sel_to_car=[0.999140 0.036666 0.036559 0.997639] oracle_coords_sel=[0.281905 0.491986 0.740280 0.103237] oracle_coords_car=[0.302229 0.484240 0.745953 0.075979]
+matrix=mixed-tail-sharp block=5 kind=survival prev_car_v2_in_sel=0.845285 prev_car_v2_dot_sel2=0.835789 prev_sel_v2_in_sel=0.862950
+matrix=mixed-tail-sharp block=6 kind=subspace sel_oracle_cos=[0.900431 0.451873] car_oracle_cos=[0.902063 0.454550] sel_car_cos=[0.999841 0.999165] sel_tail=0.958622 car_tail=0.958204 s=[0.914344 0.909797]
+matrix=mixed-tail-sharp block=6 kind=coords sel_to_car=[0.987867 0.154214 0.153955 0.987243] oracle_coords_sel=[0.259546 0.468681 0.852740 0.027806] oracle_coords_car=[0.329605 0.426403 0.839626 0.157807]
+matrix=mixed-tail-sharp block=6 kind=survival prev_car_v2_in_sel=0.888771 prev_car_v2_dot_sel2=0.888155 prev_sel_v2_in_sel=0.893204
+matrix=mixed-tail-sharp block=7 kind=subspace sel_oracle_cos=[0.879373 0.471344] car_oracle_cos=[0.883198 0.477733] sel_car_cos=[0.998841 0.992426] sel_tail=0.951440 car_tail=0.951161 s=[0.917426 0.910150]
+matrix=mixed-tail-sharp block=7 kind=coords sel_to_car=[0.942897 0.325746 0.329289 0.937548] oracle_coords_sel=[0.547813 0.262420 0.656523 0.442124] oracle_coords_car=[0.432884 0.433819 0.768723 0.204320]
+matrix=mixed-tail-sharp block=7 kind=survival prev_car_v2_in_sel=0.961853 prev_car_v2_dot_sel2=0.898137 prev_sel_v2_in_sel=0.961936
+matrix=mixed-tail-sharp block=8 kind=subspace sel_oracle_cos=[0.969679 0.344129] car_oracle_cos=[0.971303 0.348261] sel_car_cos=[0.999541 0.996160] sel_tail=0.940192 car_tail=0.940156 s=[0.919238 0.909799]
+matrix=mixed-tail-sharp block=8 kind=coords sel_to_car=[0.988289 0.141263 0.144333 0.986871] oracle_coords_sel=[0.368812 0.287891 0.892455 0.208142] oracle_coords_car=[0.325865 0.342127 0.913956 0.078494]
+matrix=mixed-tail-sharp block=8 kind=survival prev_car_v2_in_sel=0.943255 prev_car_v2_dot_sel2=0.937169 prev_sel_v2_in_sel=0.954586
+matrix=mixed-tail-sharp block=9 kind=subspace sel_oracle_cos=[0.954407 0.263088] car_oracle_cos=[0.958111 0.266866] sel_car_cos=[0.999580 0.994795] sel_tail=0.932306 car_tail=0.931318 s=[0.920209 0.909714]
+matrix=mixed-tail-sharp block=9 kind=coords sel_to_car=[0.996954 0.030915 0.035657 0.996310] oracle_coords_sel=[0.229388 0.268596 0.924774 0.011782] oracle_coords_car=[0.223378 0.280461 0.927493 0.019869]
+matrix=mixed-tail-sharp block=9 kind=survival prev_car_v2_in_sel=0.941847 prev_car_v2_dot_sel2=0.941817 prev_sel_v2_in_sel=0.957802
+matrix=mixed-tail-sharp block=10 kind=subspace sel_oracle_cos=[0.972523 0.239199] car_oracle_cos=[0.975634 0.240578] sel_car_cos=[0.999513 0.994985] sel_tail=0.919577 car_tail=0.918787 s=[0.922114 0.910051]
+matrix=mixed-tail-sharp block=10 kind=coords sel_to_car=[0.997747 0.010331 0.014710 0.996594] oracle_coords_sel=[0.188453 0.245173 0.952560 0.004852] oracle_coords_car=[0.187709 0.249493 0.954936 0.018829]
+matrix=mixed-tail-sharp block=10 kind=survival prev_car_v2_in_sel=0.939953 prev_car_v2_dot_sel2=0.939156 prev_sel_v2_in_sel=0.942472
+matrix=mixed-tail-sharp block=11 kind=subspace sel_oracle_cos=[0.984018 0.387235] car_oracle_cos=[0.986587 0.389154] sel_car_cos=[0.999732 0.995545] sel_tail=0.904415 car_tail=0.902864 s=[0.923991 0.909988]
+matrix=mixed-tail-sharp block=11 kind=coords sel_to_car=[0.997936 0.007153 0.011285 0.997256] oracle_coords_sel=[0.001490 0.387351 0.983795 0.018613] oracle_coords_car=[0.001458 0.389316 0.986062 0.030127]
+matrix=mixed-tail-sharp block=11 kind=survival prev_car_v2_in_sel=0.955232 prev_car_v2_dot_sel2=0.954914 prev_sel_v2_in_sel=0.954624
+matrix=mixed-tail-sharp block=12 kind=subspace sel_oracle_cos=[0.988019 0.376450] car_oracle_cos=[0.990503 0.379350] sel_car_cos=[0.999849 0.996318] sel_tail=0.888147 car_tail=0.887533 s=[0.925570 0.910045]
+matrix=mixed-tail-sharp block=12 kind=coords sel_to_car=[0.996597 0.057787 0.054261 0.996423] oracle_coords_sel=[0.010096 0.377458 0.982777 0.097306] oracle_coords_car=[0.011712 0.380417 0.989065 0.043567]
+matrix=mixed-tail-sharp block=12 kind=survival prev_car_v2_in_sel=0.953648 prev_car_v2_dot_sel2=0.950802 prev_sel_v2_in_sel=0.954552
+matrix=mixed-tail-sharp block=13 kind=subspace sel_oracle_cos=[0.980948 0.358466] car_oracle_cos=[0.983759 0.362217] sel_car_cos=[0.999793 0.996561] sel_tail=0.874849 car_tail=0.874800 s=[0.927738 0.909927]
+matrix=mixed-tail-sharp block=13 kind=coords sel_to_car=[0.997607 0.040404 0.037193 0.997238] oracle_coords_sel=[0.003887 0.360319 0.976792 0.082394] oracle_coords_car=[0.018536 0.363744 0.981958 0.045698]
+matrix=mixed-tail-sharp block=13 kind=survival prev_car_v2_in_sel=0.951472 prev_car_v2_dot_sel2=0.949098 prev_sel_v2_in_sel=0.947376
+matrix=mixed-tail-sharp block=14 kind=subspace sel_oracle_cos=[0.991589 0.373005] car_oracle_cos=[0.993304 0.375089] sel_car_cos=[0.999597 0.997217] sel_tail=0.859907 car_tail=0.859281 s=[0.930098 0.910022]
+matrix=mixed-tail-sharp block=14 kind=coords sel_to_car=[0.998889 0.004270 0.002098 0.997916] oracle_coords_sel=[0.090113 0.378156 0.985086 0.029401] oracle_coords_car=[0.091303 0.380052 0.986832 0.027056]
+matrix=mixed-tail-sharp block=14 kind=survival prev_car_v2_in_sel=0.953679 prev_car_v2_dot_sel2=0.953647 prev_sel_v2_in_sel=0.950903
+matrix=mixed-tail-sharp block=15 kind=subspace sel_oracle_cos=[0.996576 0.442579] car_oracle_cos=[0.997897 0.445527] sel_car_cos=[0.999690 0.997208] sel_tail=0.843241 car_tail=0.841978 s=[0.932507 0.909679]
+matrix=mixed-tail-sharp block=15 kind=coords sel_to_car=[0.998795 0.010626 0.008271 0.998013] oracle_coords_sel=[0.020937 0.443909 0.995187 0.033877] oracle_coords_car=[0.025091 0.446704 0.996720 0.025849]
+matrix=mixed-tail-sharp block=15 kind=survival prev_car_v2_in_sel=0.957011 prev_car_v2_dot_sel2=0.957008 prev_sel_v2_in_sel=0.956583
+matrix=mixed-tail-sharp block=16 kind=subspace sel_oracle_cos=[0.998647 0.417330] car_oracle_cos=[0.999553 0.420801] sel_car_cos=[0.999802 0.997948] sel_tail=0.826489 car_tail=0.825826 s=[0.935061 0.909799]
+matrix=mixed-tail-sharp block=16 kind=coords sel_to_car=[0.999219 0.002820 0.001100 0.998528] oracle_coords_sel=[0.011388 0.417267 0.997532 0.046352] oracle_coords_car=[0.010345 0.420784 0.998482 0.045237]
+matrix=mixed-tail-sharp block=16 kind=survival prev_car_v2_in_sel=0.960285 prev_car_v2_dot_sel2=0.960249 prev_sel_v2_in_sel=0.959347
+matrix=mixed-tail-sharp block=17 kind=subspace sel_oracle_cos=[0.993400 0.420426] car_oracle_cos=[0.994566 0.423785] sel_car_cos=[0.999592 0.997667] sel_tail=0.812693 car_tail=0.811438 s=[0.937449 0.909838]
+matrix=mixed-tail-sharp block=17 kind=coords sel_to_car=[0.998962 0.010083 0.008308 0.998213] oracle_coords_sel=[0.010266 0.420497 0.991970 0.051713] oracle_coords_car=[0.006036 0.423968 0.993517 0.043517]
+matrix=mixed-tail-sharp block=17 kind=survival prev_car_v2_in_sel=0.956130 prev_car_v2_dot_sel2=0.956130 prev_sel_v2_in_sel=0.955720
+matrix=mixed-tail-sharp block=18 kind=subspace sel_oracle_cos=[0.998087 0.454275] car_oracle_cos=[0.999101 0.456080] sel_car_cos=[0.999760 0.998141] sel_tail=0.796205 car_tail=0.794851 s=[0.939950 0.909978]
+matrix=mixed-tail-sharp block=18 kind=coords sel_to_car=[0.998660 0.029880 0.028283 0.998394] oracle_coords_sel=[0.043225 0.452557 0.996094 0.060521] oracle_coords_car=[0.030334 0.455404 0.998420 0.032482]
+matrix=mixed-tail-sharp block=18 kind=survival prev_car_v2_in_sel=0.959703 prev_car_v2_dot_sel2=0.959480 prev_sel_v2_in_sel=0.959096
+matrix=mixed-tail-sharp block=19 kind=subspace sel_oracle_cos=[0.994977 0.506858] car_oracle_cos=[0.995897 0.511235] sel_car_cos=[0.999767 0.998750] sel_tail=0.780068 car_tail=0.779152 s=[0.942362 0.910297]
+matrix=mixed-tail-sharp block=19 kind=coords sel_to_car=[0.999030 0.027187 0.026203 0.998775] oracle_coords_sel=[0.038816 0.505553 0.993460 0.053199] oracle_coords_car=[0.024925 0.510781 0.995436 0.027568]
+matrix=mixed-tail-sharp block=19 kind=survival prev_car_v2_in_sel=0.962487 prev_car_v2_dot_sel2=0.962234 prev_sel_v2_in_sel=0.960530
+matrix=mixed-tail-sharp block=20 kind=subspace sel_oracle_cos=[0.998917 0.493557] car_oracle_cos=[0.999458 0.495267] sel_car_cos=[0.999802 0.998780] sel_tail=0.764140 car_tail=0.763303 s=[0.944659 0.910591]
+matrix=mixed-tail-sharp block=20 kind=coords sel_to_car=[0.999479 0.000553 0.001502 0.999101] oracle_coords_sel=[0.064368 0.491538 0.996653 0.048623] oracle_coords_car=[0.063989 0.493174 0.997178 0.050253]
+matrix=mixed-tail-sharp block=20 kind=survival prev_car_v2_in_sel=0.966558 prev_car_v2_dot_sel2=0.966549 prev_sel_v2_in_sel=0.967451
+matrix=mixed-tail-sharp block=21 kind=subspace sel_oracle_cos=[0.999602 0.491554] car_oracle_cos=[0.999856 0.495249] sel_car_cos=[0.999898 0.999307] sel_tail=0.747951 car_tail=0.747601 s=[0.947111 0.911076]
+matrix=mixed-tail-sharp block=21 kind=coords sel_to_car=[0.999738 0.006406 0.005903 0.999429] oracle_coords_sel=[0.037265 0.490690 0.998731 0.034656] oracle_coords_car=[0.033669 0.494606 0.999190 0.028867]
+matrix=mixed-tail-sharp block=21 kind=survival prev_car_v2_in_sel=0.968245 prev_car_v2_dot_sel2=0.968244 prev_sel_v2_in_sel=0.967853
+matrix=mixed-tail-sharp block=22 kind=subspace sel_oracle_cos=[0.999692 0.504259] car_oracle_cos=[0.999921 0.507140] sel_car_cos=[0.999863 0.999274] sel_tail=0.731519 car_tail=0.731655 s=[0.949584 0.911043]
+matrix=mixed-tail-sharp block=22 kind=coords sel_to_car=[0.999558 0.020911 0.020485 0.999151] oracle_coords_sel=[0.009236 0.504659 0.999258 0.019488] oracle_coords_car=[0.019682 0.507244 0.999674 0.001071]
+matrix=mixed-tail-sharp block=22 kind=survival prev_car_v2_in_sel=0.969029 prev_car_v2_dot_sel2=0.968913 prev_sel_v2_in_sel=0.968771
+matrix=mixed-tail-sharp block=23 kind=subspace sel_oracle_cos=[0.999322 0.568677] car_oracle_cos=[0.999790 0.571951] sel_car_cos=[0.999838 0.999135] sel_tail=0.715926 car_tail=0.714295 s=[0.952140 0.911131]
+matrix=mixed-tail-sharp block=23 kind=coords sel_to_car=[0.999333 0.020108 0.019410 0.999248] oracle_coords_sel=[0.107105 0.566450 0.993499 0.051576] oracle_coords_car=[0.119608 0.567514 0.992604 0.071191]
+matrix=mixed-tail-sharp block=23 kind=survival prev_car_v2_in_sel=0.969334 prev_car_v2_dot_sel2=0.969286 prev_sel_v2_in_sel=0.969302
+matrix=mixed-tail-sharp block=24 kind=subspace sel_oracle_cos=[0.999500 0.411018] car_oracle_cos=[0.999853 0.413981] sel_car_cos=[0.999661 0.999605] sel_tail=0.702998 car_tail=0.702608 s=[0.954450 0.914096]
+matrix=mixed-tail-sharp block=24 kind=coords sel_to_car=[0.999640 0.006219 0.006196 0.999589] oracle_coords_sel=[0.074484 0.408965 0.996623 0.043350] oracle_coords_car=[0.077733 0.411457 0.996646 0.049448]
+matrix=mixed-tail-sharp block=24 kind=survival prev_car_v2_in_sel=0.097463 prev_car_v2_dot_sel2=0.097066 prev_sel_v2_in_sel=0.100055
+matrix=mixed-tail-sharp block=25 kind=subspace sel_oracle_cos=[0.999723 0.510049] car_oracle_cos=[0.999792 0.511852] sel_car_cos=[0.999942 0.999608] sel_tail=0.686256 car_tail=0.685965 s=[0.956808 0.917860]
+matrix=mixed-tail-sharp block=25 kind=coords sel_to_car=[0.999770 0.018477 0.018441 0.999439] oracle_coords_sel=[0.101624 0.507550 0.994543 0.050450] oracle_coords_car=[0.111846 0.507355 0.993419 0.069104]
+matrix=mixed-tail-sharp block=25 kind=survival prev_car_v2_in_sel=0.639529 prev_car_v2_dot_sel2=0.639502 prev_sel_v2_in_sel=0.638860
+matrix=mixed-tail-sharp block=26 kind=subspace sel_oracle_cos=[0.999745 0.715455] car_oracle_cos=[0.999854 0.717439] sel_car_cos=[0.999903 0.999812] sel_tail=0.664316 car_tail=0.664479 s=[0.959240 0.917059]
+matrix=mixed-tail-sharp block=26 kind=coords sel_to_car=[0.999841 0.010981 0.010957 0.999754] oracle_coords_sel=[0.065208 0.713978 0.997616 0.045966] oracle_coords_car=[0.072837 0.715198 0.997174 0.057084]
+matrix=mixed-tail-sharp block=26 kind=survival prev_car_v2_in_sel=0.777767 prev_car_v2_dot_sel2=0.777593 prev_sel_v2_in_sel=0.777782
+matrix=mixed-tail-sharp block=27 kind=subspace sel_oracle_cos=[0.999856 0.157806] car_oracle_cos=[0.999893 0.157096] sel_car_cos=[0.999974 0.999965] sel_tail=0.661395 car_tail=0.661507 s=[0.962701 0.961366]
+matrix=mixed-tail-sharp block=27 kind=coords sel_to_car=[0.394463 0.918874 0.918880 0.394469] oracle_coords_sel=[0.047259 0.157610 0.998739 0.007884] oracle_coords_car=[0.125265 0.105942 0.401223 0.914642]
+matrix=mixed-tail-sharp block=27 kind=survival prev_car_v2_in_sel=0.016075 prev_car_v2_dot_sel2=0.012001 prev_sel_v2_in_sel=0.012251
+matrix=mixed-tail-sharp block=28 kind=subspace sel_oracle_cos=[0.999969 0.214932] car_oracle_cos=[0.999985 0.214529] sel_car_cos=[0.999974 0.999969] sel_tail=0.646669 car_tail=0.646748 s=[0.964288 0.963239]
+matrix=mixed-tail-sharp block=28 kind=coords sel_to_car=[0.945158 0.326531 0.326532 0.945154] oracle_coords_sel=[0.071341 0.214433 0.997421 0.014666] oracle_coords_car=[0.002427 0.225605 0.947534 0.311877]
+matrix=mixed-tail-sharp block=28 kind=survival prev_car_v2_in_sel=0.979127 prev_car_v2_dot_sel2=0.387481 prev_sel_v2_in_sel=0.985129
+matrix=mixed-tail-sharp block=29 kind=subspace sel_oracle_cos=[0.999957 0.185353] car_oracle_cos=[0.999965 0.186015] sel_car_cos=[0.999985 0.999984] sel_tail=0.632199 car_tail=0.632263 s=[0.966677 0.963662]
+matrix=mixed-tail-sharp block=29 kind=coords sel_to_car=[0.996375 0.084905 0.084904 0.996373] oracle_coords_sel=[0.116942 0.184059 0.993096 0.021865] oracle_coords_car=[0.101958 0.194074 0.991248 0.062447]
+matrix=mixed-tail-sharp block=29 kind=survival prev_car_v2_in_sel=0.993099 prev_car_v2_dot_sel2=0.939676 prev_sel_v2_in_sel=0.995147
+matrix=mixed-tail-sharp block=30 kind=subspace sel_oracle_cos=[0.999938 0.124647] car_oracle_cos=[0.999949 0.125613] sel_car_cos=[0.999985 0.999981] sel_tail=0.618533 car_tail=0.618324 s=[0.969087 0.963948]
+matrix=mixed-tail-sharp block=30 kind=coords sel_to_car=[0.995200 0.097671 0.097669 0.995204] oracle_coords_sel=[0.081617 0.124345 0.996600 0.008784] oracle_coords_car=[0.069014 0.132683 0.992710 0.088524]
+matrix=mixed-tail-sharp block=30 kind=survival prev_car_v2_in_sel=0.959394 prev_car_v2_dot_sel2=0.955882 prev_sel_v2_in_sel=0.959491
+matrix=mixed-tail-sharp block=31 kind=subspace sel_oracle_cos=[0.999955 0.150666] car_oracle_cos=[0.999954 0.150475] sel_car_cos=[0.999997 0.999995] sel_tail=0.603935 car_tail=0.603880 s=[0.971544 0.964576]
+matrix=mixed-tail-sharp block=31 kind=coords sel_to_car=[0.996388 0.084865 0.084864 0.996389] oracle_coords_sel=[0.104412 0.150264 0.994480 0.011729] oracle_coords_car=[0.091717 0.158430 0.991842 0.072725]
+matrix=mixed-tail-sharp block=31 kind=survival prev_car_v2_in_sel=0.994561 prev_car_v2_dot_sel2=0.990177 prev_sel_v2_in_sel=0.994504
+matrix=mixed-tail-sharp block=32 kind=subspace sel_oracle_cos=[0.999893 0.147133] car_oracle_cos=[0.999893 0.147150] sel_car_cos=[1.000000 1.000000] sel_tail=0.589914 car_tail=0.589914 s=[0.973874 0.965199]
+matrix=mixed-tail-sharp block=32 kind=coords sel_to_car=[1.000000 0.000803 0.000803 1.000000] oracle_coords_sel=[0.022781 0.149897 0.995152 0.090102] oracle_coords_car=[0.022667 0.149932 0.995079 0.090900]
+matrix=mixed-tail-sharp block=32 kind=survival prev_car_v2_in_sel=0.994008 prev_car_v2_dot_sel2=0.993980 prev_sel_v2_in_sel=0.993947
+rotation_handoff_done matrix=mixed-tail-sharp mean_align=0.029637 elapsed=33.048
+rotation_handoff_start matrix=static-cex A=(1024, 1024) sigma1=0.991
+matrix=static-cex block=1 kind=subspace sel_oracle_cos=[0.999932 0.703855] car_oracle_cos=[0.999331 0.697164] sel_car_cos=[0.999850 0.999518] sel_tail=0.972025 car_tail=0.972187 s=[0.912880 0.908036]
+matrix=static-cex block=1 kind=coords sel_to_car=[0.800949 0.598185 0.597934 0.801166] oracle_coords_sel=[0.999926 0.002137 0.000469 0.703860] oracle_coords_car=[0.799280 0.599786 0.413606 0.561284]
+matrix=static-cex block=1 kind=survival prev_car_v2_in_sel=nan prev_car_v2_dot_sel2=nan prev_sel_v2_in_sel=nan
+matrix=static-cex block=2 kind=subspace sel_oracle_cos=[0.971893 0.571902] car_oracle_cos=[0.971486 0.572932] sel_car_cos=[0.999862 0.999731] sel_tail=0.955890 car_tail=0.956015 s=[0.912335 0.908378]
+matrix=static-cex block=2 kind=coords sel_to_car=[0.987969 0.153379 0.153248 0.987975] oracle_coords_sel=[0.968997 0.030226 0.037490 0.574780] oracle_coords_car=[0.961683 0.117610 0.127008 0.563239]
+matrix=static-cex block=2 kind=survival prev_car_v2_in_sel=0.707852 prev_car_v2_dot_sel2=0.567337 prev_sel_v2_in_sel=0.708371
+matrix=static-cex block=3 kind=subspace sel_oracle_cos=[0.918889 0.675623] car_oracle_cos=[0.918019 0.677376] sel_car_cos=[0.999838 0.999578] sel_tail=0.942897 car_tail=0.943128 s=[0.915009 0.909431]
+matrix=static-cex block=3 kind=coords sel_to_car=[0.959760 0.280241 0.280139 0.959521] oracle_coords_sel=[0.914839 0.018189 0.043311 0.679476] oracle_coords_car=[0.882658 0.238768 0.230515 0.642156]
+matrix=static-cex block=3 kind=survival prev_car_v2_in_sel=0.803481 prev_car_v2_dot_sel2=0.793647 prev_sel_v2_in_sel=0.810283
+matrix=static-cex block=4 kind=subspace sel_oracle_cos=[0.935197 0.743606] car_oracle_cos=[0.935086 0.743295] sel_car_cos=[0.999831 0.998901] sel_tail=0.928481 car_tail=0.928836 s=[0.916987 0.910679]
+matrix=static-cex block=4 kind=coords sel_to_car=[0.959739 0.280287 0.279979 0.958863] oracle_coords_sel=[0.931353 0.000122 0.050899 0.746681] oracle_coords_car=[0.893672 0.261616 0.160334 0.730804]
+matrix=static-cex block=4 kind=survival prev_car_v2_in_sel=0.824793 prev_car_v2_dot_sel2=0.790228 prev_sel_v2_in_sel=0.847849
+matrix=static-cex block=5 kind=subspace sel_oracle_cos=[0.984525 0.888455] car_oracle_cos=[0.984898 0.890850] sel_car_cos=[0.999888 0.999294] sel_tail=0.901672 car_tail=0.902119 s=[0.918785 0.911968]
+matrix=static-cex block=5 kind=coords sel_to_car=[0.979572 0.200533 0.200438 0.978986] oracle_coords_sel=[0.984100 0.009284 0.020169 0.888648] oracle_coords_car=[0.966376 0.188207 0.159153 0.876928]
+matrix=static-cex block=5 kind=survival prev_car_v2_in_sel=0.875120 prev_car_v2_dot_sel2=0.839869 prev_sel_v2_in_sel=0.877208
+matrix=static-cex block=6 kind=subspace sel_oracle_cos=[0.975957 0.757836] car_oracle_cos=[0.975955 0.761784] sel_car_cos=[0.999867 0.999575] sel_tail=0.890371 car_tail=0.890018 s=[0.921126 0.912013]
+matrix=static-cex block=6 kind=coords sel_to_car=[0.996431 0.082796 0.082812 0.996140] oracle_coords_sel=[0.975798 0.009093 0.002433 0.757982] oracle_coords_car=[0.971538 0.091286 0.061063 0.759511]
+matrix=static-cex block=6 kind=survival prev_car_v2_in_sel=0.925456 prev_car_v2_dot_sel2=0.908062 prev_sel_v2_in_sel=0.906477
+matrix=static-cex block=7 kind=subspace sel_oracle_cos=[0.988898 0.950499] car_oracle_cos=[0.989477 0.949241] sel_car_cos=[0.999875 0.999349] sel_tail=0.861285 car_tail=0.861011 s=[0.923612 0.914540]
+matrix=static-cex block=7 kind=coords sel_to_car=[0.999078 0.039542 0.039702 0.998575] oracle_coords_sel=[0.988704 0.018355 0.019514 0.950323] oracle_coords_car=[0.987727 0.057770 0.058557 0.947498]
+matrix=static-cex block=7 kind=survival prev_car_v2_in_sel=0.912947 prev_car_v2_dot_sel2=0.909971 prev_sel_v2_in_sel=0.910110
+matrix=static-cex block=8 kind=subspace sel_oracle_cos=[0.999098 0.963234] car_oracle_cos=[0.999153 0.965114] sel_car_cos=[0.999902 0.999153] sel_tail=0.829693 car_tail=0.829886 s=[0.926197 0.916546]
+matrix=static-cex block=8 kind=coords sel_to_car=[0.999367 0.032453 0.032588 0.998630] oracle_coords_sel=[0.998866 0.021329 0.019800 0.963035] oracle_coords_car=[0.997688 0.053941 0.051079 0.963770]
+matrix=static-cex block=8 kind=survival prev_car_v2_in_sel=0.928139 prev_car_v2_dot_sel2=0.927719 prev_sel_v2_in_sel=0.927041
+matrix=static-cex block=9 kind=subspace sel_oracle_cos=[0.999477 0.987513] car_oracle_cos=[0.999525 0.988751] sel_car_cos=[0.999930 0.999080] sel_tail=0.797704 car_tail=0.796722 s=[0.928916 0.918973]
+matrix=static-cex block=9 kind=coords sel_to_car=[0.998383 0.055522 0.055590 0.997536] oracle_coords_sel=[0.999198 0.023078 0.022030 0.987280] oracle_coords_car=[0.996419 0.078609 0.077116 0.985750]
+matrix=static-cex block=9 kind=survival prev_car_v2_in_sel=0.932867 prev_car_v2_dot_sel2=0.932524 prev_sel_v2_in_sel=0.932570
+matrix=static-cex block=10 kind=subspace sel_oracle_cos=[0.999520 0.994181] car_oracle_cos=[0.999622 0.994908] sel_car_cos=[0.999909 0.999445] sel_tail=0.763928 car_tail=0.763284 s=[0.931743 0.921570]
+matrix=static-cex block=10 kind=coords sel_to_car=[0.995927 0.088934 0.089076 0.995486] oracle_coords_sel=[0.999278 0.021816 0.021416 0.993954] oracle_coords_car=[0.993458 0.110779 0.109897 0.988826]
+matrix=static-cex block=10 kind=survival prev_car_v2_in_sel=0.936335 prev_car_v2_dot_sel2=0.935002 prev_sel_v2_in_sel=0.935031
+matrix=static-cex block=11 kind=subspace sel_oracle_cos=[0.999718 0.995545] car_oracle_cos=[0.999811 0.996500] sel_car_cos=[0.999899 0.999177] sel_tail=0.731545 car_tail=0.730022 s=[0.934610 0.924035]
+matrix=static-cex block=11 kind=coords sel_to_car=[0.992082 0.124788 0.124716 0.991363] oracle_coords_sel=[0.999243 0.030379 0.029789 0.995113] oracle_coords_car=[0.987722 0.154904 0.153954 0.984551]
+matrix=static-cex block=11 kind=survival prev_car_v2_in_sel=0.945111 prev_car_v2_dot_sel2=0.942325 prev_sel_v2_in_sel=0.943341
+matrix=static-cex block=12 kind=subspace sel_oracle_cos=[0.999740 0.995884] car_oracle_cos=[0.999799 0.996912] sel_car_cos=[0.999909 0.999162] sel_tail=0.697517 car_tail=0.697049 s=[0.937093 0.926632]
+matrix=static-cex block=12 kind=coords sel_to_car=[0.995404 0.094805 0.094717 0.994663] oracle_coords_sel=[0.998977 0.038552 0.037861 0.995183] oracle_coords_car=[0.990864 0.133101 0.132100 0.988156]
+matrix=static-cex block=12 kind=survival prev_car_v2_in_sel=0.951090 prev_car_v2_dot_sel2=0.944958 prev_sel_v2_in_sel=0.950706
+matrix=static-cex block=13 kind=subspace sel_oracle_cos=[0.999861 0.997478] car_oracle_cos=[0.999917 0.998199] sel_car_cos=[0.999935 0.999379] sel_tail=0.664047 car_tail=0.664230 s=[0.939812 0.929168]
+matrix=static-cex block=13 kind=coords sel_to_car=[0.993046 0.117157 0.117039 0.992503] oracle_coords_sel=[0.999374 0.030893 0.030517 0.997021] oracle_coords_car=[0.988936 0.147736 0.147271 0.987282]
+matrix=static-cex block=13 kind=survival prev_car_v2_in_sel=0.954512 prev_car_v2_dot_sel2=0.949710 prev_sel_v2_in_sel=0.953498
+matrix=static-cex block=14 kind=subspace sel_oracle_cos=[0.999828 0.997716] car_oracle_cos=[0.999902 0.998557] sel_car_cos=[0.999906 0.999280] sel_tail=0.631890 car_tail=0.631832 s=[0.942649 0.931652]
+matrix=static-cex block=14 kind=coords sel_to_car=[0.992890 0.118221 0.118080 0.992281] oracle_coords_sel=[0.998542 0.049785 0.049076 0.996554] oracle_coords_car=[0.985706 0.167429 0.166610 0.984639]
+matrix=static-cex block=14 kind=survival prev_car_v2_in_sel=0.960064 prev_car_v2_dot_sel2=0.955811 prev_sel_v2_in_sel=0.958160
+matrix=static-cex block=15 kind=subspace sel_oracle_cos=[0.999829 0.997961] car_oracle_cos=[0.999916 0.998647] sel_car_cos=[0.999918 0.999399] sel_tail=0.599866 car_tail=0.599622 s=[0.945153 0.934211]
+matrix=static-cex block=15 kind=coords sel_to_car=[0.994514 0.103817 0.103787 0.993995] oracle_coords_sel=[0.998714 0.046865 0.046443 0.996895] oracle_coords_car=[0.988520 0.150359 0.149816 0.987372]
+matrix=static-cex block=15 kind=survival prev_car_v2_in_sel=0.961066 prev_car_v2_dot_sel2=0.954341 prev_sel_v2_in_sel=0.961228
+matrix=static-cex block=16 kind=subspace sel_oracle_cos=[0.999914 0.998636] car_oracle_cos=[0.999951 0.999055] sel_car_cos=[0.999952 0.999645] sel_tail=0.567190 car_tail=0.567631 s=[0.947625 0.936817]
+matrix=static-cex block=16 kind=coords sel_to_car=[0.996884 0.078238 0.078159 0.996587] oracle_coords_sel=[0.998917 0.043869 0.043406 0.997726] oracle_coords_car=[0.992471 0.121844 0.121431 0.991676]
+matrix=static-cex block=16 kind=survival prev_car_v2_in_sel=0.963044 prev_car_v2_dot_sel2=0.957788 prev_sel_v2_in_sel=0.963554
+matrix=static-cex block=17 kind=subspace sel_oracle_cos=[0.999735 0.998746] car_oracle_cos=[0.999886 0.999362] sel_car_cos=[0.999871 0.999415] sel_tail=0.536587 car_tail=0.536083 s=[0.950528 0.939027]
+matrix=static-cex block=17 kind=coords sel_to_car=[0.991211 0.131307 0.131212 0.990765] oracle_coords_sel=[0.998073 0.057406 0.057134 0.997123] oracle_coords_car=[0.982030 0.187998 0.187697 0.981601]
+matrix=static-cex block=17 kind=survival prev_car_v2_in_sel=0.968306 prev_car_v2_dot_sel2=0.966530 prev_sel_v2_in_sel=0.966309
+matrix=static-cex block=18 kind=subspace sel_oracle_cos=[0.999762 0.998773] car_oracle_cos=[0.999886 0.999342] sel_car_cos=[0.999896 0.999509] sel_tail=0.506090 car_tail=0.504824 s=[0.953106 0.941547]
+matrix=static-cex block=18 kind=coords sel_to_car=[0.992095 0.124657 0.124640 0.991707] oracle_coords_sel=[0.998005 0.059130 0.058911 0.997041] oracle_coords_car=[0.982946 0.183156 0.182852 0.982494]
+matrix=static-cex block=18 kind=survival prev_car_v2_in_sel=0.968154 prev_car_v2_dot_sel2=0.960392 prev_sel_v2_in_sel=0.967776
+matrix=static-cex block=19 kind=subspace sel_oracle_cos=[0.999804 0.999022] car_oracle_cos=[0.999895 0.999384] sel_car_cos=[0.999931 0.999688] sel_tail=0.473578 car_tail=0.473916 s=[0.955709 0.944034]
+matrix=static-cex block=19 kind=coords sel_to_car=[0.992237 0.123806 0.123759 0.991998] oracle_coords_sel=[0.997423 0.068666 0.068368 0.996700] oracle_coords_car=[0.981334 0.191629 0.191319 0.980928]
+matrix=static-cex block=19 kind=survival prev_car_v2_in_sel=0.970263 prev_car_v2_dot_sel2=0.964207 prev_sel_v2_in_sel=0.969458
+matrix=static-cex block=20 kind=subspace sel_oracle_cos=[0.999840 0.999266] car_oracle_cos=[0.999925 0.999525] sel_car_cos=[0.999935 0.999784] sel_tail=0.442844 car_tail=0.443202 s=[0.958091 0.946750]
+matrix=static-cex block=20 kind=coords sel_to_car=[0.995351 0.095631 0.095641 0.995200] oracle_coords_sel=[0.998035 0.059873 0.059688 0.997492] oracle_coords_car=[0.987811 0.155090 0.154892 0.987464]
+matrix=static-cex block=20 kind=survival prev_car_v2_in_sel=0.970042 prev_car_v2_dot_sel2=0.961793 prev_sel_v2_in_sel=0.971018
+matrix=static-cex block=21 kind=subspace sel_oracle_cos=[0.999939 0.999528] car_oracle_cos=[0.999974 0.999704] sel_car_cos=[0.999968 0.999858] sel_tail=0.412365 car_tail=0.412734 s=[0.960498 0.949477]
+matrix=static-cex block=21 kind=coords sel_to_car=[0.997985 0.062936 0.062919 0.997877] oracle_coords_sel=[0.999094 0.040740 0.040575 0.998718] oracle_coords_car=[0.994587 0.103534 0.103393 0.994356]
+matrix=static-cex block=21 kind=survival prev_car_v2_in_sel=0.972107 prev_car_v2_dot_sel2=0.965848 prev_sel_v2_in_sel=0.973121
+matrix=static-cex block=22 kind=subspace sel_oracle_cos=[0.999896 0.999748] car_oracle_cos=[0.999939 0.999846] sel_car_cos=[0.999964 0.999923] sel_tail=0.382336 car_tail=0.382620 s=[0.963171 0.951917]
+matrix=static-cex block=22 kind=coords sel_to_car=[0.996575 0.082245 0.082256 0.996535] oracle_coords_sel=[0.998890 0.044829 0.044801 0.998745] oracle_coords_car=[0.991857 0.126857 0.126818 0.991773]
+matrix=static-cex block=22 kind=survival prev_car_v2_in_sel=0.974646 prev_car_v2_dot_sel2=0.973080 prev_sel_v2_in_sel=0.974269
+matrix=static-cex block=23 kind=subspace sel_oracle_cos=[0.999907 0.999806] car_oracle_cos=[0.999967 0.999906] sel_car_cos=[0.999936 0.999908] sel_tail=0.352751 car_tail=0.352676 s=[0.965585 0.954559]
+matrix=static-cex block=23 kind=coords sel_to_car=[0.998605 0.051517 0.051531 0.998581] oracle_coords_sel=[0.999477 0.029300 0.029289 0.999377] oracle_coords_car=[0.996699 0.080769 0.080751 0.996641]
+matrix=static-cex block=23 kind=survival prev_car_v2_in_sel=0.974382 prev_car_v2_dot_sel2=0.969779 prev_sel_v2_in_sel=0.975260
+matrix=static-cex block=24 kind=subspace sel_oracle_cos=[0.999930 0.999802] car_oracle_cos=[0.999971 0.999917] sel_car_cos=[0.999968 0.999881] sel_tail=0.322865 car_tail=0.322904 s=[0.967976 0.956959]
+matrix=static-cex block=24 kind=coords sel_to_car=[0.998744 0.049320 0.049362 0.998669] oracle_coords_sel=[0.999294 0.035665 0.035655 0.999166] oracle_coords_car=[0.996350 0.084939 0.084899 0.996313]
+matrix=static-cex block=24 kind=survival prev_car_v2_in_sel=0.976800 prev_car_v2_dot_sel2=0.975869 prev_sel_v2_in_sel=0.976765
+matrix=static-cex block=25 kind=subspace sel_oracle_cos=[0.999905 0.999872] car_oracle_cos=[0.999941 0.999922] sel_car_cos=[0.999977 0.999959] sel_tail=0.293400 car_tail=0.293584 s=[0.970506 0.959370]
+matrix=static-cex block=25 kind=coords sel_to_car=[0.998660 0.051118 0.051136 0.998660] oracle_coords_sel=[0.998621 0.050570 0.050591 0.998596] oracle_coords_car=[0.994769 0.101575 0.101576 0.994750]
+matrix=static-cex block=25 kind=survival prev_car_v2_in_sel=0.977223 prev_car_v2_dot_sel2=0.976714 prev_sel_v2_in_sel=0.977031
+matrix=static-cex block=26 kind=subspace sel_oracle_cos=[0.999878 0.999732] car_oracle_cos=[0.999943 0.999868] sel_car_cos=[0.999967 0.999869] sel_tail=0.265291 car_tail=0.264687 s=[0.973097 0.961808]
+matrix=static-cex block=26 kind=coords sel_to_car=[0.998170 0.059798 0.059844 0.998084] oracle_coords_sel=[0.998127 0.059147 0.059138 0.997982] oracle_coords_car=[0.992852 0.118791 0.118735 0.992803]
+matrix=static-cex block=26 kind=survival prev_car_v2_in_sel=0.979752 prev_car_v2_dot_sel2=0.978959 prev_sel_v2_in_sel=0.979654
+matrix=static-cex block=27 kind=subspace sel_oracle_cos=[0.999968 0.999941] car_oracle_cos=[0.999984 0.999953] sel_car_cos=[0.999989 0.999978] sel_tail=0.235650 car_tail=0.235819 s=[0.975393 0.964384]
+matrix=static-cex block=27 kind=coords sel_to_car=[0.999752 0.021655 0.021665 0.999747] oracle_coords_sel=[0.999428 0.032874 0.032871 0.999401] oracle_coords_car=[0.998496 0.054518 0.054508 0.998466]
+matrix=static-cex block=27 kind=survival prev_car_v2_in_sel=0.978311 prev_car_v2_dot_sel2=0.974736 prev_sel_v2_in_sel=0.978888
+matrix=static-cex block=28 kind=subspace sel_oracle_cos=[0.999990 0.999950] car_oracle_cos=[0.999994 0.999977] sel_car_cos=[0.999997 0.999974] sel_tail=0.207166 car_tail=0.207335 s=[0.977869 0.966870]
+matrix=static-cex block=28 kind=coords sel_to_car=[0.999958 0.008787 0.008787 0.999936] oracle_coords_sel=[0.999742 0.022163 0.022147 0.999707] oracle_coords_car=[0.999513 0.030947 0.030934 0.999501]
+matrix=static-cex block=28 kind=survival prev_car_v2_in_sel=0.980763 prev_car_v2_dot_sel2=0.980270 prev_sel_v2_in_sel=0.980858
+matrix=static-cex block=29 kind=subspace sel_oracle_cos=[0.999994 0.999971] car_oracle_cos=[0.999998 0.999988] sel_car_cos=[0.999997 0.999981] sel_tail=0.179350 car_tail=0.179235 s=[0.980418 0.969392]
+matrix=static-cex block=29 kind=coords sel_to_car=[0.999996 0.000053 0.000057 0.999981] oracle_coords_sel=[0.999969 0.007154 0.007154 0.999945] oracle_coords_car=[0.999971 0.007211 0.007208 0.999962]
+matrix=static-cex block=29 kind=survival prev_car_v2_in_sel=0.981769 prev_car_v2_dot_sel2=0.981495 prev_sel_v2_in_sel=0.981794
+matrix=static-cex block=30 kind=subspace sel_oracle_cos=[0.999995 0.999976] car_oracle_cos=[0.999997 0.999981] sel_car_cos=[0.999997 0.999986] sel_tail=0.151124 car_tail=0.151090 s=[0.982759 0.971720]
+matrix=static-cex block=30 kind=coords sel_to_car=[0.999988 0.004300 0.004305 0.999977] oracle_coords_sel=[0.999934 0.010884 0.010893 0.999918] oracle_coords_car=[0.999880 0.015186 0.015195 0.999867]
+matrix=static-cex block=30 kind=survival prev_car_v2_in_sel=0.981968 prev_car_v2_dot_sel2=0.981960 prev_sel_v2_in_sel=0.981957
+matrix=static-cex block=31 kind=subspace sel_oracle_cos=[0.999998 0.999990] car_oracle_cos=[0.999998 0.999994] sel_car_cos=[0.999999 0.999996] sel_tail=0.123550 car_tail=0.123547 s=[0.985299 0.974216]
+matrix=static-cex block=31 kind=coords sel_to_car=[0.999989 0.004654 0.004654 0.999985] oracle_coords_sel=[0.999997 0.001253 0.001254 0.999990] oracle_coords_car=[0.999981 0.005907 0.005908 0.999976]
+matrix=static-cex block=31 kind=survival prev_car_v2_in_sel=0.983179 prev_car_v2_dot_sel2=0.983045 prev_sel_v2_in_sel=0.983188
+matrix=static-cex block=32 kind=subspace sel_oracle_cos=[0.999997 0.999890] car_oracle_cos=[0.999997 0.999890] sel_car_cos=[1.000000 1.000000] sel_tail=0.096207 car_tail=0.096207 s=[0.987737 0.976626]
+matrix=static-cex block=32 kind=coords sel_to_car=[1.000000 0.000315 0.000315 1.000000] oracle_coords_sel=[0.999985 0.004851 0.004856 0.999879] oracle_coords_car=[0.999983 0.005166 0.005170 0.999877]
+matrix=static-cex block=32 kind=survival prev_car_v2_in_sel=0.982952 prev_car_v2_dot_sel2=0.982895 prev_sel_v2_in_sel=0.982959
+rotation_handoff_done matrix=static-cex mean_align=0.977801 elapsed=33.245

@@ -1,0 +1,159 @@
+Approximation note: online harmonic-mean combinations
+======================================================
+
+Context
+-------
+
+This note extends the previous future_hmean_online selection rule.  At
+online window w, the candidate second vector v is selected from the same
+small online pool:
+
+  opt2, q2_vs_q1oracle, mgain_deflated_svd, block_complement, prev_opt2.
+
+The old rule used the current block and next block only:
+
+  J_old(v) = HM(g1(v), g2(v)) * H1(v),
+
+where g1 is normalized gain on the current window N_w, g2 is normalized
+gain on the next/probe window N_{w+1}, and H1 is the relative entropy of
+the current-window response.
+
+Window terms
+------------
+
+For each candidate v, define raw gains
+
+  s_raw(v)  = ||S_{w-1} v||_2^2
+  g1_raw(v) = ||A_w v||_2^2
+  g2_raw(v) = ||A_{w+1} v||_2^2.
+
+Here S_{w-1} is the carried sketch before the current window.  In the
+implementation this is the compact prior factor B_top = diag(state.s)
+state.V.T.  For the first block there is no prior sketch, so the sketch
+term is omitted by setting its normalized share to 1 and giving it zero
+weight in the weighted variant.
+
+Normalize over the finite candidate pool:
+
+  s(v)  = s_raw(v)  / max_u s_raw(u), if a prior sketch exists; else 1
+  g1(v) = g1_raw(v) / max_u g1_raw(u)
+  g2(v) = g2_raw(v) / max_u g2_raw(u).
+
+Parenthesized terms denote concatenating row blocks before taking the
+norm, not nesting scalar harmonic means.  Thus
+
+  c1_raw(v) = ||[S_{w-1}; A_w] v||_2^2
+            = s_raw(v) + g1_raw(v)
+
+  c2_raw(v) = ||[S_{w-1}; A_{w+1}] v||_2^2
+            = s_raw(v) + g2_raw(v),
+
+with s_raw treated as 0 when there is no prior sketch.  These are also
+normalized over the finite candidate pool:
+
+  c1(v) = c1_raw(v) / max_u c1_raw(u)
+  c2(v) = c2_raw(v) / max_u c2_raw(u).
+
+The entropy multiplier is the current-window response entropy:
+
+  y_i = (A_w v)_i
+  p_i = y_i^2 / sum_j y_j^2
+  H1(v) = -sum_i p_i log(p_i) / log(m_w).
+
+Harmonic-mean variants
+----------------------
+
+The generalized weighted harmonic mean is
+
+  HM_w(x_1,...,x_k) = (sum_i alpha_i) / (sum_i alpha_i / x_i),
+
+with zero or non-finite weights omitted.  The implemented policy scores
+are:
+
+  future_hmean_triplet_online:
+    J(v) = HM(s, g1, g2) * H1.
+
+  future_hmean_nested_online:
+    J(v) = HM(c1, g2) * H1
+         = HM(||[S_{w-1}; A_w]v||^2, ||A_{w+1}v||^2) * H1,
+    after candidate-pool normalization.
+
+  future_hmean_pairwise_online:
+    J(v) = HM(c1, c2) * H1
+         = HM(||[S_{w-1}; A_w]v||^2,
+              ||[S_{w-1}; A_{w+1}]v||^2) * H1,
+    after candidate-pool normalization.
+
+  future_hmean_weighted_online:
+    J(v) = HM_alpha(s, g1, g2) * H1,
+    alpha = (rows seen before N_w, |N_w|, |N_{w+1}|).
+
+Thus the weighted rule gives the prior sketch a mass proportional to the
+number of rows summarized before the current window, while current and
+future terms each receive their actual window size.
+
+Gradient for smooth optimization
+--------------------------------
+
+The current implementation only ranks a finite candidate pool, but if the
+same objectives are optimized over a smooth vector/subspace parameter,
+the derivative should be based on the reciprocal form.
+
+Let
+
+  R(v) = sum_i alpha_i / x_i(v)
+  A = sum_i alpha_i
+  h(v) = A / R(v).
+
+For positive x_i,
+
+  grad h = (A / R^2) * sum_i alpha_i grad x_i / x_i^2.
+
+With the entropy multiplier,
+
+  grad J = H1 grad h + h grad H1.
+
+For a quadratic gain x(v) = ||Bv||_2^2 / c with fixed normalization c,
+
+  grad x = 2 B.T B v / c.
+
+For response entropy, with e_i = y_i^2, E = sum_i e_i,
+p_i = e_i / E, and L = log(m),
+
+  H = -sum_i p_i log(p_i) / L.
+
+The derivative with respect to e_i is
+
+  dH/de_i = -(log(p_i) + H_nat) / (E L),
+
+where H_nat = -sum_i p_i log(p_i).  Since e_i = y_i^2 and y = Bv,
+
+  grad H = B.T [2 y_i dH/de_i]_i.
+
+Parenthesized variants use the same quadratic-gain derivative with
+vertically concatenated blocks.  For example,
+
+  grad c1 = 2 (S_{w-1}.T S_{w-1} + A_w.T A_w) v / c1_norm,
+  grad c2 = 2 (S_{w-1}.T S_{w-1} + A_{w+1}.T A_{w+1}) v / c2_norm,
+
+where c1_norm and c2_norm are the fixed candidate-pool normalizers for a
+local smooth step.
+
+Binary HM composition then uses
+
+  HM(a,b) = 2ab/(a+b)
+  d HM/da = 2 b^2/(a+b)^2
+  d HM/db = 2 a^2/(a+b)^2.
+
+Implementation mapping
+----------------------
+
+The policy implementations live in half_window_sliding_hmean_experiment.py.
+score_half_candidates computes s, g1, g2, c1, c2, and H1 once, then adds
+the four new objective keys.  choose_second_slot maps each policy name to
+its score key.  ONLINE_HMEAN_POLICIES ensures all future-HM policies use
+the online candidate pool and the same rank-2 SVD frame handoff as
+future_hmean_online.
+
+The --max-pairs argument stops a run after block 2 or 3 for the requested
+early benchmark diagnostics.

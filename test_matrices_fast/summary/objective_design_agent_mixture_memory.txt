@@ -1,0 +1,135 @@
+Objective Design Agent Mixture / Memory Findings
+=================================================
+
+Date: 2026-04-22
+
+Scope
+-----
+This note answers the current design questions about candidate mixtures,
+gradient/subspace expressibility, and what the memory should retain when scalar
+score history is not enough.
+
+Files and summaries inspected
+-----------------------------
+- summary/gradient_memory_objective_design_notes.txt
+- summary/oracle_projection_score_insight_summary.txt
+- summary/combined_debug_oracle_span_handoff.txt
+- summary/rotation_handoff_mixed_static_diagnostic.txt
+- summary/outside_rotation_change_diagnostic.txt
+- summary/second_slot_tail_bias_verification.txt
+- summary/consecutive_tail_conspiracy_diagnostic.txt
+- summary/combined_rownorm_allblocks_benchmark_handoff.txt
+
+Commands run
+------------
+- sed -n '1,240p' summary/gradient_memory_objective_design_notes.txt
+- sed -n '1,260p' summary/combined_debug_oracle_span_handoff.txt
+- sed -n '1,260p' summary/outside_rotation_change_diagnostic.txt
+- sed -n '1,260p' summary/rotation_handoff_mixed_static_diagnostic.txt
+- sed -n '1,240p' summary/second_slot_tail_bias_verification.txt
+- sed -n '1,260p' summary/consecutive_tail_conspiracy_diagnostic.txt
+- python debug_combined_objective_probe.py
+
+Live probe highlights
+---------------------
+The live run of `debug_combined_objective_probe.py` on static-cex block 1
+reported:
+
+- `fast_oracle_warm_principal_cosines = [0.9997695, 0.34560803]`
+- `fast_oracle_warm_v1_oracle_part_norm = 0.999752...`, `outside_norm = 0.022256...`
+- `fast_oracle_warm_v2_oracle_part_norm = 0.345658...`, `outside_norm = 0.938361...`
+- `oracle_tangent total = 3.5243978717`, with outside norms
+  `0.06842952` and `0.06495048`
+- best in-subspace oracle score was `3.5243978717`
+- a one-dimensional outside move improved score to
+  `rotate_q2_toward_exact_v3 total = 3.5570236713`
+
+Interpretation: the selected rank-2 oracle frame is not the whole story. The
+optimizer can gain by moving along a one-dimensional outside component, and
+that outside component is tied to block-local evidence rather than a clean
+oracle-2 recovery.
+
+Answers
+-------
+1. Is the missing oracle direction expressible by selected rank-2 memory, or
+   only after adding fresh gradients/tangent directions?
+
+   The evidence says the selected rank-2 memory alone is not enough. The
+   missing second direction is not recovered as a stable vector already
+   present in the retained rank-2 sketch. The strongest deviation from the
+   oracle frame is a one-dimensional outside component aligned with fresh
+   block structure and high-leverage rows. The `oracle_projection_score_insight_summary.txt`
+   block-1 deviation analysis and the live probe both show that the optimizer
+   finds value by leaving `Q_oracle` in an outside direction.
+
+   So: expressibility comes from adding fresh gradient / tangent / innovation
+   directions, not from the retained rank-2 memory alone.
+
+2. Are fake directions corrupted oracle-plus-tail mixtures that can be rotated
+   toward oracle by new block evidence?
+
+   Sometimes they have oracle mass, but the main failure mode is not a simple
+   corrupted oracle vector that later block evidence cleanly rotates back.
+   `rotation_handoff_mixed_static_diagnostic.txt` shows the bad second slot is
+   already present before handoff, and the handoff SVD mostly rotates inside an
+   already tail-heavy selected subspace. `second_slot_tail_bias_verification.txt`
+   shows that forcing early blocks into the oracle span helps in
+   diffuse-diffuse, but mixed-tail-sharp can still lose the second oracle
+   cosine later.
+
+   So the answer is: partially mixed, yes; reliably rotatable back to oracle by
+   later evidence, no. Later evidence helps only when the oracle-rich state is
+   already present or explicitly injected early.
+
+3. What should memory hold if scalar score history is insufficient?
+
+   The best first answer is an innovation sketch or gradient subspace built
+   from fresh tangent gradients / residual directions.
+
+   Ranking of memory choices from the current evidence:
+
+   - Gradient subspace / innovation sketch: best practical first design.
+   - Low-rank PSD gradient memory: useful if the goal is only to score whether
+     a candidate lies in historically important fresh directions.
+   - Signed rotation operator: more expressive for steering, but more fragile
+     and harder to stabilize.
+   - Scalar score history alone: insufficient, because it cannot tell whether a
+     new candidate lies in the direction previous fresh rows wanted to move
+     toward.
+
+   This matches `summary/gradient_memory_objective_design_notes.txt`, which
+   explicitly recommends a fresh innovation sketch as the most practical first
+   design.
+
+4. Which diagnostic should be implemented next to test this objectively?
+
+   Implement a blockwise tangent-gradient attribution diagnostic on the first
+   failing block, and compare it against an oracle-rich control block.
+
+   Minimum useful report for each block:
+
+   - `direction_to_oracle(v)`
+   - `g_old_tan`
+   - `g_new_tan`
+   - `g_entropy_tan`
+   - `g_total_tan`
+   - cosine of each tangent component to `direction_to_oracle`
+   - candidate scores for `Q_oracle`, `prev_opt2`, and
+     `Q_oracle + gradient-sketch` variants
+
+   The objective test is:
+
+   - does the best candidate move toward oracle only after fresh tangent /
+     innovation directions are added to memory?
+   - or does the retained rank-2 sketch already suffice once search is made
+     stronger?
+
+   If the gradient sketch wins consistently on the failing first block while
+   the rank-2 memory alone does not, that is direct evidence that the memory
+   needs a gradient subspace / innovation component.
+
+Actionable conclusion
+---------------------
+The current failure is best modeled as path-dependent storage of a wrong
+second-slot basin plus a missing innovation channel. The next memory design to
+try is a small fresh tangent-gradient sketch, not another scalar summary.

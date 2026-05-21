@@ -1,0 +1,262 @@
+Let $B \in \mathbb R^{r\times n}$ denote the sketch carried from the previous windows, let
+\begin{align}
+A_w \in \mathbb R^{k\times n},
+\qquad
+k = \rho(A_w),
+\qquad
+k>1,
+\qquad
+v \in \mathbb S^{n-1},
+\end{align}
+and write
+\begin{align}
+H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)
+=
+-\log\left(\frac{\|A_wv\|_4^4}{\|A_wv\|_2^4}\right).
+\end{align}
+We propose the score
+\begin{align}
+\operatorname{score}_w(v)
+:=
+\|Bv\|_2^2
++
+\left(\frac{k}{n}\right)^{1/4}
+\|A_wv\|_2^2
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+
+\paragraph{Derivation of the score.}
+The correction factor for the new window is inherited from the same heuristic used in the first-window score. Let
+\begin{align}
+z = A_wv
+\end{align}
+denote the response of the current window, and let
+\begin{align}
+x = Av
+\end{align}
+denote the response of the full matrix. Since $A_w$ contains only $k=\rho(A_w)$ rows, $z$ is a restriction of $x$. We again use the dimension-scaling heuristic
+\begin{align}
+\frac{H_2\left(\frac{x}{\|x\|_2}\right)}{\log n}
+\approx
+\frac{H_2\left(\frac{z}{\|z\|_2}\right)}{\log k},
+\end{align}
+that is,
+\begin{align}
+H_2\left(\frac{x}{\|x\|_2}\right)
+\approx
+H_2\left(\frac{z}{\|z\|_2}\right)\frac{\log n}{\log k}.
+\end{align}
+Using
+\begin{align}
+H_2\left(\frac{y}{\|y\|_2}\right)
+=
+4\log\|y\|_2 - 4\log\|y\|_4,
+\end{align}
+and the fact that $\|z\|_4 \le \|x\|_4$ because $z$ is a restriction of $x$, we get
+\begin{align}
+4\log\|z\|_2 - H_2\left(\frac{z}{\|z\|_2}\right)
+=
+4\log\|z\|_4
+\le
+4\log\|x\|_4
+=
+4\log\|x\|_2 - H_2\left(\frac{x}{\|x\|_2}\right).
+\end{align}
+Rearranging yields
+\begin{align}
+4\log\frac{\|z\|_2}{\|x\|_2}
+\le
+H_2\left(\frac{z}{\|z\|_2}\right)
+-
+H_2\left(\frac{x}{\|x\|_2}\right).
+\end{align}
+Substituting the heuristic approximation for $H_2(x/\|x\|_2)$ gives
+\begin{align}
+\log\frac{\|z\|_2}{\|x\|_2}
+\lesssim
+-\frac{H_2\left(\frac{z}{\|z\|_2}\right)}{4}\frac{\log(n/k)}{\log k},
+\end{align}
+and therefore
+\begin{align}
+\frac{\|A_wv\|_2}{\|Av\|_2}
+\lesssim
+\left(\frac{k}{n}\right)^{\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+So the reciprocal factor
+\begin{align}
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}
+\end{align}
+is the entropy correction suggested by that upper bound. In the maximal-entropy case
+\begin{align}
+H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)=\log k,
+\end{align}
+the bound predicts shrinkage only of order
+\begin{align}
+\left(\frac{k}{n}\right)^{1/4},
+\end{align}
+whereas the true flat-vector shrinkage is
+\begin{align}
+\left(\frac{k}{n}\right)^{1/2}.
+\end{align}
+Thus the entropy correction overshoots by the constant factor
+\begin{align}
+\left(\frac{n}{k}\right)^{1/4}.
+\end{align}
+For the standalone window objective this can be removed by multiplying by the $v$-independent correction
+\begin{align}
+\left(\frac{k}{n}\right)^{1/4},
+\end{align}
+which does not change the maximizer of the isolated window score. We therefore use the flat-case-corrected entropy factor
+\begin{align}
+\left(\frac{k}{n}\right)^{1/4}
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+
+In the streaming setting, however, we do not replace the entire accumulated objective by a corrected norm of the new block. The previous windows have already been summarized by the sketch $B$, so their contribution is carried forward as the quadratic energy $\|Bv\|_2^2$. We therefore attach the same entropy multiplier only to the fresh window contribution, keeping the objective additive in old and new information:
+\begin{align}
+\operatorname{score}_w(v)
+:=
+\|Bv\|_2^2
++
+\left(\frac{k}{n}\right)^{1/4}
+\|A_wv\|_2^2
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+This is the sense in which the new score reuses the first-window entropy correction while leaving the previously accumulated sketch energy untouched.
+
+\paragraph{Heuristic motivation.}
+The point of this definition is to separate the old and new contributions. The old contribution is represented directly by the sketch energy $\|Bv\|_2^2$. For the new window, we keep the same collision-entropy correction factor as in the first-window score, now including the extra flat-case correction $(k/n)^{1/4}$, but apply it to the current-window energy term $\|A_wv\|_2^2$ rather than to a standalone norm objective. Thus the entropy factor is used only to compensate the new block, while the previously accumulated contribution is already summarized by $B$.
+
+If one wants a formal statement, it can be packaged as the following lemma.
+
+\begin{lem}
+Let
+\begin{align}
+N_{w-1}
+=
+\begin{pmatrix}
+A_{I_1}\\
+\vdots\\
+A_{I_{w-1}}
+\end{pmatrix},
+\qquad
+N_w
+=
+\begin{pmatrix}
+N_{w-1}\\
+A_w
+\end{pmatrix}.
+\end{align}
+Assume that $\|Bv\|_2^2 \approx \|N_{w-1}v\|_2^2$, and that the entropy factor
+\begin{align}
+\left(\frac{k}{n}\right)^{1/4}
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}
+\end{align}
+provides the desired compensation for the shrinkage of the current-window response. Then $\operatorname{score}_w(v)$ is a reasonable surrogate for the total contribution of the previous sketch together with the corrected current window.
+\end{lem}
+
+\begin{proof}
+Deferred.
+\end{proof}
+
+\paragraph{Simplified form.}
+Let
+\begin{align}
+c_k = \frac{\log(k/n)}{\log k}.
+\end{align}
+Using
+\begin{align}
+H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)
+=
+4\log\|A_wv\|_2 - 4\log\|A_wv\|_4,
+\end{align}
+the corrected current-window term becomes
+\begin{align}
+\left(\frac{k}{n}\right)^{1/4}
+\|A_wv\|_2^2
+\left(\frac{k}{n}\right)^{-\frac{H_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}
+=
+\left(\frac{k}{n}\right)^{1/4}\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k}.
+\end{align}
+Therefore
+\begin{align}
+\operatorname{score}_w(v)
+=
+\|Bv\|_2^2 + \left(\frac{k}{n}\right)^{1/4}\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k}.
+\end{align}
+
+If we isolate the new-window term as
+\begin{align}
+\Psi_w(v) := \left(\frac{k}{n}\right)^{1/4}\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k},
+\end{align}
+then
+\begin{align}
+\operatorname{score}_w(v) = \|Bv\|_2^2 + \Psi_w(v),
+\end{align}
+and
+\begin{align}
+\log \Psi_w(v)
+=
+\frac14\log\left(\frac{k}{n}\right)
++
+(2-c_k)\log\|A_wv\|_2 + c_k\log\|A_wv\|_4.
+\end{align}
+
+\paragraph{Gradient.}
+The old term is quadratic, so
+\begin{align}
+\nabla \|Bv\|_2^2 = 2B^\top Bv.
+\end{align}
+For the corrected current-window term, assume $A_wv \neq 0$. Differentiating
+\begin{align}
+\log \Psi_w(v)
+=
+\frac14\log\left(\frac{k}{n}\right)
++
+(2-c_k)\log\|A_wv\|_2 + c_k\log\|A_wv\|_4
+\end{align}
+gives
+\begin{align}
+\nabla \log \Psi_w(v)
+=
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right).
+\end{align}
+Hence
+\begin{align}
+\nabla \Psi_w(v)
+=
+\Psi_w(v)\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}
+Therefore the full gradient is
+\begin{align}
+\nabla \operatorname{score}_w(v)
+=
+2B^\top Bv
++
+\Psi_w(v)\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}
+
+Equivalently, substituting back for $\Psi_w(v)$,
+\begin{align}
+\nabla \operatorname{score}_w(v)
+=
+2B^\top Bv
++
+\left(\frac{k}{n}\right)^{1/4}
+\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k}
+\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}

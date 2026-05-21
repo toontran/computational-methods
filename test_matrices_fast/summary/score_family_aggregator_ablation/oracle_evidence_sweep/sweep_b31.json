@@ -1,0 +1,317 @@
+[
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.0,
+    "oracle_r": 2,
+    "score_oracle": 0.006630522620611574,
+    "score_greedy": 0.03799251859952746,
+    "score_joint": 0.03826196188486235,
+    "delta_greedy": 0.03136199597891588,
+    "delta_joint": 0.03163143926425077,
+    "joint_minus_greedy": 0.0002694432853348888,
+    "pa2_greedy_vs_oracle": [
+      0.4460070311715409,
+      0.014484238600912346
+    ],
+    "pa2_joint_vs_oracle": [
+      0.454375035555695,
+      0.30245934953225556
+    ]
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.0,
+    "oracle_r": 2,
+    "score_oracle": 0.026979615998731672,
+    "score_greedy": 0.04087020603590356,
+    "score_joint": 0.04093870803695188,
+    "delta_greedy": 0.013890590037171885,
+    "delta_joint": 0.013959092038220211,
+    "joint_minus_greedy": 6.850200104832616e-05,
+    "pa2_greedy_vs_oracle": [
+      0.8764979753173114,
+      0.5601061012585995
+    ],
+    "pa2_joint_vs_oracle": [
+      0.8766476283592493,
+      0.5582715904237242
+    ]
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.0,
+    "oracle_r": 2,
+    "score_oracle": 0.021542529915895777,
+    "score_greedy": 0.03816493722625623,
+    "score_joint": 0.03855222514145492,
+    "delta_greedy": 0.016622407310360455,
+    "delta_joint": 0.017009695225559143,
+    "joint_minus_greedy": 0.0003872879151986877,
+    "pa2_greedy_vs_oracle": [
+      0.42675566680584676,
+      0.0014374451972406716
+    ],
+    "pa2_joint_vs_oracle": [
+      0.47730679767766027,
+      0.013379180531225691
+    ]
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.01,
+    "oracle_r": 2,
+    "score_oracle": 0.029408482774766882,
+    "score_greedy": 0.0392183110833004,
+    "score_joint": 0.039564952789236274,
+    "delta_greedy": 0.009809828308533518,
+    "delta_joint": 0.010156470014469392,
+    "joint_minus_greedy": 0.00034664170593587396,
+    "pa2_greedy_vs_oracle": [
+      0.6907594616622542,
+      0.48559308590025313
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9284503958423396,
+      0.613593091469281
+    ]
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.01,
+    "oracle_r": 2,
+    "score_oracle": 0.0326022798615027,
+    "score_greedy": 0.042774598156544406,
+    "score_joint": 0.04292761539689928,
+    "delta_greedy": 0.010172318295041706,
+    "delta_joint": 0.01032533553539658,
+    "joint_minus_greedy": 0.00015301724035487324,
+    "pa2_greedy_vs_oracle": [
+      0.9165365577860443,
+      0.6986823827874925
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9439380288971406,
+      0.7131516654871399
+    ]
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.01,
+    "oracle_r": 2,
+    "score_oracle": 0.029358687027242848,
+    "score_greedy": 0.040026750074064844,
+    "score_joint": 0.04054384074220226,
+    "delta_greedy": 0.010668063046821996,
+    "delta_joint": 0.011185153714959414,
+    "joint_minus_greedy": 0.0005170906681374182,
+    "pa2_greedy_vs_oracle": [
+      0.5483669260470816,
+      0.3500116697412645
+    ],
+    "pa2_joint_vs_oracle": [
+      0.651561598047976,
+      0.4979676217766346
+    ]
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.05,
+    "oracle_r": 2,
+    "score_oracle": 0.03438096039809479,
+    "score_greedy": 0.0436259984719126,
+    "score_joint": 0.04392506452112382,
+    "delta_greedy": 0.00924503807381781,
+    "delta_joint": 0.009544104123029029,
+    "joint_minus_greedy": 0.00029906604921121904,
+    "pa2_greedy_vs_oracle": [
+      0.957834846621551,
+      0.731713632331623
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9030616594176557,
+      0.8119223474703742
+    ]
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.05,
+    "oracle_r": 2,
+    "score_oracle": 0.03892281462912913,
+    "score_greedy": 0.05326500769405486,
+    "score_joint": 0.0536295972366276,
+    "delta_greedy": 0.014342193064925728,
+    "delta_joint": 0.01470678260749847,
+    "joint_minus_greedy": 0.0003645895425727422,
+    "pa2_greedy_vs_oracle": [
+      0.8755776796225593,
+      0.675087022520296
+    ],
+    "pa2_joint_vs_oracle": [
+      0.8921535053907546,
+      0.6960691672725888
+    ]
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.05,
+    "oracle_r": 2,
+    "score_oracle": 0.030717239600569813,
+    "score_greedy": 0.04755588344316248,
+    "score_joint": 0.048090392832621946,
+    "delta_greedy": 0.016838643842592666,
+    "delta_joint": 0.017373153232052133,
+    "joint_minus_greedy": 0.0005345093894594671,
+    "pa2_greedy_vs_oracle": [
+      0.7432011884757554,
+      0.5481066458666141
+    ],
+    "pa2_joint_vs_oracle": [
+      0.6782496331860922,
+      0.593437043234925
+    ]
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.1,
+    "oracle_r": 2,
+    "score_oracle": 0.04074103327611096,
+    "score_greedy": 0.05384384397534454,
+    "score_joint": 0.054232073339912465,
+    "delta_greedy": 0.013102810699233573,
+    "delta_joint": 0.013491040063801502,
+    "joint_minus_greedy": 0.0003882293645679283,
+    "pa2_greedy_vs_oracle": [
+      0.8368703142584485,
+      0.6903829066070558
+    ],
+    "pa2_joint_vs_oracle": [
+      0.773676667143423,
+      0.7364802737959549
+    ]
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.1,
+    "oracle_r": 2,
+    "score_oracle": 0.056311215750418184,
+    "score_greedy": 0.06304209103799027,
+    "score_joint": 0.06333762604427508,
+    "delta_greedy": 0.006730875287572088,
+    "delta_joint": 0.007026410293856894,
+    "joint_minus_greedy": 0.00029553500628480556,
+    "pa2_greedy_vs_oracle": [
+      0.9774923158912809,
+      0.8522732190773148
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9902080645895297,
+      0.853419141875431
+    ]
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.1,
+    "oracle_r": 2,
+    "score_oracle": 0.06746093157322859,
+    "score_greedy": 0.06740711638596687,
+    "score_joint": 0.06948940076733576,
+    "delta_greedy": -5.3815187261718744e-05,
+    "delta_joint": 0.002028469194107166,
+    "joint_minus_greedy": 0.0020822843813688846,
+    "pa2_greedy_vs_oracle": [
+      0.9979529578089185,
+      0.7257281997599386
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9911734738613752,
+      0.925362976811577
+    ]
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.5,
+    "oracle_r": 2,
+    "score_oracle": 0.10770675826011034,
+    "score_greedy": 0.1118230780810463,
+    "score_joint": 0.1125191419579108,
+    "delta_greedy": 0.004116319820935965,
+    "delta_joint": 0.00481238369780046,
+    "joint_minus_greedy": 0.0006960638768644944,
+    "pa2_greedy_vs_oracle": [
+      0.9646032654719922,
+      0.9633930143036161
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9712465546630493,
+      0.9319159190673808
+    ]
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.5,
+    "oracle_r": 2,
+    "score_oracle": 0.17750673099122502,
+    "score_greedy": 0.18127407583662183,
+    "score_joint": 0.1815866385040639,
+    "delta_greedy": 0.003767344845396814,
+    "delta_joint": 0.004079907512838876,
+    "joint_minus_greedy": 0.0003125626674420623,
+    "pa2_greedy_vs_oracle": [
+      0.9831597519677845,
+      0.9699218527050018
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9877527834835177,
+      0.9643032403008537
+    ]
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "oracle_lambda": 0.5,
+    "oracle_r": 2,
+    "score_oracle": 0.18563025748894352,
+    "score_greedy": 0.18865782309964493,
+    "score_joint": 0.18866009549310347,
+    "delta_greedy": 0.003027565610701416,
+    "delta_joint": 0.003029838004159957,
+    "joint_minus_greedy": 2.272393458541133e-06,
+    "pa2_greedy_vs_oracle": [
+      0.993188758803145,
+      0.9590832655252746
+    ],
+    "pa2_joint_vs_oracle": [
+      0.9933985873592552,
+      0.9566028176561607
+    ]
+  }
+]

@@ -1,0 +1,180 @@
+Mixed-tail-sharp force-b1 block-2 diagnostic dump
+=================================================
+
+Date: 2026-04-23
+
+Question
+--------
+After forcing block 1 to the projected oracle frame, what does block 2 look
+like when the optimizer is allowed to choose normally?
+
+
+Setup
+-----
+Matrix:
+
+  mixed-tail-sharp
+
+Run configuration:
+
+  n=1024
+  win=32
+  rank=2
+  dtype=float32
+  preset=fast
+  seed=0
+  intervention=force-b1
+
+Block inspected:
+
+  block=2
+  rows=33-64
+  rows_seen=64
+
+At block 1, the selected frame was forced to the projected oracle frame. At
+block 2, the selected frame is the optimizer's normal output under the sketch
+state produced by that forced block-1 frame.
+
+
+Selected block-2 frame
+----------------------
+Principal cosines against the current [sketch; block] projected oracle frame:
+
+  block_sketch_oracle_cos = 0.894780689518, 0.556386919381
+
+Principal cosines against the original global oracle frame:
+
+  exact_oracle_cos = 0.251779498461, 0.144134957532
+
+Raw original oracle-column projection norms into current [sketch; block]:
+
+  oracle_proj_norm = 0.271320124944, 0.270638122965
+
+Signal/tail mass of the selected rank-2 frame against the original true
+rank-2 signal span:
+
+  selected_signal_mass = 0.042083905278
+  selected_tail_mass   = 0.957916094722
+
+Survival of the forced block-1 second slot into the selected block-2 frame:
+
+  prev_forced_opt2_in_selected_subspace = 0.686567106432
+  prev_forced_opt2_dot_selected_opt2    = 0.000305164024
+
+Readout:
+
+  The forced block-1 second vector is not preserved as the block-2 second
+  column. It still has substantial projection into the rank-2 selected subspace,
+  but almost zero dot with selected opt2. In other words, the forced second
+  direction is immediately rotated/mixed into the block-2 frame rather than
+  retained as slot 2.
+
+
+Candidate geometry
+------------------
+All dot products below are absolute values. q1/q2 are the current projected
+oracle frame columns for M_gain = [forced block-1 sketch; block-2 rows].
+
+  candidate           dot_q1        dot_q2        dot_exact1    dot_exact2    tail_mass
+  opt1                0.248760774   0.852006202   0.067519992   0.237173004   0.939190017
+  opt2                0.563161377   0.072468360   0.152831339   0.000633287   0.976642181
+  q1_projected        1.000000000   0.000000000   0.271320125   0.033375937   0.925271437
+  q2_projected        0.000000000   1.000000000   0.000000000   0.268572226   0.927868960
+  q2_vs_v1opt         0.196347489   0.510091188   0.053320631   0.130360917   0.980162942
+  q2_vs_q1oracle      0.000000000   1.000000000   0.000000000   0.268572226   0.927868960
+  prev_forced_opt2    0.000170508   0.691739872   0.000000000   0.185877445   0.965449575
+  svd_complement      0.115377204   0.003838960   0.031300808   0.004876083   0.998996483
+
+Readout:
+
+  The selected columns are frame-mixed:
+
+  - opt1 is mostly aligned with projected oracle q2, not q1;
+  - opt2 has more overlap with projected oracle q1 than q2;
+  - the previous forced second slot still points substantially toward q2, but
+    the block-2 opt2 column is almost orthogonal to it.
+
+  This explains why the rank-2 subspace has moderate projected-oracle cosine
+  while the slot-level story is already broken at b2.
+
+
+Candidate scores
+----------------
+Context actual_B:
+
+  candidate           score          rel_to_best   gain2          phi           relH
+  q1_projected        3.334275549    1.000000000   0.833802732   3.998878176   0.999797665
+  opt1                3.330182435    0.998772413   0.832715152   3.999185587   0.999853116
+  opt2                3.304694677    0.991128246   0.826374967   3.999025635   0.999824265
+  q2_projected        3.269895415    0.980691418   0.834182068   3.919882172   0.985405144
+  q2_vs_q1oracle      3.269895415    0.980691418   0.834182068   3.919882172   0.985405144
+  prev_forced_opt2    2.438161848    0.731241858   0.829336638   2.939894051   0.777882082
+  q2_vs_v1opt         1.402395098    0.420599641   0.846072345   1.657535677   0.364519962
+  svd_complement      0.912649016    0.273717334   0.894920110   1.019810602   0.014150620
+
+Context zero_B:
+
+  candidate           score          rel_to_best   gain2          phi           relH
+  q2_projected        1.686131966    1.000000000   0.430148635   3.919882172   0.985405144
+  q2_vs_q1oracle      1.686131966    1.000000000   0.430148635   3.919882172   0.985405144
+  q1_projected        1.667137756    0.988735039   0.416901361   3.998878176   0.999797665
+  opt1                1.658511200    0.983618858   0.414712237   3.999185587   0.999853116
+  opt2                1.645223812    0.975738462   0.411406168   3.999025635   0.999824265
+  q2_vs_v1opt         1.357278148    0.804965551   0.818853052   1.657535677   0.364519962
+  svd_complement      0.905582761    0.537077037   0.887991123   1.019810602   0.014150620
+  prev_forced_opt2    0.000092476    0.000054845   0.000031455   2.939894051   0.777882082
+
+Context oracle_B:
+
+  Same as actual_B in this block-2 force-b1 case, because the actual carried
+  sketch after block 1 is already the oracle-forced sketch.
+
+
+Interpretation
+--------------
+1. b2 is not a clean continuation of the forced b1 oracle frame.
+
+   The selected rank-2 frame has moderate projected-oracle overlap, but the
+   second slot itself is already wrong. The forced b1 second direction has
+   projection 0.6866 into the selected subspace, yet dot 0.0003 with selected
+   opt2.
+
+2. The block-2 columns are swapped/mixed relative to the projected oracle frame.
+
+   opt1 has dot 0.8520 with projected q2, while opt2 has dot 0.5632 with
+   projected q1 and almost no q2. This is a frame/ordering/rotation issue, not
+   a simple "selected opt2 = oracle2" story.
+
+3. The objective does not strongly reject the oracle frame at b2.
+
+   Under actual_B:
+
+     q1_projected is best;
+     q2_projected is only about 1.9 percent below best;
+     opt2 is about 0.9 percent below best.
+
+   The badness at b2 is therefore subtle: several directions are very close in
+   score, and the optimizer can choose a high-entropy/tail-heavy rotated frame.
+
+4. Orthogonalizing oracle-2 against optimizer opt1 is damaging.
+
+   q2_vs_v1opt has high gain2 but very low phi/relH and only 42 percent of the
+   best actual_B score. This happens because optimizer opt1 already absorbed
+   much of the projected q2 direction. Once v1 is chosen that way, the residual
+   oracle-2 candidate becomes weak.
+
+5. The previous forced second slot depends almost entirely on the sketch.
+
+   In zero_B, prev_forced_opt2 has essentially zero score. Under actual_B it
+   rises to 73 percent of best due to the carried forced sketch. So the b1
+   intervention leaves memory, but that memory does not hold the second slot in
+   the desired column.
+
+
+Bottom line
+-----------
+After force-b1, b2 is already frame-mixed. It is not yet the catastrophic late
+failure seen around b27, but the clean oracle slot identity is gone immediately:
+the optimizer's first vector takes much of projected q2, the optimizer's second
+vector points more toward projected q1/tail, and the forced b1 second vector is
+not preserved as selected opt2.

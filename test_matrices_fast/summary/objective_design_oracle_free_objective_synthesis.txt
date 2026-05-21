@@ -1,0 +1,377 @@
+Objective-design oracle-free objective synthesis
+===============================================
+
+Date: 2026-04-23
+
+Purpose
+-------
+This pass proposes and tests oracle-free objectives after the repeated
+block-only support result.
+
+The repeated-support diagnostic showed:
+
+  - raw block-only gain finds fresh-row support;
+  - the strongest fresh-row support is often block-local SVD complement support;
+  - the useful signal was fresh support multiplied by oracle consistency;
+  - the next step is to replace oracle consistency with an oracle-free proxy.
+
+Four agents independently proposed objective families. Their suggestions
+converged on:
+
+  1. full-vs-block combined score balance;
+  2. old-row reservoir / history consistency;
+  3. explicit current-block SVD-complement rejection;
+  4. anti-spike / entropy guards;
+  5. held-out future-block consistency as an offline diagnostic proxy.
+
+
+Code added
+----------
+Added:
+
+  objective_design_oracle_free_objective_probe.py
+
+Outputs:
+
+  summary/objective_design_oracle_free_objective_probe.json
+  summary/objective_design_oracle_free_objective_probe.csv
+
+Commands run:
+
+  python objective_design_oracle_free_objective_probe.py \
+    --matrices static-cex diffuse-diffuse mixed-tail-sharp residual-spiky-shocks \
+    --n 1024 --win 32 --rank 2 --dtype float32
+
+Smoke / syntax checks:
+
+  python objective_design_oracle_free_objective_probe.py \
+    --matrices static-cex --n 256 --win 32 --rank 2 --dtype float32
+
+  python -m py_compile objective_design_oracle_free_objective_probe.py
+
+
+Candidate set
+-------------
+Each objective is oracle-free. Oracle labels are used only after ranking, to
+measure whether the objective picks the desired candidate on these synthetic
+diagnostics.
+
+Candidates per block:
+
+  opt2
+  q2_vs_q1oracle
+  svd_complement_mgain
+  block_svd_complement
+  prev_opt2
+
+The important adversary is:
+
+  block_svd_complement
+
+which is the strongest current-block right-singular direction orthogonal to
+the selected first slot.
+
+
+Objective components
+--------------------
+For each candidate v:
+
+  S_b(v) = block-only combined score
+         = combined_score_component_details(A_block, A_block, v, ...)
+
+  S_f(v) = full sketch-inclusive combined score
+         = combined_score_component_details(M_gain, A_block, v, ...)
+
+  g_b(v) = ||A_block v||^2
+
+  old(v) = ||old_row_memory v||^2
+
+  future(v) = sum over next H blocks ||A_future v||^2
+              with H=2 in this run
+
+  relH(v) = entropy(A_block v)^2 response / log(block_rows)
+
+  top4(v) = fraction of current-block response energy in the largest 4 rows
+
+  align_svd(v) = |v^T block_svd_complement|^2
+
+All share quantities are normalized within the candidate set for that block.
+
+
+Objectives tested
+-----------------
+1. Baseline block score
+
+  obj_block_score = S_b_share
+
+This is the corrected block-only score baseline.
+
+2. Entropy / anti-spike block score
+
+  obj_block_antispike = S_b_share * relH
+
+3. Concentration-guarded block score
+
+  obj_block_concentration_guard = S_b_share * relH * (1 - top4)
+
+4. Full-vs-block harmonic mean
+
+  obj_full_block_hmean = HM(S_b_share, S_f_share) * relH
+
+5. Old-reservoir-vs-block harmonic mean
+
+  obj_old_block_hmean = HM(g_b_share, old_share) * relH
+
+6. Explicit complement penalty
+
+  obj_complement_penalty = S_b_share * relH * (1 - align_svd)
+
+7. Old reservoir plus complement penalty
+
+  obj_old_complement_penalty =
+      HM(g_b_share, old_share) * relH * (1 - align_svd)
+
+8. Offline future consistency
+
+  obj_future_hmean = HM(g_b_share, future_share) * relH
+
+9. Offline future consistency plus complement penalty
+
+  obj_future_complement_penalty =
+      HM(g_b_share, future_share) * relH * (1 - align_svd)
+
+The future objectives are oracle-free but not online deployable as written.
+They are useful as offline proxies for whether a candidate generalizes beyond
+the block that produced it.
+
+
+Aggregate n=1024 results
+------------------------
+There are 4 matrices x 32 blocks = 128 block decisions.
+
+  objective                         q2 wins   block_svd wins   opt2 wins   mean winner oracle_mass
+  obj_block_score                   33        74               5           0.320355
+  obj_block_antispike               75        30               13          0.740823
+  obj_block_concentration_guard     86        22               20          0.780155
+  obj_full_block_hmean              80        25               15          0.766742
+  obj_old_block_hmean               68        0                21          0.697919
+  obj_complement_penalty            106       0                14          0.945174
+  obj_old_complement_penalty        69        0                23          0.697028
+  obj_future_hmean                  96        12               6           0.902377
+  obj_future_complement_penalty     108       0                6           0.978367
+
+Main readout:
+
+  - block score alone fails, selecting block_svd 74/128 times;
+  - entropy and concentration guards help, but still fail on
+    residual-spiky-shocks;
+  - full/block balance helps on three matrices but still selects block_svd
+    often on residual-spiky-shocks;
+  - old-row reservoir consistency eliminates block_svd, but can prefer
+    svd_complement_mgain or opt2 instead of q2;
+  - explicit block_svd complement penalty is the best online-style candidate;
+  - future consistency plus complement penalty is the best offline diagnostic.
+
+
+Per-matrix highlights
+---------------------
+1. static-cex
+
+Baseline block score:
+
+  q2 3/32, block_svd 24/32, opt2 1/32
+
+Best online-style objectives:
+
+  obj_block_concentration_guard: q2 24/32, block_svd 0/32
+  obj_complement_penalty:        q2 18/32, block_svd 0/32
+
+Future consistency:
+
+  obj_future_complement_penalty: q2 18/32, block_svd 0/32
+
+Interpretation:
+
+  The block_svd direction is highly concentrated / low-entropy here, so
+  anti-spike guards work well.
+
+2. diffuse-diffuse
+
+Baseline block score is already fairly good:
+
+  q2 23/32, block_svd 8/32
+
+Most guards recover q2:
+
+  obj_block_antispike:           q2 31/32, block_svd 0/32
+  obj_full_block_hmean:          q2 31/32, block_svd 0/32
+  obj_complement_penalty:        q2 31/32, block_svd 0/32
+  obj_future_complement_penalty: q2 30/32, block_svd 0/32
+
+Reservoir consistency fails:
+
+  obj_old_block_hmean: q2 0/32, block_svd 0/32, opt2 4/32
+
+The remaining winners are mostly svd_complement_mgain, so old-row memory is
+not a reliable oracle proxy in this matrix.
+
+3. mixed-tail-sharp
+
+Baseline block score:
+
+  q2 5/32, block_svd 13/32, svd_complement_mgain 12/32
+
+Good objectives:
+
+  obj_full_block_hmean:          q2 27/32, block_svd 0/32
+  obj_complement_penalty:        q2 27/32, block_svd 0/32
+  obj_future_complement_penalty: q2 30/32, block_svd 0/32
+
+Interpretation:
+
+  This matrix needs either full/block balance or explicit complement rejection.
+  Anti-spike helps but is not the cleanest signal.
+
+4. residual-spiky-shocks
+
+This is the critical stress case.
+
+Baseline block score:
+
+  q2 2/32, block_svd 29/32
+
+Entropy-only and full/block balance fail:
+
+  obj_block_antispike:           q2 2/32, block_svd 28/32
+  obj_block_concentration_guard: q2 5/32, block_svd 22/32
+  obj_full_block_hmean:          q2 4/32, block_svd 24/32
+
+Successful objectives:
+
+  obj_old_block_hmean:           q2 25/32, block_svd 0/32
+  obj_complement_penalty:        q2 30/32, block_svd 0/32
+  obj_future_complement_penalty: q2 30/32, block_svd 0/32
+
+Interpretation:
+
+  residual-spiky-shocks proves that entropy and full-score balance are not
+  enough. The block_svd direction can be diffuse and still non-oracle. Explicit
+  complement rejection is required.
+
+
+Recommended objective candidates
+--------------------------------
+Best online-style candidate from this pass:
+
+  J_online(v) = S_b_share(v) * relH(v) * (1 - align_svd(v))
+
+where:
+
+  align_svd(v) = |v^T c_t|^2
+
+and c_t is the current block's top orthogonal SVD-complement direction.
+
+Why this is the current best candidate:
+
+  - q2 wins 106/128;
+  - block_svd wins 0/128;
+  - mean winner oracle_mass is 0.945174;
+  - it solves residual-spiky-shocks, where entropy and full/block balance fail.
+
+Best offline oracle-free diagnostic:
+
+  J_future(v) = HM(g_b_share(v), future_share(v)) * relH(v) * (1 - align_svd(v))
+
+Why this is the best diagnostic:
+
+  - q2 wins 108/128;
+  - block_svd wins 0/128;
+  - opt2 wins only 6/128;
+  - mean winner oracle_mass is 0.978367;
+  - it directly tests whether support generalizes beyond the current block.
+
+Useful secondary candidate:
+
+  J_full_block(v) = HM(S_b_share(v), S_f_share(v)) * relH(v)
+
+This is attractive because it uses existing combined score components, but it
+is not sufficient by itself. It fails on residual-spiky-shocks by selecting
+block_svd 24/32 times.
+
+Reservoir objective:
+
+  J_old(v) = HM(g_b_share(v), old_share(v)) * relH(v)
+
+This removes block_svd in the aggregate, but it is unstable:
+
+  - q2 only 68/128;
+  - mean winner oracle_mass only 0.697919;
+  - diffuse-diffuse selects q2 0/32.
+
+Old-row memory is therefore a useful diagnostic channel, not a standalone
+oracle proxy.
+
+
+Practical design notes
+----------------------
+1. Normalize within the candidate set.
+
+Raw gain/score magnitudes drift by block and matrix. The tested objectives use
+candidate-set shares before mixing components.
+
+2. Use complement rejection explicitly.
+
+Anti-spike and entropy are not enough because a non-oracle block_svd direction
+can be diffuse across rows. The objective needs to know whether the candidate is
+just the current block's local orthogonal SVD maximizer.
+
+3. Treat future consistency as a diagnostic target.
+
+The future objective is not online, but it gives a strong oracle-free target:
+good support should survive into independent future blocks. Any online proxy
+should be judged by how closely it matches this behavior.
+
+4. Do not overtrust old row memory.
+
+Reservoir consistency can suppress block_svd, but it can also select
+svd_complement_mgain or stale opt2-like support. It should be combined with a
+complement penalty and freshness requirements.
+
+5. Full score is useful but contaminated.
+
+Full/block harmonic mean improves over block score alone, but residual-spiky
+still breaks it. This matches the prior diagnosis: carried sketch score alone
+can preserve stale or misleading support.
+
+
+Updated objective-design takeaway
+---------------------------------
+The best oracle-free objective family found in this pass is:
+
+  fresh block score
+  x response entropy / anti-spike guard
+  x explicit current-block SVD-complement rejection
+
+with future-block consistency used as the offline validation target.
+
+In code terms, the next online experiment should try:
+
+  S_b_share(v) * current_relH(v) * (1 - |v^T c_t|^2)
+
+and possibly a softened multi-complement version:
+
+  S_b_share(v) * current_relH(v)
+    * exp(-lambda * sum_j w_j |v^T c_{t,j}|^2)
+
+where c_{t,j} are the top residual right singular vectors of the current block
+orthogonal to the already selected slot(s).
+
+The objective should not be:
+
+  - block-only gain alone;
+  - block-only combined score alone;
+  - entropy alone;
+  - full/block balance alone;
+  - old-row reservoir consistency alone.
+
+Those all fail at least one matrix in the current suite.

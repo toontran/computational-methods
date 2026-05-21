@@ -1,0 +1,798 @@
+Input: generated structured cex (n=1024, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand), row_shuffled(seed=0): A=(1024, 1024), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=fast, q0=8, qmax=48, krylov_depth=2, residual_tol=0.01, expansion_maxit=8, num_restarts=8, maxit=120, carry=left, reduced_optimizer=cex, dtype=float32, basis_selection=greedy, joint_warm_start_greedy=False, joint_warm_start_oracle=False, joint_warm_start_rotations=0, joint_warm_start_rotation_angle=0.7853981633974483, joint_warm_start_perturbations=0, joint_warm_start_perturb_scale=0.01, joint_default_svd_start=True, joint_oversample=0, joint_oversample_rotate=svd, joint_solver=riemannian, row_concentration_lambda=0.0, row_leverage_lambda=0.0, row_leverage_mode=none, row_leverage_rank=2, score_variant=combined, rownorm_seed_first_block=True, rownorm_seed_all_blocks=True, old_memory_size=32, debug_mode=off, oracle_candidate_check=True, oracle_sketch_all_seen_rows=False, dump_score_components=False, dump_consecutive_tail_diagnostics=True, old_memory_holdout_size=None, dump_oracle_old_row_responses=False, dump_oracle_old_row_response_block=3, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=80
+
+===== block rows 1:32 (initial restricted score) =====
+consecutive_tail_diag: block=1 rows=1:32 train_old_rows=0 holdout_old_rows=0 train_old_idx=[]
+  opt_vs_prev_cos:  tail_vs_prev_cos=
+  opt_vs_oracle_cos:  0.999932  0.703855 sig_mass=0.027975379809 tail_mass=0.972024620191
+  train_opt: score_sum=9.369604852451 relH= 0.999818  0.999833 gain2= 0.829647  0.827181 phi= 5.655072  5.655219
+  train_oracle_qr: score_sum=9.072054722620 relH= 1.000000  0.960972
+  holdout_opt: unavailable
+rows 1:32
+s:  0.9129  0.9080
+H:  3.4651  3.4652
+scores:  4.6917  4.6779
+oracle_candidate_check: rejected optimizer_sum=9.369606150299 candidate_sum=9.072054823538
+oracle_raw_projection_scores:  4.6902  4.6895 sum=9.379746056898
+oracle_qr_projection_scores:  4.6902  4.3818 sum=9.072054823538
+optimizer_score_sum: 9.369606150299
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999928  0.716774
+principal_cosines(V_score, Q_oracle):  0.999932  0.703855
+raw_oracle_projection_overlap: 0.186897295705
+subspace_dims: [16, 20]
+grad_perp_ratio:  0.007313  0.000651
+old_row_memory_rows: 32
+
+===== block rows 33:64 (streaming restricted score) =====
+consecutive_tail_diag: block=2 rows=33:64 train_old_rows=32 holdout_old_rows=0 train_old_idx=[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32]
+  opt_vs_prev_cos:  0.709995  0.707890 tail_vs_prev_cos= 0.703344  0.696882
+  opt_vs_oracle_cos:  0.971893  0.571902 sig_mass=0.044110147284 tail_mass=0.955889852716
+  train_opt: score_sum=6.625451825407 relH= 0.999802  0.999790 gain2= 0.831858  0.824972 phi= 3.998904  3.998838
+  train_oracle_qr: score_sum=6.460066194625 relH= 0.999298  0.960027
+  train_prev_opt_on_curr: score_sum=5.259289601451 relH= 0.833199  0.833204
+  holdout_opt: unavailable
+rows 33:64
+s:  0.9123  0.9084
+H:  4.1581  4.1580
+scores:  3.3265  3.2989
+oracle_candidate_check: rejected optimizer_sum=6.625452867828 candidate_sum=6.460065994036
+oracle_raw_projection_scores:  3.3261  3.1451 sum=6.471174969786
+oracle_qr_projection_scores:  3.3261  3.1340 sum=6.460065994036
+optimizer_score_sum: 6.625452867828
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.969468  0.579739
+principal_cosines(V_score, Q_oracle):  0.971893  0.571902
+raw_oracle_projection_overlap: 0.033775273934
+subspace_dims: [22, 32]
+grad_perp_ratio:  0.000003  0.002838
+old_row_memory_rows: 32
+
+===== block rows 65:96 (streaming restricted score) =====
+consecutive_tail_diag: block=3 rows=65:96 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 2  4  6  7  8 12 14 17 18 24 25 26 27 28 29 31 32 34 35 38 40 41 44 48 50 52 55 59 60 62 63 39]
+  opt_vs_prev_cos:  0.835282  0.789880 tail_vs_prev_cos= 0.826194  0.779984
+  opt_vs_oracle_cos:  0.918889  0.675623 sig_mass=0.057103344283 tail_mass=0.942896655717
+  train_opt: score_sum=5.429043525393 relH= 0.999836  0.999106 gain2= 0.836169  0.827166 phi= 3.265352  3.262533
+  train_oracle_qr: score_sum=5.233296233622 relH= 0.998581  0.929424
+  train_prev_opt_on_curr: score_sum=4.441418407949 relH= 0.833122  0.833074
+  holdout_opt: score_sum=5.418908917541 relH= 0.999617  0.996149 gain2= 0.836169  0.827166 phi= 3.264508  3.251134
+  holdout_oracle_qr: score_sum=5.216387081069 relH= 0.998989  0.923242
+rows 65:96
+s:  0.9150  0.9094
+H:  4.1582  4.1552
+scores:  2.7304  2.6987
+oracle_candidate_check: rejected optimizer_sum=5.429043832799 candidate_sum=5.233295759754
+oracle_raw_projection_scores:  2.7330  2.4989 sum=5.231831991448
+oracle_qr_projection_scores:  2.7330  2.5003 sum=5.233295759754
+optimizer_score_sum: 5.429043832799
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.915020  0.679697
+principal_cosines(V_score, Q_oracle):  0.918889  0.675623
+raw_oracle_projection_overlap: 0.016074451759
+subspace_dims: [24, 40]
+grad_perp_ratio:  0.001179  0.999424
+old_row_memory_rows: 32
+
+===== block rows 97:128 (streaming restricted score) =====
+consecutive_tail_diag: block=4 rows=97:128 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 3  7  9 14 18 20 24 27 32 34 40 44 48 52 60 62 64 67 68 72 74 77 78 80 81 82 83 90 93 94 61 54]
+  opt_vs_prev_cos:  0.902814  0.810641 tail_vs_prev_cos= 0.895700  0.799564
+  opt_vs_oracle_cos:  0.935197  0.743606 sig_mass=0.071519137732 tail_mass=0.928480862268
+  train_opt: score_sum=4.713025898176 relH= 0.999830  0.998095 gain2= 0.839674  0.828420 phi= 2.827928  2.822831
+  train_oracle_qr: score_sum=4.556010180459 relH= 0.997200  0.926451
+  train_prev_opt_on_curr: score_sum=3.952433013846 relH= 0.832981  0.831780
+  holdout_opt: score_sum=4.678988188232 relH= 0.999530  0.984303 gain2= 0.839674  0.828420 phi= 2.827045  2.782639
+  holdout_oracle_qr: score_sum=4.532749167181 relH= 0.996178  0.917267
+rows 97:128
+s:  0.9170  0.9107
+H:  4.1582  4.1510
+scores:  2.3745  2.3385
+oracle_candidate_check: rejected optimizer_sum=4.713026476769 candidate_sum=4.556010300044
+oracle_raw_projection_scores:  2.3736  2.1830 sum=4.556541200945
+oracle_qr_projection_scores:  2.3736  2.1824 sum=4.556010300044
+optimizer_score_sum: 4.713026476769
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.931353  0.748187
+principal_cosines(V_score, Q_oracle):  0.935197  0.743606
+raw_oracle_projection_overlap: 0.003622177834
+subspace_dims: [24, 36]
+grad_perp_ratio:  0.079995  0.000344
+old_row_memory_rows: 32
+
+===== block rows 129:160 (streaming restricted score) =====
+consecutive_tail_diag: block=5 rows=129:160 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  6   7  10  14  18  24  27  32  34  49  52  55  60  68  73  76  77  78  81  85  94 103 104 105 106 108 113 116 127
+ 125  33  80]
+  opt_vs_prev_cos:  0.894550  0.874350 tail_vs_prev_cos= 0.883593  0.866828
+  opt_vs_oracle_cos:  0.984525  0.888455 sig_mass=0.098328153544 tail_mass=0.901671846456
+  train_opt: score_sum=4.233838514671 relH= 0.999884  0.998930 gain2= 0.843473  0.831015 phi= 2.529550  2.527310
+  train_oracle_qr: score_sum=4.098183017496 relH= 0.995638  0.929409
+  train_prev_opt_on_curr: score_sum=3.602114068582 relH= 0.833129  0.825504
+  holdout_opt: score_sum=4.211504788717 relH= 0.999402  0.987906 gain2= 0.843473  0.831015 phi= 2.528418  2.501583
+  holdout_oracle_qr: score_sum=4.075591759244 relH= 0.993830  0.918963
+rows 129:160
+s:  0.9188  0.9120
+H:  4.1584  4.1544
+scores:  2.1336  2.1002
+oracle_candidate_check: rejected optimizer_sum=4.233838200655 candidate_sum=4.098183438930
+oracle_raw_projection_scores:  2.1263  1.9701 sum=4.096419043375
+oracle_qr_projection_scores:  2.1263  1.9719 sum=4.098183438930
+optimizer_score_sum: 4.233838200655
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.984144  0.889125
+principal_cosines(V_score, Q_oracle):  0.984525  0.888455
+raw_oracle_projection_overlap: 0.016801270556
+subspace_dims: [22, 38]
+grad_perp_ratio:  0.000001  0.353384
+old_row_memory_rows: 32
+
+===== block rows 161:192 (streaming restricted score) =====
+consecutive_tail_diag: block=6 rows=161:192 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  2   4   7   9  14  25  27  32  43  52  54  56  57  59  68  73  77  78  81  88  94  98 103 104 113 127 144 154 155
+ 159 160  39]
+  opt_vs_prev_cos:  0.956398  0.863066 tail_vs_prev_cos= 0.951320  0.848227
+  opt_vs_oracle_cos:  0.975957  0.757836 sig_mass=0.109629423176 tail_mass=0.890370576824
+  train_opt: score_sum=3.877307918901 relH= 0.999858  0.999592 gain2= 0.848131  0.831178 phi= 2.309126  2.308612
+  train_oracle_qr: score_sum=3.807385726970 relH= 0.996514  0.947647
+  train_prev_opt_on_curr: score_sum=3.347553090668 relH= 0.832760  0.822169
+  holdout_opt: score_sum=3.870711107619 relH= 0.999283  0.996066 gain2= 0.848131  0.831178 phi= 2.308015  2.301809
+  holdout_oracle_qr: score_sum=3.786501705661 relH= 0.994911  0.935808
+rows 161:192
+s:  0.9211  0.9120
+H:  4.1583  4.1572
+scores:  1.9584  1.9189
+oracle_candidate_check: rejected optimizer_sum=3.877308370238 candidate_sum=3.807385740197
+oracle_raw_projection_scores:  1.9553  1.8486 sum=3.803933994719
+oracle_qr_projection_scores:  1.9553  1.8520 sum=3.807385740197
+optimizer_score_sum: 3.877308370238
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.975840  0.758884
+principal_cosines(V_score, Q_oracle):  0.975957  0.757836
+raw_oracle_projection_overlap: 0.040374802477
+subspace_dims: [22, 38]
+grad_perp_ratio:  0.000373  0.294161
+old_row_memory_rows: 32
+
+===== block rows 193:224 (streaming restricted score) =====
+consecutive_tail_diag: block=7 rows=193:224 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  2   8  17  18  32  51  84 102 109 110 113 117 118 120 123 130 134 135 139 141 143 146 149 150 151 157 159 160 175
+ 180 192  12]
+  opt_vs_prev_cos:  0.936166  0.901062 tail_vs_prev_cos= 0.925855  0.891612
+  opt_vs_oracle_cos:  0.988898  0.950499 sig_mass=0.138714605451 tail_mass=0.861285394549
+  train_opt: score_sum=3.608045415666 relH= 0.999864  0.999142 gain2= 0.852793  0.835348 phi= 2.137870  2.136697
+  train_oracle_qr: score_sum=3.526806278250 relH= 0.996087  0.938343
+  train_prev_opt_on_curr: score_sum=3.154571375707 relH= 0.833119  0.825820
+  holdout_opt: score_sum=3.598388820652 relH= 0.999233  0.992652 gain2= 0.852793  0.835348 phi= 2.136843  2.126185
+  holdout_oracle_qr: score_sum=3.503994243570 relH= 0.995378  0.921410
+rows 193:224
+s:  0.9236  0.9145
+H:  4.1583  4.1553
+scores:  1.8232  1.7849
+oracle_candidate_check: rejected optimizer_sum=3.608044449278 candidate_sum=3.526806563750
+oracle_raw_projection_scores:  1.8192  1.7073 sum=3.526485999085
+oracle_qr_projection_scores:  1.8192  1.7076 sum=3.526806563750
+optimizer_score_sum: 3.608044449278
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.988874  0.950530
+principal_cosines(V_score, Q_oracle):  0.988898  0.950499
+raw_oracle_projection_overlap: 0.003303634860
+subspace_dims: [22, 34]
+grad_perp_ratio:  0.000950  0.005078
+old_row_memory_rows: 32
+
+===== block rows 225:256 (streaming restricted score) =====
+consecutive_tail_diag: block=8 rows=225:256 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 19  24  32  38  39  54  57  84 108 113 114 117 130 132 135 140 141 143 149 150 159 160 173 203 204 205 208 213 217
+ 218 221  20]
+  opt_vs_prev_cos:  0.945541  0.917578 tail_vs_prev_cos= 0.935641  0.904898
+  opt_vs_oracle_cos:  0.999098  0.963234 sig_mass=0.170307148630 tail_mass=0.829692851370
+  train_opt: score_sum=3.384899808792 relH= 0.999889  0.993465 gain2= 0.857640  0.838666 phi= 1.999847  1.990961
+  train_oracle_qr: score_sum=3.338697126625 relH= 0.996430  0.953524
+  train_prev_opt_on_curr: score_sum=3.000513018269 relH= 0.833419  0.825610
+  holdout_opt: score_sum=3.375766659736 relH= 0.999024  0.986445 gain2= 0.857640  0.838666 phi= 1.998647  1.981297
+  holdout_oracle_qr: score_sum=3.324770166038 relH= 0.996228  0.941341
+rows 225:256
+s:  0.9262  0.9165
+H:  4.1584  4.1317
+scores:  1.7151  1.6698
+oracle_candidate_check: rejected optimizer_sum=3.384900232683 candidate_sum=3.338697358835
+oracle_raw_projection_scores:  1.7111  1.6276 sum=3.338727957821
+oracle_qr_projection_scores:  1.7111  1.6276 sum=3.338697358835
+optimizer_score_sum: 3.384900232683
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999094  0.963251
+principal_cosines(V_score, Q_oracle):  0.999098  0.963234
+raw_oracle_projection_overlap: 0.032173936087
+subspace_dims: [18, 34]
+grad_perp_ratio:  0.000133  0.999997
+old_row_memory_rows: 32
+
+===== block rows 257:288 (streaming restricted score) =====
+consecutive_tail_diag: block=9 rows=257:288 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  6  20  33  38  57  88 107 113 116 130 141 143 149 159 160 164 165 174 187 203 208 213 237 239 242 245 246 248 251
+ 252 254   8]
+  opt_vs_prev_cos:  0.944307  0.931518 tail_vs_prev_cos= 0.929279  0.920407
+  opt_vs_oracle_cos:  0.999477  0.987513 sig_mass=0.202295803085 tail_mass=0.797704196915
+  train_opt: score_sum=3.214766888029 relH= 0.999914  0.998528 gain2= 0.862700  0.843022 phi= 1.885515  1.883858
+  train_oracle_qr: score_sum=3.179445012462 relH= 0.997321  0.962588
+  train_prev_opt_on_curr: score_sum=2.866955439366 relH= 0.833867  0.820236
+  holdout_opt: score_sum=3.206335498725 relH= 0.998711  0.991373 gain2= 0.862700  0.843022 phi= 1.884077  1.875329
+  holdout_oracle_qr: score_sum=3.169357398116 relH= 0.996496  0.953196
+rows 257:288
+s:  0.9289  0.9190
+H:  4.1585  4.1528
+scores:  1.6266  1.5881
+oracle_candidate_check: rejected optimizer_sum=3.214769101970 candidate_sum=3.179445131580
+oracle_raw_projection_scores:  1.6240  1.5558 sum=3.179812546635
+oracle_qr_projection_scores:  1.6240  1.5554 sum=3.179445131580
+optimizer_score_sum: 3.214769101970
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999464  0.987513
+principal_cosines(V_score, Q_oracle):  0.999477  0.987513
+raw_oracle_projection_overlap: 0.036297544433
+subspace_dims: [20, 34]
+grad_perp_ratio:  0.000711  0.008522
+old_row_memory_rows: 32
+
+===== block rows 289:320 (streaming restricted score) =====
+consecutive_tail_diag: block=10 rows=289:320 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 31  47  52  62  83 101 109 110 113 126 130 141 143 159 160 183 201 203 208 213 237 239 246 251 252 255 262 273 277
+ 283 286 288]
+  opt_vs_prev_cos:  0.952809  0.932306 tail_vs_prev_cos= 0.937577  0.918065
+  opt_vs_oracle_cos:  0.999520  0.994181 sig_mass=0.236072365086 tail_mass=0.763927634914
+  train_opt: score_sum=3.069306352829 relH= 0.999860  0.999048 gain2= 0.867806  0.848529 phi= 1.788708  1.787864
+  train_oracle_qr: score_sum=3.049065917489 relH= 0.997665  0.975784
+  train_prev_opt_on_curr: score_sum=2.764343863813 relH= 0.833126  0.826475
+  holdout_opt: score_sum=3.059767711036 relH= 0.999094  0.988991 gain2= 0.867806  0.848529 phi= 1.787912  1.777437
+  holdout_oracle_qr: score_sum=3.036799588000 relH= 0.997120  0.962221
+rows 289:320
+s:  0.9317  0.9216
+H:  4.1583  4.1549
+scores:  1.5523  1.5171
+oracle_candidate_check: rejected optimizer_sum=3.069306521176 candidate_sum=3.049066021640
+oracle_raw_projection_scores:  1.5504  1.4967 sum=3.047119116092
+oracle_qr_projection_scores:  1.5504  1.4986 sum=3.049066021640
+optimizer_score_sum: 3.069306521176
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999516  0.994184
+principal_cosines(V_score, Q_oracle):  0.999520  0.994181
+raw_oracle_projection_overlap: 0.048298665042
+subspace_dims: [20, 36]
+grad_perp_ratio:  0.008789  0.299563
+old_row_memory_rows: 32
+
+===== block rows 321:352 (streaming restricted score) =====
+consecutive_tail_diag: block=11 rows=321:352 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 62  63  78  83  89  92 111 113 141 150 159 160 184 192 201 213 216 233 237 239 248 250 251 252 260 286 289 298 301
+ 303 309 318]
+  opt_vs_prev_cos:  0.959031  0.937769 tail_vs_prev_cos= 0.944964  0.918832
+  opt_vs_oracle_cos:  0.999718  0.995545 sig_mass=0.268455153473 tail_mass=0.731544846527
+  train_opt: score_sum=2.942052459077 relH= 0.999845  0.998349 gain2= 0.873014  0.852741 phi= 1.705464  1.704103
+  train_oracle_qr: score_sum=2.928221425060 relH= 0.998096  0.978695
+  train_prev_opt_on_curr: score_sum=2.670947371709 relH= 0.834030  0.821544
+  holdout_opt: score_sum=2.934368770278 relH= 0.998395  0.989912 gain2= 0.873014  0.852741 phi= 1.704144  1.696443
+  holdout_oracle_qr: score_sum=2.923356515689 relH= 0.997794  0.972672
+rows 321:352
+s:  0.9346  0.9240
+H:  4.1582  4.1520
+scores:  1.4889  1.4532
+oracle_candidate_check: rejected optimizer_sum=2.942052180970 candidate_sum=2.928221358376
+oracle_raw_projection_scores:  1.4875  1.4429 sum=2.930368580866
+oracle_qr_projection_scores:  1.4875  1.4407 sum=2.928221358376
+optimizer_score_sum: 2.942052180970
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999705  0.995546
+principal_cosines(V_score, Q_oracle):  0.999718  0.995545
+raw_oracle_projection_overlap: 0.064955052838
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.000979  0.000695
+old_row_memory_rows: 32
+
+===== block rows 353:384 (streaming restricted score) =====
+consecutive_tail_diag: block=12 rows=353:384 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  9  33  38  91  95 113 132 141 159 160 161 164 187 194 213 227 230 236 237 251 252 267 286 289 301 306 309 324 337
+ 342 346 351]
+  opt_vs_prev_cos:  0.957704  0.950683 tail_vs_prev_cos= 0.937867  0.935807
+  opt_vs_oracle_cos:  0.999740  0.995884 sig_mass=0.302482798547 tail_mass=0.697517201453
+  train_opt: score_sum=2.832250702351 relH= 0.999853  0.998247 gain2= 0.877808  0.857384 phi= 1.632875  1.631590
+  train_oracle_qr: score_sum=2.821084738602 relH= 0.998289  0.979544
+  train_prev_opt_on_curr: score_sum=2.587356533958 relH= 0.833999  0.816235
+  holdout_opt: score_sum=2.823947587760 relH= 0.997798  0.988223 gain2= 0.877808  0.857384 phi= 1.631231  1.623589
+  holdout_oracle_qr: score_sum=2.815677666299 relH= 0.997437  0.972472
+rows 353:384
+s:  0.9371  0.9266
+H:  4.1583  4.1516
+scores:  1.4333  1.3989
+oracle_candidate_check: rejected optimizer_sum=2.832249037986 candidate_sum=2.821084579527
+oracle_raw_projection_scores:  1.4321  1.3914 sum=2.823455985987
+oracle_qr_projection_scores:  1.4321  1.3890 sum=2.821084579527
+optimizer_score_sum: 2.832249037986
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999721  0.995885
+principal_cosines(V_score, Q_oracle):  0.999740  0.995884
+raw_oracle_projection_overlap: 0.057062103253
+subspace_dims: [20, 36]
+grad_perp_ratio:  0.000879  0.001209
+old_row_memory_rows: 32
+
+===== block rows 385:416 (streaming restricted score) =====
+consecutive_tail_diag: block=13 rows=385:416 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  7   8  62  94 103 105 113 159 160 167 182 213 214 237 240 251 252 286 289 301 309 314 316 337 346 351 359 364 369
+ 373 383  11]
+  opt_vs_prev_cos:  0.961357  0.952678 tail_vs_prev_cos= 0.942337  0.933056
+  opt_vs_oracle_cos:  0.999861  0.997478 sig_mass=0.335952548578 tail_mass=0.664047451422
+  train_opt: score_sum=2.737465615132 relH= 0.999877  0.998547 gain2= 0.882855  0.862557 phi= 1.568842  1.567903
+  train_oracle_qr: score_sum=2.729964983202 relH= 0.998878  0.984099
+  train_prev_opt_on_curr: score_sum=2.518500266937 relH= 0.834127  0.818714
+  holdout_opt: score_sum=2.730505097200 relH= 0.998779  0.988220 gain2= 0.882855  0.862557 phi= 1.568066  1.560627
+  holdout_oracle_qr: score_sum=2.725285672565 relH= 0.998169  0.977097
+rows 385:416
+s:  0.9398  0.9292
+H:  4.1584  4.1528
+scores:  1.3851  1.3524
+oracle_candidate_check: rejected optimizer_sum=2.737465703630 candidate_sum=2.729964661077
+oracle_raw_projection_scores:  1.3844  1.3473 sum=2.731631908521
+oracle_qr_projection_scores:  1.3844  1.3456 sum=2.729964661077
+optimizer_score_sum: 2.737465703630
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999851  0.997478
+principal_cosines(V_score, Q_oracle):  0.999861  0.997478
+raw_oracle_projection_overlap: 0.056285971188
+subspace_dims: [22, 30]
+grad_perp_ratio:  0.000670  0.003926
+old_row_memory_rows: 32
+
+===== block rows 417:448 (streaming restricted score) =====
+consecutive_tail_diag: block=14 rows=417:448 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  1  52 103 136 148 160 189 198 213 225 237 242 249 252 254 286 289 292 301 309 318 320 325 337 346 351 365 369 373
+ 395 402 407]
+  opt_vs_prev_cos:  0.968148  0.953138 tail_vs_prev_cos= 0.951920  0.927489
+  opt_vs_oracle_cos:  0.999828  0.997716 sig_mass=0.368109791755 tail_mass=0.631890208245
+  train_opt: score_sum=2.652410223012 relH= 0.999795  0.998143 gain2= 0.888128  0.867017 phi= 1.511730  1.510698
+  train_oracle_qr: score_sum=2.646885368793 relH= 0.998855  0.984534
+  train_prev_opt_on_curr: score_sum=2.458242456807 relH= 0.834499  0.820897
+  holdout_opt: score_sum=2.646424951373 relH= 0.996962  0.989976 gain2= 0.888128  0.867017 phi= 1.509960  1.505607
+  holdout_oracle_qr: score_sum=2.645507088335 relH= 0.998210  0.982641
+rows 417:448
+s:  0.9426  0.9317
+H:  4.1580  4.1512
+scores:  1.3426  1.3098
+oracle_candidate_check: rejected optimizer_sum=2.652410995416 candidate_sum=2.646885097519
+oracle_raw_projection_scores:  1.3418  1.3074 sum=2.649194996916
+oracle_qr_projection_scores:  1.3418  1.3051 sum=2.646885097519
+optimizer_score_sum: 2.652410995416
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999783  0.997729
+principal_cosines(V_score, Q_oracle):  0.999828  0.997716
+raw_oracle_projection_overlap: 0.067693561438
+subspace_dims: [22, 36]
+grad_perp_ratio:  0.000471  0.007282
+old_row_memory_rows: 32
+
+===== block rows 449:480 (streaming restricted score) =====
+consecutive_tail_diag: block=15 rows=449:480 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 15  20  49  51  76  88 160 186 192 205 213 237 252 272 286 301 309 321 324 327 337 347 359 373 402 407 422 424 426
+ 431 444 446]
+  opt_vs_prev_cos:  0.967276  0.960171 tail_vs_prev_cos= 0.945294  0.938389
+  opt_vs_oracle_cos:  0.999829  0.997961 sig_mass=0.400133801075 tail_mass=0.599866198925
+  train_opt: score_sum=2.576831439740 relH= 0.999814  0.998270 gain2= 0.892946  0.871924 phi= 1.460491  1.459637
+  train_oracle_qr: score_sum=2.571442842146 relH= 0.998531  0.984701
+  train_prev_opt_on_curr: score_sum=2.400285365256 relH= 0.834069  0.816438
+  holdout_opt: score_sum=2.568888567532 relH= 0.998172  0.983437 gain2= 0.892946  0.871924 phi= 1.459583  1.451457
+  holdout_oracle_qr: score_sum=2.567260601399 relH= 0.998225  0.976296
+rows 449:480
+s:  0.9452  0.9342
+H:  4.1581  4.1517
+scores:  1.3041  1.2727
+oracle_candidate_check: rejected optimizer_sum=2.576833890094 candidate_sum=2.571443013566
+oracle_raw_projection_scores:  1.3033  1.2693 sum=2.572628362396
+oracle_qr_projection_scores:  1.3033  1.2681 sum=2.571443013566
+optimizer_score_sum: 2.576833890094
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999813  0.997963
+principal_cosines(V_score, Q_oracle):  0.999829  0.997961
+raw_oracle_projection_overlap: 0.055826194290
+subspace_dims: [18, 34]
+grad_perp_ratio:  0.000003  0.013917
+old_row_memory_rows: 32
+
+===== block rows 481:512 (streaming restricted score) =====
+consecutive_tail_diag: block=16 rows=481:512 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 11  29 144 160 166 194 213 229 237 252 286 291 301 303 337 346 348 363 371 392 402 407 422 424 426 431 444 446 461
+ 462 466 473]
+  opt_vs_prev_cos:  0.970813  0.960779 tail_vs_prev_cos= 0.949067  0.935348
+  opt_vs_oracle_cos:  0.999914  0.998636 sig_mass=0.432809590024 tail_mass=0.567190409976
+  train_opt: score_sum=2.509552566392 relH= 0.999871  0.998863 gain2= 0.897777  0.877130 phi= 1.414150  1.413657
+  train_oracle_qr: score_sum=2.506383986148 relH= 0.998708  0.990375
+  train_prev_opt_on_curr: score_sum=2.353689062363 relH= 0.835463  0.823607
+  holdout_opt: score_sum=2.504754609682 relH= 0.997612  0.989997 gain2= 0.897777  0.877130 phi= 1.413044  1.409319
+  holdout_oracle_qr: score_sum=2.502999347123 relH= 0.998325  0.982866
+rows 481:512
+s:  0.9476  0.9368
+H:  4.1583  4.1542
+scores:  1.2696  1.2400
+oracle_candidate_check: rejected optimizer_sum=2.509554127846 candidate_sum=2.506384046510
+oracle_raw_projection_scores:  1.2689  1.2382 sum=2.507164447901
+oracle_qr_projection_scores:  1.2689  1.2374 sum=2.506384046510
+optimizer_score_sum: 2.509554127846
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999880  0.998655
+principal_cosines(V_score, Q_oracle):  0.999914  0.998636
+raw_oracle_projection_overlap: 0.041414499096
+subspace_dims: [16, 30]
+grad_perp_ratio:  0.000373  0.001353
+old_row_memory_rows: 32
+
+===== block rows 513:544 (streaming restricted score) =====
+consecutive_tail_diag: block=17 rows=513:544 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 19  28  89 101 118 131 151 171 213 237 247 253 262 286 301 337 355 407 422 424 430 431 437 444 446 452 473 477 489
+ 495 511 512]
+  opt_vs_prev_cos:  0.980553  0.957013 tail_vs_prev_cos= 0.965604  0.921583
+  opt_vs_oracle_cos:  0.999735  0.998746 sig_mass=0.463412893844 tail_mass=0.536587106156
+  train_opt: score_sum=2.446615265630 relH= 0.999578  0.997746 gain2= 0.902895  0.881115 phi= 1.371806  1.371011
+  train_oracle_qr: score_sum=2.443696459199 relH= 0.997716  0.987405
+  train_prev_opt_on_curr: score_sum=2.305221890429 relH= 0.832816  0.817732
+  holdout_opt: score_sum=2.440258568639 relH= 0.997083  0.983633 gain2= 0.902895  0.881115 phi= 1.370724  1.364905
+  holdout_oracle_qr: score_sum=2.442111769677 relH= 0.998467  0.982475
+rows 513:544
+s:  0.9505  0.9390
+H:  4.1571  4.1495
+scores:  1.2386  1.2080
+oracle_candidate_check: rejected optimizer_sum=2.446614998803 candidate_sum=2.443696541203
+oracle_raw_projection_scores:  1.2377  1.2073 sum=2.444963481430
+oracle_qr_projection_scores:  1.2377  1.2060 sum=2.443696541203
+optimizer_score_sum: 2.446614998803
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999723  0.998749
+principal_cosines(V_score, Q_oracle):  0.999735  0.998746
+raw_oracle_projection_overlap: 0.063768815172
+subspace_dims: [20, 36]
+grad_perp_ratio:  0.000354  0.001255
+old_row_memory_rows: 32
+
+===== block rows 545:576 (streaming restricted score) =====
+consecutive_tail_diag: block=18 rows=545:576 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 16  32  44  68  99 110 160 175 205 213 217 223 237 269 286 301 304 337 341 373 407 422 424 429 431 444 446 469 495
+ 512 533 540]
+  opt_vs_prev_cos:  0.972804  0.967756 tail_vs_prev_cos= 0.946121  0.941056
+  opt_vs_oracle_cos:  0.999762  0.998773 sig_mass=0.493909685849 tail_mass=0.506090314151
+  train_opt: score_sum=2.390911521635 relH= 0.999647  0.997696 gain2= 0.907881  0.885982 phi= 1.333198  1.332450
+  train_oracle_qr: score_sum=2.388690087283 relH= 0.998377  0.987968
+  train_prev_opt_on_curr: score_sum=2.262510634187 relH= 0.832871  0.815862
+  holdout_opt: score_sum=2.384441305323 relH= 0.996489  0.981846 gain2= 0.907881  0.885982 phi= 1.331987  1.326388
+  holdout_oracle_qr: score_sum=2.386190426182 relH= 0.998256  0.980715
+rows 545:576
+s:  0.9531  0.9415
+H:  4.1574  4.1493
+scores:  1.2104  1.1805
+oracle_candidate_check: rejected optimizer_sum=2.390913100312 candidate_sum=2.388690128838
+oracle_raw_projection_scores:  1.2096  1.1803 sum=2.389920664628
+oracle_qr_projection_scores:  1.2096  1.1790 sum=2.388690128838
+optimizer_score_sum: 2.390913100312
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999756  0.998774
+principal_cosines(V_score, Q_oracle):  0.999762  0.998773
+raw_oracle_projection_overlap: 0.058925619694
+subspace_dims: [18, 28]
+grad_perp_ratio:  0.000000  0.000331
+old_row_memory_rows: 32
+
+===== block rows 577:608 (streaming restricted score) =====
+consecutive_tail_diag: block=19 rows=577:608 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 29  36 107 172 213 226 256 286 291 301 337 403 407 422 424 431 440 444 446 456 459 486 495 504 512 514 527 531 533
+ 540 547 574]
+  opt_vs_prev_cos:  0.974202  0.968939 tail_vs_prev_cos= 0.948756  0.936126
+  opt_vs_oracle_cos:  0.999804  0.999022 sig_mass=0.526422063916 tail_mass=0.473577936084
+  train_opt: score_sum=2.340470321669 relH= 0.999719  0.998374 gain2= 0.912913  0.890985 phi= 1.297676  1.297221
+  train_oracle_qr: score_sum=2.339136995126 relH= 0.998733  0.991804
+  train_prev_opt_on_curr: score_sum=2.228133539839 relH= 0.835504  0.824566
+  holdout_opt: score_sum=2.336512307144 relH= 0.996048  0.988985 gain2= 0.912913  0.890985 phi= 1.296435  1.294051
+  holdout_oracle_qr: score_sum=2.338336585209 relH= 0.998522  0.989361
+rows 577:608
+s:  0.9557  0.9440
+H:  4.1577  4.1521
+scores:  1.1847  1.1558
+oracle_candidate_check: rejected optimizer_sum=2.340470034986 candidate_sum=2.339137258676
+oracle_raw_projection_scores:  1.1839  1.1562 sum=2.340144229670
+oracle_qr_projection_scores:  1.1839  1.1552 sum=2.339137258676
+optimizer_score_sum: 2.340470034986
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999784  0.999030
+principal_cosines(V_score, Q_oracle):  0.999804  0.999022
+raw_oracle_projection_overlap: 0.058385076319
+subspace_dims: [18, 30]
+grad_perp_ratio:  0.000162  0.002175
+old_row_memory_rows: 32
+
+===== block rows 609:640 (streaming restricted score) =====
+consecutive_tail_diag: block=20 rows=609:640 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 32  96 142 156 213 220 253 301 306 390 422 424 431 444 477 495 502 507 512 516 533 540 547 574 578 583 584 593 601
+ 602 608  70]
+  opt_vs_prev_cos:  0.979065  0.967816 tail_vs_prev_cos= 0.952260  0.933874
+  opt_vs_oracle_cos:  0.999840  0.999266 sig_mass=0.557155649296 tail_mass=0.442844350704
+  train_opt: score_sum=2.293814614839 relH= 0.999691  0.998665 gain2= 0.917620  0.896148 phi= 1.264819  1.264514
+  train_oracle_qr: score_sum=2.292571198169 relH= 0.998431  0.992760
+  train_prev_opt_on_curr: score_sum=2.193153593528 relH= 0.834045  0.824536
+  holdout_opt: score_sum=2.287533735723 relH= 0.995887  0.978928 gain2= 0.917620  0.896148 phi= 1.263689  1.258663
+  holdout_oracle_qr: score_sum=2.288906603235 relH= 0.998308  0.979095
+rows 609:640
+s:  0.9581  0.9467
+H:  4.1576  4.1533
+scores:  1.1606  1.1332
+oracle_candidate_check: rejected optimizer_sum=2.293815047990 candidate_sum=2.292571257725
+oracle_raw_projection_scores:  1.1600  1.1329 sum=2.292981582488
+oracle_qr_projection_scores:  1.1600  1.1325 sum=2.292571257725
+optimizer_score_sum: 2.293815047990
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999830  0.999271
+principal_cosines(V_score, Q_oracle):  0.999840  0.999266
+raw_oracle_projection_overlap: 0.043961344355
+subspace_dims: [18, 30]
+grad_perp_ratio:  0.000000  0.002367
+old_row_memory_rows: 32
+
+===== block rows 641:672 (streaming restricted score) =====
+consecutive_tail_diag: block=21 rows=641:672 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 90 207 213 218 234 301 333 337 348 360 412 420 422 429 431 442 444 468 482 512 533 540 547 566 584 587 597 601 602
+ 608 610  37]
+  opt_vs_prev_cos:  0.981729  0.968541 tail_vs_prev_cos= 0.956143  0.929542
+  opt_vs_oracle_cos:  0.999939  0.999528 sig_mass=0.587634919899 tail_mass=0.412365080101
+  train_opt: score_sum=2.250999272921 relH= 0.999819  0.998983 gain2= 0.922412  0.901334 phi= 1.234380  1.234162
+  train_oracle_qr: score_sum=2.250012192044 relH= 0.998880  0.993987
+  train_prev_opt_on_curr: score_sum=2.162048632813 relH= 0.835529  0.827500
+  holdout_opt: score_sum=2.248713905470 relH= 0.998217  0.990860 gain2= 0.922412  0.901334 phi= 1.233963  1.232053
+  holdout_oracle_qr: score_sum=2.248804318911 relH= 0.998617  0.989095
+rows 641:672
+s:  0.9605  0.9495
+H:  4.1581  4.1547
+scores:  1.1386  1.1124
+oracle_candidate_check: rejected optimizer_sum=2.250999425961 candidate_sum=2.250012254475
+oracle_raw_projection_scores:  1.1383  1.1119 sum=2.250145827429
+oracle_qr_projection_scores:  1.1383  1.1117 sum=2.250012254475
+optimizer_score_sum: 2.250999425961
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999925  0.999538
+principal_cosines(V_score, Q_oracle):  0.999939  0.999528
+raw_oracle_projection_overlap: 0.028128816592
+subspace_dims: [18, 30]
+grad_perp_ratio:  0.002154  0.000640
+old_row_memory_rows: 32
+
+===== block rows 673:704 (streaming restricted score) =====
+consecutive_tail_diag: block=22 rows=673:704 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 55 213 234 266 301 307 337 386 401 402 404 407 416 431 462 493 512 533 540 546 549 564 565 574 584 597 602 608 610
+ 611 625 664]
+  opt_vs_prev_cos:  0.979922  0.972887 tail_vs_prev_cos= 0.950280  0.931829
+  opt_vs_oracle_cos:  0.999896  0.999748 sig_mass=0.617663642205 tail_mass=0.382336357795
+  train_opt: score_sum=2.211260386013 relH= 0.999741  0.999336 gain2= 0.927483  0.906155 phi= 1.205987  1.205895
+  train_oracle_qr: score_sum=2.210703089092 relH= 0.999013  0.996057
+  train_prev_opt_on_curr: score_sum=2.134249075256 relH= 0.837229  0.835353
+  holdout_opt: score_sum=2.207324905013 relH= 0.997821  0.982049 gain2= 0.927483  0.906155 phi= 1.205553  1.201996
+  holdout_oracle_qr: score_sum=2.207847067790 relH= 0.998836  0.982267
+rows 673:704
+s:  0.9632  0.9519
+H:  4.1578  4.1561
+scores:  1.1185  1.0927
+oracle_candidate_check: rejected optimizer_sum=2.211261513807 candidate_sum=2.210702871690
+oracle_raw_projection_scores:  1.1182  1.0926 sum=2.210777030995
+oracle_qr_projection_scores:  1.1182  1.0925 sum=2.210702871690
+optimizer_score_sum: 2.211261513807
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999896  0.999749
+principal_cosines(V_score, Q_oracle):  0.999896  0.999748
+raw_oracle_projection_overlap: 0.032497076868
+subspace_dims: [18, 26]
+grad_perp_ratio:  0.000345  0.000743
+old_row_memory_rows: 32
+
+===== block rows 705:736 (streaming restricted score) =====
+consecutive_tail_diag: block=23 rows=705:736 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 67  75 107 118 181 213 252 264 292 301 337 431 445 456 475 493 512 533 540 572 584 597 601 602 608 610 664 674 683
+ 689 703 340]
+  opt_vs_prev_cos:  0.983865  0.971399 tail_vs_prev_cos= 0.954414  0.926210
+  opt_vs_oracle_cos:  0.999907  0.999806 sig_mass=0.647248784995 tail_mass=0.352751215005
+  train_opt: score_sum=2.173892083002 relH= 0.999376  0.999016 gain2= 0.932175  0.911076 phi= 1.179414  1.179344
+  train_oracle_qr: score_sum=2.173226562078 relH= 0.997486  0.995293
+  train_prev_opt_on_curr: score_sum=2.104854322101 relH= 0.833607  0.830713
+  holdout_opt: score_sum=2.171348683479 relH= 0.998284  0.985783 gain2= 0.932175  0.911076 phi= 1.179202  1.176770
+  holdout_oracle_qr: score_sum=2.171407765928 relH= 0.998525  0.983964
+rows 705:736
+s:  0.9656  0.9546
+H:  4.1563  4.1548
+scores:  1.0994  1.0745
+oracle_candidate_check: rejected optimizer_sum=2.173892248531 candidate_sum=2.173226658870
+oracle_raw_projection_scores:  1.0991  1.0741 sum=2.173249436310
+oracle_qr_projection_scores:  1.0991  1.0741 sum=2.173226658870
+optimizer_score_sum: 2.173892248531
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999907  0.999806
+principal_cosines(V_score, Q_oracle):  0.999907  0.999806
+raw_oracle_projection_overlap: 0.018992944960
+subspace_dims: [18, 30]
+grad_perp_ratio:  0.000308  0.001384
+old_row_memory_rows: 32
+
+===== block rows 737:768 (streaming restricted score) =====
+consecutive_tail_diag: block=24 rows=737:768 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  1  69  91 116 213 220 233 240 249 307 312 324 337 339 431 451 490 533 540 584 597 601 602 608 610 638 683 689 713
+ 717 720 729]
+  opt_vs_prev_cos:  0.979912  0.976751 tail_vs_prev_cos= 0.942404  0.930114
+  opt_vs_oracle_cos:  0.999930  0.999802 sig_mass=0.677135057837 tail_mass=0.322864942163
+  train_opt: score_sum=2.138743045241 relH= 0.999570  0.998437 gain2= 0.936853  0.915616 phi= 1.154629  1.154441
+  train_oracle_qr: score_sum=2.138221522387 relH= 0.998418  0.994010
+  train_prev_opt_on_curr: score_sum=2.078682584620 relH= 0.836336  0.828460
+  holdout_opt: score_sum=2.136249273942 relH= 0.997672  0.983963 gain2= 0.936853  0.915616 phi= 1.154314  1.152040
+  holdout_oracle_qr: score_sum=2.136690655847 relH= 0.998132  0.984224
+rows 737:768
+s:  0.9680  0.9570
+H:  4.1571  4.1524
+scores:  1.0817  1.0570
+oracle_candidate_check: rejected optimizer_sum=2.138745085134 candidate_sum=2.138221267067
+oracle_raw_projection_scores:  1.0815  1.0568 sum=2.138274697703
+oracle_qr_projection_scores:  1.0815  1.0567 sum=2.138221267067
+optimizer_score_sum: 2.138745085134
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999930  0.999802
+principal_cosines(V_score, Q_oracle):  0.999930  0.999802
+raw_oracle_projection_overlap: 0.017859774551
+subspace_dims: [24, 38]
+grad_perp_ratio:  0.025575  0.000642
+old_row_memory_rows: 32
+
+===== block rows 769:800 (streaming restricted score) =====
+consecutive_tail_diag: block=25 rows=769:800 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  2  16 134 145 213 431 446 527 537 540 544 547 555 584 593 602 608 632 683 700 704 707 713 717 739 745 746 754 756
+ 757 767 657]
+  opt_vs_prev_cos:  0.981494  0.976801 tail_vs_prev_cos= 0.940206  0.925423
+  opt_vs_oracle_cos:  0.999905  0.999872 sig_mass=0.706600377864 tail_mass=0.293399622136
+  train_opt: score_sum=2.106662944891 relH= 0.999528  0.999522 gain2= 0.941765  0.920388 phi= 1.131305  1.131304
+  train_oracle_qr: score_sum=2.106447197103 relH= 0.998395  0.997790
+  train_prev_opt_on_curr: score_sum=2.055201569847 relH= 0.837629  0.836161
+  holdout_opt: score_sum=2.105224389510 relH= 0.998022  0.989864 gain2= 0.941765  0.920388 phi= 1.131095  1.129956
+  holdout_oracle_qr: score_sum=2.105653998893 relH= 0.999070  0.990926
+rows 769:800
+s:  0.9705  0.9594
+H:  4.1569  4.1569
+scores:  1.0654  1.0412
+oracle_candidate_check: rejected optimizer_sum=2.106662026165 candidate_sum=2.106447468432
+oracle_raw_projection_scores:  1.0652  1.0413 sum=2.106487430646
+oracle_qr_projection_scores:  1.0652  1.0413 sum=2.106447468432
+optimizer_score_sum: 2.106662026165
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999901  0.999877
+principal_cosines(V_score, Q_oracle):  0.999905  0.999872
+raw_oracle_projection_overlap: 0.019395034955
+subspace_dims: [16, 22]
+grad_perp_ratio:  0.000338  0.000416
+old_row_memory_rows: 32
+
+===== block rows 801:832 (streaming restricted score) =====
+consecutive_tail_diag: block=26 rows=801:832 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 11  31  59  60 168 191 213 268 360 372 422 425 431 446 484 577 584 602 667 683 713 717 734 739 745 746 754 757 775
+ 788 790 795]
+  opt_vs_prev_cos:  0.982613  0.979356 tail_vs_prev_cos= 0.942095  0.921310
+  opt_vs_oracle_cos:  0.999878  0.999732 sig_mass=0.734709484738 tail_mass=0.265290515262
+  train_opt: score_sum=2.075918980591 relH= 0.999098  0.995932 gain2= 0.946762  0.924925 phi= 1.109297  1.108932
+  train_oracle_qr: score_sum=2.075673591488 relH= 0.997755  0.991542
+  train_prev_opt_on_curr: score_sum=2.030988425313 relH= 0.836843  0.822906
+  holdout_opt: score_sum=2.075574615169 relH= 0.997449  0.994386 gain2= 0.946762  0.924925 phi= 1.109107  1.108754
+  holdout_oracle_qr: score_sum=2.076144246348 relH= 0.999037  0.994649
+rows 801:832
+s:  0.9731  0.9618
+H:  4.1551  4.1420
+scores:  1.0502  1.0257
+oracle_candidate_check: rejected optimizer_sum=2.075919277463 candidate_sum=2.075673963370
+oracle_raw_projection_scores:  1.0499  1.0259 sum=2.075805464523
+oracle_qr_projection_scores:  1.0499  1.0257 sum=2.075673963370
+optimizer_score_sum: 2.075919277463
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999878  0.999732
+principal_cosines(V_score, Q_oracle):  0.999878  0.999732
+raw_oracle_projection_overlap: 0.020765111238
+subspace_dims: [16, 26]
+grad_perp_ratio:  0.005040  0.000211
+old_row_memory_rows: 32
+
+===== block rows 833:864 (streaming restricted score) =====
+consecutive_tail_diag: block=27 rows=833:864 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 31  70 130 213 420 423 441 470 568 584 602 683 706 713 717 739 745 746 751 754 757 775 787 788 790 795 812 816 819
+ 821 831 610]
+  opt_vs_prev_cos:  0.987206  0.974867 tail_vs_prev_cos= 0.947983  0.902401
+  opt_vs_oracle_cos:  0.999968  0.999941 sig_mass=0.764349956856 tail_mass=0.235650043144
+  train_opt: score_sum=2.048090061395 relH= 0.999604  0.999438 gain2= 0.951354  0.930013 phi= 1.088626  1.088610
+  train_oracle_qr: score_sum=2.047911490506 relH= 0.998575  0.997828
+  train_prev_opt_on_curr: score_sum=2.010951781235 relH= 0.838463  0.837259
+  holdout_opt: score_sum=2.047056315028 relH= 0.998979  0.988053 gain2= 0.951354  0.930013 phi= 1.088568  1.087558
+  holdout_oracle_qr: score_sum=2.047179502556 relH= 0.999281  0.988591
+rows 833:864
+s:  0.9754  0.9644
+H:  4.1572  4.1565
+scores:  1.0357  1.0124
+oracle_candidate_check: rejected optimizer_sum=2.048090800139 candidate_sum=2.047911787230
+oracle_raw_projection_scores:  1.0355  1.0124 sum=2.047913351766
+oracle_qr_projection_scores:  1.0355  1.0124 sum=2.047911787230
+optimizer_score_sum: 2.048090800139
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999968  0.999941
+principal_cosines(V_score, Q_oracle):  0.999968  0.999941
+raw_oracle_projection_overlap: 0.008011009780
+subspace_dims: [18, 26]
+grad_perp_ratio:  0.000000  0.005710
+old_row_memory_rows: 32
+
+===== block rows 865:896 (streaming restricted score) =====
+consecutive_tail_diag: block=28 rows=865:896 train_old_rows=32 holdout_old_rows=32 train_old_idx=[213 233 234 262 275 323 357 416 431 482 484 536 584 602 609 713 715 717 745 754 757 761 788 790 807 810 838 848 853
+ 854 860 861]
+  opt_vs_prev_cos:  0.984861  0.979558 tail_vs_prev_cos= 0.935783  0.902018
+  opt_vs_oracle_cos:  0.999990  0.999950 sig_mass=0.792833887820 tail_mass=0.207166112180
+  train_opt: score_sum=2.021470351148 relH= 0.999869  0.998575 gain2= 0.956219  0.934790 phi= 1.069036  1.068943
+  train_oracle_qr: score_sum=2.021371112515 relH= 0.999443  0.996672
+  train_prev_opt_on_curr: score_sum=1.990821635022 relH= 0.840959  0.833842
+  holdout_opt: score_sum=2.020992075510 relH= 0.998194  0.993119 gain2= 0.956219  0.934790 phi= 1.068916  1.068554
+  holdout_oracle_qr: score_sum=2.021025854186 relH= 0.998350  0.992614
+rows 865:896
+s:  0.9779  0.9669
+H:  4.1583  4.1530
+scores:  1.0222  0.9992
+oracle_candidate_check: rejected optimizer_sum=2.021469299407 candidate_sum=2.021370844190
+oracle_raw_projection_scores:  1.0222  0.9992 sum=2.021373799091
+oracle_qr_projection_scores:  1.0222  0.9992 sum=2.021370844190
+optimizer_score_sum: 2.021469299407
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999988  0.999952
+principal_cosines(V_score, Q_oracle):  0.999990  0.999950
+raw_oracle_projection_overlap: 0.003088563442
+subspace_dims: [14, 22]
+grad_perp_ratio:  0.000446  0.000569
+old_row_memory_rows: 32
+
+===== block rows 897:928 (streaming restricted score) =====
+consecutive_tail_diag: block=29 rows=897:928 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 68 254 281 293 330 364 407 431 440 451 488 548 576 584 602 608 613 713 745 757 767 774 788 790 838 840 848 853 854
+ 860 888 197]
+  opt_vs_prev_cos:  0.985661  0.980632 tail_vs_prev_cos= 0.931842  0.890187
+  opt_vs_oracle_cos:  0.999994  0.999971 sig_mass=0.820650329820 tail_mass=0.179349670180
+  train_opt: score_sum=1.996668920106 relH= 0.999758  0.997523 gain2= 0.961212  0.939686 phi= 1.050439  1.050323
+  train_oracle_qr: score_sum=1.996593237494 relH= 0.999354  0.995593
+  train_prev_opt_on_curr: score_sum=1.971995119740 relH= 0.841634  0.833915
+  holdout_opt: score_sum=1.996375992284 relH= 0.998772  0.992502 gain2= 0.961212  0.939686 phi= 1.050388  1.050064
+  holdout_oracle_qr: score_sum=1.996379469288 relH= 0.998739  0.991821
+rows 897:928
+s:  0.9804  0.9694
+H:  4.1579  4.1486
+scores:  1.0097  0.9870
+oracle_candidate_check: rejected optimizer_sum=1.996669550373 candidate_sum=1.996592940246
+oracle_raw_projection_scores:  1.0097  0.9869 sum=1.996594467545
+oracle_qr_projection_scores:  1.0097  0.9869 sum=1.996592940246
+optimizer_score_sum: 1.996669550373
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999994  0.999971
+principal_cosines(V_score, Q_oracle):  0.999994  0.999971
+raw_oracle_projection_overlap: 0.001404706869
+subspace_dims: [18, 32]
+grad_perp_ratio:  0.005161  0.003777
+old_row_memory_rows: 32
+
+===== block rows 929:960 (streaming restricted score) =====
+consecutive_tail_diag: block=30 rows=929:960 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  7  25  82  94 126 216 273 323 328 415 431 491 584 602 608 650 713 745 757 767 790 800 820 838 848 851 853 860 870
+ 874 888 794]
+  opt_vs_prev_cos:  0.985199  0.981564 tail_vs_prev_cos= 0.920982  0.870755
+  opt_vs_oracle_cos:  0.999995  0.999976 sig_mass=0.848876494561 tail_mass=0.151123505439
+  train_opt: score_sum=1.972514045126 relH= 0.999404  0.995885 gain2= 0.965808  0.944214 phi= 1.032776  1.032658
+  train_oracle_qr: score_sum=1.972465433377 relH= 0.999003  0.994262
+  train_prev_opt_on_curr: score_sum=1.954032782879 relH= 0.840543  0.829990
+  holdout_opt: score_sum=1.972319654317 relH= 0.997543  0.991610 gain2= 0.965808  0.944214 phi= 1.032714  1.032516
+  holdout_oracle_qr: score_sum=1.972339250181 relH= 0.997671  0.991613
+rows 929:960
+s:  0.9828  0.9717
+H:  4.1564  4.1418
+scores:  0.9975  0.9751
+oracle_candidate_check: rejected optimizer_sum=1.972513904851 candidate_sum=1.972465420952
+oracle_raw_projection_scores:  0.9974  0.9750 sum=1.972465193711
+oracle_qr_projection_scores:  0.9974  0.9750 sum=1.972465420952
+optimizer_score_sum: 1.972513904851
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999993  0.999977
+principal_cosines(V_score, Q_oracle):  0.999995  0.999976
+raw_oracle_projection_overlap: 0.000796565645
+subspace_dims: [16, 32]
+grad_perp_ratio:  0.000956  0.014937
+old_row_memory_rows: 32
+
+===== block rows 961:992 (streaming restricted score) =====
+consecutive_tail_diag: block=31 rows=961:992 train_old_rows=32 holdout_old_rows=32 train_old_idx=[  8  54 107 174 214 295 340 372 439 584 593 602 713 745 757 790 815 824 838 848 853 860 908 919 936 941 943 948 949
+ 950 960 741]
+  opt_vs_prev_cos:  0.986832  0.982061 tail_vs_prev_cos= 0.918268  0.838528
+  opt_vs_oracle_cos:  0.999998  0.999990 sig_mass=0.876450493692 tail_mass=0.123549506308
+  train_opt: score_sum=1.950528403096 relH= 0.999621  0.994252 gain2= 0.970813  0.949089 phi= 1.015995  1.015908
+  train_oracle_qr: score_sum=1.950515226655 relH= 0.999480  0.993182
+  train_prev_opt_on_curr: score_sum=1.936957761930 relH= 0.843169  0.828998
+  holdout_opt: score_sum=1.950473219624 relH= 0.999338  0.990936 gain2= 0.970813  0.949089 phi= 1.015990  1.015855
+  holdout_oracle_qr: score_sum=1.950471173113 relH= 0.999282  0.990506
+rows 961:992
+s:  0.9853  0.9742
+H:  4.1573  4.1350
+scores:  0.9863  0.9642
+oracle_candidate_check: rejected optimizer_sum=1.950527343234 candidate_sum=1.950515596177
+oracle_raw_projection_scores:  0.9863  0.9642 sum=1.950516644628
+oracle_qr_projection_scores:  0.9863  0.9642 sum=1.950515596177
+optimizer_score_sum: 1.950527343234
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999998  0.999990
+principal_cosines(V_score, Q_oracle):  0.999998  0.999990
+raw_oracle_projection_overlap: 0.003272277441
+subspace_dims: [16, 26]
+grad_perp_ratio:  0.006095  0.001482
+old_row_memory_rows: 32
+
+===== block rows 993:1024 (streaming restricted score) =====
+consecutive_tail_diag: block=32 rows=993:1024 train_old_rows=32 holdout_old_rows=32 train_old_idx=[ 22  78  87 138 308 431 519 574 584 602 608 626 644 707 755 757 790 821 824 838 848 853 860 864 895 929 936 941 943
+ 948 949 950]
+  opt_vs_prev_cos:  0.986340  0.982601 tail_vs_prev_cos= 0.899721  0.778473
+  opt_vs_oracle_cos:  0.999997  0.999890 sig_mass=0.903792776128 tail_mass=0.096207223872
+  train_opt: score_sum=1.929421193229 relH= 0.999491  0.990822 gain2= 0.975623  0.953798 phi= 1.000000  1.000000
+  train_oracle_qr: score_sum=1.929408197713 relH= 0.999494  0.993994
+  train_prev_opt_on_curr: score_sum=1.921251398012 relH= 0.843062  0.829865
+  holdout_opt: score_sum=1.929421193229 relH= 0.999362  0.991607 gain2= 0.975623  0.953798 phi= 1.000000  1.000000
+  holdout_oracle_qr: score_sum=1.929408197713 relH= 0.999425  0.995479
+rows 993:1024
+s:  0.9877  0.9766
+H:  4.1568  4.1207
+scores:  0.9756  0.9538
+oracle_candidate_check: rejected optimizer_sum=1.929423093796 candidate_sum=1.929408431053
+oracle_raw_projection_scores:  0.9756  0.9538 sum=1.929407894611
+oracle_qr_projection_scores:  0.9756  0.9538 sum=1.929408431053
+optimizer_score_sum: 1.929423093796
+vecnorm(V_score V_score' [v1_proj v2_proj], 2):  0.999997  0.999890
+principal_cosines(V_score, Q_oracle):  0.999997  0.999890
+raw_oracle_projection_overlap: 0.001225654336
+subspace_dims: [8, 24]
+grad_perp_ratio:  0.001716  0.033755
+old_row_memory_rows: 32
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.977801           0.00329311          33.641

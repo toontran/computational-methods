@@ -1,0 +1,21 @@
+# Oracle-evidence sweep — V1 → V2 → V3
+# block=31
+# Δ > 0 (winner > oracle) on a regression matrix → score is bottleneck
+# joint < greedy → joint optimizer is broken; joint ≥ greedy expected
+
+ablation                λ matrix                       oracle     greedy      joint    Δgreedy     Δjoint        j−g
+hm                      0 diffuse-diffuse              0.0066     0.0380     0.0383    +0.0314    +0.0316    +0.0003
+hm                      0 residual-spiky-shocks        0.0270     0.0409     0.0409    +0.0139    +0.0140    +0.0001
+hm                      0 mixed-tail-soft              0.0215     0.0382     0.0386    +0.0166    +0.0170    +0.0004
+hm                   0.01 diffuse-diffuse              0.0294     0.0392     0.0396    +0.0098    +0.0102    +0.0003
+hm                   0.01 residual-spiky-shocks        0.0326     0.0428     0.0429    +0.0102    +0.0103    +0.0002
+hm                   0.01 mixed-tail-soft              0.0294     0.0400     0.0405    +0.0107    +0.0112    +0.0005
+hm                   0.05 diffuse-diffuse              0.0344     0.0436     0.0439    +0.0092    +0.0095    +0.0003
+hm                   0.05 residual-spiky-shocks        0.0389     0.0533     0.0536    +0.0143    +0.0147    +0.0004
+hm                   0.05 mixed-tail-soft              0.0307     0.0476     0.0481    +0.0168    +0.0174    +0.0005
+hm                    0.1 diffuse-diffuse              0.0407     0.0538     0.0542    +0.0131    +0.0135    +0.0004
+hm                    0.1 residual-spiky-shocks        0.0563     0.0630     0.0633    +0.0067    +0.0070    +0.0003
+hm                    0.1 mixed-tail-soft              0.0675     0.0674     0.0695    -0.0001    +0.0020    +0.0021
+hm                    0.5 diffuse-diffuse              0.1077     0.1118     0.1125    +0.0041    +0.0048    +0.0007
+hm                    0.5 residual-spiky-shocks        0.1775     0.1813     0.1816    +0.0038    +0.0041    +0.0003
+hm                    0.5 mixed-tail-soft              0.1856     0.1887     0.1887    +0.0030    +0.0030    +0.0000

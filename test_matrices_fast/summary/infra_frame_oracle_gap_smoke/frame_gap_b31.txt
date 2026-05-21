@@ -1,0 +1,11 @@
+# FAM-01-DIAG: frame-level oracle-vs-winner gap (S-2 screen)
+# block=31
+# Δ > 0 (winner > oracle) on a regression matrix → evidence model insufficient at rank-2
+
+matrix                   ablation         anchor       oracle     winner          Δ   pa²[0]   pa²[1]
+mixed-tail-sharp         hm               free         0.0251     0.0373    +0.0122    0.992    0.601
+mixed-tail-sharp         hm               oracle1      0.0251     0.0373    +0.0121    1.000    0.003
+mixed-tail-sharp         hm               oracle2      0.0251     0.0254    +0.0003    1.000    0.991
+static-cex               hm               free         0.0038     0.0371    +0.0333    0.199    0.009
+static-cex               hm               oracle1      0.0038     0.0249    +0.0211    1.000    0.008
+static-cex               hm               oracle2      0.0038     0.0253    +0.0214    1.000    0.003

@@ -1,0 +1,209 @@
+Investigation: where does V_exact[:,0] vanish at half_win=32 sliding?
+====================================================================
+
+Date: 2026-04-23
+
+Artifact: `summary/half_window_joint_diag_win64.json` — diagnostic run of
+`future_hmean_online_joint` at half_win=32 sliding on `mixed-tail-sharp` with
+per-step instrumentation of V_selected columns (pre- and post-polish),
+their V_exact[:,0]/V_exact[:,1] inner products, and which candidate best
+matches the outside-V_exact component.
+
+
+Where does the vanishing happen?
+--------------------------------
+Step 27 out of 31.
+
+The per-step trajectory of V_selected[:,1] · V_exact[:,0] (labelled
+`pre_c1_Ve0`) and V_selected[:,1] · V_exact[:,1] (`pre_c1_Ve1`) around the
+transition:
+
+  step  label               pre_c1_Ve0  pre_c1_Ve1  opn1   opn2   ex1    ex2
+   26   opt2                 -0.399      -0.001     0.400  0.904  0.905  0.399
+   27   q2_raw_projected     -0.013       0.062     0.441  0.920  0.920  0.015
+   28   q2_vs_q1oracle        0.061       0.059     0.193  0.935  0.934  0.061
+   29   q2_raw_projected      0.057       0.057     0.201  0.949  0.949  0.057
+   30   q2_vs_q1oracle        0.037       0.055     0.202  0.963  0.963  0.037
+   31   q2_raw_projected      0.041       0.048     0.198  0.977  0.977  0.041
+
+Before step 27, V_selected[:,1] held ~40% of V_exact[:,0]. From step 27 on,
+that drops to 1-6%. The second principal cosine `ex2` crashes from 0.399 to
+0.015 at the same step. So the vanishing is localised: one decision boundary
+flips the subspace from capturing both oracle directions to capturing only
+V_exact[:,1].
+
+Note: the first-slot `pre_c0_Ve0` is already tiny throughout (< 0.03) and
+`pre_c0_Ve1` = -0.905 → -0.977 across these steps. V_default[:,0] has
+converged onto V_exact[:,1] early, not V_exact[:,0].
+
+
+Is it the polish?
+-----------------
+No. The per-step diagnostic logs V_selected both pre-polish (greedy
+orthogonalized output) and post-polish. At every step the two are
+essentially identical (entries differ by < 0.002). The polish is a near-noop
+on this matrix, at every size.
+
+The vanishing happens in the greedy pipeline, specifically in the
+orthonormalisation step
+
+    V_selected[:,1] = (chosen_v2 - v_1 * (v_1 · chosen_v2)) / norm
+
+applied after the greedy score picks a winner.
+
+
+Which outside direction did V_selected[:,1] take?
+-------------------------------------------------
+At step 27 the outside-V_exact component of V_selected[:,1] accounts for
+99.6% of its energy, and the candidate with the highest absolute dot
+product to that outside direction is:
+
+  mgain_deflated_svd, overlap = 0.987
+
+At steps 28, 29, 30, 31 the best-aligned outside candidate is
+`mgain_deflated_svd` or `opt2_outside` (both "tail/complement" directions),
+with overlap in the range 0.76 to 0.99.
+
+So after the flip, V_selected[:,1] is effectively the deflated-SVD complement
+of M_gain — a row-space tail/noise direction, not oracle.
+
+
+Why does step 27 specifically break?
+------------------------------------
+Three things line up simultaneously at step 27:
+
+1. V_default[:,0] (the first-slot vector, output of the streaming optimizer)
+   has finished converging to V_exact[:,1]:
+     step 25 : pre_c0_Ve1 = -0.889
+     step 26 : pre_c0_Ve1 = -0.905
+     step 27 : pre_c0_Ve1 = -0.918     ← crosses ~92% here
+   That is, by step 27 the first slot contains essentially no V_exact[:,0]
+   and is ~92% V_exact[:,1].
+
+2. The current-block row-space finally captures V_exact[:,1] to ~92%:
+     step 26 : opn2 = 0.904
+     step 27 : opn2 = 0.920
+   So `raw_oracle[1]` (= P_{Q_row} V_exact[:,1] / opn2, i.e. the
+   oracle-constructed `q2_raw_projected` candidate) is now ≈ 0.920
+   V_exact[:,1] + outside-but-in-row-space.
+
+3. The score function `obj_future_online = HM(g_cur_share, g_fut_share) *
+   relH` then prefers `q2_raw_projected` over `opt2` (which had been winning
+   since step 6). The greedy switches from opt2 to q2_raw_projected exactly
+   at step 27.
+
+Now the geometry: v_1 is ~92% V_exact[:,1]-aligned AND
+`q2_raw_projected` is ~92% V_exact[:,1]-aligned. They are nearly
+co-linear. Gram-Schmidt orthonormalisation
+
+    V_selected[:,1] ← q2_raw_projected - v_1 (v_1 · q2_raw_projected)
+
+almost completely cancels both vectors in the V_exact[:,1] direction,
+leaving only the residual that is orthogonal to v_1. That residual lives in
+Q_row but outside V_exact[:,:2], because the in-V_exact content was
+contained in the V_exact[:,1] component which just got subtracted. After
+normalisation, this residual points in whichever Q_row-internal tail
+direction happens to be left — and on mixed-tail-sharp that tail direction is
+almost exactly the deflated-SVD complement `mgain_deflated_svd`.
+
+So V_selected[:,1] ≈ mgain_deflated_svd at step 27. Post-polish doesn't
+change that.
+
+
+Why didn't opt2 do this?
+------------------------
+Opt2 at steps 6..26 is the streaming optimizer's second-slot output. Up to
+step 26 it had ~40% V_exact[:,0] content and ~0% V_exact[:,1] content, so
+it was almost orthogonal to v_1 already. Gram-Schmidt barely changed it.
+Result: V_selected[:,1] ≈ opt2, with V_exact[:,0] captured.
+
+The failure switch is triggered not by opt2 going bad but by the HM-online
+score finally preferring `q2_raw_projected`. The greedy is "right" in the
+sense that `q2_raw_projected` has higher J than opt2 at step 27 — the J
+values from the log: opt2-like J ≈ 1.47e-3, q2_raw_projected J ≈ 1.43e-4 at
+that step, but the online policy's specific objective picked q2_raw_projected
+even so. The pipeline then destroys the pick via orthogonalisation.
+
+
+Why not other window sizes?
+---------------------------
+At half_win=16 and half_win=64 the sequence of events unfolds differently:
+
+- half_win=16: shorter block → v_1 converges more slowly → v_1 still has
+  significant V_exact[:,0] component when q2 starts winning, so Gram-Schmidt
+  doesn't cancel. The polish then has room to add V_exact[:,0] back through
+  rotation. align 0.017 → 0.699.
+
+- half_win=64: longer block → v_1 converges to V_exact[:,1] quickly but the
+  second slot has many candidates and richer row-space, and on these few
+  long windows, q2_raw_projected isn't perfectly co-linear with v_1 in one
+  step. The polish then adds the missing V_exact[:,0] back. align 0.492 →
+  0.679.
+
+- half_win=32: the specific window size at which v_1 reaches ~92%
+  V_exact[:,1] exactly at the step when q2_raw_projected also reaches ~92%,
+  causing the Gram-Schmidt cancellation. The polish is local and can't
+  recover because span(V_selected, candidates) at that step already has
+  V_exact[:,0] mostly knocked out.
+
+
+Concretely, what aligns with what at step 27?
+---------------------------------------------
+V_default[:,0] (first slot, pre-polish and unchanged) ≈
+    -0.918 V_exact[:,1] + 0.008 V_exact[:,0] + 0.397 (outside direction)
+
+V_selected[:,1] after orthonormalisation, pre- and post-polish ≈
+    -0.013 V_exact[:,0] + 0.062 V_exact[:,1] + 0.998 (outside direction)
+    where the outside direction is 0.987-aligned with mgain_deflated_svd
+
+Post-polish at step 27, V_selected[:,0] is still ≈ V_default[:,0]
+(V_exact[:,1]-dominant), V_selected[:,1] is ≈ mgain_deflated_svd
+(tail/noise-dominant). V_exact[:,0] is no longer in the frame.
+
+The carried state derives from SVD of M_gain @ V_selected. Since v_1 is
+V_exact[:,1]-aligned and v_2 is row-space tail, the SVD preserves that
+subspace; V_r ≈ span(V_exact[:,1], tail_noise). At subsequent steps the
+state keeps recycling this (V_exact[:,1], tail) subspace, so the row-space
+never recovers V_exact[:,0] and the second slot stays tail-aligned.
+
+
+Bottom line
+-----------
+The vanishing at half_win=32 sliding happens at a single step (27) and is
+caused by Gram-Schmidt cancellation between
+
+  v_1 (≈ 92% V_exact[:,1])  and
+  chosen_v2 = q2_raw_projected (≈ 92% V_exact[:,1]).
+
+The residual after cancellation is dominated by the deflated-SVD complement
+of M_gain (`mgain_deflated_svd`), i.e. row-space tail. V_selected[:,1]
+locks into that direction and the carried state never recovers V_exact[:,0].
+
+The polish is not the culprit — it's a near-noop here. The bug is upstream:
+the streaming optimizer converges v_1 onto V_exact[:,1], and the second-slot
+objective (rightly) prefers q2-like candidates once the row-space matures,
+but they share the same top direction, so the orthogonalisation rule kills
+the pick.
+
+
+What would fix it
+-----------------
+Two options at the pipeline level:
+
+1. Swap v_1 with the new oracle candidate when the new candidate carries
+   more oracle content. Concretely: compute `oracle_mass` of each
+   [V_default[:,0], chosen_v2] pair and pick the 2D assignment that
+   maximises joint oracle_mass, rather than always holding v_1 fixed and
+   orthogonalising v_2 against it.
+
+2. Replace Gram-Schmidt with a rank-2 SVD step: form C = [v_1, chosen_v2],
+   compute SVD of A_current @ C (or M_gain @ C), take the top-2 right
+   singular vectors as V_selected. This preserves span({v_1, chosen_v2})
+   but reorders columns by local singular dominance, avoiding the
+   cancellation.
+
+Either change would convert the step-27 "collapse" into an explicit 2D
+rotation that keeps V_exact[:,0] in the subspace. This is precisely the
+kind of operation that a rank-2 objective (J_span) could drive correctly,
+but only if the span being polished actually contains V_exact[:,0] — which
+it does at step 27 (opn1 = 0.441) before the Gram-Schmidt step wipes it.

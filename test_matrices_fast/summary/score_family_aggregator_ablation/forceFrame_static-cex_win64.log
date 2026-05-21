@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.737050 mean_relerr_sval=0.03996350
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.986674 mean_relerr_sval=0.00244880
+wrote_json=summary/score_family_aggregator_ablation/forceFrame_static-cex_win64.json wrote_csv=summary/score_family_aggregator_ablation/forceFrame_static-cex_win64.csv wrote_text=summary/score_family_aggregator_ablation/forceFrame_static-cex_win64.txt elapsed=93.011

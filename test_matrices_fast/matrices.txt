@@ -1,0 +1,798 @@
+Input matrix catalog
+====================
+
+1. Generated structured CEX matrix
+----------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_structured_cex_input(...)
+
+Default parameters
+  n = 1024
+  r_sig = 2
+  alpha_sig = 0.003
+  alpha_tail = 0.0145
+  tail_scale = 0.99
+  sigma1 = 0.991
+  v_type = rand
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+  With defaults:
+
+    A.shape = (1024, 1024)
+
+Construction
+  The generated matrix is SVD-structured:
+
+    A_unpermuted = U * diag(svec) * V'
+    A = P * A_unpermuted
+
+  where P is a random row permutation. In code this is written as:
+
+    A_unpermuted = (U * svec[None, :]) @ V.T
+    A = A_unpermuted[p, :]
+
+Singular values
+  The singular-value vector has a shallow signal block followed by a
+  slowly decaying tail:
+
+    sig_block[j]  = sigma1 * j^(-alpha_sig),       j = 1:r_sig
+    tail_block[j] = tail_scale * j^(-alpha_tail),  j = 1:(n-r_sig)
+    svec = [sig_block, tail_block]
+    svec[0] = sigma1
+
+  With the defaults, the leading signal values are very close together and
+  the tail starts just below them. This makes the dominant subspace hard to
+  separate by singular value magnitude alone.
+
+What is special about U
+  U is not sampled as a generic random orthogonal matrix. It is built from a
+  deliberately structured prototype U0, then orthonormalized by QR.
+
+  The first r_sig columns of U0 are normalized Hadamard columns:
+
+    U0[:, 0:r_sig] = hadamard(n)[:, 0:r_sig] / sqrt(n)
+
+  These signal directions are dense, flat, and incoherent across rows: every
+  row has equal-magnitude participation in the signal columns.
+
+  The remaining columns are tail directions with a near-coordinate structure.
+  For each tail column j >= r_sig:
+
+    U0[j-r_sig, j] = sqrt(1 - r_sig / n)
+    U0[n-r_sig:n, j] = 1 / sqrt(n)
+
+  So each tail column has one large coordinate plus small shared mass in the
+  final r_sig rows. This creates many localized tail directions while coupling
+  them through a small common row support.
+
+  Finally:
+
+    U, _ = qr(U0)
+
+  The first r_sig signs are flipped if needed so they remain aligned with the
+  original Hadamard signal columns. The result is an orthonormal left singular
+  basis whose leading directions are dense Hadamard-like signals and whose
+  trailing directions come from a structured sparse/localized tail.
+
+Right singular vectors V
+  V depends on v_type:
+
+    id    -> V = identity
+    U     -> V = U
+    rand  -> V = qr(randn(n, n))
+
+  The default run uses v_type = rand, so the right singular vectors are a
+  random orthonormal basis.
+
+Streaming layout used by the script
+  Rows of A are processed in windows:
+
+    A_block = A[start0:end0, :]
+
+  The default window size is:
+
+    win = 100
+
+  In restricted mode, the working gain matrix is:
+
+    first block:
+      M_gain = A_block
+
+    later blocks:
+      M_gain = vstack([S_previous * V_previous', A_block])
+
+  With default rank = 2 and win = 100, most later restricted updates use:
+
+    M_gain.shape = (102, 1024)
+
+  The first update uses:
+
+    M_gain.shape = (100, 1024)
+
+Notes
+  This matrix is designed to stress streaming low-rank methods: the leading
+  left singular directions are globally spread over all rows, the tail is
+  structured and close in magnitude, and a row permutation prevents the stream
+  from presenting the construction in a convenient order.
+
+
+2. Alternative data signals
+---------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_alternative_data_signals_input(...)
+
+CLI name
+  alternative-data-signals
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are assets or signal
+  buckets from alternative-data sources. The matrix combines web/search,
+  card-spend, app-engagement, sentiment, satellite, and coverage exposures
+  with delayed source factors, local data-revision shocks, stale update
+  stripes, source-dependent noise, and column demeaning.
+
+What this stresses
+  The leading search and spend modes are deliberately near-tied and delayed
+  relative to each other. Local revisions and stale-source stripes create
+  structured transient competitors, so streaming sketches must preserve the
+  persistent alternative-data factor rather than chasing update artifacts.
+
+
+2. Futures term structure
+-------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_futures_term_structure_input(...)
+
+CLI name
+  futures-term-structure
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are ordered futures
+  maturities. The matrix combines smooth curve factors over maturity with
+  time-varying level, slope, curvature, and carry loadings. It then adds
+  front/back roll-pressure shocks, sparse maturity-localized jumps, and small
+  dense noise before demeaning columns.
+
+What this stresses
+  The top two directions are intentionally close level/slope term-structure
+  modes. Localized roll shocks and maturity jumps create structured competitors
+  that are not purely isotropic noise, so streaming sketches must preserve both
+  curve shape and scale while rows arrive in time order.
+
+
+3. Crowded strategy
+-------------------
+
+Source
+  cex_restricted_space_probe.py, generate_crowded_strategy_input(...)
+
+CLI name
+  crowded-strategy
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are assets in overlapping
+  long/short strategy books. The matrix combines a common crowded trade, sector
+  crowding, liquidity pressure, and value-style exposure with staggered unwind
+  episodes, rebalance shocks, sparse crowded-name bursts, and small dense
+  idiosyncratic noise before demeaning columns.
+
+What this stresses
+  The leading crowded trade and its staggered unwind competitor are deliberately
+  close in scale. Sparse bursts on crowded names add structured transient
+  pressure, so streaming sketches must track both the persistent common trade
+  and the near-tied rotation caused by crowding and unwind timing.
+
+
+4. Rates cross currency
+-----------------------
+
+Source
+  cex_restricted_space_probe.py, generate_rates_cross_currency_input(...)
+
+CLI name
+  rates-cross-currency
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are cross-currency
+  rates/basis instruments arranged by currency bloc and tenor bucket. The
+  matrix combines USD funding pressure, carry-curve rotation, basis-smile
+  exposure, and regional basis shocks with crisis/fixing windows, localized
+  basis jumps, and small dense noise before demeaning columns.
+
+What this stresses
+  The first two factors are intentionally near-tied funding and carry modes.
+  Localized basis jumps create realistic structured competitors, so streaming
+  sketches must keep the cross-currency funding direction without confusing it
+  with transient regional basis dislocations.
+
+
+5. Options vol surface
+----------------------
+
+Source
+  cex_restricted_space_probe.py, generate_options_vol_surface_input(...)
+
+CLI name
+  options-vol-surface
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are option implied-vol
+  surface points over log-moneyness and maturity. The matrix combines surface
+  level, term, skew, smile, term-skew, and wing-kink modes with time-varying
+  factors, localized volatility-event windows, quote-band microstructure, and
+  small liquidity-weighted dense noise before demeaning columns.
+
+What this stresses
+  The leading level, term, and skew modes are deliberately close enough that a
+  streaming sketch must preserve a smooth volatility surface subspace rather
+  than overreacting to transient wing events or quote-level microstructure.
+
+
+6. Risk residual panel
+----------------------
+
+Source
+  cex_restricted_space_probe.py, generate_risk_residual_panel_input(...)
+
+CLI name
+  risk-residual-panel
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are residualized assets.
+  The matrix combines a crowding residual book, a liquidity/turnover residual
+  book, sector-local idiosyncratic structure, event-driven volatility scaling,
+  and small heavy-tailed residual noise before demeaning columns.
+
+What this stresses
+  The two leading residual modes are close in scale and compete with many
+  localized, sector-shaped residual pulses. Streaming sketches must preserve
+  the persistent crowded residual direction without mistaking transient
+  heteroskedastic residual bursts for the top risk mode.
+
+
+7. Macro factor panel
+---------------------
+
+Source
+  cex_restricted_space_probe.py, generate_macro_factor_panel_input(...)
+
+CLI name
+  macro-factor-panel
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are assets grouped by macro
+  region and sector. The matrix combines inflation, growth, rates, dollar,
+  commodity, and liquidity exposures with recession/inflation windows,
+  macro-release stripes, localized country/sector event shocks, and small
+  dense noise before demeaning columns.
+
+What this stresses
+  The leading inflation and growth modes are deliberately near-tied while
+  transient macro-event shocks create structured competitors. Streaming
+  sketches must keep the persistent macro factor subspace without chasing
+  short-lived release or regional event directions.
+
+
+7. Realized vol corr
+--------------------
+
+Source
+  cex_restricted_space_probe.py, generate_realized_vol_corr_input(...)
+
+CLI name
+  realized-vol-corr
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are realized-volatility /
+  realized-correlation assets or buckets. The matrix combines a market-vol
+  mode, a sector correlation-cluster mode, term-decay and dispersion modes,
+  volatility event windows, localized correlation bursts, leverage-like
+  correlation pressure, and small dense noise before demeaning columns.
+
+What this stresses
+  The market-vol and correlation-cluster directions are intentionally close in
+  scale. Localized correlation bursts create structured transient competitors,
+  so streaming sketches must preserve the persistent realized-vol/correlation
+  subspace without overfitting short event windows.
+
+
+7. ETF basket basis
+-------------------
+
+Source
+  cex_restricted_space_probe.py, generate_etf_basket_basis_input(...)
+
+CLI name
+  etf-basket-basis
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are ETF, basket, sector,
+  hedge, and constituent-basis features. The matrix combines a dense
+  index/basket mode, sector modes, basis slope, and hedge tilt with
+  time-varying factors, localized name/basket dislocations, ETF stale-print
+  pressure, and small dense noise before demeaning columns.
+
+What this stresses
+  The dense basket mode is stable, while sector and constituent dislocations
+  form structured near-competitors. This is a quant-style analogue of a dense
+  signal with sparse/localized tail pressure.
+
+
+8. Execution cost slippage
+--------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_execution_cost_slippage_input(...)
+
+CLI name
+  execution-cost-slippage
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic trading intervals and columns are execution-cost,
+  venue, queue, and slippage buckets. The matrix combines persistent
+  liquidity and market-impact modes with venue pressure, queue imbalance,
+  close-auction pressure, localized liquidity pockets, routing artifacts,
+  and small dense noise before demeaning columns.
+
+What this stresses
+  The leading liquidity and impact directions are close in scale, while
+  short-lived venue and liquidity-pocket shocks create structured local
+  competitors. Streaming sketches must preserve the persistent execution-cost
+  subspace without overfitting transient slippage events.
+
+
+8. Stat arb spreads
+-------------------
+
+Source
+  cex_restricted_space_probe.py, generate_stat_arb_spreads_input(...)
+
+CLI name
+  stat-arb-spreads
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic observation dates and columns are residualized
+  pair/spread books. The matrix combines pair-spread, sector-spread,
+  borrow/liquidity, beta-residual, and reversal-bucket exposures with
+  mean-reversion, crowded-residual, liquidity, beta, and reversal factors.
+  Local spread-breakdown pulses and small heteroskedastic dense noise are
+  added before demeaning columns.
+
+What this stresses
+  The leading mean-reversion and crowded-residual modes are deliberately
+  near-tied. Local spread-breakdown shocks create structured transient
+  competitors, so streaming sketches must preserve the persistent stat-arb
+  spread subspace without chasing short-lived pair dislocations.
+
+
+9. Intraday liquidity shape
+---------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_intraday_liquidity_shape_input(...)
+
+CLI name
+  intraday-liquidity-shape
+
+Default benchmark parameters
+  n = 128
+  rank = 2
+  win = 32
+  preset = small
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Rows are synthetic intraday observation times and columns are liquidity /
+  venue buckets. The matrix combines U-shaped open/close liquidity, close
+  auction pressure, venue-split, midday drought, and spread-slope modes with
+  localized liquidity bursts, halt-like stripes, and small dense noise before
+  demeaning columns.
+
+What this stresses
+  The open/close liquidity shape and auction-pressure directions are
+  near-tied, while short-lived venue and liquidity bursts form structured
+  competitors. Streaming sketches must keep the persistent intraday shape
+  without chasing transient microstructure events.
+
+
+10. Diffuse-diffuse close-gap CEX
+---------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_diffuse_diffuse_input(...)
+
+CLI name
+  diffuse-diffuse
+
+Default parameters
+  n = 1024
+  r_sig = 2
+  alpha_sig = 0.003
+  alpha_tail = 0.0145
+  tail_scale = 0.99
+  sigma1 = 0.991
+  v_type = rand
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Minimal perturbation of static-cex. Build
+
+    A_unpermuted = U * diag(svec) * V'
+    A = P * A_unpermuted
+
+  with the same Hadamard signal columns and the same close-σ spectrum as
+  static-cex, but replace the structured spike-localized tail by an
+  orthonormalized random Gaussian tail in the subspace orthogonal to the
+  signal columns. Specifically:
+
+    U0[:, 0:r_sig] = hadamard(n)[:, 0:r_sig] / sqrt(n)
+    G             = randn(n, n - r_sig)
+    G            -= U0[:, :r_sig] @ (U0[:, :r_sig]' @ G)   # project out signal
+    U0[:, r_sig:] = qr(G)
+    U, _          = qr(U0)
+
+  Singular values follow static-cex:
+
+    sig_block[j]  = sigma1 * j^(-alpha_sig),       j = 1:r_sig
+    tail_block[j] = tail_scale * j^(-alpha_tail),  j = 1:(n-r_sig)
+    svec          = [sig_block, tail_block]
+    svec[0]       = sigma1
+
+  so σ_signal ≈ σ_tail as in static-cex. V is a random orthonormal basis by
+  default, since theory says V does not affect the streaming recovery
+  problem.
+
+What is special about U
+  Every column of U — signal and tail alike — is globally spread over all
+  rows. There are no spike-localized tail coordinates. The left-side row
+  geometry is uniform across all singular directions.
+
+What this stresses
+  This is the "both signal and noise are diffuse, with close singular values"
+  regime that is absent from the rest of the catalog. Row-entropy carries no
+  information because every candidate direction has near-uniform row support,
+  and gain is near-tied because σ_signal ≈ σ_tail. It isolates whether a
+  combined gain × entropy objective degrades gracefully to gain-only
+  behavior when the entropy term becomes uninformative, or starts chasing
+  arbitrary diffuse tail directions.
+
+
+11. Mixed-tail soft close-gap CEX
+---------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_mixed_tail_input(..., tail_spikiness=0.25)
+
+CLI name
+  mixed-tail-soft
+
+Default parameters
+  n = 1024
+  r_sig = 2
+  alpha_sig = 0.003
+  alpha_tail = 0.0145
+  tail_scale = 0.99
+  sigma1 = 0.991
+  v_type = rand
+  tail_spikiness = 0.25
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Interpolation between diffuse-diffuse and static-cex. The signal columns
+  are the same normalized Hadamard columns and the singular-value profile is
+  the same close-gap static-cex profile. The tail is built from two tail
+  bases in the subspace orthogonal to the signal:
+
+    U_diffuse_tail = qr(projected randn(n, n-r_sig))
+    U_spiky_tail   = qr(projected static-cex localized tail)
+
+  Then:
+
+    tail_raw = sqrt(1-tail_spikiness) * U_diffuse_tail
+             + sqrt(tail_spikiness)   * U_spiky_tail
+    U_tail   = qr(project_out_signal(tail_raw))
+    U        = qr([U_sig, U_tail])
+
+What is special about U
+  The top signal directions remain fully diffuse. The tail is mostly diffuse
+  but has visible localized leverage. In the n=1024, seed=0 structural probe
+  using the designed left singular vectors:
+
+    signal rel_H mean       1.000
+    first-50 tail rel_H     0.745 mean, 0.721 min
+    first-50 tail top1 mass 0.260 mean
+    first-50 tail top32     0.405 mean
+    first-50 tail r80       263 rows mean
+
+What this stresses
+  This is the first "in-between" case: entropy still has some ability to
+  penalize the tail, but the tail is far less concentrated than static-cex.
+  It tests whether combined/hybrid degrade smoothly as the tail becomes less
+  entropy-poor.
+
+
+12. Mixed-tail balanced close-gap CEX
+-------------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_mixed_tail_input(..., tail_spikiness=0.50)
+
+CLI name
+  mixed-tail-balanced
+
+Default parameters
+  Same as mixed-tail-soft, except:
+
+    tail_spikiness = 0.50
+
+Construction
+  Same interpolation construction as mixed-tail-soft, with equal diffuse and
+  localized tail weights before re-orthonormalization.
+
+What is special about U
+  The signal remains fully diffuse, while the tail lands in the middle of the
+  row-coherence ladder. In the n=1024, seed=0 structural probe:
+
+    signal rel_H mean       1.000
+    first-50 tail rel_H     0.542 mean, 0.521 min
+    first-50 tail top1 mass 0.506 mean
+    first-50 tail top32     0.603 mean
+    first-50 tail r80       174 rows mean
+
+What this stresses
+  This is the midpoint between "tail entropy is uninformative" and "tail is
+  clearly spike-like." It is the most direct threshold probe for whether the
+  combined entropy multiplier is strong enough to reorder near-tied gain
+  candidates when the tail is only moderately localized.
+
+
+13. Mixed-tail sharp close-gap CEX
+----------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_mixed_tail_input(..., tail_spikiness=0.75)
+
+CLI name
+  mixed-tail-sharp
+
+Default parameters
+  Same as mixed-tail-soft, except:
+
+    tail_spikiness = 0.75
+
+Construction
+  Same interpolation construction as mixed-tail-soft, biased toward the
+  static-cex localized tail basis.
+
+What is special about U
+  The signal remains fully diffuse and the tail is strongly localized, but not
+  as extreme as static-cex. In the n=1024, seed=0 structural probe:
+
+    signal rel_H mean       1.000
+    first-50 tail rel_H     0.304 mean, 0.292 min
+    first-50 tail top1 mass 0.751 mean
+    first-50 tail top32     0.800 mean
+    first-50 tail r80       32 rows mean
+
+  For comparison, the same probe gives:
+
+    diffuse-diffuse tail rel_H mean 0.895, r80 325 rows
+    static-cex      tail rel_H mean 0.006, r80   1 row
+
+What this stresses
+  This is the near-static-cex but not fully spiky case. It tests whether the
+  combined objective already recovers the static-cex behavior before the tail
+  becomes coordinate-spike extreme.
+
+
+14. Residual panel with spiky idiosyncratic shocks
+--------------------------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_residual_spiky_shocks_input(...)
+
+CLI name
+  residual-spiky-shocks
+
+Default benchmark parameters
+  n = 1024
+  rank = 2
+  win = 32
+  preset = fast
+  seed = 0
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+Construction
+  Counterfactual variant of risk-residual-panel. The factor geometry is
+  identical: same two crowding / liquidity residual U columns, same
+  sector-grouped V, same structured residual tail, same close-σ signal gap.
+  Only the idiosyncratic noise model is changed:
+
+    risk-residual-panel:
+      A = vol[t] * (U * svec) V'  +  idio_scale * t5_noise(n, n)
+
+    residual-spiky-shocks:
+      A = (U * svec) V'
+      for each of n_spike_rows rows chosen uniformly at random:
+          support    = random subset of columns (size ~ n / 64)
+          direction  = randn(support).normalized
+          A[row, support] += spike_amp * direction
+      A += noise_floor * randn(n, n)
+      A -= A.mean(axis=0)
+
+  The dense heavy-tailed heteroskedastic noise of risk-residual-panel is
+  replaced by rare, row-localized spikes on a few random columns, plus a
+  tiny dense Gaussian floor for non-degeneracy.
+
+What this stresses
+  The pre-shock signal subspace is identical to risk-residual-panel, so the
+  same close-σ residual competition between the crowding and liquidity modes
+  is present. What changes is the row geometry of the idiosyncratic shock:
+  instead of a dense diffuse noise direction that spreads mass evenly across
+  rows, the shock is spike-like with concentrated row support. At the tuned
+  spike_amp=0.10 setting, the shock can rise into the exact top subspace after
+  V_exact is recomputed from the final A, so this matrix is also a probe of
+  row-concentrated targets, not only row-concentrated tails.
+
+  Paired with risk-residual-panel this began as a factorial probe:
+  combined-score objectives that were defeated on risk-residual-panel because
+  the noise direction won on both gain and entropy were expected to recover
+  here, because spiky noise loses entropy. The tuned version revealed a sharper
+  case: if the spike enters V_exact itself, combined is expected to reject the
+  true top direction because the entropy multiplier penalizes row concentration.

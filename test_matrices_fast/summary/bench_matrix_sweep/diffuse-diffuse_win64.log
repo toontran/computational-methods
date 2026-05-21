@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:601: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.365526 mean_relerr_sval=0.06294331
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.253738 mean_relerr_sval=0.05026867
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.646263 mean_relerr_sval=0.04810674
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.912383 mean_relerr_sval=0.01506529
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.514689 mean_relerr_sval=0.04172633
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.768442 mean_relerr_sval=0.00901013
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.021440 mean_relerr_sval=0.04653397
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.527744 mean_relerr_sval=0.01160157
+wrote_json=summary/bench_matrix_sweep/diffuse-diffuse_win64.json wrote_csv=summary/bench_matrix_sweep/diffuse-diffuse_win64.csv wrote_text=summary/bench_matrix_sweep/diffuse-diffuse_win64.txt elapsed=22.364

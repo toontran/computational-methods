@@ -1,0 +1,383 @@
+Matrix benchmark and objective-development summary
+==================================================
+
+Purpose
+-------
+This note summarizes the recent benchmark recheck and connects it to the
+existing oracle-projection, joint-Stiefel, and row-regularization notes. The
+goal is to give a compact starting point for understanding the non-CEX matrix
+families and deciding whether to change the restricted algorithm or its score
+objective.
+
+
+Current implementation state
+----------------------------
+The restricted optimizer still defaults to the original backward-compatible
+greedy path:
+
+  --basis-selection greedy
+
+The work-in-progress options now include:
+
+  --basis-selection joint
+  --joint-warm-start-greedy
+  --joint-warm-start-oracle
+  --row-concentration-lambda L
+
+The oracle warm start uses:
+
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :rank])
+
+and adds this as a Stiefel restart seed labeled:
+
+  oracle-projected
+
+This is diagnostic/oracle-assisted, not a deployable online method, because it
+uses V_exact.
+
+The row-concentration regularizer optimizes:
+
+  score_reg(v) = score(v) - lambda * sum_i p_i^2
+  p_i = (A_block v)_i^2 / sum_j (A_block v)_j^2
+
+The raw score outputs remain backward compatible. Regularized scores are
+available in:
+
+  diag["regularized_score"]
+  diag["regularized_score_sum"]
+
+
+Benchmark context
+-----------------
+Original benchmark file:
+
+  benchmarks.txt
+
+Old baseline of interest:
+
+  n=128, win=32, rank=2, preset=small, seed=0
+  restricted = low-budget simple greedy restricted algorithm
+
+The new recheck used a medium-budget joint restricted algorithm:
+
+  q0=8
+  qmax=48
+  num_restarts=8
+  maxit=120
+  expansion_maxit=8
+  post_expansion_maxit=80
+  dtype=float32
+  reduced_optimizer=cex
+
+Runner:
+
+  python run_joint_warmstart_benchmarks.py
+
+The recheck tested two methods:
+
+  joint-greedywarm-medium
+  joint-oraclewarm-medium
+
+
+High-level benchmark result
+---------------------------
+The medium joint algorithm improves the old greedy restricted result most
+clearly on static-cex:
+
+  method                    align       relerr
+  ------------------------------------------------
+  old restricted             0.344369    0.00252601
+  joint-greedywarm-medium    0.201402    0.00010514
+  joint-oraclewarm-medium    0.171806    0.00071261
+
+This supports the idea that the low-budget greedy restricted algorithm
+understated the potential of the restricted approach. A future implementation
+could plausibly include joint optimization at much lower marginal cost.
+
+For most documented quant families, medium joint gives small improvements or
+near-identical results relative to old restricted:
+
+  alternative-data-signals
+  futures-term-structure
+  crowded-strategy
+  rates-cross-currency
+  etf-basket-basis
+  execution-cost-slippage
+  stat-arb-spreads
+
+The improvements are usually modest, which means the old greedy restricted
+result was already close to the target on these matrices.
+
+Two regressions are important:
+
+  risk-residual-panel
+    old restricted             align 0.345120, relerr 0.02982747
+    joint-greedywarm-medium    align 0.672373, relerr 0.05191749
+    joint-oraclewarm-medium    align 0.566750, relerr 0.04779328
+
+  intraday-liquidity-shape
+    old restricted             align 0.004775, relerr 0.00173719
+    joint-greedywarm-medium    align 0.009190, relerr 0.00146502
+    joint-oraclewarm-medium    align 0.009190, relerr 0.00146502
+
+On intraday-liquidity-shape, the joint methods improve singular-value error
+but worsen vector alignment. On risk-residual-panel, both metrics worsen.
+
+
+Matrix interpretation from matrices.txt
+---------------------------------------
+static-cex:
+  Dense, flat leading Hadamard-like signal directions compete with many
+  localized close-magnitude tail directions. The big improvement from joint
+  optimization is consistent with the idea that the greedy low-budget path was
+  selecting columns myopically and missing a better rank-2 carried subspace.
+
+Alternative-data-signals:
+  Persistent search/spend factors compete with delayed and stale-source
+  artifacts. Joint optimization gives a small improvement, suggesting the
+  original greedy path mostly kept the persistent factor.
+
+Futures-term-structure:
+  Near-tied level/slope curve modes compete with roll-pressure shocks and
+  maturity-local jumps. Joint and oracle-warm results are identical here,
+  suggesting the objective landscape is benign once the right row space is
+  available.
+
+Crowded-strategy:
+  Persistent crowded trade and staggered unwind modes compete with sparse
+  crowded-name bursts. Joint gives a small improvement. This is a likely case
+  where a continuity/carry-aware objective might help more than pure joint
+  optimization.
+
+Rates-cross-currency:
+  Funding and carry modes compete with crisis/fixing windows and localized
+  basis jumps. Medium joint barely changes results, so the low-budget greedy
+  algorithm was already adequate.
+
+Options-vol-surface:
+  Smooth surface level/term/skew modes compete with localized volatility
+  events and quote microstructure. Joint is essentially neutral/slightly worse.
+  The objective may already be near the same optimum, or alignment may be
+  harsh under near-tied smooth factors.
+
+Risk-residual-panel:
+  Persistent crowding/liquidity residual books compete with sector-local
+  idiosyncratic pulses, event volatility scaling, and heavy-tailed residual
+  noise. The joint score objective appears to chase a rank-2 score optimum
+  induced by transient/localized residual structure. This is the strongest
+  case for changing the objective.
+
+Macro-factor-panel:
+  Inflation/growth/rates/dollar modes compete with macro-release stripes and
+  localized event shocks. Joint is nearly neutral. This looks like a stable
+  factor-subspace case where objective changes are not urgent.
+
+Realized-vol-corr:
+  Market-vol and correlation-cluster modes compete with event windows and
+  localized correlation bursts. Joint is nearly neutral and slightly worsens
+  alignment while slightly improving scale.
+
+ETF-basket-basis:
+  Dense basket mode competes with sector/constituent dislocations. Joint gives
+  a small improvement, consistent with static-cex-like dense signal plus
+  localized tail pressure, but the old greedy path was already strong.
+
+Execution-cost-slippage:
+  Persistent liquidity/market-impact modes compete with venue, queue, and
+  auction artifacts. Joint gives a tiny improvement. This may need temporal
+  continuity rather than a stronger per-block score optimizer.
+
+Stat-arb-spreads:
+  Mean-reversion and crowded-residual modes compete with local spread-breakdown
+  pulses. Joint gives a small improvement, but structured transient pressure
+  remains relevant.
+
+Intraday-liquidity-shape:
+  Persistent U-shaped liquidity and auction-pressure directions compete with
+  venue bursts, halt-like stripes, and other microstructure events. The joint
+  methods improve scale but worsen alignment, suggesting the score objective
+  may rotate toward transient liquidity shapes that help singular value
+  recovery but hurt exact top-vector alignment.
+
+
+Important lesson from oracle warm start
+---------------------------------------
+Oracle warm start is not an upper bound on algorithm quality. It initializes
+from the projection of the exact top subspace into the current row space, but
+the entropy score can still move away from that frame.
+
+This was already visible in the oracle-gradient notes:
+
+  - Q_oracle is geometrically close to the desired carried subspace.
+  - Unrestricted entropy-score optimization can increase score by leaving
+    Q_oracle.
+  - The outward incentive is strongest in early blocks and becomes much
+    smaller near the final block.
+
+In the medium benchmark recheck, oracle warm start usually matches greedy warm
+start. On static-cex it improves alignment but has worse singular-value error
+than greedy warm start. That tradeoff is another sign that the score objective
+and exact SVD recovery target are not identical.
+
+
+Working hypotheses
+------------------
+1. The old greedy restricted benchmarks are a lower bound on what the
+   restricted method can do. Joint optimization can substantially improve
+   static-cex and mildly improve several quant families.
+
+2. The main remaining failures are probably objective failures, not just
+   optimizer failures. Risk-residual-panel is the strongest evidence: a more
+   powerful joint optimizer makes the result worse.
+
+3. The entropy score rewards some localized or transient row structure,
+   especially in matrices with heteroskedastic residual pulses or
+   microstructure bursts.
+
+4. Oracle projection is a useful diagnostic target, but optimizing the current
+   entropy score from that target can still move away from the exact SVD
+   target.
+
+5. Different matrix families may need different regularization:
+
+   - Dense signal plus localized tail pressure:
+       static-cex, etf-basket-basis
+       likely benefits from joint optimization and row concentration control.
+
+   - Persistent near-tied smooth factors plus event artifacts:
+       futures-term-structure, options-vol-surface, macro-factor-panel,
+       realized-vol-corr
+       likely needs stable subspace/carry preservation more than stronger
+       local optimization.
+
+   - Heteroskedastic/local residual or microstructure bursts:
+       risk-residual-panel, intraday-liquidity-shape,
+       execution-cost-slippage, stat-arb-spreads
+       likely needs row/leverage regularization and/or temporal continuity.
+
+
+Candidate objective changes
+---------------------------
+1. Row-concentration penalty:
+
+   score_reg(v) = score(v) - lambda * sum_i p_i^2
+
+   This directly penalizes current-window response energy concentrated in a few
+   rows. First candidates:
+
+     lambda = 1e-4, 3e-4, 1e-3, 3e-3, 1e-2
+
+   Most relevant targets:
+
+     risk-residual-panel
+     intraday-liquidity-shape
+     static-cex
+     etf-basket-basis
+
+2. Leverage-weighted row penalty:
+
+   score_reg(v) = score(v) - lambda * sum_i leverage_i p_i
+
+   Possible leverage definitions:
+
+     row norm of A_block
+     leverage in current block top singular span
+     leverage in M_gain row structure
+     historical high-frequency row influence
+
+   Most relevant when a few known rows or event windows dominate the outward
+   score gradient.
+
+3. Carry/continuity penalty:
+
+   Penalize large movement away from the previous carried subspace unless the
+   score gain is large enough. This may fit matrices with persistent factors
+   plus transient structured shocks.
+
+   Most relevant targets:
+
+     crowded-strategy
+     execution-cost-slippage
+     intraday-liquidity-shape
+     stat-arb-spreads
+
+4. Oracle-alignment diagnostic, not deployable objective:
+
+   Continue using Q_oracle for debugging:
+
+     found_vs_Q_oracle
+     outside_norm at Q_oracle
+     score difference between direct-Q_oracle and unrestricted optimization
+
+   This identifies whether a regression is due to search failure or objective
+   mismatch.
+
+
+Recommended next experiments
+----------------------------
+1. Run medium joint with row-concentration regularization:
+
+   python run_joint_warmstart_benchmarks.py \
+     --row-concentration-lambda 0.001
+
+2. Focus first on regression cases:
+
+   python run_joint_warmstart_benchmarks.py \
+     --matrices risk-residual-panel,intraday-liquidity-shape \
+     --row-concentration-lambda 0.001
+
+3. Sweep lambda for the most important cases:
+
+   matrices:
+     static-cex
+     risk-residual-panel
+     intraday-liquidity-shape
+     etf-basket-basis
+
+   lambdas:
+     0, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2
+
+   compare:
+     final_align
+     final_relerr
+     score_sum
+     regularized_score_sum
+     found_vs_Q_oracle where available
+     outside_norm at Q_oracle where available
+
+4. Add row diagnostics for the regression cases:
+
+   For each block and winning frame:
+
+     top rows by |normalized row dot v|
+     row concentration sum_i p_i^2
+     block row norm leverage
+     overlap with current block top singular vectors
+
+   Goal:
+     determine whether risk-residual-panel and intraday-liquidity-shape
+     regress because of a small number of event rows or because the rank-2
+     score objective is selecting a genuinely different smooth subspace.
+
+5. Keep greedy baseline in every table.
+
+   A stronger optimizer is not automatically better. The old greedy path can
+   act as an implicit regularizer by not fully optimizing the transient-heavy
+   score objective.
+
+
+Files to consult
+----------------
+summary/joint_stiefel_progress_summary.txt
+summary/oracle_projection_score_insight_summary.txt
+summary/oracle_gradient_regularization_notes.txt
+summary/restricted_cex_span_selection_insight.txt
+summary/restricted_cex_joint_sum_theory.txt
+summary/streaming_projection_invariant.txt
+
+benchmarks.txt
+matrices.txt
+cex_restricted_space_probe.py
+run_joint_warmstart_benchmarks.py
+run_oracle_regularization_sweep.py
+init_geometry_probe.py

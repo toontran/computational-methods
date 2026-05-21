@@ -1,0 +1,716 @@
+\paragraph{Setting.}
+Let $A\in\mathbb R^{n\times d}$ be partitioned into row windows
+$A_1,\dots,A_W$ processed one at a time. At window $w$ the state carried
+from earlier windows is a sketch $B\in\mathbb R^{r_\text{sk}\times d}$ and
+a row sample (reservoir) $R\in\mathbb R^{r_\text{R}\times d}$. In the
+lookahead variant developed here, the state also includes a fixed-size
+future buffer $F_w$ containing a contiguous row block observed after the
+current block with a lag of $\mathrm{row}(F_w)$ rows. Let
+\begin{align}
+N_w:=\begin{pmatrix}A_1\\ \vdots\\ A_w\end{pmatrix},
+\qquad
+C_w:=\begin{pmatrix}R\\ A_w\end{pmatrix},
+\qquad
+L_w:=\begin{pmatrix}A_w\\ F_w\end{pmatrix},
+\qquad
+M_w:=\begin{pmatrix}B\\ A_w\end{pmatrix}.
+\end{align}
+For a nonzero $y$, the Rényi-2 / inverse-participation entropy is
+\begin{align}
+h_2(y):=-\log\!\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)=4\log\|y\|_2-4\log\|y\|_4,
+\end{align}
+bounded between $0$ (one-spike) and $\log\dim(y)$ (uniform).
+Throughout $v\in\mathbb S^{d-1}$; assume $\mathrm{row}(C_w)>1$,
+$\mathrm{row}(L_w)>1$, and $\mathrm{row}(N_w)\le n$.
+
+The current window $A_w$ and the lookahead buffer $F_w$ are disjoint row
+sets. Setting $F_w=\varnothing$ and ignoring assumption (A1$'$) below
+recovers a pure past-state online method driven by the additive score
+alone.
+
+\paragraph{Assumptions.}
+Two past-state approximations:
+\begin{align}
+\|Bv\|_2^2+\|A_wv\|_2^2
+&\;\approx\;
+\|N_wv\|_2^2,
+\tag{A1}
+\\
+\frac{h_2(C_wv)}{\log\mathrm{row}(C_w)}
+\;\approx\;
+\frac{h_2(N_wv)}{\log\mathrm{row}(N_w)}
+&\;\approx\;
+\frac{h_2(Av)}{\log n}.
+\tag{A2}
+\end{align}
+(A1) says the sketch preserves the aggregate past-row energy; (A2) says
+the pooled reservoir-plus-current entropy tracks the full-matrix entropy
+at the same rate.
+
+For the future-consistency variant, add a stationarity assumption on
+per-row squared action:
+\begin{align}
+\frac{\|A_wv\|_2^2}{\mathrm{row}(A_w)}
+\;\approx\;
+\frac{\|F_wv\|_2^2}{\mathrm{row}(F_w)}
+\;\approx\;
+\frac{\|Av\|_2^2}{n}
+\;=:\;\lambda(v).
+\tag{A1$'$}
+\end{align}
+(A1$'$) says that $v$'s per-row gain is the same on the current window,
+on the immediately-following lookahead rows, and on the full matrix. It
+is strictly stronger than (A1): (A1) requires only additive energy
+conservation of the sketch, while (A1$'$) requires rate stationarity
+across row blocks. (A1$'$) is plausible when $v$ captures genuinely
+repeated structure across row blocks and is violated by directions whose
+support lives in a single window.
+
+\paragraph{Resulting inequality.}
+Under (A2) and $\|N_wv\|_4\le\|Av\|_4$,
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\|N_wv\|_2^2
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(N_wv)/(2\log\mathrm{row}(N_w))}.
+\tag{$\star$}
+\end{align}
+The exponent $-h_2/(2\log\mathrm{row})$ is an entropy-dependent
+subsampling correction: if the response $N_wv$ is diffuse (large $h_2$),
+the subsample gain closely approximates the full-matrix gain; if it is
+concentrated (small $h_2$), the correction factor rises, reflecting the
+possibility that subsampling may miss concentrated support rows.
+
+\paragraph{Additive combined score.}
+Substituting (A1) and (A2) into $(\star)$ gives
+\begin{align}
+\|Av\|_2^2
+\;\gtrsim\;
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)\phi_w(v)
+\;=:\;\operatorname{score}_w^{\mathrm{add}}(v),
+\end{align}
+with
+\begin{align}
+\phi_w(v)
+:=
+\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right)^{c_w},
+\qquad
+c_w:=\frac{\log(\mathrm{row}(N_w)/n)}{2\log\mathrm{row}(C_w)}.
+\end{align}
+The gain factor $\|Bv\|_2^2+\|A_wv\|_2^2$ is a proxy for $\|N_wv\|_2^2$
+by (A1). Since $\mathrm{row}(N_w)\le n$, $c_w\le 0$, and high-entropy
+pooled vectors are boosted by the correction. If no old row sample is
+available, take $R=\varnothing$; if no old sketch is available, take
+$B=0$.
+
+\paragraph{Future-consistency harmonic-mean score.}
+Define per-row rate estimators
+\begin{align}
+\hat\lambda_{A_w}(v):=\frac{\|A_wv\|_2^2}{\mathrm{row}(A_w)},
+\qquad
+\hat\lambda_{F_w}(v):=\frac{\|F_wv\|_2^2}{\mathrm{row}(F_w)},
+\end{align}
+and the harmonic mean
+\begin{align}
+\mathrm{HM}(x,y):=\frac{2xy}{x+y+\varepsilon}.
+\end{align}
+Under (A1$'$), $\hat\lambda_{A_w}(v)\approx\hat\lambda_{F_w}(v)\approx
+\lambda(v)$, so any symmetric mean of the two recovers $\lambda(v)$. We
+choose the harmonic mean because it penalises violations of (A1$'$) more
+aggressively than the arithmetic or geometric mean:
+$\mathrm{HM}(x,y)\le\mathrm{GM}(x,y)\le\mathrm{AM}(x,y)$, with equality
+only when $x=y$, and $\mathrm{HM}(x,y)\to 0$ whenever either argument
+vanishes while $\mathrm{AM}$ remains nonzero. This matches the failure
+mode the HM variant is designed to reject, in which a direction is
+highly aligned with the current block but has no future support.
+
+The resulting score is
+\begin{align}
+\operatorname{score}_w^{\mathrm{HM}}(v)
+:=
+n\cdot\mathrm{HM}\!\bigl(\hat\lambda_{A_w}(v),\hat\lambda_{F_w}(v)\bigr)
+\cdot\phi_w(v),
+\tag{HM-SCORE}
+\end{align}
+equivalently
+\begin{align}
+\operatorname{score}_w^{\mathrm{HM}}(v)
+=
+\frac{2n\,\|A_wv\|_2^2\,\|F_wv\|_2^2}
+{\mathrm{row}(F_w)\|A_wv\|_2^2+\mathrm{row}(A_w)\|F_wv\|_2^2+\varepsilon}
+\cdot\phi_w(v).
+\end{align}
+Under (A1$'$), $n\cdot\mathrm{HM}(\hat\lambda_{A_w},\hat\lambda_{F_w})
+\approx n\lambda(v)=\|Av\|_2^2$, so
+\begin{align}
+\|Av\|_2^2\;\approx\;
+\operatorname{score}_w^{\mathrm{HM}}(v)\cdot\phi_w(v)^{-1}
+\quad\text{under (A1$'$)},
+\end{align}
+and the score itself equals $\|Av\|_2^2\cdot\phi_w(v)$ under (A1$'$).
+The HM-score is therefore an \emph{estimator} of
+$\|Av\|_2^2\cdot\phi_w(v)$ that is conservative against (A1$'$)
+violations, not a proof-style lower bound.
+
+\paragraph{[INCOMPLETE] Deriving the HM form from the subsampling
+inequality $(\star)$.}
+The additive score inherits the lower-bound interpretation
+$\operatorname{score}_w^{\mathrm{add}}(v)\le\|Av\|_2^2$ directly from
+$(\star)+(\mathrm{A1})+(\mathrm{A2})$. A corresponding derivation that
+yields $\operatorname{score}_w^{\mathrm{HM}}(v)$ as a bound on
+$\|Av\|_2^2$ starting from $(\star)$ (or a Hölder-class relative) is
+\emph{not written down}. Required pieces that are missing:
+\begin{itemize}
+\item A subsampling inequality analogous to $(\star)$ but applied
+symmetrically to two disjoint row blocks $A_w,F_w$ of $A$ rather than to
+a nested prefix $N_w\subset A$.
+\item A probabilistic or deterministic argument under which the harmonic
+mean of per-row rates lower-bounds $\|Av\|_2^2/n$. Candidate tools: a
+Chebyshev / second-moment argument treating $\hat\lambda_{A_w}$ and
+$\hat\lambda_{F_w}$ as independent estimators of $\lambda(v)$, a matrix
+concentration bound on row partitions, or a direct rearrangement
+inequality converting $\mathrm{HM}\le\mathrm{GM}\le\mathrm{AM}$ into a
+two-sided bound on $\lambda(v)$ with a controlled gap.
+\item Handling of the lookahead lag. The online variant accesses $F_w$
+only after a fixed lag, so any bound must account for the residual rows
+between $A_w$ and $F_w$ that are neither used nor available, or relate
+$\lambda(v)$ computed on the two windows to $\lambda(v)$ on the full
+matrix under mixing/stationarity assumptions.
+\end{itemize}
+Until this derivation is filled in,
+$\operatorname{score}_w^{\mathrm{HM}}$ should be understood as a
+stationarity-based estimator with empirically verified robustness, not as
+a theorem-backed lower bound. The additive form remains the reference
+when a proof-style bound is required.
+
+\paragraph{Algorithm overview.}
+Process one row-window at a time. For the first window, there is no
+previous sketch and no old row sample, so $B=0$, $R=\varnothing$,
+$C_1=A_1$, $M_1=A_1$, and (in the lookahead variant) $F_1$ is taken from
+the rows immediately following $A_1$. For a later window $w$, the input
+state is the carried sketch $B^{(w-1)}=\Sigma_{w-1}V_{w-1}^\top$, the row
+sample $R^{(w-1)}$, and the lookahead buffer $F_w$. The algorithm at
+window $w$ performs three stages:
+\begin{enumerate}
+\item \emph{Stage 1 --- subspace selection.} Evaluate
+$\operatorname{score}_w$ (either form) on a finite candidate pool
+$\mathcal P_w$ and pick the $r$-element subset with largest total score.
+Let $\mathcal S_w$ denote the span of the selected candidates.
+\item \emph{Stage 2 --- Rayleigh--Ritz frame refinement.} Let $Q_c$ be
+an orthonormal basis of $\mathcal S_w$ (via QR). Compute the restricted
+SVD $M_wQ_c=U_c\Sigma_cV_c^\top$ and take $\widehat V_w:=Q_cV_c$.
+\item \emph{Stage 3 --- carry-sketch update.} Form $Y_w:=M_w\widehat V_w$,
+$U_{\hat{},w}:=\operatorname{orth}(Y_w)$, and compute
+$U_{\hat{},w}^\top M_w=U_{\mathrm{small},w}\Sigma_wV_w^\top$. The sketch
+passed to the next window is $B^{(w)}=\Sigma_wV_w^\top$. The row sample
+$R^{(w)}$ is updated from the raw rows seen through window $w$.
+\end{enumerate}
+The rest of the document expands and justifies each stage.
+
+\paragraph{Stage 1 --- subspace selection by simple argmax.}
+Let $\operatorname{score}_w$ denote either the additive or the HM score.
+Stage 1 is a single argmax over size-$r$ subsets of the pool:
+\begin{align}
+\widetilde V_w
+\;\in\;
+\operatorname*{arg\,max}_{S\subseteq\mathcal P_w,\ |S|=r}
+\ \sum_{v\in S}\operatorname{score}_w(v),
+\qquad
+\mathcal S_w\;:=\;\operatorname{span}(\widetilde V_w).
+\tag{S1}
+\end{align}
+When pool elements are linearly independent and distinct in score, (S1)
+reduces to top-$r$-by-score selection. No orthogonality constraint is
+imposed in Stage 1 and no sequential greedy structure is needed.
+Orthogonality is handled by the Rayleigh--Ritz reframe in Stage 2, which
+operates on any basis of $\mathcal S_w$. This simplification is valid
+whenever the pool elements are structurally distinct enough that the
+top-$r$ span $\mathcal S_w$ is genuinely $r$-dimensional; the Stage-2 SVD
+flags the degenerate case through $\sigma_r(M_wQ_c)\to 0$, and the
+algorithm can fall back to a smaller effective rank.
+
+\paragraph{Candidate pool.}
+The pool $\mathcal P_w$ is a fixed set of $|\mathcal P_w|\ge r$
+online-computable unit vectors in $\mathbb R^d$. Abstractly, each
+$v\in\mathcal P_w$ should be derivable from the online state
+$(B,A_w,R,B^{(w-1)})$ without access to $F_w$ (so that $F_w$ enters only
+through score evaluation, not through candidate construction), and the
+pool should cover the expected failure modes of the score so that the
+argmax can avoid them.
+
+One concrete pool that has been validated empirically uses the five
+candidates below; the method is not tied to this specific choice.
+\begin{itemize}
+\item \emph{Streaming-optimizer slot 2.} $v_\mathrm{opt}^{(2)}$: the
+second direction returned by projected-gradient ascent on
+$\operatorname{score}_w^{\mathrm{add}}$ initialised orthogonally to the
+first-slot optimum.
+\item \emph{Current-block SVD complement.} $v_\mathrm{blk}$: the top
+right singular vector of $A_w$ projected onto the orthogonal complement
+of the first-slot direction.
+\item \emph{Sketched SVD complement.} $v_\mathrm{sk}$: the top right
+singular vector of $M_w$ projected onto the orthogonal complement of
+the first-slot direction.
+\item \emph{Projected oracle analogue.} $v_\mathrm{q2}$: a reference
+direction constructed by projecting a candidate onto the row space of
+the current block and renormalising (the specific construction depends
+on the available state; in the purely online setting, this candidate is
+replaced by a second SVD-complement variant).
+\item \emph{Previous-window slot-2 carry.} $v_\mathrm{prev}$: the
+slot-2 direction selected at window $w-1$, carried forward as a
+stability anchor.
+\end{itemize}
+Pool edits that add candidates with disproportionately large
+$\|A_wv\|_2^2$ but negligible past or future support shift the argmax
+toward those candidates by inflating the score's gain numerator, and
+should be validated with an ablation before deployment.
+
+\paragraph{Stage 2 --- Rayleigh--Ritz frame refinement.}
+Let $Q_c\in\mathbb R^{d\times r}$ with $Q_c^\top Q_c=I$ and
+$\mathrm{span}(Q_c)=\mathcal S_w$ (obtained from QR of the selected pool
+elements). Compute the restricted SVD
+\begin{align}
+M_wQ_c\;=\;U_c\,\Sigma_c\,V_c^\top,
+\qquad
+M_w=\begin{pmatrix}B\\A_w\end{pmatrix},
+\end{align}
+and take
+\begin{align}
+\widehat V_w \;:=\; Q_cV_c.
+\end{align}
+$\widehat V_w$ is the top-$r$ right singular frame of $M_w$ restricted
+to $\mathcal S_w$, equivalently the unique (up to sign) orthonormal
+frame of $\mathcal S_w$ that diagonalises $Q_c^\top M_w^\top M_wQ_c$.
+The output is independent of the choice of $Q_c$: a different ONB of
+$\mathcal S_w$ produces $Q_cR$ for some rotation $R$, which rotates
+$V_c$ to $R^\top V_c$, and the product $Q_cV_c$ is unchanged.
+
+By Rayleigh--Ritz, $\widehat V_w$ is the minimiser of the Stage-2
+frame objective:
+\begin{align}
+\widehat V_w
+\;=\;
+\operatorname*{arg\,min}_{V\in\mathrm{St}(r,\mathcal S_w)}
+\|M_w-M_wVV^\top\|_F
+\;=\;
+\operatorname*{arg\,max}_{V\in\mathrm{St}(r,\mathcal S_w)}
+\|M_wV\|_F^2,
+\end{align}
+where $\mathrm{St}(r,\mathcal S_w)$ is the set of orthonormal
+$d\times r$ matrices with columns in $\mathcal S_w$.
+
+\paragraph{Stage 3 --- carry-sketch update.}
+Using the Ritz frame $\widehat V_w$, form
+\begin{align}
+Y_w\;:=\;M_w\widehat V_w,
+\qquad
+U_{\hat{},w}\;:=\;\operatorname{orth}(Y_w),
+\end{align}
+compute the SVD
+\begin{align}
+U_{\hat{},w}^\top M_w\;=\;U_{\mathrm{small},w}\Sigma_wV_w^\top,
+\end{align}
+and store
+\begin{align}
+U_{\mathrm{proj},w}=U_{\hat{},w}U_{\mathrm{small},w},
+\qquad
+S_w=\Sigma_w,
+\qquad
+V_w^\top\;\text{(the right singular factor)}.
+\end{align}
+The sketch passed to the next window is
+\begin{align}
+B^{(w)}\;:=\;\Sigma_wV_w^\top.
+\end{align}
+
+\paragraph{Why this is the sketch carried into the next window.}
+Consider the naive alternative of carrying $\widehat V_w$ together with
+column norms $s_i:=\|M_w\widehat v_i\|_2$. With
+\begin{align}
+M_w=\begin{pmatrix}1&1\\0&0\end{pmatrix},
+\qquad
+\widehat V_w=[e_1,e_2],
+\end{align}
+one has $s_1=s_2=1$, so
+$B_\mathrm{diag}:=\mathrm{diag}(s)\widehat V_w^\top=I$ gives
+$\|B_\mathrm{diag}v\|_2^2=1$ uniformly on $\mathbb S^1$, whereas
+\begin{align}
+\|M_wv\|_2^2=v^\top\begin{pmatrix}1&1\\1&1\end{pmatrix}v
+\end{align}
+vanishes at $v=(1,-1)/\sqrt 2$ and equals $2$ at $v=(1,1)/\sqrt 2$.
+Column norms drop the cross-correlations
+$(M_w\widehat v_i)^\top(M_w\widehat v_j)$, which are generically nonzero
+because the Ritz-refined frame $\widehat V_w$ is aligned with the
+singular structure of $M_w$ restricted to $\mathcal S_w$ rather than the
+full $M_w$. Carrying $B^{(w)}=\Sigma_wV_w^\top$ instead is the
+norm-preserving right-action form of $P_{U_{\hat{},w}}M_w$, where
+$P_{U_{\hat{},w}}=U_{\hat{},w}U_{\hat{},w}^\top$ is the orthogonal
+projector onto the retained left space. For any $v$,
+$\|B^{(w)}v\|_2=\|P_{U_{\hat{},w}}M_wv\|_2$, and for $v\in\mathcal S_w$
+this equals $\|M_wv\|_2$ exactly since
+$M_wv\in\mathrm{span}(U_{\hat{},w})$. Hence $B^{(w)\top}B^{(w)}$
+reproduces the full Gram $\widehat V_w^\top M_w^\top M_w\widehat V_w$ on
+the retained right span, all off-diagonals included. The row sample
+$R^{(w)}$ enters the pooled entropy at the next window.
+
+Because the Stage-2 Ritz frame already satisfies
+$(M_w\widehat v_i)^\top(M_w\widehat v_j)=\sigma_i^2\delta_{ij}$, the
+Stage-3 carry-SVD receives an already-diagonalised input on
+$\mathcal S_w$; cross-correlations only appear through the interaction
+of $\mathcal S_w$ with its complement, which the carry-SVD handles
+exactly.
+
+\paragraph{Combined entropy.}
+With $y:=C_wv$, the definition of $h_2$ gives
+\begin{align}
+h_2(C_wv)=4\log\|y\|_2-4\log\|y\|_4.
+\end{align}
+Applied to the stacked vector combining the old row sample $Rv$ with the
+current window $A_wv$, rare large entries in either source contribute to
+the same correction factor $\phi_w(v)$; the reservoir and the current
+window are not separated in the entropy term.
+
+\paragraph{Simplified form.}
+Let
+\begin{align}
+c_w:=\frac{\log(\mathrm{row}(N_w)/n)}{2\log\mathrm{row}(C_w)},
+\qquad
+y:=C_wv.
+\end{align}
+Since
+\begin{align}
+h_2(C_wv)=-\log\!\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right),
+\end{align}
+the entropy multiplier is
+\begin{align}
+\left(\frac{\mathrm{row}(N_w)}{n}\right)^{-h_2(C_wv)/(2\log\mathrm{row}(C_w))}
+=
+\left(\frac{\|y\|_4^4}{\|y\|_2^4}\right)^{c_w}
+=
+\|C_wv\|_4^{4c_w}\|C_wv\|_2^{-4c_w}.
+\end{align}
+Thus
+\begin{align}
+\operatorname{score}_w^{\mathrm{add}}(v)
+=
+\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)\phi_w(v),
+\qquad
+\operatorname{score}_w^{\mathrm{HM}}(v)
+=
+n\cdot\mathrm{HM}\!\bigl(\hat\lambda_{A_w}(v),\hat\lambda_{F_w}(v)\bigr)
+\cdot\phi_w(v),
+\end{align}
+with the common entropy factor
+\begin{align}
+\phi_w(v)=\|C_wv\|_4^{4c_w}\|C_wv\|_2^{-4c_w}.
+\end{align}
+When $\mathrm{row}(N_w)<n$, $c_w<0$, and high-entropy pooled vectors are
+boosted.
+
+\paragraph{Expanded row-sample form.}
+Using
+\begin{align}
+C_w^\top C_wv=R^\top Rv+A_w^\top A_wv,
+\qquad
+C_w^\top(C_wv)^{\odot 3}=R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3},
+\end{align}
+the entropy factor can be evaluated without explicitly forming $C_w$:
+\begin{align}
+\phi_w(v)
+=
+\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right)^{c_w}.
+\end{align}
+Gradient-style quantities on the entropy factor reuse these pooled
+expressions:
+\begin{align}
+C_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+=
+\frac{R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3}}
+{\|Rv\|_4^4+\|A_wv\|_4^4},
+\qquad
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+=
+\frac{R^\top Rv+A_w^\top A_wv}{\|Rv\|_2^2+\|A_wv\|_2^2}.
+\end{align}
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+B=SV^\top,
+\qquad
+V=[v_1,\dots,v_{r_\text{sk}}],
+\qquad
+S=\mathrm{diag}(s_1,\dots,s_{r_\text{sk}}),
+\end{align}
+then
+\begin{align}
+\|Bv\|_2^2
+=
+\sum_{j=1}^{r_\text{sk}} s_j^2(v_j^\top v)^2,
+\qquad
+B^\top Bv
+=
+\sum_{j=1}^{r_\text{sk}} s_j^2(v_j^\top v)v_j.
+\end{align}
+The past-energy term of the additive score and its gradient are
+therefore evaluated from $(V,s)$ directly, without materialising $B$.
+
+\paragraph{Gradient of the additive score.}
+Let $y_B:=Bv$, $z:=A_wv$, $y:=C_wv$. Then
+\begin{align}
+\nabla\!\left(\|Bv\|_2^2+\|A_wv\|_2^2\right)
+=
+2B^\top Bv+2A_w^\top A_wv,
+\end{align}
+and
+\begin{align}
+\nabla\log\phi_w(v)
+=
+4c_wC_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}.
+\end{align}
+The full Euclidean gradient is
+\begin{align}
+\nabla\operatorname{score}_w^{\mathrm{add}}(v)
+=
+\operatorname{score}_w^{\mathrm{add}}(v)\left[
+\frac{2B^\top Bv+2A_w^\top A_wv}{\|Bv\|_2^2+\|A_wv\|_2^2}
++4c_wC_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+-4c_w\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+\right],
+\end{align}
+provided $\|Bv\|_2^2+\|A_wv\|_2^2>0$.
+
+\paragraph{Gradient of the HM score.}
+Let $a(v):=\|A_wv\|_2^2$, $f(v):=\|F_wv\|_2^2$, $p:=\mathrm{row}(A_w)$,
+$q:=\mathrm{row}(F_w)$, and $D(v):=qa(v)+pf(v)+\varepsilon$. Then
+\begin{align}
+\operatorname{score}_w^{\mathrm{HM}}(v)
+=
+\frac{2n\,a(v)f(v)}{D(v)}\cdot\phi_w(v),
+\end{align}
+and, with $\nabla a(v)=2A_w^\top A_wv$, $\nabla f(v)=2F_w^\top F_wv$,
+\begin{align}
+\nabla\!\left(\frac{2n\,a(v)f(v)}{D(v)}\right)
+=
+\frac{2n}{D(v)}\bigl(f(v)\nabla a(v)+a(v)\nabla f(v)\bigr)
+-\frac{2n\,a(v)f(v)}{D(v)^2}\bigl(q\nabla a(v)+p\nabla f(v)\bigr).
+\end{align}
+The entropy factor has the same gradient as above. The full Euclidean
+gradient of $\operatorname{score}_w^{\mathrm{HM}}$ follows by the product
+rule; it is not used in the pool-based Stage 1 defined above, which
+evaluates the HM score on a finite set rather than optimising it
+continuously, but it is needed if the pool is replaced by a continuous
+optimiser.
+
+\paragraph{Optimization problem for candidate construction.}
+Certain candidates in $\mathcal P_w$ are themselves defined as solutions
+to a continuous optimisation; for those the feasible set is
+\begin{align}
+\max_{v\in\mathbb S^{d-1},\ Q^\top v=0}\operatorname{score}_w^{\mathrm{add}}(v),
+\end{align}
+where the columns of $Q$ are previously accepted directions.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the additive score. Project it onto the
+feasible tangent space:
+\begin{align}
+g_\mathrm{tan}(v):=(I-QQ^\top-vv^\top)\nabla\operatorname{score}_w^{\mathrm{add}}(v).
+\end{align}
+Then take
+\begin{align}
+\widetilde v^+=v+\eta\,g_\mathrm{tan}(v),
+\qquad
+v^+=\frac{(I-QQ^\top)\widetilde v^+}{\|(I-QQ^\top)\widetilde v^+\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on the true score.
+
+\paragraph{Basis-expansion interpretation.}
+If one is building a local search subspace rather than taking a pure
+steepest-ascent step, the new direction added to the basis is the
+projected full gradient
+\begin{align}
+g_\mathrm{basis}(v):=(I-QQ^\top-vv^\top)\nabla\operatorname{score}_w^{\mathrm{add}}(v).
+\end{align}
+In a reduced-subspace version with local right basis
+$Z\in\mathbb R^{d\times q}$ ($Z^\top Z=I$), the expansion residual is
+\begin{align}
+r_Z(v):=(I-ZZ^\top)(I-QQ^\top-vv^\top)\nabla\operatorname{score}_w^{\mathrm{add}}(v).
+\end{align}
+Expand the basis with the normalised residual $r_Z(v)/\|r_Z(v)\|_2$ when
+$\|r_Z(v)\|_2/\|(I-QQ^\top-vv^\top)\nabla\operatorname{score}_w^{\mathrm{add}}(v)\|_2$
+exceeds a prescribed tolerance; optionally follow with Krylov
+refinements.
+
+\paragraph{Rayleigh--Ritz optimality.}
+The Stage-2 Ritz frame $\widehat V_w$ provides the following standard
+guarantees inside $\mathcal S_w$ (no assumption beyond existence of the
+restricted SVD):
+\begin{enumerate}
+\item \emph{Energy ordering.}
+$\|M_w\widehat V_w[:,i]\|_2=\sigma_i(M_wQ_c)$, ordered decreasing in $i$.
+\item \emph{Diagonalisation.}
+$\widehat V_w^\top M_w^\top M_w\widehat V_w=\mathrm{diag}(\sigma_1^2,\dots,\sigma_r^2)$.
+\item \emph{Optimal truncation.} For every $k\le r$, the first $k$
+columns of $\widehat V_w$ minimise $\|M_w-M_wVV^\top\|_F$ over
+$V\in\mathrm{St}(k,\mathcal S_w)$.
+\end{enumerate}
+None of these hold generically for a Gram--Schmidt orthonormalisation of
+the selected pool elements: Gram--Schmidt preserves the span but leaves
+the columns aligned with the pool's construction rather than with the
+singular structure of $M_w|_{\mathcal S_w}$.
+
+\paragraph{Role of the score: test-space certificate.}
+The additive score is a certified lower bound on $\|Av\|_2^2$ under
+$(\mathrm{A1})+(\mathrm{A2})$. Applied to Stage 1 (S1), the selected
+candidates satisfy
+\begin{align}
+\sum_{v\in\widetilde V_w}\|Av\|_2^2
+\;\gtrsim\;
+\sum_{v\in\widetilde V_w}\operatorname{score}_w^{\mathrm{add}}(v)
+\;\ge\;
+\sum_{i=1}^{r}\operatorname{score}_w^{\mathrm{add}}(v_i^*)
+\;\gtrsim\;
+\sum_{i=1}^{r}\sigma_i(A)^2,
+\end{align}
+provided the top-$r$ right singular vectors $v_i^*$ of $A$ are contained
+in (or well approximated by) the pool $\mathcal P_w$. The score's role
+is therefore to supply a \emph{test-space certificate}: the span
+$\mathcal S_w$ covers the top-$r$ singular mass of $A$ up to the
+(A1,A2) gap. Rayleigh--Ritz then extracts the provably-best rank-$r$
+frame inside $\mathcal S_w$, and the carry-sketch update stores the
+restricted operator's Gram factorisation for the next window.
+
+The HM variant substitutes a stationarity-based estimator for the
+certified bound at Stage 1. Under (A1$'$)+(A2) at $v=v_i^*$, the
+heuristic analogue $\operatorname{score}_w^{\mathrm{HM}}(v_i^*)\approx
+\sigma_i(A)^2\phi_w(v_i^*)$ would give the same certificate, but the
+violation tolerance is not quantified.
+
+\paragraph{[INCOMPLETE] Coverage certificate for the HM variant.}
+For the Stage 1 certificate to carry over to the HM score, we need an
+analogue of $\operatorname{score}_w^{\mathrm{add}}(v_i^*)\gtrsim
+\sigma_i(A)^2$ for $\operatorname{score}_w^{\mathrm{HM}}$. A natural
+candidate is
+\begin{align}
+\operatorname{score}_w^{\mathrm{HM}}(v_i^*)\;\gtrsim\;\sigma_i(A)^2
+\qquad\text{under }(\mathrm{A1}'){+}(\mathrm{A2}),
+\end{align}
+which holds exactly when $\hat\lambda_{A_w}(v_i^*)\approx
+\hat\lambda_{F_w}(v_i^*)\approx\lambda(v_i^*)=\sigma_i(A)^2/n$, but the
+$(\mathrm{A1}')$-violation tolerance of the inequality has not been
+quantified. What is needed:
+\begin{itemize}
+\item A quantitative stability bound of the form
+$|\operatorname{score}_w^{\mathrm{HM}}(v)-\|Av\|_2^2\phi_w(v)|\le
+g(\hat\lambda_{A_w}(v),\hat\lambda_{F_w}(v))$, so that the HM score's
+lower-bound gap is controlled by the stationarity deficit.
+\item A translation of such a stability bound into a subspace-distance
+bound $\mathrm{dist}(\mathcal S_w,\mathrm{span}(v_1^*,\dots,v_r^*))$,
+matching the role of the $(\mathrm{A1})+(\mathrm{A2})$ gap for the
+additive score.
+\end{itemize}
+
+\paragraph{[INCOMPLETE] End-to-end approximation bound.}
+The three-stage algorithm combines a bound-backed Stage 1 (additive
+score) with a theorem-backed Stage 2 (Rayleigh--Ritz) and a
+norm-preserving Stage 3 (carry sketch), but a single end-to-end bound on
+$\|A-AV_\mathrm{final}V_\mathrm{final}^\top\|_F$ in terms of windowed
+quantities is not written. The ingredients are in place:
+\begin{itemize}
+\item Stage-1 test-space coverage:
+$\|AP_{\mathcal S_w}\|_F^2\gtrsim\sum_{v\in\widetilde V_w}
+\operatorname{score}_w(v)\gtrsim\sum_{i=1}^r\sigma_i(A)^2$ under
+$(\mathrm{A1})+(\mathrm{A2})$.
+\item Stage-2 Ritz optimality inside $\mathcal S_w$.
+\item Stage-3 carry-sketch norm-preservation on the retained right span.
+\end{itemize}
+What is missing is a composition argument that tracks the per-window
+approximation error through the sequence of carry updates and yields a
+final bound in terms of the per-window (A1,A2) gaps and the Ritz
+truncation residuals $\|M_wQ_c-U_c\Sigma_cV_c^\top\|$ (zero for
+$r=\dim\mathcal S_w$, nonzero otherwise). For the HM variant, such a
+bound must further absorb the gap documented in the [INCOMPLETE]
+HM-derivation paragraph.
+
+\paragraph{First-window special case.}
+When $B=0$, $R=\varnothing$, and $F_1$ is the first lookahead buffer,
+the entropy factor reduces to
+\begin{align}
+\phi_1(v)=\|A_1v\|_4^{4c_1}\|A_1v\|_2^{-4c_1},
+\qquad
+c_1=\frac{\log(\mathrm{row}(A_1)/n)}{2\log\mathrm{row}(A_1)}.
+\end{align}
+The additive score reduces to
+\begin{align}
+\operatorname{score}_1^{\mathrm{add}}(v)
+=
+\|A_1v\|_2^2\,\phi_1(v)
+=
+\|A_1v\|_2^2\,\|A_1v\|_4^{4c_1}\|A_1v\|_2^{-4c_1},
+\end{align}
+and the HM score to
+\begin{align}
+\operatorname{score}_1^{\mathrm{HM}}(v)
+=
+\frac{2n\,\|A_1v\|_2^2\,\|F_1v\|_2^2}
+{\mathrm{row}(F_1)\|A_1v\|_2^2+\mathrm{row}(A_1)\|F_1v\|_2^2+\varepsilon}
+\cdot\phi_1(v).
+\end{align}
+The three-stage structure is the same as for general $w$; only $M_1=A_1$
+differs in that it has no sketch block.
+
+\paragraph{Practical remarks.}
+\begin{itemize}
+\item The objective is nonconvex in candidates that are themselves
+continuously optimised; multiple restarts are useful for those
+candidates. Reject or regularise steps when $\|C_wv\|_2$,
+$\|C_wv\|_4$, $\|Bv\|_2^2+\|A_wv\|_2^2$, $\|A_wv\|_2$, or $\|F_wv\|_2$
+is numerically tiny in a formula that divides by that quantity.
+\item The expanded row-sample form avoids forming $C_w$ explicitly; the
+pooled norms must still include both $Rv$ and $A_wv$.
+\item The row sample is not a replacement for the old sketch. $B$
+supplies retained old energy; $R$ supplies raw old rows for the pooled
+entropy. A pure reservoir gives coverage but can miss rare large rows
+that dominate $\ell_4$ terms. A practical row sample should combine a
+uniform reservoir with a small set of rows having large entries on
+current sketch directions.
+\item The Rayleigh--Ritz reframe is numerically well-conditioned even
+when selected pool elements are nearly collinear in $\mathbb R^d$: the
+SVD sees the rank-deficiency through $\sigma_r(M_wQ_c)\to 0$, whereas a
+Gram--Schmidt orthonormalisation of the same elements would amplify the
+residual direction through division by a small norm. Fall back to a
+smaller effective rank only if $\sigma_r(M_wQ_c)$ is below a prescribed
+tolerance.
+\item The online HM variant requires a lookahead lag of
+$\mathrm{row}(F_w)$ rows. It is online-deployable at a latency cost but
+not strictly streaming. The additive score with $F_w=\varnothing$
+remains strictly streaming (zero lag).
+\item The reservoir $R$ enters both scores only through the entropy
+factor $\phi_w$, not through the gain factors.
+\end{itemize}
+
+\paragraph{Open items.}
+The [INCOMPLETE] paragraphs above flag the missing pieces of the
+theoretical story:
+\begin{enumerate}
+\item Derivation of $\operatorname{score}_w^{\mathrm{HM}}$ as a
+lower-bound quantity starting from a subsampling inequality analogous
+to $(\star)$.
+\item A coverage certificate of the form
+$\operatorname{score}_w^{\mathrm{HM}}(v_i^*)\gtrsim\sigma_i(A)^2$ with
+quantified $(\mathrm{A1}')$-deficit tolerance.
+\item End-to-end approximation bound composing Stage-1 coverage,
+Stage-2 Ritz optimality, and Stage-3 carry-sketch exactness across
+$w=1,\dots,W$.
+\end{enumerate}
+Filling (1) and (2) is required before the HM variant can be reported
+with the same theoretical status as the additive score. Filling (3)
+would promote the three-stage pipeline from a justified heuristic into
+an approximation algorithm with explicit error guarantees.

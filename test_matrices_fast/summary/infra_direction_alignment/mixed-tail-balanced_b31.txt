@@ -1,0 +1,83 @@
+# direction_alignment_probe — mixed-tail-balanced b31
+
+Oracle reachability ||P_B_union V_exact[:,k]||² per slot
+(upper bound on cos²(v, oracle_v?_exact) for any v in B_union;
+ = 1 means the oracle slot lives entirely in the visible row span):
+  slot 1:  0.7495
+  slot 2:  0.0774
+
+Alignment table (cos² of top principal angle vs. each reference)
+Note: oracle_v?_exact = un-projected V_exact[:, k] (population truth);
+      oracle_v?_proj  = V_exact[:, k] projected into B_union (reachable).
+------------------------------------------------------------------------
+reference                 sketch_v1      sketch_v2    combined_v1    combined_v2 oracle_v1_exact oracle_v1_proj oracle_v2_exact oracle_v2_proj
+Acur_rowcheat_frame          0.0000         0.0000         0.0031         0.0062         0.0023         0.0031         0.0023         0.0298
+Acur_rowcheat_v1             0.0000         0.0000         0.0015         0.0050         0.0012         0.0015         0.0012         0.0149
+Acur_rowcheat_v2             0.0000         0.0000         0.0016         0.0012         0.0012         0.0015         0.0012         0.0149
+Acur_topSV_frame             0.0001         0.0001         0.0085         0.0313         0.0059         0.0079         0.0174         0.2244
+Acur_topSV_v1                0.0001         0.0001         0.0083         0.0312         0.0057         0.0076         0.0140         0.1808
+Acur_topSV_v2                0.0000         0.0000         0.0002         0.0001         0.0002         0.0003         0.0034         0.0436
+Afut_rowcheat_frame          0.0000         0.0000         0.0000         0.0000         0.0022         0.0030         0.0022         0.0286
+Afut_rowcheat_v1             0.0000         0.0000         0.0000         0.0000         0.0011         0.0015         0.0011         0.0142
+Afut_rowcheat_v2             0.0000         0.0000         0.0000         0.0000         0.0011         0.0015         0.0011         0.0145
+Afut_topSV_frame             0.0000         0.0000         0.0000         0.0000         0.0040         0.0053         0.0053         0.0679
+Afut_topSV_v1                0.0000         0.0000         0.0000         0.0000         0.0015         0.0020         0.0021         0.0275
+Afut_topSV_v2                0.0000         0.0000         0.0000         0.0000         0.0025         0.0033         0.0031         0.0405
+B_top_topSV_frame            1.0000         1.0000         0.9609         0.9409         0.6913         0.9223         0.0043         0.0558
+B_top_topSV_v1               1.0000         0.0000         0.9596         0.0023         0.6901         0.9207         0.0018         0.0235
+B_top_topSV_v2               0.0000         1.0000         0.0013         0.9386         0.0012         0.0016         0.0025         0.0323
+V_state_frame                1.0000         1.0000         0.9609         0.9409         0.6913         0.9223         0.0043         0.0558
+V_state_v1                   1.0000         0.0000         0.9596         0.0023         0.6901         0.9207         0.0018         0.0235
+V_state_v2                   0.0000         1.0000         0.0013         0.9386         0.0012         0.0016         0.0025         0.0323
+mgain_topSV_frame            0.9614         0.9490         0.9998         0.9996         0.7198         0.9604         0.0061         0.0793
+mgain_topSV_v1               0.9605         0.0003         0.9994         0.0003         0.7194         0.9599         0.0024         0.0313
+mgain_topSV_v2               0.0009         0.9487         0.0003         0.9993         0.0004         0.0005         0.0037         0.0480
+oracle_frame_exact           0.6919         0.0037         0.7225         0.0037         1.0000         0.7505         1.0000         0.0877
+oracle_frame_proj            0.9224         0.0326         0.9647         0.0484         0.7495         1.0000         0.0774         1.0000
+oracle_v1_exact              0.6901         0.0012         0.7201         0.0000         1.0000         0.7495         0.0000         0.0103
+oracle_v1_proj               0.9207         0.0016         0.9609         0.0000         0.7495         1.0000         0.0011         0.0137
+oracle_v2_exact              0.0018         0.0025         0.0024         0.0037         0.0000         0.0011         1.0000         0.0774
+oracle_v2_proj               0.0235         0.0323         0.0308         0.0479         0.0103         0.0137         0.0774         1.0000
+visible_topSV_frame          0.0000         0.0000         0.0000         0.0002         0.0033         0.0044         0.0059         0.0757
+visible_topSV_v1             0.0000         0.0000         0.0000         0.0002         0.0011         0.0014         0.0024         0.0306
+visible_topSV_v2             0.0000         0.0000         0.0000         0.0000         0.0022         0.0030         0.0035         0.0451
+
+state_align (cross-check: cos²(v, V_state_v1) row should equal
+the §6 invariant printed by r_sk_g_score.py)
+
+Row-bias of input directions (per window)
+------------------------------------------------------------------------
+input          window    rows   relH1  eff_frac   top1 top3_idx                
+sketch_v1      B            2  0.0000    0.5000 1.0000 0,1                     
+sketch_v1      A_cur       32  0.9929    0.9756 0.0460 24,26,4                 
+sketch_v1      A_fut       32  0.9858    0.9520 0.0471 30,11,24                
+sketch_v1      visible     64  0.9908    0.9624 0.0245 24,26,4                 
+sketch_v2      B            2  0.0000    0.5000 1.0000 1,0                     
+sketch_v2      A_cur       32  0.7803    0.4671 0.1937 11,23,29                
+sketch_v2      A_fut       32  0.7690    0.4491 0.2363 18,15,13                
+sketch_v2      visible     64  0.7892    0.4162 0.1403 11,23,29                
+combined_v1    B            2  0.0140    0.5049 0.9987 0,1                     
+combined_v1    A_cur       32  0.9985    0.9949 0.0366 26,23,24                
+combined_v1    A_fut       32  0.9848    0.9488 0.0475 11,24,30                
+combined_v1    visible     64  0.8484    0.5324 0.0362 26,23,24                
+combined_v2    B            2  0.0260    0.5091 0.9974 1,0                     
+combined_v2    A_cur       32  0.7716    0.4532 0.2049 11,29,22                
+combined_v2    A_fut       32  0.7996    0.4993 0.2131 18,15,13                
+combined_v2    visible     64  0.6459    0.2293 0.2046 11,29,22                
+oracle_v1_exact B            2  0.0175    0.5061 0.9984 0,1                     
+oracle_v1_exact A_cur       32  1.0000    1.0000 0.0313 8,28,5                  
+oracle_v1_exact A_fut       32  1.0000    1.0000 0.0313 29,19,2                 
+oracle_v1_exact visible     64  1.0000    1.0000 0.0156 8,28,61                 
+oracle_v1_proj B            2  0.0175    0.5061 0.9984 0,1                     
+oracle_v1_proj A_cur       32  1.0000    1.0000 0.0313 8,28,5                  
+oracle_v1_proj A_fut       32  1.0000    1.0000 0.0313 29,19,2                 
+oracle_v1_proj visible     64  1.0000    1.0000 0.0156 8,28,61                 
+oracle_v2_exact B            2  0.9876    0.9914 0.5655 1,0                     
+oracle_v2_exact A_cur       32  1.0000    1.0000 0.0313 19,17,28                
+oracle_v2_exact A_fut       32  1.0000    1.0000 0.0313 3,5,7                   
+oracle_v2_exact visible     64  1.0000    1.0000 0.0156 35,37,39                
+oracle_v2_proj B            2  0.9876    0.9914 0.5655 1,0                     
+oracle_v2_proj A_cur       32  1.0000    1.0000 0.0313 19,17,28                
+oracle_v2_proj A_fut       32  1.0000    1.0000 0.0313 3,5,7                   
+oracle_v2_proj visible     64  1.0000    1.0000 0.0156 35,37,39                
+

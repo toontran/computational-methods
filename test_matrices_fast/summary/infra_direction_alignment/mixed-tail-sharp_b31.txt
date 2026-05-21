@@ -1,0 +1,52 @@
+# direction_alignment_probe — mixed-tail-sharp b31
+
+Alignment table (cos² of top principal angle vs. each reference)
+------------------------------------------------------------------------
+reference                 sketch_v1          S6_v1      oracle_v1
+Acur_rowcheat_frame          0.0000         0.0322         0.0303
+Acur_rowcheat_v1             0.0000         0.0158         0.0151
+Acur_rowcheat_v2             0.0000         0.0164         0.0152
+Acur_topSV_frame             0.0000         0.0899         0.0678
+Acur_topSV_v1                0.0000         0.0421         0.0333
+Acur_topSV_v2                0.0000         0.0479         0.0345
+Afut_rowcheat_frame          0.0000         0.0394         0.0285
+Afut_rowcheat_v1             0.0000         0.0218         0.0140
+Afut_rowcheat_v2             0.0000         0.0177         0.0145
+Afut_topSV_frame             0.0000         0.0622         0.0406
+Afut_topSV_v1                0.0000         0.0301         0.0172
+Afut_topSV_v2                0.0000         0.0322         0.0234
+B_top_topSV_frame            1.0000         0.1132         0.0316
+B_top_topSV_v1               1.0000         0.0529         0.0086
+B_top_topSV_v2               0.0000         0.0603         0.0230
+V_state_frame                1.0000         0.1132         0.0316
+V_state_v1                   1.0000         0.0529         0.0086
+V_state_v2                   0.0000         0.0603         0.0230
+mgain_topSV_frame            0.9897         0.1324         0.0298
+mgain_topSV_v1               0.9894         0.0614         0.0117
+mgain_topSV_v2               0.0002         0.0710         0.0181
+oracle_frame                 0.0216         0.9753         1.0000
+oracle_v1_proj               0.0086         0.0307         1.0000
+oracle_v2_proj               0.0160         0.9746         0.0226
+visible_topSV_frame          0.0000         0.0647         0.0369
+visible_topSV_v1             0.0000         0.0320         0.0151
+visible_topSV_v2             0.0000         0.0327         0.0218
+
+state_align (cross-check: cos²(v, V_state_v1) row should equal
+the §6 invariant printed by r_sk_g_score.py)
+
+Row-bias of input directions (per window)
+------------------------------------------------------------------------
+input          window    rows   relH1  eff_frac   top1 top3_idx                
+sketch_v1      B            2  0.0000    0.5000 1.0000 0,1                     
+sketch_v1      A_cur       32  0.8298    0.5544 0.1494 25,31,9                 
+sketch_v1      A_fut       32  0.8067    0.5118 0.1282 2,14,8                  
+sketch_v1      visible     64  0.8487    0.5331 0.0773 25,31,34                
+S6_v1          B            2  0.9978    0.9985 0.5273 1,0                     
+S6_v1          A_cur       32  0.9992    0.9973 0.0369 11,14,29                
+S6_v1          A_fut       32  0.9962    0.9869 0.0521 12,25,0                 
+S6_v1          visible     64  0.9981    0.9920 0.0262 44,57,32                
+oracle_v1      B            2  0.8506    0.9016 0.7235 1,0                     
+oracle_v1      A_cur       32  1.0000    1.0000 0.0313 10,15,18                
+oracle_v1      A_fut       32  1.0000    1.0000 0.0313 5,20,25                 
+oracle_v1      visible     64  1.0000    1.0000 0.0156 37,10,15                
+

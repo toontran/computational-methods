@@ -1,0 +1,14 @@
+# E2: slot-2 landscape inside the deflation complement of combined_v_1.
+# All directions below are unit, orthogonal to combined_v_1.
+
+== block 1 ==
+  label                    gain_tot        phi       score  algn_v1_chk   algn_o2
+  combined_v2                0.8273     5.6546      4.6781     1.46e-15    0.0162
+  oracle_v1_proj_perp        0.8287     4.3974      3.6441     1.87e-32    0.0041
+  oracle_v2_proj_perp        0.8328     3.6994      3.0809     8.00e-32    0.7489
+  random_0                   0.8281     3.9123      3.2396     3.28e-33    0.0109
+  random_1                   0.8215     3.3388      2.7428     9.95e-33    0.0112
+  random_2                   0.8242     3.1015      2.5562     1.33e-32    0.0028
+  random_3                   0.8191     3.7066      3.0359     4.12e-33    0.0338
+  random_4                   0.8208     2.9861      2.4511     1.93e-34    0.0252
+

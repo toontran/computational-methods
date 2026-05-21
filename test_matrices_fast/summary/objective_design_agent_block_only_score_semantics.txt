@@ -1,0 +1,176 @@
+Objective design note: block-only gain semantics vs sketch-inclusive gain2
+==========================================================================
+
+Date: 2026-04-22
+
+Scope
+-----
+This note clarifies where the current code uses sketch-inclusive gain2 and where it
+already stays block-only. The user-facing requirement is:
+
+  - score/energy must come from the current raw block only;
+  - entropy can still use row sampling / `old_row_memory`;
+  - do not fold carried sketch rows into gain2 when interpreting diagnostics.
+
+The current codebase does not implement that split uniformly yet.
+
+1. Exact helper semantics
+-------------------------
+
+Sketch-inclusive gain2 paths:
+
+  - `cex_restricted_space_probe.py:1933` `combined_score_component_details(M_gain, A_block, v, ...)`
+    uses `gain2 = ||M_gain v||^2`, while entropy terms (`phi`, `pooled_H`,
+    `pooled_rel_H`) are computed from `A_block` plus optional `old_row_memory`.
+    This is the clearest example of the mixed semantic.
+
+  - `cex_restricted_space_probe.py:1858` `oldcorrected_score_component_details(...)`
+    also uses `gain2 = ||M_gain v||^2` and keeps entropy / correction terms tied
+    to `A_block` and `old_row_memory`.
+
+  - Streaming reduced scorers in `cex_restricted_space_probe.py`:
+    `oldcorrected_streaming_score_grad_reduced`, `combined_streaming_score_grad_reduced`,
+    `l4l2_streaming_score_grad_reduced`, `subsetmass_streaming_score_grad_reduced`
+    all take a `B_gain` argument and compute gain/energy from that matrix.
+    If callers build `B_gain` from stacked sketch rows plus the new block, then
+    gain2 is sketch-inclusive by construction.
+
+Block-only gain paths:
+
+  - `cex_restricted_space_probe.py:1822` `score_full_vector_details_forget(...)`
+    is block-only only in the `state_prev is None` branch, where it calls
+    `score_grad_reduced_by_variant(score_variant, A_block, ...)`.
+    Once `state_prev` is non-None, it switches to the streaming path and gain2
+    comes from `M_gain`.
+
+  - `cex_restricted_space_probe.py:1107` `entropyscore_forget_joint_reduced_eval(...)`
+    is block-only only when its input matrix `B` is the raw block. In the main
+    streaming loop the caller usually passes `M_gain`, so the same helper can
+    become sketch-inclusive at the call site.
+
+  - `cex_restricted_space_probe.py:857` `score_grad_reduced_by_variant(...)`
+    itself is not sketch-inclusive or block-only by policy; it just scores the
+    matrix it is handed. The semantics come from the caller.
+
+2. Diagnostic contexts that currently mix sketch into gain2
+-----------------------------------------------------------
+
+These call sites either pass a stacked `M_gain = [B_top; A_block]` or use a helper
+that derives gain2 from `M_gain` / `B_gain`, so their `gain2` fields are not
+raw-block energy on blocks after the first:
+
+  - `cex_restricted_space_probe.py:4860+` in `run()`: after block 1, `M_gain`
+    is explicitly `np.vstack([B_top, A_block_work])`. That `M_gain` is passed to
+    `entropy_iter_basis_forget(...)`, `oracle_projection_candidate(...)`, and the
+    component dumps. Any printed `gain2` / `s` / `score_total` from these paths
+    is sketch-inclusive for blocks 2+.
+
+  - `cex_restricted_space_probe.py:4891`, `4979`, `5022` in the main diagnostic
+    output path: `oracle_candidate_check`, `oracle_projection_diagnostics`, and
+    the score-component dump all inherit the same `M_gain`.
+
+  - `second_slot_tail_bias_diagnostic.py:78-89`, `233-238`, `251-262`
+    (`combined_score_component_details` on candidates and previous/current
+    second-slot comparisons).
+
+  - `debug_combined_objective_probe.py:24-30`, `145-174`, `209-226`, `301`
+    (the `component(...)` helper and the first-block combined objective probe).
+    The first block is fine because `M_gain == A_block` there; later streaming
+    comparisons become sketch-inclusive.
+
+  - `cex_structured_combined_hybrid_tail.py:89-125`, `332`
+    (`score_full_vector_details_forget(..., score_variant="combined")` plus
+    `combined_score_component_details`).
+
+  - `outside_rotation_change_diagnostic.py:80-106`
+    (`score_variant="combined"` in the streaming loop).
+
+  - `rotation_handoff_diagnostic.py:80-117`
+    (`score_variant="combined"` in the streaming loop).
+
+  - `check_oracle_warm_joint.py:16-34`, `106`
+    (joint reduced evaluation on `A_block @ Vbasis` with `score_variant="combined"`).
+
+  - `try_outside_direction_steering.py:143`
+    (same combined streaming semantic).
+
+  - `diag_score_components.py:48-53`
+    (`score_variant="combined"`, `oracle_sketch_all_seen_rows=False`; the row
+    sampling flag affects oracle projection / entropy, not the gain2 source).
+
+  - `run_joint_warmstart_benchmarks.py:137-142`
+    (benchmark sweep in `score_variant="combined"` mode).
+
+3. How to compute the requested block-only score
+-------------------------------------------------
+
+The cleanest interpretation is:
+
+  - gain2_block = `||A_block v||^2`
+  - entropy factor = whatever the current combined helper computes from
+    `A_block`, `state_prev`, and `old_row_memory`
+  - block-only score = `gain2_block * phi`
+
+Existing helper reuse:
+
+  - Call `combined_score_component_details(M_gain, A_block, v, ...)` to get the
+    entropy term `phi`, `pooled_H`, `pooled_rel_H`, and the row-memory plumbing.
+  - Separately compute `gain2_block` from `A_block` only.
+  - Multiply them outside the helper, or build a tiny wrapper that replaces only
+    the gain leg.
+
+Minimal wrapper sketch:
+
+```python
+comp = probe.combined_score_component_details(
+    M_gain, A_block, v, rows_ref,
+    state_prev=state_prev,
+    old_row_memory=old_row_memory,
+)
+gain2_block = float(np.linalg.norm(np.asarray(A_block) @ v) ** 2)
+score_block_only = gain2_block * float(comp["phi"])
+```
+
+If the diagnostic only reports scores, that wrapper is enough. If the optimizer
+is supposed to search under the same semantics, the matching gradient path also
+needs the same substitution in the combined streaming scorer.
+
+4. Reinterpreting prior `gain2` claims
+--------------------------------------
+
+Invalid as raw-block-energy claims:
+
+  - any `gain2` or `score_total` comparison from a streaming block where `M_gain`
+    included carried rows;
+  - any `candidate_sum` vs `optimizer_sum` comparison in the main `run()` path
+    after block 1, because both inherit sketch-inclusive gain2 under `combined`;
+  - any `opt*_actualB_gain2`, `oracleB_gain2`, `q2_vs_q1oracle gain2`, or similar
+    fields when they came from `combined_score_component_details` on a streamed
+    `M_gain`.
+
+Still relevant:
+
+  - first-block results, because `M_gain == A_block` there;
+  - entropy-only observations: `phi`, `H`, `relH`, `pooled_*`, and the old-row
+    sampling behavior;
+  - geometry / alignment diagnostics: principal cosines, span projections,
+    outside-components, and row-response structure;
+  - any result that explicitly used a raw `A_block` as the matrix being scored.
+
+5. Recommendation for the main diagnostic
+-----------------------------------------
+
+For `cex_restricted_space_probe.py` and the downstream diagnostics that depend on
+it, use block-only gain2 in the reported objective and keep sketch/row-memory only
+inside entropy estimation.
+
+Concretely:
+
+  - keep `old_row_memory` and row-sampled oracle projection inputs as they are;
+  - replace `gain2 = ||M_gain v||^2` with `gain2_block = ||A_block v||^2` in the
+    reporting path;
+  - if optimization should match the report, update the streaming combined scorer
+    as well, not just the formatter.
+
+That keeps the entropy model intact while making the gain/energy metric mean what
+the diagnostic now intends: current block only.

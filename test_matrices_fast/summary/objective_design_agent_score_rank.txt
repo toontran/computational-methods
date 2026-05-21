@@ -1,0 +1,60 @@
+Objective design diagnostic: score overestimation, decay, and rank movement
+==========================================================================
+
+Scope
+-----
+I inspected the existing score/movement diagnostics in `second_slot_tail_bias_diagnostic.py`, `summary/second_slot_scores_failures_raw.txt`, and the trajectory summaries it produces.
+
+Commands run
+------------
+`python3 second_slot_tail_bias_diagnostic.py --matrices static-cex diffuse-diffuse mixed-tail-sharp mixed-tail-balanced residual-spiky-shocks alternative-data-signals --n 128 --win 32 --rank 2 --dtype float64`
+
+`sed -n '1,140p' summary/second_slot_scores_failures_raw.txt`
+
+`sed -n '140,280p' summary/second_slot_scores_failures_raw.txt`
+
+`sed -n '280,420p' summary/second_slot_scores_failures_raw.txt`
+
+Findings
+--------
+1. Early overestimation is real.
+   The detailed second-slot dump shows the selected second direction often starts above the oracle-like comparator on the same actual objective, while the zero-B score is much smaller. Example early blocks:
+   - block 2: `opt2 actual_B score=3.300717` vs `q2_vs_q1oracle actual_B score=3.028255`; `opt2 zero_B=1.642572` vs `q2_vs_q1oracle zero_B=2.254454`
+   - block 3: `opt2 actual_B=2.696395` vs `q2_vs_q1oracle actual_B=2.285385`; `opt2 zero_B=0.897058` vs `q2_vs_q1oracle zero_B=1.307932`
+   - block 4: `opt2 actual_B=2.338271` vs `q2_vs_q1oracle actual_B=1.881920`; `opt2 zero_B=0.609259` vs `q2_vs_q1oracle zero_B=1.211831`
+   This is the pattern I would call "overestimated early": the retained fake direction looks strong only when scored through the carried state, but its zero-B score is materially weaker than the oracle-like candidate.
+
+2. I do not see clean evidence that fake directions decay faster than oracle directions.
+   The raw actual-B scores for the selected second slot and the oracle-like comparator both decay over the stream and stay close:
+   - by block 32: `opt2 actual_B=0.860594`, `q2_vs_q1oracle actual_B=0.830316`
+   - the gap shrinks from roughly `0.27` in block 2 to roughly `0.03` by block 32
+   The score ratio history is even less decisive: `prev2_score_ratio` rises from about `0.79` early to about `0.99` late. That looks more like noisy convergence than a distinct faster-decay law for the fake direction.
+
+3. Rank/order movement separates oracle from fake directions better than raw score changes.
+   The strongest signal is not the score delta; it is whether the carried second slot keeps the same identity.
+   - `mixed-tail-sharp` normal: `prev_opt2_dot_curr_opt2=0.174288` at block 7, while `prev2_score_ratio=0.881487`
+   - `residual-spiky-shocks` normal: `survive_v2=0.070622` at block 2, while `prev2_score_ratio=0.890534`
+   In both cases, the score ratio barely moves, but the slot identity rotates sharply. That is a better separator for oracle-vs-fake behavior than raw score change alone.
+
+4. Best next matrices for this check family.
+   Use a spread that covers both strong failure and near-control cases:
+   - `static-cex`: stable high-contrast reference
+   - `mixed-tail-sharp`: strongest rank/order pathology
+   - `residual-spiky-shocks`: good for slot-flip / movement checks
+   - `diffuse-diffuse`: useful control where score deltas are much less discriminative
+   - `mixed-tail-balanced`: intermediate bridge between control and failure
+   - `alternative-data-signals`: only as a sanity check; it saturates too early to stress the mechanism
+   If you want the next realism pass, the finance-style generators already in the repo are the right place to extend this: `crowded-strategy`, `execution-cost-slippage`, and `options-vol-surface`.
+
+Trajectory notes
+----------------
+The multi-matrix trajectory run showed why movement matters:
+- `static-cex`: `mean_align=0.981720` in normal mode; forcing the first two slots gives only a small change
+- `diffuse-diffuse`: normal `mean_align=0.900378`, but `force-b1b2` reaches `0.996661`
+- `mixed-tail-sharp`: normal `mean_align=0.045486`, while `force-b1b2` reaches `0.967036`
+- `residual-spiky-shocks`: normal `mean_align=0.684060`, `force-b1b2` reaches `0.996500`
+- `alternative-data-signals`: all modes are near `1.0`, so it is not a good separator for this mechanism
+
+Bottom line
+-----------
+Early score inflation is real, but raw score decay is too noisy to be the main separator. The rank/order movement metrics are the cleaner diagnostic, and the next experiments should lean on matrices that actually force slot identity changes.

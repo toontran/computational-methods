@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:601: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999823 mean_relerr_sval=0.29570237
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999994 mean_relerr_sval=0.01729508
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.999823 mean_relerr_sval=0.29570116
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.999994 mean_relerr_sval=0.01729557
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.999821 mean_relerr_sval=0.29573149
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999993 mean_relerr_sval=0.01729855
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999823 mean_relerr_sval=0.29569430
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999994 mean_relerr_sval=0.01730306
+wrote_json=summary/bench_matrix_sweep/realized-vol-corr_win64.json wrote_csv=summary/bench_matrix_sweep/realized-vol-corr_win64.csv wrote_text=summary/bench_matrix_sweep/realized-vol-corr_win64.txt elapsed=12.311

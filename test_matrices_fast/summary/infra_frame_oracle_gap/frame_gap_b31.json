@@ -1,0 +1,359 @@
+[
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.028436071153394252,
+    "score_winner": 0.03785909936038603,
+    "delta": 0.009423028206991774,
+    "pa_cos2": [
+      0.5068847404017041,
+      0.057235017558232716
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.028436071153394252,
+    "score_winner": 0.028888502798015935,
+    "delta": 0.0004524316446216821,
+    "pa_cos2": [
+      1.0000000000000004,
+      0.9749984413346183
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.028436071153394252,
+    "score_winner": 0.037624897377253344,
+    "delta": 0.009188826223859092,
+    "pa_cos2": [
+      0.9999999999999998,
+      0.48170324090312383
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.03555691064874877,
+    "score_winner": 0.04059765665497927,
+    "delta": 0.005040746006230501,
+    "pa_cos2": [
+      0.966536297309988,
+      0.8667304706294771
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.03555691064874877,
+    "score_winner": 0.0404306741390181,
+    "delta": 0.004873763490269335,
+    "pa_cos2": [
+      0.9999999999999991,
+      0.8479853647601668
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.03555691064874877,
+    "score_winner": 0.037347080723921955,
+    "delta": 0.0017901700751731878,
+    "pa_cos2": [
+      0.9999999999999998,
+      0.944067578195118
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.022457562261149523,
+    "score_winner": 0.038249491233374844,
+    "delta": 0.01579192897222532,
+    "pa_cos2": [
+      0.8962681435310151,
+      0.4738612166741599
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.022457562261149523,
+    "score_winner": 0.025485138210710554,
+    "delta": 0.0030275759495610316,
+    "pa_cos2": [
+      1.0000000000000009,
+      0.8582698271617468
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.022457562261149523,
+    "score_winner": 0.0378746605185227,
+    "delta": 0.015417098257373179,
+    "pa_cos2": [
+      1.0000000000000004,
+      0.3117713579227491
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-sharp",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.025147276140742594,
+    "score_winner": 0.03816202543601972,
+    "delta": 0.013014749295277128,
+    "pa_cos2": [
+      0.970976886884803,
+      0.4842994309518743
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-sharp",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.025147276140742594,
+    "score_winner": 0.03802558175637368,
+    "delta": 0.012878305615631087,
+    "pa_cos2": [
+      1.0,
+      0.43624580853635775
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-sharp",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.025147276140742594,
+    "score_winner": 0.02578832137633453,
+    "delta": 0.0006410452355919347,
+    "pa_cos2": [
+      0.9999999999999993,
+      0.025990119632795596
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "static-cex",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.0038468029342224696,
+    "score_winner": 0.0386442369383834,
+    "delta": 0.03479743400416093,
+    "pa_cos2": [
+      0.3308217404577158,
+      0.30115642936484516
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "static-cex",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.0038468029342224696,
+    "score_winner": 0.02570290008003996,
+    "delta": 0.02185609714581749,
+    "pa_cos2": [
+      1.0000000000000013,
+      0.008579395350483826
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "static-cex",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.0038468029342224696,
+    "score_winner": 0.026010494004271602,
+    "delta": 0.022163691070049132,
+    "pa_cos2": [
+      1.0000000000000004,
+      6.790027228083838e-07
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-balanced",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.026009037523139544,
+    "score_winner": 0.03810774345082514,
+    "delta": 0.012098705927685596,
+    "pa_cos2": [
+      0.9879456376794037,
+      0.5295501897313308
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-balanced",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.026009037523139544,
+    "score_winner": 0.026146995234290524,
+    "delta": 0.00013795771115097943,
+    "pa_cos2": [
+      0.9999999999999993,
+      0.979926209162279
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-balanced",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.026009037523139544,
+    "score_winner": 0.038053059581794814,
+    "delta": 0.01204402205865527,
+    "pa_cos2": [
+      1.0000000000000004,
+      0.5235018536538446
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "etf-basket-basis",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "free",
+    "score_oracle": 0.6687533050370507,
+    "score_winner": 0.7022945153908751,
+    "delta": 0.0335412103538244,
+    "pa_cos2": [
+      0.9955647171557913,
+      0.1536517023651401
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "etf-basket-basis",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle1",
+    "score_oracle": 0.6687533050370507,
+    "score_winner": 0.6972356941234502,
+    "delta": 0.02848238908639955,
+    "pa_cos2": [
+      1.0000000000000004,
+      0.1240043009992317
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "etf-basket-basis",
+    "block": 31,
+    "ablation": "hm",
+    "anchor": "oracle2",
+    "score_oracle": 0.6687533050370507,
+    "score_winner": 0.673230104421247,
+    "delta": 0.004476799384196317,
+    "pa_cos2": [
+      1.0000000000000009,
+      0.9908328319261669
+    ],
+    "n_starts": 100,
+    "max_iter": 200,
+    "optimizer": "analytic_stiefel_hm",
+    "status": "evidence_insufficient"
+  }
+]

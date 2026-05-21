@@ -1,0 +1,122 @@
+Input matrix catalog
+====================
+
+1. Generated structured CEX matrix
+----------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_structured_cex_input(...)
+
+Default parameters
+  n = 1024
+  r_sig = 2
+  alpha_sig = 0.003
+  alpha_tail = 0.0145
+  tail_scale = 0.99
+  sigma1 = 0.991
+  v_type = rand
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+  With defaults:
+
+    A.shape = (1024, 1024)
+
+Construction
+  The generated matrix is SVD-structured:
+
+    A_unpermuted = U * diag(svec) * V'
+    A = P * A_unpermuted
+
+  where P is a random row permutation. In code this is written as:
+
+    A_unpermuted = (U * svec[None, :]) @ V.T
+    A = A_unpermuted[p, :]
+
+Singular values
+  The singular-value vector has a shallow signal block followed by a
+  slowly decaying tail:
+
+    sig_block[j]  = sigma1 * j^(-alpha_sig),       j = 1:r_sig
+    tail_block[j] = tail_scale * j^(-alpha_tail),  j = 1:(n-r_sig)
+    svec = [sig_block, tail_block]
+    svec[0] = sigma1
+
+  With the defaults, the leading signal values are very close together and
+  the tail starts just below them. This makes the dominant subspace hard to
+  separate by singular value magnitude alone.
+
+What is special about U
+  U is not sampled as a generic random orthogonal matrix. It is built from a
+  deliberately structured prototype U0, then orthonormalized by QR.
+
+  The first r_sig columns of U0 are normalized Hadamard columns:
+
+    U0[:, 0:r_sig] = hadamard(n)[:, 0:r_sig] / sqrt(n)
+
+  These signal directions are dense, flat, and incoherent across rows: every
+  row has equal-magnitude participation in the signal columns.
+
+  The remaining columns are tail directions with a near-coordinate structure.
+  For each tail column j >= r_sig:
+
+    U0[j-r_sig, j] = sqrt(1 - r_sig / n)
+    U0[n-r_sig:n, j] = 1 / sqrt(n)
+
+  So each tail column has one large coordinate plus small shared mass in the
+  final r_sig rows. This creates many localized tail directions while coupling
+  them through a small common row support.
+
+  Finally:
+
+    U, _ = qr(U0)
+
+  The first r_sig signs are flipped if needed so they remain aligned with the
+  original Hadamard signal columns. The result is an orthonormal left singular
+  basis whose leading directions are dense Hadamard-like signals and whose
+  trailing directions come from a structured sparse/localized tail.
+
+Right singular vectors V
+  V depends on v_type:
+
+    id    -> V = identity
+    U     -> V = U
+    rand  -> V = qr(randn(n, n))
+
+  The default run uses v_type = rand, so the right singular vectors are a
+  random orthonormal basis.
+
+Streaming layout used by the script
+  Rows of A are processed in windows:
+
+    A_block = A[start0:end0, :]
+
+  The default window size is:
+
+    win = 100
+
+  In restricted mode, the working gain matrix is:
+
+    first block:
+      M_gain = A_block
+
+    later blocks:
+      M_gain = vstack([S_previous * V_previous', A_block])
+
+  With default rank = 2 and win = 100, most later restricted updates use:
+
+    M_gain.shape = (102, 1024)
+
+  The first update uses:
+
+    M_gain.shape = (100, 1024)
+
+Notes
+  This matrix is designed to stress streaming low-rank methods: the leading
+  left singular directions are globally spread over all rows, the tail is
+  structured and close in magnitude, and a row permutation prevents the stream
+  from presenting the construction in a convenient order.
+

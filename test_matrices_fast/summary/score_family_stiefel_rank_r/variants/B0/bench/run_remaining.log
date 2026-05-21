@@ -1,0 +1,10 @@
+[B0/T3] running etf-basket-basis (half_win=32)
+[B0/T3] etf-basket-basis: greedy_S6 cos0²=1.0000 cos1²=0.6518 | online_VO cos0²=1.0000 cos1²=0.9388 | B0 cos0²=0.9954 cos1²=0.8205 | Δcos0²=-0.0046 elapsed=65.4s
+[B0/T3] running mixed-tail-sharp (half_win=32)
+[B0/T3] mixed-tail-sharp: greedy_S6 cos0²=0.7569 cos1²=0.0125 | online_VO cos0²=0.7598 cos1²=0.0026 | B0 cos0²=0.0177 cos1²=0.0000 | Δcos0²=-0.7392 elapsed=90.3s
+[B0/T3] running mixed-tail-balanced (half_win=32)
+[B0/T3] mixed-tail-balanced: greedy_S6 cos0²=0.4435 cos1²=0.0015 | online_VO cos0²=0.6264 cos1²=0.0035 | B0 cos0²=0.0243 cos1²=0.0000 | Δcos0²=-0.4192 elapsed=105.5s
+[B0/T3] running mixed-tail-soft (half_win=32)
+[B0/T3] mixed-tail-soft: greedy_S6 cos0²=0.8595 cos1²=0.0240 | online_VO cos0²=0.7372 cos1²=0.0000 | B0 cos0²=0.0320 cos1²=0.0036 | Δcos0²=-0.8275 elapsed=108.1s
+wrote: /home/ttran02/pj/computational-methods/test_matrices_fast/summary/score_family_stiefel_rank_r/variants/B0/bench/T3_summary_win64.json
+wrote: /home/ttran02/pj/computational-methods/test_matrices_fast/summary/score_family_stiefel_rank_r/variants/B0/bench/T3_summary_win64.txt

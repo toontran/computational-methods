@@ -1,0 +1,1051 @@
+Tail-Conspiracy Failure Mode In The Combined Algorithm
+======================================================
+
+Date: 2026-04-22
+
+Purpose
+-------
+This note is a self-contained explanation of a fundamental failure mode in the
+combined streaming sketch algorithm.
+
+Assume the reader knows the combined algorithm at a high level:
+
+  - process the matrix in row windows;
+  - keep a small sketch B from previous windows;
+  - keep a raw-row memory R for entropy estimation;
+  - score candidate right directions v using old sketch energy, current-window
+    energy, and a row-entropy correction;
+  - retain a small rank-r right subspace and form the next sketch.
+
+The question is:
+
+  Can a tail-biased direction keep winning across consecutive windows even
+  though entropy is computed from raw old rows plus the current window, rather
+  than from compressed sketch rows?
+
+The answer is yes. This is not just an implementation bug or a narrow
+row-reservoir overfit. It is a structural path-dependence problem in the
+combined objective.
+
+
+Main Claim
+----------
+The combined score has two information channels:
+
+  B:
+    carries old quadratic energy and old selected geometry;
+
+  R:
+    carries raw old row responses for the entropy factor.
+
+The raw-row memory R can make the entropy estimate more honest, but it cannot
+undo a wrong direction that has already been stored in B. If the rank budget is
+small and a tail-biased direction occupies the second retained slot early, then
+the next sketch gives that same tail region old-energy credit. Later windows
+therefore score a biased contest:
+
+  missing oracle-2 direction
+  versus
+  previous tail-ish opt2 direction plus old energy from B.
+
+The tail direction does not need to be literally the same vector forever. It is
+enough that a nearby tail region or second-slot family survives strongly enough
+for B to reinforce it.
+
+The mechanism is:
+
+  early weak oracle-2 retention
+  -> tail-biased second slot selected
+  -> tail-biased slot stored in B
+  -> next score includes old energy for that slot
+  -> previous opt2 remains high-scoring
+  -> oracle-2 cannot re-enter the retained rank-2 state
+
+This is the "tail conspiracy": the tail is not merely rediscovered each block;
+the combined sketch state helps carry it forward.
+
+
+Notation
+--------
+Let A be the full n-row matrix. At window w:
+
+  A_w:
+    current raw row window;
+
+  N_w:
+    all raw rows seen through window w;
+
+  B:
+    sketch carried from previous windows;
+
+  R:
+    raw-row memory from previous windows;
+
+  C_w = [R; A_w]:
+    pooled raw rows used for entropy estimation;
+
+  row(X):
+    number of rows of X.
+
+The target rank in the main experiments is r = 2. For offline diagnostics, the
+known target top-2 directions are projected into the current feasible space and
+orthonormalized; this gives a comparator frame Q_oracle. The phrase
+"oracle-1" means the first direction in this projected target frame, and
+"oracle-2" means the second. Q_oracle is not available to the combined
+algorithm. The key failure is not usually loss of oracle-1; it is loss of
+oracle-2.
+
+A "tail" direction means a direction outside the desired top-r right singular
+subspace. It may still have real energy and high row entropy, but it is not one
+of the target directions that the final rank-r sketch should preserve.
+
+When the algorithm selects two directions in a window, call them opt1 and opt2.
+The failure studied here is mostly an opt2 failure: opt1 often becomes
+oracle-like, while opt2 remains tail-biased.
+
+
+The Combined Score
+------------------
+For a unit direction v, the combined algorithm scores
+
+  score_w(v)
+    = (||Bv||_2^2 + ||A_w v||_2^2)
+      (row(N_w) / n)^(-h_2(C_w v) / (2 log row(C_w))),
+
+where
+
+  h_2(C_w v)
+    = -log((||Rv||_4^4 + ||A_w v||_4^4)
+           / (||Rv||_2^2 + ||A_w v||_2^2)^2).
+
+Equivalently, with
+
+  c_w = log(row(N_w) / n) / (2 log row(C_w)),
+
+the entropy multiplier is
+
+  phi_w(v)
+    = (||C_w v||_4^4 / ||C_w v||_2^4)^{c_w}.
+
+Before the full stream has been seen, c_w <= 0. Therefore higher pooled
+entropy, equivalently a smaller collision ratio, boosts the score. This is the
+intended correction: a direction whose observed row responses are spread out
+may have more unseen energy than a direction whose observed response is a
+single spike.
+
+But this entropy multiplier is not an oracle-span test. A tail direction can
+remain attractive if it has both:
+
+  - enough old energy from B;
+  - high enough pooled entropy on R plus A_w.
+
+The entropy term can compare row concentration. It cannot recreate old
+quadratic energy that was not kept in B.
+
+
+How The Sketch Carries The Error
+--------------------------------
+After selecting a retained right frame V_hat, the algorithm forms
+
+  M_w = [B; A_w],
+  U_hat = orth(M_w V_hat),
+
+then stores the left-projected operator through a small SVD:
+
+  U_hat' M_w = U_small Sigma V_new',
+  B_next = Sigma V_new'.
+
+Thus B_next is not merely "the selected right basis with column norms." It is
+the right-action representation of the left-projected operator P_U M_w, where
+P_U = U_hat U_hat'. For any v,
+
+  ||B_next v||_2 = ||P_U M_w v||_2.
+
+On the retained right span, this preserves the full Gram action, including
+off-diagonal correlations between retained directions.
+
+This is why a wrong second slot can become persistent. If V_hat contains a
+tail-biased second direction, the next sketch does not simply remember that
+direction's norm. It remembers a compressed operator geometry in which nearby
+tail directions can continue to score well.
+
+
+Why Raw-Row Entropy Is Not Enough
+---------------------------------
+The raw-row memory R fixes one important problem: entropy is no longer computed
+from sketch rows. The pooled entropy uses raw old row responses plus the
+current window:
+
+  C_w v = [Rv; A_w v].
+
+This prevents a direct sketch-row entropy artifact. However, the score still
+multiplies that entropy correction by
+
+  ||Bv||_2^2 + ||A_w v||_2^2.
+
+If B already contains the wrong second-slot geometry, the old-energy landscape
+is path dependent. R may estimate entropy reasonably well while B has already
+made the tail direction energetically privileged.
+
+So the failure is not:
+
+  "Entropy was computed from the wrong rows."
+
+The deeper failure is:
+
+  "The rank-r sketch state can store a wrong direction, and the next combined
+   objective treats that stored direction as old evidence."
+
+
+The Candidate Failure In Rank 2
+-------------------------------
+The rank-2 version is the clearest way to see the problem.
+
+In many failing runs, the first oracle direction eventually enters the sketch.
+The second retained slot is the fragile one. Early in the stream, oracle-2 may
+be weakly represented or poorly scored after projection and orthogonalization.
+A tail direction can then win the second slot because it has a competitive
+combination of current-window gain and entropy correction.
+
+Once that happens, the next window is biased. The previous second slot appears
+inside B. Directions aligned with it receive old-energy credit. The combined
+algorithm is then less likely to evict that direction in favor of oracle-2,
+even if oracle-2 is the globally correct second target direction.
+
+This is a rank-budget problem as much as a scoring problem. With only two
+slots, deleting oracle-2 early can be hard to reverse.
+
+
+Test Matrices And What They Represent
+-------------------------------------
+The diagnostics use three representative matrices. Their names are local to
+the test suite, but the roles are simple.
+
+  diffuse-diffuse:
+    Both signal and competing tail structure have diffuse row responses. This
+    is the cleanest example of early second-slot capture. Small windows and a
+    close spectrum make it easy for a tail direction to tie or beat oracle-2
+    early.
+
+  mixed-tail-sharp:
+    The global tail is more localized, so it should have been less dangerous.
+    The failure is subtler: blockwise projection and QR/orthogonalization can
+    make the oracle-2 residual score poorly, leaving high-gain tail complements
+    competitive.
+
+  static-cex:
+    A control case that succeeds. It can also be tail-heavy early and highly
+    persistent across windows, but it converges into the oracle rank-2 span.
+    This shows that persistence itself is not bad; persistence without oracle
+    convergence is bad.
+
+
+Diagnostics Used
+----------------
+The diagnostics are designed to answer three questions.
+
+1. Does the selected subspace actually converge to the oracle rank-2 subspace?
+
+  opt_vs_oracle_cos:
+    principal cosines between the selected rank-2 frame V_opt and the projected
+    QR oracle frame Q_oracle. The second cosine is the crucial second-slot
+    signal.
+
+2. Is the tail behavior merely a reservoir overfit?
+
+  train-vs-holdout score and entropy:
+    the training rows are R plus A_w, which are used by the objective. The
+    holdout rows are independent old raw rows excluded from R, plus A_w. If a
+    selected tail direction only memorizes R, it should collapse on holdout.
+
+  score_sum(V):
+    the sum of combined scores over the two directions in a rank-2 frame V.
+    In holdout comparisons, the same scoring formula is evaluated with the
+    excluded raw rows substituted for the old-row memory.
+
+  relH:
+    relative collision entropy, h_2 divided by the logarithm of the number of
+    pooled rows. Values closer to one mean the row responses are more diffuse
+    over the pooled raw rows.
+
+3. Does the previous second slot survive into the next window?
+
+  prev_opt2_dot_curr_opt2:
+    absolute dot product between the previous selected second direction and the
+    current selected second direction.
+
+  prev2_score_ratio:
+    score_current(prev_opt2) / score_current(curr_opt2). Values near one mean
+    the previous second slot remains competitive under the next objective.
+
+Other useful metrics:
+
+  tail_mass:
+    ||(I - P_exact) V_opt||_F^2 / rank, where P_exact projects onto the exact
+    top-r right singular subspace. High early tail_mass alone is not a failure
+    signal, because successful runs can also be tail-heavy early.
+
+  mean_align:
+    final alignment metric against the target singular directions. It is useful
+    as an aggregate, but it can hide rank-2 failure when oracle-1 is recovered
+    and oracle-2 remains missing. Always read it together with the two oracle
+    cosines.
+
+
+Evidence 1: Tail Mass Alone Does Not Explain The Failure
+--------------------------------------------------------
+Early tail mass is high in both bad and good cases.
+
+  matrix             block  opt_vs_oracle_cos   tail_mass
+  mixed-tail-sharp   1      0.635624, 0.257128  0.990438
+  diffuse-diffuse    1      0.632433, 0.203908  0.990222
+  static-cex         1      0.999932, 0.703855  0.972025
+
+  mixed-tail-sharp   2      0.850178, 0.250898  0.979383
+  diffuse-diffuse    2      0.771323, 0.069150  0.983603
+  static-cex         2      0.971893, 0.571902  0.955890
+
+Static-cex is also tail-heavy in blocks 1 and 2, yet it succeeds. The
+separator is not tail mass by itself. The separator is whether the selected
+rank-2 frame contains the oracle rank-2 span, especially oracle-2.
+
+Oracle-overlap trajectories:
+
+  mixed-tail-sharp:
+    b01 cos=(0.635624, 0.257128)
+    b08 cos=(0.969679, 0.344129)
+    b16 cos=(0.998647, 0.417330)
+    b32 cos=(0.999893, 0.147133)
+
+  diffuse-diffuse:
+    b01 cos=(0.632433, 0.203908)
+    b08 cos=(0.931345, 0.538878)
+    b16 cos=(0.982754, 0.486283)
+    b32 cos=(0.999102, 0.416568)
+
+  static-cex:
+    b01 cos=(0.999932, 0.703855)
+    b08 cos=(0.999098, 0.963234)
+    b16 cos=(0.999914, 0.998636)
+    b32 cos=(0.999997, 0.999890)
+
+In the bad cases, oracle-1 eventually wins but oracle-2 does not reliably
+enter the retained state. In static-cex, both oracle cosines compound upward.
+
+
+Evidence 2: Holdout Rows Do Not Rescue The Oracle
+-------------------------------------------------
+If the failure were only overfitting to the raw-row memory R, an excluded
+old-row holdout should knock down the selected optimizer frame.
+
+Aggregate over blocks 3-32:
+
+  matrix             hold_relH  hold_score_gap
+  mixed-tail-sharp   0.913714   +0.138593
+  diffuse-diffuse    0.968146   +0.211455
+  static-cex         0.993476   +0.026465
+
+Here
+
+  hold_score_gap = holdout score_sum(V_opt) - holdout score_sum(Q_oracle).
+
+For mixed-tail-sharp and diffuse-diffuse, the optimizer frame still beats the
+QR oracle on excluded raw old rows. Therefore the bad selected directions are
+not merely memorizing the particular raw rows in R. They are broad enough, or
+diffuse enough, to pass a second raw-row sample under the same kind of combined
+score.
+
+This does not prove that the selected directions are globally correct. It
+proves that the failure is not a simple reservoir-overfit problem.
+
+
+Evidence 3: The Previous Second Slot Survives
+---------------------------------------------
+The previous selected second direction remains aligned with the next selected
+second direction and remains score-competitive under the next objective.
+
+Mixed-tail-sharp:
+
+  block  prev_opt2_dot_curr_opt2  prev2_score_ratio
+  3      0.814741                 0.820774
+  8      0.927770                 0.888422
+  12     0.949787                 0.914175
+  24     0.970770                 0.973977
+  32     0.992592                 0.998780
+
+Diffuse-diffuse:
+
+  block  prev_opt2_dot_curr_opt2  prev2_score_ratio
+  3      0.822935                 0.827726
+  8      0.923632                 0.879163
+  12     0.930764                 0.911498
+  24     0.969330                 0.969374
+  32     0.928465                 0.994271
+
+After the first handoff, previous opt2 is not discarded and rediscovered from
+scratch. It is inherited as a strong candidate. This is direct evidence of
+path dependence in the retained rank-2 state.
+
+
+Evidence 4: Removing Or Replacing B Breaks The Tail Advantage
+-------------------------------------------------------------
+The most direct causal check is to score second-slot candidates under three
+contexts:
+
+  actual_B:
+    the real carried sketch from the normal trajectory;
+
+  zero_B:
+    no old sketch energy;
+
+  oracle_B:
+    a parallel sketch formed from oracle-aligned retained frames.
+
+The candidate labels are:
+
+  opt2:
+    optimizer's selected second direction;
+
+  q2_vs_v1opt:
+    oracle-2 direction orthogonalized against optimizer v1;
+
+  q2_vs_q1oracle:
+    oracle-2 direction orthogonalized against oracle q1;
+
+  prev_opt2:
+    previous block's selected second direction, scored in the current block.
+
+Diffuse-diffuse block 12:
+
+  actual_B:
+    opt2 score            = 1.350097
+    q2_vs_v1opt score     = 1.247202
+    q2_vs_q1oracle score  = 1.247194
+
+  zero_B:
+    opt2 score            = 0.159979
+    q2_vs_v1opt score     = 1.246482
+    q2_vs_q1oracle score  = 1.246538
+
+  oracle_B:
+    opt2 score            = 0.160928
+    q2_vs_v1opt score     = 1.246906
+    q2_vs_q1oracle score  = 1.246957
+
+Under actual_B, opt2 wins. Under zero_B and oracle_B, opt2 collapses while
+oracle-like second-slot candidates win. This isolates the cause: opt2 was not
+winning because of current-window entropy alone. It was winning because the
+real carried sketch gave it old-energy credit.
+
+Mixed-tail-sharp block 12:
+
+  actual_B:
+    opt2 score            = 1.350237
+    q2_vs_v1opt score     = 0.821233
+    q2_vs_q1oracle score  = 1.312085
+    prev_opt2 score       = 1.234354
+
+  zero_B:
+    opt2 score            = 0.125208
+    q2_vs_v1opt score     = 0.815590
+    q2_vs_q1oracle score  = 0.241812
+
+  oracle_B:
+    opt2 score            = 0.126837
+    q2_vs_v1opt score     = 0.816055
+    q2_vs_q1oracle score  = 0.926283
+
+Mixed-tail-sharp shows the same sketch-energy effect, but it also shows a
+frame issue. Oracle-2 can score very differently depending on whether it is
+orthogonalized against optimizer v1 or oracle q1. This means the combined
+algorithm has both:
+
+  - contaminated old-energy credit from B;
+  - greedy frame/orthogonalization brittleness in the second slot.
+
+
+Intervention: What If Early B Is Oracle-Aligned?
+------------------------------------------------
+Another diagnostic forces early retained frames to be oracle-aligned before
+forming the next sketch B.
+
+Diffuse-diffuse:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.900378          0.999759, 0.186017    0.593975
+  force-b1          0.991745          0.999989, 0.999468    0.182056
+  force-b1b2        0.996661          0.999995, 0.999782    0.096417
+  force-second-b1   0.707408          0.999974, 0.998759    0.273291
+
+This is the cleanest early-capture case. If the early sketch is oracle-aligned,
+the later algorithm can preserve oracle-2. The normal failure is mostly:
+
+  wrong second slot enters B early
+  -> B reinforces it
+  -> oracle-2 stays out.
+
+Mixed-tail-sharp:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.045486          0.999936, 0.167467    0.561206
+  force-b1          0.026017          0.999968, 0.056239    0.536511
+  force-b1b2        0.967036          0.999924, 0.155109    0.531968
+  force-second-b1   0.026787          0.999888, 0.103950    0.555335
+
+This case is more complicated. Forcing blocks 1-2 improves top-1 mean_align,
+but the final second oracle cosine remains low. The intervention can rescue
+one dominant direction while still failing to preserve the full rank-2 oracle
+span.
+
+Static-cex:
+
+  mode              final mean_align  final oracle cos       final tail_mass
+  normal            0.988981          0.999999, 0.999976    0.050119
+  force-b1          0.989474          0.999999, 0.999915    0.071166
+  force-b1b2        0.980263          0.999996, 0.999995    0.043400
+  force-second-b1   0.980447          0.999998, 0.999995    0.037184
+
+Static-cex is insensitive to the intervention because the normal trajectory
+already converges.
+
+
+Interpretation By Case
+----------------------
+Diffuse-diffuse:
+
+  This is the clearest demonstration of the fundamental path-dependence
+  mechanism. Signal and tail are both diffuse enough that early small-window
+  comparisons can choose the wrong second slot. Once the wrong second slot is
+  stored in B, actual_B gives it old-energy credit. Replacing actual_B with
+  zero_B or oracle_B makes the tail advantage disappear.
+
+Mixed-tail-sharp:
+
+  This case shows that the problem is not limited to globally diffuse tails.
+  Even when the global tail is sharper, the local blockwise projected oracle
+  frame can be brittle. The second oracle residual can be weak after
+  orthogonalization against the optimizer's first direction, allowing a
+  high-gain tail complement to occupy the second slot. The carried sketch then
+  reinforces that choice.
+
+Static-cex:
+
+  This is the control. It also has high early tail mass and high consecutive
+  overlap, but the selected frame converges to the oracle span. The lesson is
+  that persistence is not the problem. The problem is persistence of a
+  non-oracle second slot.
+
+
+Why This Is Fundamental For Combined
+------------------------------------
+The combined algorithm tries to estimate full-matrix importance from:
+
+  old energy retained in B
+  + current-window energy
+  + raw-row entropy correction.
+
+This is reasonable, but it creates a feedback loop:
+
+  selected directions determine B;
+  B determines future old-energy scores;
+  future scores favor directions near what B already retained.
+
+When the retained rank is small, a wrong early selection can become a stable
+state. The raw-row entropy term does not break the loop because it is only a
+multiplier on top of the old-energy term. It can say that a direction has
+spread-out row responses; it cannot say, by itself, that an omitted oracle
+direction should receive old energy that B failed to retain.
+
+Therefore the problem should be framed as a fundamental combined-algorithm
+failure mode:
+
+  The combined score is path dependent through B. Raw-row entropy corrects the
+  entropy channel, but it does not make the old-energy channel unbiased. A
+  small retained rank can permanently suppress an oracle direction if a
+  tail-biased competitor enters the sketch first.
+
+
+Implications For Fixes
+----------------------
+1. A raw-row reservoir is not a complete guardrail.
+
+The bad selected directions pass excluded-row holdout under the same combined
+score. More row validation may catch narrow overfit, but broad high-entropy
+tail regions can pass independent raw-row samples.
+
+2. The fix should target retention, not only entropy estimation.
+
+The core event is deletion or suppression of oracle-2. Once oracle-2 is missing
+from the retained state, the sketch reinforces the alternative.
+
+3. Internal oversampling is the natural next test.
+
+Run internal ranks larger than the final target rank:
+
+  4, 8, 16
+
+Then compress to final rank 2 and evaluate whether oracle-2 is recovered.
+
+Interpret the result carefully:
+
+  - If larger internal rank preserves oracle-2 and final compression recovers
+    rank 2, the issue was early candidate deletion.
+
+  - If oracle-2 is present internally but final compression still returns the
+    tail-biased second slot, then the left-projected operator or compression
+    criterion is reinforcing the wrong geometry.
+
+  - If oracle-2 is never present even with oversampling, then the combined
+    objective or search procedure is globally misaligned for these matrices.
+
+4. Hybrid retention is a plausible remedy.
+
+The hybrid idea is to split the retained budget:
+
+  - keep some directions from the combined score;
+  - keep some top right singular directions of M_w = [B; A_w], orthogonal to
+    the score-selected directions;
+  - form B_next using the same left-projected extraction.
+
+This protects high-energy oracle directions that the nonconvex combined score
+may not currently favor, while still preserving the entropy-corrected search
+that motivated the combined algorithm.
+
+Hybrid Follow-Up Result
+-----------------------
+The Python diagnostic was extended on 2026-04-22 to compare pure combined
+selection against a simple hybrid split:
+
+  - combined:
+    both rank-2 directions come from the combined optimizer.
+
+  - hybrid:
+    the first direction comes from the combined optimizer and the second
+    direction comes from deflated SVD of M_w = [B; A_w], followed by the same
+    left-projected sketch extraction.
+
+The run used the same main diagnostic settings:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --old-memory-size 32 \
+    --dtype float32 \
+    --q0 8 --qmax 48 \
+    --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --methods combined hybrid \
+    --hybrid-combined-rank 1 \
+    --plot \
+    --output-dir summary/tail_conspiracy_python
+
+Outputs:
+
+  summary/tail_conspiracy_python/tail_diagnostics_all.csv
+  summary/tail_conspiracy_python/tail_diagnostics_interpretation.txt
+  summary/tail_conspiracy_python/*_combined_tail_diagnostics.png
+  summary/tail_conspiracy_python/*_hybrid_tail_diagnostics.png
+
+Main results:
+
+  mixed-tail-sharp:
+    combined final subspace_cos2 = 0.167467
+    hybrid final subspace_cos2   = 0.244707
+    hybrid improves the second-slot oracle cosine somewhat, but does not
+    recover the rank-2 oracle subspace.
+
+  diffuse-diffuse:
+    combined final subspace_cos2 = 0.186017
+    hybrid final subspace_cos2   = 0.442648
+    hybrid improves the failure but still leaves oracle-2 poorly retained.
+
+  static-cex:
+    combined final subspace_cos2 = 0.999976
+    hybrid final subspace_cos2   = 0.159654
+    the hybrid split breaks the control case. This shows that blindly replacing
+    the second combined slot by deflated SVD is not a safe general remedy.
+
+Interpretation:
+
+  The simple rank-2 hybrid split is diagnostic, not a fix. It confirms that
+  changing retention can alter the tail-conspiracy outcome, but it is too blunt:
+  it only partially helps the failing matrices and can destroy a case where
+  combined memory was benign and correct.
+
+  A useful remedy probably needs internal oversampling or candidate retention,
+  followed by a principled final rank-2 compression/evaluation step. That is
+  different from forcing a hard rank-2 split where one slot is always deflated
+  SVD.
+
+Internal-Rank Harness
+---------------------
+The same Python script now also has an internal-rank diagnostic path:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --old-memory-size 32 \
+    --dtype float32 \
+    --q0 8 --qmax 48 \
+    --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --only-internal-ranks \
+    --internal-ranks 4 8 16 \
+    --output-dir summary/tail_conspiracy_python
+
+It writes:
+
+  summary/tail_conspiracy_python/internal_rank_diagnostics_all.csv
+  summary/tail_conspiracy_python/internal_rank_diagnostics_interpretation.txt
+
+For each block it records whether oracle-2 is present in the larger internal
+selected subspace, then whether the left-projected final rank-2 compression
+retains or drops it. The summary classifies each matrix/internal-rank pair into:
+
+  oracle2_absent_internally
+  oracle2_present_but_compression_drops_rank2
+  oracle2_present_and_final_rank2_recovers
+
+The full 4/8/16 run completed in 771.436 seconds. It produced 288 block records
+and the expected 9 matrix/internal-rank summaries.
+
+Final internal-rank results:
+
+  mixed-tail-sharp, internal rank 4:
+    internal oracle2 projection = 0.994940
+    compressed subspace_cos2    = 0.238526
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  mixed-tail-sharp, internal rank 8:
+    internal oracle2 projection = 0.997077
+    compressed subspace_cos2    = 0.121553
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  mixed-tail-sharp, internal rank 16:
+    internal oracle2 projection = 0.999515
+    compressed subspace_cos2    = 0.469343
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  diffuse-diffuse, internal rank 4:
+    internal oracle2 projection = 0.993150
+    compressed subspace_cos2    = 0.480492
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  diffuse-diffuse, internal rank 8:
+    internal oracle2 projection = 0.999851
+    compressed subspace_cos2    = 0.938288
+    verdict = oracle2_present_and_final_rank2_recovers
+
+  diffuse-diffuse, internal rank 16:
+    internal oracle2 projection = 0.997981
+    compressed subspace_cos2    = 0.423453
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  static-cex, internal rank 4:
+    internal oracle2 projection = 0.999976
+    compressed subspace_cos2    = 0.983327
+    verdict = oracle2_present_and_final_rank2_recovers
+
+  static-cex, internal rank 8:
+    internal oracle2 projection = 0.999975
+    compressed subspace_cos2    = 0.464630
+    verdict = oracle2_present_but_compression_drops_rank2
+
+  static-cex, internal rank 16:
+    internal oracle2 projection = 0.999964
+    compressed subspace_cos2    = 0.088558
+    verdict = oracle2_present_but_compression_drops_rank2
+
+Interpretation:
+
+  Oracle-2 is not absent from the larger internal candidate spaces. In every
+  final block, its projection into the internal selected space is at least
+  0.993 for rank 4, at least 0.997 for rank 8, and at least 0.997 for rank 16
+  on the two failing matrices.
+
+  The dominant failure is therefore not simply "the search never finds
+  oracle-2." The larger selected space usually contains oracle-2, but the
+  left-projected final rank-2 compression often returns a rank-2 geometry that
+  drops the full oracle-2 relationship.
+
+  Oversampling is not monotone under the current compression rule. Diffuse
+  recovers at internal rank 8 but fails again at 16; static-cex recovers at
+  rank 4 but fails at 8 and 16. This means larger internal rank alone is not a
+  complete fix unless the final rank-2 compression criterion is changed or
+  constrained to preserve the target geometry.
+
+  The strongest current conclusion is:
+
+    early candidate deletion is not the only issue;
+    oracle-2 can be present internally and still be lost by final compression.
+
+  A better remedy should separate candidate retention from final compression,
+  and should test compression choices directly rather than assuming that a
+  larger left-projected internal sketch will automatically yield the right
+  final rank-2 state.
+
+Fixed-Frame Compression Variant Test
+------------------------------------
+The internal-rank diagnostic was extended again to hold the same internal
+selected frame fixed and compare final rank-2 extraction rules. The current
+variant set is:
+
+  left_projected:
+    the current handoff/compression rule.
+
+  internal_projected_svd:
+    SVD constrained inside the selected internal right span using M_w = [B; A_w].
+
+  internal_current_svd:
+    SVD constrained inside the selected internal right span using only A_w.
+
+  internal_first2:
+    the first two selected internal optimizer columns.
+
+  internal_score_top2:
+    the two internal columns with largest individual actual-B combined scores.
+
+  internal_zeroB_score_top2:
+    the two internal columns with largest individual zero-B scores.
+
+  internal_actualB_score_opt:
+    random Stiefel search inside the internal span to maximize final rank-2
+    actual-B score sum. The current left_projected frame is included as a seed.
+
+  internal_zeroB_score_opt:
+    random Stiefel search inside the internal span to maximize final rank-2
+    zero-B score sum.
+
+  opt1_oracle2:
+    diagnostic-only frame containing opt1 and oracle2 orthogonalized against
+    opt1.
+
+  oracle_projected:
+    diagnostic-only oracle upper bound.
+
+The full 1024-row run was repeated with these variants and trajectory plots:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --old-memory-size 32 \
+    --dtype float32 \
+    --q0 8 --qmax 48 \
+    --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --only-internal-ranks \
+    --internal-ranks 4 8 16 \
+    --variant-random-starts 64 \
+    --plot-internal \
+    --output-dir summary/tail_conspiracy_python
+
+Outputs:
+
+  summary/tail_conspiracy_python/compression_variant_diagnostics_all.csv
+  summary/tail_conspiracy_python/compression_variant_diagnostics_interpretation.txt
+  summary/tail_conspiracy_python/*_internal_rank_*_compression_variants.png
+
+Validation checks passed:
+
+  internal_rank_diagnostics_all.csv rows = 288
+  compression_variant_diagnostics_all.csv rows = 2880
+  all numeric fields finite
+  all 10 variants present for all 3 matrices and ranks 4, 8, 16
+  left_projected matches the legacy compressed fields to roundoff
+  actual-B score optimizer is tied with left_projected to roundoff or lower only
+    at about 1e-9 from seed re-orthonormalization
+
+Key full-run recovery counts:
+
+  internal_actualB_score_opt   2 / 9
+  internal_current_svd         1 / 9
+  internal_first2              2 / 9
+  internal_projected_svd       2 / 9
+  internal_score_top2          2 / 9
+  internal_zeroB_score_opt     1 / 9
+  internal_zeroB_score_top2    1 / 9
+  left_projected               2 / 9
+  opt1_oracle2                 8 / 9
+  oracle_projected             9 / 9
+
+The only recovered cases under the standard non-oracle actual-B rules are:
+
+  diffuse-diffuse at internal rank 8
+  static-cex at internal rank 4
+
+The zero-B/current-window extraction rules are not a fix in the hard 1024-row
+regime. They recover only 1 of 9 cases and are usually worse than actual-B
+compression. Examples from final blocks:
+
+  mixed-tail-sharp, internal rank 16:
+    left_projected cos2 = 0.469
+    internal_zeroB_score_opt cos2 = 0.001
+    internal_current_svd cos2 = 0.001
+
+  diffuse-diffuse, internal rank 16:
+    left_projected cos2 = 0.423
+    internal_zeroB_score_opt cos2 = 0.047
+    internal_current_svd cos2 = 0.047
+
+  static-cex, internal rank 16:
+    left_projected cos2 = 0.089
+    internal_zeroB_score_opt cos2 = 0.049
+    internal_current_svd cos2 = 0.049
+
+The objective-aware actual-B rank-2 search also does not rescue the failure.
+It recovers the same 2 of 9 cases as left_projected. This means the current
+rank-2 compression is already near the actual-B rank-2 score optimum inside
+the internal span; optimizing that same score more directly keeps the same
+wrong geometry.
+
+The strongest full-run score result is:
+
+  In every one of the 9 full-run matrix/rank cases, left_projected is the best
+  or tied-best final actual-B score among the tested variants.
+
+This includes cases where left_projected drops oracle-2 and the oracle-aware
+diagnostic variants recover it. Examples:
+
+  mixed-tail-sharp, rank 8:
+    left_projected  subspace_cos2 = 0.121553, score = 1.877337
+    opt1_oracle2    subspace_cos2 = 0.997775, score = 1.846835
+    oracle_projected subspace_cos2 = 1.000000, score = 1.846632
+
+  diffuse-diffuse, rank 16:
+    left_projected  subspace_cos2 = 0.423453, score = 1.892467
+    opt1_oracle2    subspace_cos2 = 0.989254, score = 1.861531
+    oracle_projected subspace_cos2 = 1.000000, score = 1.859551
+
+  static-cex, rank 16:
+    left_projected  subspace_cos2 = 0.088558, score = 1.921282
+    opt1_oracle2    subspace_cos2 = 0.810379, score = 1.917091
+    oracle_projected subspace_cos2 = 1.000000, score = 1.916537
+
+Interpretation:
+
+  This does not isolate the problem to the left-projected sketch extraction
+  alone. The constrained internal-span SVD is numerically almost identical to
+  left_projected in these final comparisons. The issue is broader: the
+  current energy/objective-based rank-2 extraction from the internal frame
+  prefers a slightly higher-scoring rank-2 geometry even when that geometry
+  drops oracle-2.
+
+  The diagnostic-only oracle-aware variants show that recovery is possible
+  from the same block context, but the current combined score ranks those
+  oracle-preserving frames lower. That is stronger evidence for a
+  sketch-mediated objective/compression preference than for a mere search
+  failure.
+
+Small-Sweep And Seed Cross-Checks
+---------------------------------
+A smaller seed-0 parameter sweep was also run:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --n 256 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --old-memory-size 32 \
+    --dtype float32 \
+    --q0 8 --qmax 32 \
+    --num-restarts 4 --maxit 80 \
+    --expansion-maxit 4 --post-expansion-maxit 40 \
+    --only-internal-ranks \
+    --internal-ranks 2 4 8 16 \
+    --variant-random-starts 32 \
+    --plot-internal \
+    --output-dir summary/tail_conspiracy_python_small_sweep
+
+A 5-seed smaller sweep was then run with the same n=256 setup, no plots, and
+variant-random-starts=16:
+
+  summary/tail_conspiracy_seed_sweep/seed_0
+  summary/tail_conspiracy_seed_sweep/seed_1
+  summary/tail_conspiracy_seed_sweep/seed_2
+  summary/tail_conspiracy_seed_sweep/seed_3
+  summary/tail_conspiracy_seed_sweep/seed_4
+
+Aggregated output:
+
+  summary/tail_conspiracy_seed_sweep/seed_sweep_compression_variant_summary.csv
+
+Validation checks passed for all five seed directories:
+
+  internal_rank_diagnostics_all.csv rows = 96 per seed
+  compression_variant_diagnostics_all.csv rows = 960 per seed
+  all numeric fields finite
+
+Geometry recovery counts across 60 seed/matrix/rank cases:
+
+  internal_actualB_score_opt   49 / 60
+  internal_current_svd         10 / 60
+  internal_first2              49 / 60
+  internal_projected_svd       49 / 60
+  internal_score_top2          49 / 60
+  internal_zeroB_score_opt     10 / 60
+  internal_zeroB_score_top2    10 / 60
+  left_projected               49 / 60
+  opt1_oracle2                 52 / 60
+  oracle_projected             60 / 60
+
+Restricted to the 58 cases where oracle-2 is present in the internal frame:
+
+  left_projected               49 / 58
+  internal_actualB_score_opt   49 / 58
+  internal_zeroB_score_opt     10 / 58
+  opt1_oracle2                 50 / 58
+  oracle_projected             58 / 58
+
+By matrix, left_projected recovers:
+
+  diffuse-diffuse: 15 / 20
+  mixed-tail-sharp: 15 / 20
+  static-cex: 19 / 20
+
+Interpretation of the seed sweep:
+
+  The n=256 regime is much easier than the 1024-row diagnostic, but it is not
+  perfectly trivial across seeds. Standard actual-B compression still fails in
+  11 of 60 seed/matrix/rank cases. The zero-B/current-window variants fail much
+  more often, recovering only 10 of 60 cases.
+
+  This reinforces the same conclusion: simply removing sketch energy at final
+  compression is not a remedy. The useful target is not "ignore B"; it is
+  "change the objective or rank-2 extraction so that retained internal
+  oracle-like directions are not sacrificed for a small actual-B score gain."
+
+Current Causal Framing
+----------------------
+The evidence is now strong enough to say:
+
+  The failure is sketch-mediated and objective/compression-driven.
+
+It is still too strong to say:
+
+  The failure is definitely caused by the sketch alone.
+
+The more precise statement is:
+
+  The carried sketch changes the old-energy landscape; the combined objective
+  then assigns slightly higher actual-B score to rank-2 geometries that can
+  drop oracle-2; final rank-2 extraction faithfully chooses those geometries
+  even when oracle-2 is present in a larger internal frame.
+
+So the sketch is not merely correlated with the failure. But the failure is an
+interaction of sketch memory, combined score, and rank-limited extraction.
+
+
+Bottom Line
+-----------
+The combined algorithm can suffer from a second-slot tail-conspiracy failure.
+The raw-row memory R fixes entropy estimation on sketch rows, but it does not
+remove path dependence through B. If the rank budget lets a tail-biased
+direction enter B early, later windows can keep rewarding that region with old
+energy. The result is a persistent rank-2 failure: oracle-1 may recover, but
+oracle-2 remains suppressed by a reinforced tail slot.

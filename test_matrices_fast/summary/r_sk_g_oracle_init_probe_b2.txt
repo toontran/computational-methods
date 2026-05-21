@@ -1,0 +1,138 @@
+==== matrix=static-cex  block=2  union_dim=66  c_sk=1.2106e+00 ====
+  --- start = oracle_v1_proj ---
+    score:   start=3.47032e-01  end=5.33010e-01  Δ=+1.8598e-01
+    hm3:     start=0.3470      end=0.5333
+    r_sk:    start=+0.6605      end=+1.0000
+    raw_g1:  start=0.2805      end=0.4259
+    raw_g2:  start=0.2805      end=0.4391
+    cos²(start, end) = 0.2785   (angle moved → outside-mass = 0.7215)
+    cos²(end, other_oracle_proj) = 0.0031
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.002816172931740376, 'line_search_alpha': 0.5, 'line_search_steps': 2}
+    v_end  ↔ SVD_sketch: #0 (0.000), #1 (0.000)
+    v_end  ↔ SVD_cur:    #3 (0.018), #2 (0.017), #1 (0.017), #0 (0.016)
+    v_end  ↔ SVD_fut:    #0 (0.475), #1 (0.014), #2 (0.002), #3 (0.000)
+    v_end  ↔ SVD_union:  #3 (0.487), #1 (0.017), #2 (0.017), #0 (0.016)
+    v_end  ↔ rows(A_cur):row#10 cos²=0.017 ‖row‖=0.970, row#11 cos²=0.016 ‖row‖=0.965, row#3 cos²=0.016 ‖row‖=0.954, row#8 cos²=0.016 ‖row‖=0.937
+    v_end  ↔ rows(A_fut):row#4 cos²=0.474 ‖row‖=0.943, row#29 cos²=0.015 ‖row‖=0.935, row#25 cos²=0.001 ‖row‖=0.928, row#20 cos²=0.000 ‖row‖=0.922
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.7215):
+      ↔ SVD_sketch: #0 (0.077), #1 (0.050)
+      ↔ SVD_cur:    #3 (0.009), #2 (0.009), #1 (0.008), #0 (0.008)
+      ↔ SVD_fut:    #0 (0.558), #1 (0.005), #3 (0.002), #2 (0.000)
+      ↔ SVD_union:  #3 (0.561), #1 (0.008), #0 (0.008), #2 (0.007)
+      ↔ rows(A_cur):row#10 cos²=0.008 ‖row‖=0.970, row#11 cos²=0.008 ‖row‖=0.965, row#3 cos²=0.008 ‖row‖=0.954, row#8 cos²=0.008 ‖row‖=0.937
+      ↔ rows(A_fut):row#4 cos²=0.561 ‖row‖=0.943, row#29 cos²=0.006 ‖row‖=0.935, row#16 cos²=0.003 ‖row‖=0.896, row#1 cos²=0.003 ‖row‖=0.896
+  --- start = oracle_v2_proj ---
+    score:   start=4.04888e-01  end=5.32947e-01  Δ=+1.2806e-01
+    hm3:     start=0.4049      end=0.5332
+    r_sk:    start=+0.7756      end=+1.0000
+    raw_g1:  start=0.3268      end=0.4257
+    raw_g2:  start=0.3268      end=0.4391
+    cos²(start, end) = 0.3239   (angle moved → outside-mass = 0.6761)
+    cos²(end, other_oracle_proj) = 0.0026
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.003154978740621864, 'line_search_alpha': 0.5, 'line_search_steps': 2}
+    v_end  ↔ SVD_sketch: #1 (0.000), #0 (0.000)
+    v_end  ↔ SVD_cur:    #3 (0.018), #1 (0.017), #2 (0.017), #0 (0.017)
+    v_end  ↔ SVD_fut:    #0 (0.476), #1 (0.013), #2 (0.002), #3 (0.001)
+    v_end  ↔ SVD_union:  #3 (0.484), #2 (0.018), #1 (0.017), #0 (0.016)
+    v_end  ↔ rows(A_cur):row#10 cos²=0.017 ‖row‖=0.970, row#11 cos²=0.016 ‖row‖=0.965, row#3 cos²=0.016 ‖row‖=0.954, row#8 cos²=0.016 ‖row‖=0.937
+    v_end  ↔ rows(A_fut):row#4 cos²=0.474 ‖row‖=0.943, row#29 cos²=0.014 ‖row‖=0.935, row#25 cos²=0.002 ‖row‖=0.928, row#20 cos²=0.001 ‖row‖=0.922
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.6761):
+      ↔ SVD_sketch: #1 (0.056), #0 (0.049)
+      ↔ SVD_cur:    #1 (0.007), #3 (0.007), #0 (0.007), #2 (0.007)
+      ↔ SVD_fut:    #0 (0.579), #1 (0.004), #3 (0.003), #2 (0.001)
+      ↔ SVD_union:  #3 (0.581), #2 (0.007), #1 (0.007), #0 (0.007)
+      ↔ rows(A_cur):row#10 cos²=0.007 ‖row‖=0.970, row#11 cos²=0.007 ‖row‖=0.965, row#3 cos²=0.007 ‖row‖=0.954, row#8 cos²=0.006 ‖row‖=0.937
+      ↔ rows(A_fut):row#4 cos²=0.582 ‖row‖=0.943, row#29 cos²=0.005 ‖row‖=0.935, row#0 cos²=0.004 ‖row‖=0.896, row#9 cos²=0.004 ‖row‖=0.896
+
+==== matrix=mixed-tail-sharp  block=2  union_dim=66  c_sk=1.2103e+00 ====
+  --- start = oracle_v1_proj ---
+    score:   start=4.82214e-01  end=5.23685e-01  Δ=+4.1472e-02
+    hm3:     start=0.4822      end=0.5237
+    r_sk:    start=+0.9302      end=+1.0000
+    raw_g1:  start=0.3886      end=0.4200
+    raw_g2:  start=0.3886      end=0.4261
+    cos²(start, end) = 0.5560   (angle moved → outside-mass = 0.4440)
+    cos²(end, other_oracle_proj) = 0.0115
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.005254535800125735, 'line_search_alpha': 0.5, 'line_search_steps': 2}
+    v_end  ↔ SVD_sketch: #0 (0.000), #1 (0.000)
+    v_end  ↔ SVD_cur:    #3 (0.027), #2 (0.026), #1 (0.018), #0 (0.014)
+    v_end  ↔ SVD_fut:    #0 (0.317), #1 (0.057), #3 (0.052), #2 (0.045)
+    v_end  ↔ SVD_union:  #2 (0.329), #3 (0.083), #1 (0.021), #0 (0.015)
+    v_end  ↔ rows(A_cur):row#7 cos²=0.016 ‖row‖=0.946, row#2 cos²=0.016 ‖row‖=0.935, row#26 cos²=0.016 ‖row‖=0.900, row#3 cos²=0.016 ‖row‖=0.915
+    v_end  ↔ rows(A_fut):row#30 cos²=0.287 ‖row‖=0.929, row#21 cos²=0.073 ‖row‖=0.924, row#15 cos²=0.053 ‖row‖=0.921, row#9 cos²=0.028 ‖row‖=0.923
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.4440):
+      ↔ SVD_sketch: #0 (0.077), #1 (0.008)
+      ↔ SVD_cur:    #3 (0.005), #2 (0.005), #1 (0.004), #0 (0.003)
+      ↔ SVD_fut:    #0 (0.453), #1 (0.044), #2 (0.024), #3 (0.018)
+      ↔ SVD_union:  #2 (0.446), #3 (0.056), #1 (0.004), #0 (0.002)
+      ↔ rows(A_cur):row#7 cos²=0.004 ‖row‖=0.946, row#2 cos²=0.004 ‖row‖=0.935, row#3 cos²=0.003 ‖row‖=0.915, row#11 cos²=0.003 ‖row‖=0.918
+      ↔ rows(A_fut):row#30 cos²=0.451 ‖row‖=0.929, row#21 cos²=0.075 ‖row‖=0.924, row#15 cos²=0.045 ‖row‖=0.921, row#12 cos²=0.021 ‖row‖=0.900
+  --- start = oracle_v2_proj ---
+    score:   start=4.58167e-01  end=5.23032e-01  Δ=+6.4865e-02
+    hm3:     start=0.4582      end=0.5231
+    r_sk:    start=+0.8844      end=+1.0000
+    raw_g1:  start=0.3692      end=0.4203
+    raw_g2:  start=0.3692      end=0.4244
+    cos²(start, end) = 0.5141   (angle moved → outside-mass = 0.4859)
+    cos²(end, other_oracle_proj) = 0.0162
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.004406153678890497, 'line_search_alpha': 1.0, 'line_search_steps': 1}
+    v_end  ↔ SVD_sketch: #0 (0.000), #1 (0.000)
+    v_end  ↔ SVD_cur:    #2 (0.030), #3 (0.022), #1 (0.017), #0 (0.016)
+    v_end  ↔ SVD_fut:    #0 (0.326), #1 (0.087), #2 (0.034), #3 (0.012)
+    v_end  ↔ SVD_union:  #2 (0.313), #3 (0.088), #1 (0.019), #0 (0.012)
+    v_end  ↔ rows(A_cur):row#2 cos²=0.016 ‖row‖=0.935, row#7 cos²=0.016 ‖row‖=0.946, row#11 cos²=0.016 ‖row‖=0.918, row#20 cos²=0.016 ‖row‖=0.914
+    v_end  ↔ rows(A_fut):row#30 cos²=0.297 ‖row‖=0.929, row#21 cos²=0.070 ‖row‖=0.924, row#9 cos²=0.046 ‖row‖=0.923, row#15 cos²=0.023 ‖row‖=0.921
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.4859):
+      ↔ SVD_sketch: #0 (0.110), #1 (0.009)
+      ↔ SVD_cur:    #2 (0.007), #3 (0.005), #0 (0.004), #1 (0.004)
+      ↔ SVD_fut:    #0 (0.475), #1 (0.062), #2 (0.021), #3 (0.001)
+      ↔ SVD_union:  #2 (0.452), #3 (0.069), #1 (0.007), #0 (0.002)
+      ↔ rows(A_cur):row#7 cos²=0.004 ‖row‖=0.946, row#2 cos²=0.004 ‖row‖=0.935, row#11 cos²=0.004 ‖row‖=0.918, row#20 cos²=0.004 ‖row‖=0.914
+      ↔ rows(A_fut):row#30 cos²=0.440 ‖row‖=0.929, row#21 cos²=0.068 ‖row‖=0.924, row#9 cos²=0.036 ‖row‖=0.923, row#24 cos²=0.017 ‖row‖=0.901
+
+==== matrix=diffuse-diffuse  block=2  union_dim=66  c_sk=1.2111e+00 ====
+  --- start = oracle_v1_proj ---
+    score:   start=4.93530e-01  end=5.19400e-01  Δ=+2.5870e-02
+    hm3:     start=0.4935      end=0.5194
+    r_sk:    start=+0.9509      end=+1.0000
+    raw_g1:  start=0.3978      end=0.4189
+    raw_g2:  start=0.3978      end=0.4186
+    cos²(start, end) = 0.8406   (angle moved → outside-mass = 0.1594)
+    cos²(end, other_oracle_proj) = 0.0207
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.0017040446855642389, 'line_search_alpha': 1.0, 'line_search_steps': 1}
+    v_end  ↔ SVD_sketch: #1 (0.000), #0 (0.000)
+    v_end  ↔ SVD_cur:    #0 (0.111), #3 (0.077), #2 (0.005), #1 (0.003)
+    v_end  ↔ SVD_fut:    #0 (0.357), #3 (0.038), #1 (0.005), #2 (0.000)
+    v_end  ↔ SVD_union:  #0 (0.326), #3 (0.144), #1 (0.124), #2 (0.007)
+    v_end  ↔ rows(A_cur):row#30 cos²=0.016 ‖row‖=0.909, row#17 cos²=0.016 ‖row‖=0.908, row#12 cos²=0.016 ‖row‖=0.908, row#27 cos²=0.016 ‖row‖=0.910
+    v_end  ↔ rows(A_fut):row#23 cos²=0.046 ‖row‖=0.909, row#5 cos²=0.041 ‖row‖=0.909, row#16 cos²=0.037 ‖row‖=0.909, row#30 cos²=0.032 ‖row‖=0.908
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.1594):
+      ↔ SVD_sketch: #1 (0.224), #0 (0.028)
+      ↔ SVD_cur:    #0 (0.008), #3 (0.006), #2 (0.000), #1 (0.000)
+      ↔ SVD_fut:    #3 (0.172), #0 (0.125), #1 (0.041), #2 (0.002)
+      ↔ SVD_union:  #0 (0.087), #2 (0.049), #3 (0.030), #1 (0.009)
+      ↔ rows(A_cur):row#30 cos²=0.001 ‖row‖=0.909, row#17 cos²=0.001 ‖row‖=0.908, row#12 cos²=0.001 ‖row‖=0.908, row#27 cos²=0.001 ‖row‖=0.910
+      ↔ rows(A_fut):row#12 cos²=0.149 ‖row‖=0.908, row#13 cos²=0.069 ‖row‖=0.909, row#31 cos²=0.069 ‖row‖=0.909, row#23 cos²=0.064 ‖row‖=0.909
+  --- start = oracle_v2_proj ---
+    score:   start=5.08533e-01  end=5.19176e-01  Δ=+1.0644e-02
+    hm3:     start=0.5085      end=0.5192
+    r_sk:    start=+0.9806      end=+1.0000
+    raw_g1:  start=0.4099      end=0.4175
+    raw_g2:  start=0.4099      end=0.4196
+    cos²(start, end) = 0.8951   (angle moved → outside-mass = 0.1049)
+    cos²(end, other_oracle_proj) = 0.0277
+    stop: {'reason': 'progress', 'iters': 200, 'grad_norm': 0.002278734034748115, 'line_search_alpha': 1.0, 'line_search_steps': 1}
+    v_end  ↔ SVD_sketch: #0 (0.000), #1 (0.000)
+    v_end  ↔ SVD_cur:    #1 (0.195), #2 (0.113), #3 (0.019), #0 (0.001)
+    v_end  ↔ SVD_fut:    #0 (0.173), #3 (0.092), #2 (0.041), #1 (0.000)
+    v_end  ↔ SVD_union:  #2 (0.206), #1 (0.198), #0 (0.115), #3 (0.076)
+    v_end  ↔ rows(A_cur):row#21 cos²=0.016 ‖row‖=0.909, row#4 cos²=0.016 ‖row‖=0.907, row#14 cos²=0.016 ‖row‖=0.909, row#16 cos²=0.016 ‖row‖=0.908
+    v_end  ↔ rows(A_fut):row#4 cos²=0.053 ‖row‖=0.909, row#23 cos²=0.043 ‖row‖=0.909, row#16 cos²=0.040 ‖row‖=0.909, row#5 cos²=0.034 ‖row‖=0.909
+    v_outside (v_end ⊥ v_start, ‖outside‖=0.1049):
+      ↔ SVD_sketch: #0 (0.130), #1 (0.034)
+      ↔ SVD_cur:    #1 (0.008), #2 (0.004), #3 (0.000), #0 (0.000)
+      ↔ SVD_fut:    #0 (0.353), #3 (0.063), #1 (0.018), #2 (0.009)
+      ↔ SVD_union:  #1 (0.260), #0 (0.100), #3 (0.047), #2 (0.003)
+      ↔ rows(A_cur):row#21 cos²=0.001 ‖row‖=0.909, row#4 cos²=0.001 ‖row‖=0.907, row#14 cos²=0.001 ‖row‖=0.909, row#23 cos²=0.001 ‖row‖=0.909
+      ↔ rows(A_fut):row#4 cos²=0.123 ‖row‖=0.909, row#29 cos²=0.112 ‖row‖=0.909, row#23 cos²=0.076 ‖row‖=0.909, row#8 cos²=0.066 ‖row‖=0.908
+

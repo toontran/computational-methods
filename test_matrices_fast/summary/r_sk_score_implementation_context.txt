@@ -1,0 +1,321 @@
+r_sk-based slot-2 score — implementation context
+=================================================
+
+Date: 2026-04-27
+Audience: someone implementing gradient ascent for the new
+"sketch-shortfall + raw-future" score derived from the
+HM-evidence post-mortem in `hmean_evidence_redesign_context.txt`.
+
+
+1. Motivation — why the previous score family failed
+-----------------------------------------------------
+
+Background reading (mandatory before changing code):
+  - summary/hmean_evidence_redesign_context.txt
+      §6 lists the seven failure hypotheses (a–g) for the original
+      HM-evi score.
+  - summary/hmean_evidence_score_synthesis.txt
+      per-block diagnostic confirming the original score is
+      well-optimized but optimizes the wrong thing.
+
+We then explored two reweightings of the existing
+`HM(u_sk, u_g1, u_g2)` framework on mixed-tail-sharp,
+static-cex, and residual-spiky-shocks:
+
+  - `w_k = c_k²` (user's "raw-domain HM with c-weights",
+    matches `(Σc)/Σ(c_k/raw_k)`).
+  - `w_k = c_k`  (equivalent to unweighted HM of raws).
+
+Both pass gradient checks (rel err ~1e-10) and remove the
+arbitrary `(rank, half_win, half_win)` choice. NEITHER moves
+the chosen v toward `oracle_v2_proj` on the bench matrices.
+The structural reason:
+
+  Any HM-of-(u_sk, u_g1, u_g2) is maximized when the three are
+  balanced. But oracle_v2_proj is NOT block-balanced — its
+  signature is `u_sk ≫ u_g1, u_g2` (sketch-heavy) or
+  `u_sk ≪ u_g1, u_g2` (sketch-orthogonal), depending on the
+  matrix. The optimizer that wins under any HM is
+  `hm_triplet_raw_best`, which picks v with raws nearly equal
+  across blocks — that direction systematically misses
+  V_exact[:, 1].
+
+Detailed evidence:
+  - summary/hmean_evi_compare_mixed-tail-sharp.txt
+  - summary/hmean_evi_compare_residual-spiky.txt
+  - summary/hmean_evi_skonly_mixed-tail-sharp.txt
+  - summary/hmean_evi_skonly_static-cex.txt
+
+
+2. The new framing — r_sk + raw_g
+---------------------------------
+
+Define the "sketch shortfall fraction":
+
+    r_sk(v) = (1/c_sk - raw_sk(v)) / (1/c_sk)
+            = 1 - c_sk · raw_sk(v)
+            = 1 - u_sk(v)
+
+`1/c_sk = ||A_seen||_F² / N_seen` is the mean row energy of
+seen rows. So r_sk says "by what fraction does v fall short
+of capturing typical row energy from the past?":
+
+    r_sk > 0   v captures less than typical row energy
+    r_sk = 0   v captures typical row energy
+    r_sk < 0   v captures MORE than typical (oversaturated)
+
+Empirical (block 31, mixed-tail-sharp):
+    candidate            r_sk    raw_g1   raw_g2   align_v2
+    combined_v1         -0.084   0.038    0.001    0.000
+    combined_v2         -0.110   0.013    0.000    0.001
+    hm_triplet_raw_best  0.631   0.286    0.299    0.001
+    oracle_v1_proj       0.975   0.407    0.407    0.000
+    oracle_v2_proj      -0.038   0.041    0.041    0.830
+
+Key observation: oracle_v2_proj has r_sk ≤ 0 (sketch saturated)
+and small but EQUAL raw_g1, raw_g2. hm_triplet_raw_best has
+LARGER raw_g but at the cost of r_sk = 0.63 (sketch starved).
+The previous HM-of-u scores can't see this distinction because
+they always penalize the smallest term of the triple.
+
+Same shape on static-cex (block 31):
+    oracle_v2_proj      -0.100   0.032    0.032    0.959
+
+
+3. Score forms to implement
+---------------------------
+
+Three candidate forms, in increasing complexity. Implement
+S1 first, evaluate on the existing per-block diagnostic, then
+decide whether to advance.
+
+S1. SATURATED-SKETCH ADDITIVE
+    score(v) = -max(r_sk(v), 0)² + α · HM(raw_g1(v), raw_g2(v))
+
+    where HM(a, b) = 2ab/(a + b) is the unweighted HM of two
+    positive scalars. The first term is 0 for sketch-saturated
+    candidates (r_sk ≤ 0) and quadratically negative otherwise.
+    Second term rewards future-window energy on its own scale.
+    α = 1.0 to start; tune.
+
+    Maximizer goal: r_sk ≤ 0 AND raw_g1 ≈ raw_g2 large.
+
+S2. SATURATED-SKETCH MULTIPLICATIVE
+    score(v) = (1 - max(r_sk(v), 0))^β · HM(raw_g1(v), raw_g2(v))
+
+    Sketch term is a 0–1 gate that smoothly closes as r_sk → 1.
+    β controls steepness (β=2 gives quadratic decay near r_sk=0,
+    β=1 is linear). For r_sk ≤ 0 the gate is 1.
+
+S3. CARRY-AWARE r_sk
+    score(v) = -max(r_sk(v), 0)² · (state_align(v))^γ
+               + α · HM(raw_g1(v), raw_g2(v))
+
+    where state_align(v) = ||state["V"]^T v||² ∈ [0, 1].
+    Adds the carry term from D2 of the redesign doc — only
+    counts r_sk shortfall against v if v is also outside the
+    carried subspace. This addresses §6(c) (raw_sk weights only
+    the rank-r sketch) by not penalizing oracle directions that
+    happen to be orthogonal to state["V"].
+
+Recommendation: start with S1, fall back to S2 if S1 over-rewards
+sketch oversaturation (r_sk very negative).
+
+
+4. Gradient derivations
+-----------------------
+
+All gradients are taken w.r.t. v ∈ R^n (then projected onto the
+sphere by the optimizer scaffold; see §5).
+
+Common quantities:
+    raw_sk(v) = ||A_sketch v||²        ∂/∂v = 2 A_sketch^T A_sketch v
+    raw_g1(v) = ||A_cur v||²           ∂/∂v = 2 A_cur^T A_cur v
+    raw_g2(v) = ||A_fut v||²           ∂/∂v = 2 A_fut^T A_fut v
+
+For r_sk = 1 - c_sk · raw_sk:
+    ∂r_sk/∂v = -2 c_sk · A_sketch^T A_sketch v
+
+For HM(a, b) = 2ab/(a + b):
+    ∂HM/∂a = 2b² / (a + b)²
+    ∂HM/∂b = 2a² / (a + b)²
+
+S1 gradient:
+    Let p = max(r_sk, 0).
+    ∂(-p²)/∂v = { 0           if r_sk ≤ 0
+                { -2 r_sk · ∂r_sk/∂v   if r_sk > 0
+                = +4 c_sk · r_sk · A_sketch^T A_sketch v   (when r_sk > 0)
+
+    Let H = HM(raw_g1, raw_g2).
+    ∂H/∂v = (∂HM/∂raw_g1) · ∂raw_g1/∂v + (∂HM/∂raw_g2) · ∂raw_g2/∂v
+          = (4 raw_g2² / (raw_g1+raw_g2)²) · A_cur^T A_cur v
+          + (4 raw_g1² / (raw_g1+raw_g2)²) · A_fut^T A_fut v
+
+    Total: ∂score/∂v = ∂(-p²)/∂v + α · ∂H/∂v
+
+S2 gradient:
+    Let q = (1 - max(r_sk, 0))^β, H as above.
+    ∂q/∂v = { 0                      if r_sk ≤ 0
+            { -β (1 - r_sk)^(β-1) · ∂r_sk/∂v
+              = +2β c_sk (1 - r_sk)^(β-1) · A_sketch^T A_sketch v
+                                       if r_sk > 0
+    ∂score/∂v = ∂q/∂v · H + q · ∂H/∂v
+
+S3 gradient:
+    Let s = state_align(v) = ||V_state^T v||² where V_state =
+    state["V"] ∈ R^{n×r}. Then ∂s/∂v = 2 V_state V_state^T v.
+    Combine with S1 form using product rule on the first term.
+
+The non-smoothness at r_sk = 0 is a kink, not a discontinuity.
+The optimizer scaffold uses sphere-projected gradient ascent
+which handles kinks fine (the gradient is well-defined a.e.).
+If numerical issues arise, replace max(r_sk, 0) with a softplus
+of slope κ (e.g. κ=20):
+    smooth_relu(x) = log(1 + exp(κ x)) / κ → x for x≫0, →0 for x≪0
+    ∂smooth_relu(x)/∂x = sigmoid(κ x)
+
+
+5. Implementation plan
+----------------------
+
+5.1. Add the score to a new file: `r_sk_g_score.py`. Mirror
+     the structure of `hmean_evidence_score.py`:
+       - `r_sk_g_value_grad(A_sketch, A_cur, A_fut, c_sk, alpha,
+                            v, variant="S1")`
+         returns (score, grad, r_sk, raw_g1, raw_g2, hm_g)
+       - `make_r_sk_g_optimizer(...)` adapter for the scaffold.
+       - `optimize_r_sk_g_in_basis(...)` mirroring
+         `optimize_hm_evi_in_basis` (monkey-patches
+         `future_hmean_value_grad` in the optimizer module).
+     DO NOT modify `future_hmean_optimizer_diagnostic.py`
+     (per §7 of the redesign context).
+
+5.2. Add a `--variant` CLI flag accepting {S1, S2, S3}.
+     Default S1.
+
+5.3. Per-block diagnostic CLI: clone the structure of
+     `hmean_evidence_score.py::analyze_block`, but score
+     candidates with `r_sk_g_value_grad` and ALSO with
+     `hm_evi_value_grad` (for cross-comparison). Per-block
+     output should include columns:
+       r_sk  raw_g1  raw_g2  hm_g  sat_term  score(S1/2/3)
+       sc_evi(fixed)  sc_evi(c)  align_v1  align_v2
+
+5.4. Streaming integration: in
+     `half_window_sliding_hmean_experiment.py`, add a new policy
+     `future_hmean_r_sk_g` analogous to `future_hmean_evidence`.
+     Same start-set construction; `chosen_v2 =
+     optimize_r_sk_g_in_basis(...)["vec"]`. Same SVD reframe in
+     M_gain and state advance.
+
+
+6. Sanity checks (in order)
+---------------------------
+
+S1. Gradient FD test on each variant:
+      h = 1e-6, 20 sampled coords, max rel err < 1e-8 in float64.
+      Use the `gradient_check` pattern from
+      `hmean_evidence_score.py::gradient_check`. Run on
+      mixed-tail-sharp at blocks 2, 6, 12.
+
+S2. Per-block diagnostic on (mixed-tail-sharp, static-cex,
+      residual-spiky-shocks) at blocks 2, 6, 12, 31. Acceptance:
+        score(oracle_v2_proj) ≥ score(hm_triplet_raw_best) - ε
+      for ε = 0.05, on at least one of the four blocks per matrix.
+      If the new score still ranks hm_triplet_raw above the
+      oracle on every block, the score's structural goal isn't
+      met — go back to choosing form before wiring streaming.
+
+S3. Streaming smoke test (rank=2, half_win=32, n=1024) on:
+        mixed-tail-sharp     (counterexample tail)
+        static-cex           (steady divergence regime —
+                              align_v2 of oracle is high here)
+        etf-basket-basis     (sanity: oracle_v2_proj should
+                              still be tracked)
+      Acceptance:
+        final_exact_cos2 ≥ 0.6 on the first two,
+                         ≥ 0.9 on etf-basket-basis,
+        wall-clock ≤ 10 s/matrix.
+
+S4. Full 17-matrix sweep against the four baselines:
+        comb / hybr / isvd / online
+      Bench harness: see
+        summary/bench_matrix_sweep_evidence/synthesis.txt
+      Win count goal on `final_exact_cos2`: ≥ 5 wins,
+      ≥ 8 ties-or-wins. (Current evi: 0 wins.)
+
+
+7. Files to touch
+-----------------
+
+NEW:
+  r_sk_g_score.py
+      score implementation, gradient, optimizer adapter,
+      diagnostic CLI.
+
+  summary/r_sk_g_score_synthesis.txt
+      to be written after S2 acceptance — same shape as
+      summary/hmean_evidence_score_synthesis.txt.
+
+EDIT:
+  half_window_sliding_hmean_experiment.py
+      add `future_hmean_r_sk_g` policy entry.
+
+DO NOT MODIFY:
+  future_hmean_optimizer_diagnostic.py     (sphere ascent core)
+  hmean_evidence_score.py                  (keep as comparison)
+  hmean_combinations_optimizer_diagnostic.py
+
+
+8. Hyperparameters and defaults
+-------------------------------
+
+S1: α = 1.0
+S2: β = 2.0
+S3: γ = 1.0, α = 1.0
+softplus slope κ (if smoothing): 20.0 (kink width ≈ 0.05)
+
+Optimizer:
+  union_maxit = 120, union_tol = 1e-9, union_random_starts = 24
+  (same as existing HM-evi diagnostic)
+  Warm starts: V_default[:, 1], all online-pool candidates,
+  top-8 of Vbasis_final, oracle_v1_proj, oracle_v2_proj
+  (latter two only for the diagnostic, not streaming —
+  streaming has no oracle access).
+
+
+9. Open questions to resolve before scaling up
+----------------------------------------------
+
+Q1. Does S1 over-reward r_sk ≪ 0 (sketch oversaturation)?
+    combined_v1 at block 31 has r_sk = -0.084 with score
+    contribution 0 from the sketch term (since max(r_sk, 0) = 0).
+    If many candidates pile up at r_sk ≤ 0, the score reduces
+    to α · HM(raw_g1, raw_g2) — which still favors the
+    raw-balanced direction. Resolution: try S2 (multiplicative
+    gate) which rewards r_sk slightly negative more than r_sk = 0.
+
+Q2. Should HM(raw_g1, raw_g2) be replaced by something that
+    rewards "raw_g1 ≈ raw_g2" specifically (rather than just
+    their HM)? oracle_v2_proj has equal raws by construction;
+    a balance-aware term might amplify that signal. e.g.
+    HM(raw_g1, raw_g2) · (1 - |raw_g1 - raw_g2|/(raw_g1+raw_g2))^η.
+
+Q3. How does the new score behave on residual-spiky-shocks where
+    the oracle has u_sk ≈ 0 (orthogonal to state["V"])? S3 with
+    state_align is meant to address this — should be the first
+    matrix to look at if S1/S2 regress on spiky families.
+
+
+10. Why this might still fail
+-----------------------------
+
+The structural diagnosis says oracle_v2 is characterized by
+"r_sk ≤ 0 + small equal raw_g". Both conditions are necessary
+but may not be sufficient — a candidate with r_sk = -0.05 and
+raw_g1 = raw_g2 = 0.1 might still not align with V_exact[:, 1]
+under the rank-2 SVD reframe. If S1/S2/S3 all pass the
+per-block diagnostic but streaming carry still fails, the issue
+is in the M_gain reframe (D3 in redesign doc) — at that point,
+go to a Stiefel-rank-2 joint score and stop iterating on the
+per-v scalar score.

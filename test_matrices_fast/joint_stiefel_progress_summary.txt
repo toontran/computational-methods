@@ -1,0 +1,225 @@
+Joint Stiefel optimizer progress summary
+========================================
+
+Context
+-------
+Main file:
+  cex_restricted_space_probe.py
+
+New fair-comparison helper:
+  compare_joint_same_state.py
+
+The original restricted optimizer selected rank-r vectors sequentially/greedily.
+We added a true joint Stiefel option that optimizes all columns together for
+
+  max_{Z'Z = I} sum_j F(z_j)
+
+using stacked gradients G, Stiefel tangent projection
+
+  Xi = G - Z sym(Z'G),
+
+a joint step, and polar/SVD retraction.
+
+
+Implemented options
+-------------------
+Existing greedy path remains default:
+
+  --basis-selection greedy
+
+Joint rank-r optimizer:
+
+  --basis-selection joint
+
+Joint solver choices:
+
+  --joint-solver riemannian
+  --joint-solver slsqp
+
+The SLSQP option is a constrained quasi-Newton/SQP refinement over Z'Z = I
+using exact objective gradients. It did not improve alignment in our tests.
+
+Warm-start and perturbation options:
+
+  --joint-warm-start-greedy
+  --joint-warm-start-rotations N
+  --joint-warm-start-rotation-angle ANGLE
+  --joint-warm-start-perturbations N
+  --joint-warm-start-perturb-scale SCALE
+
+Oversampling/compression options:
+
+  --joint-oversample K
+  --joint-oversample-rotate svd
+
+Oversampling solves for rank + K joint columns, then rotates/compresses back
+to rank using an SVD inside the oversampled span.
+
+
+Usual old settings
+------------------
+When we say "old/usual settings", we used the ablation-style settings:
+
+  --matrix static-cex
+  --mode restricted
+  --dtype float64
+  --carry left
+  --reduced-optimizer cex
+  --expansion-direction residual
+  --n 128
+  --win 32
+  --rank 2
+  --preset cex-replicate
+  --q0 4
+  --qmax 32
+  --krylov-depth 2
+  --residual-tol 1e-4
+  --expansion-maxit 8
+  --num-restarts 8
+  --maxit 250
+  --tol 1e-8
+  --post-expansion-maxit 120
+  --reuse-line-search-grad
+  --expansion-warm-start
+
+
+Whole-stream results
+--------------------
+All rows below use static-cex, n=128, win=32, rank=2, seed=0 unless noted.
+
+method                                           mean_align   rel_err_sval   notes
+-----------------------------------------------------------------------------------------------
+greedy old baseline                              0.978499     0.00023944     old settings
+greedy, residual_tol=1e-6                         0.978500     0.00023944     no change
+greedy, tol=1e-10                                 0.978499     0.00023944     no change
+greedy, residual_tol=1e-6 and tol=1e-10           0.978500     0.00023944     no change
+greedy, qmax=64, expansion_maxit=16               0.978499     0.00023945     no change
+literal cex-replicate preset greedy               0.978499     0.00023942     q0=qmax=200-like, no help
+joint old                                         0.965176     0.00074888     worse than greedy
+joint + greedy warm                               0.980184     0.00009717     modest improvement
+joint + rotations, 7 angles, pi/2                 0.979730     0.00010479     no improvement
+joint + rotations, 31 angles, pi                  0.979763     0.00010387     no improvement
+joint + tangent perturb, 8 @ scale 0.05           0.980184     0.00009717     same as greedy warm
+joint + tangent perturb, 8 @ scale 0.2            0.980184     0.00009717     same as greedy warm
+joint + tangent perturb, 8 @ scale 0.5            0.967989     0.00112583     worse
+joint + tangent perturb, 32 @ scale 0.2           0.980184     0.00009717     same, much slower
+joint SLSQP                                       0.973047     0.00191572     worse
+joint SLSQP + greedy warm                         0.973047     0.00191572     worse
+joint oversample=1 + SVD rotate + greedy warm     0.985001     0.00084579     best whole-stream alignment except high random
+joint oversample=1 + SVD rotate, no warm          0.965123     0.00200550     bad
+joint high random, q0=qmax=32, 64 starts          0.969539     0.00129940     bad
+joint high random, expansion path, 64 starts      0.999259     0.00005185     best whole-stream alignment; expensive
+
+Important: final whole-stream score sums are not directly comparable across
+methods because each method carries a different previous state into later
+blocks. The apparent success of the high-random run came from a different
+streaming trajectory, not necessarily from a better final-block optimizer on
+the same state.
+
+
+Best high-random command
+------------------------
+This produced mean_align ~= 0.999259 under the projection-norm convention:
+
+python cex_restricted_space_probe.py \
+  --matrix static-cex --mode restricted --dtype float64 --carry left \
+  --reduced-optimizer cex --expansion-direction residual \
+  --n 128 --win 32 --rank 2 --preset cex-replicate \
+  --q0 4 --qmax 32 --krylov-depth 2 --residual-tol 1e-4 \
+  --expansion-maxit 8 --num-restarts 64 --maxit 1000 --tol 1e-10 \
+  --post-expansion-maxit 500 --reuse-line-search-grad --expansion-warm-start \
+  --basis-selection joint --joint-solver riemannian --verbose
+
+Final block in that run:
+  score_sum       1.956360252525395
+  mean_align      0.999259
+  rel_err_sval    0.00005185
+  elapsed         53.473s whole run
+
+
+Fair same-state comparison
+--------------------------
+Because streaming state changes the problem, we added:
+
+  compare_joint_same_state.py
+
+It freezes one reference previous state and compares candidate optimizers on
+the exact same block with the exact same state_prev, M_gain, and A_block.
+
+Default reference state:
+  old greedy through prior blocks.
+
+Run final-block comparison:
+
+  python compare_joint_same_state.py --target-block 3
+
+Result for block 97:128 with greedy previous state:
+
+method              score_sum   scores              align     rel_err       grad_perp_max
+------------------------------------------------------------------------------------------
+greedy-old          1.95567     0.981604,0.974070   0.978499  0.000239478   2.77e-05
+joint-old           1.95568     0.981602,0.974077   0.978527  0.000241336   7.33e-04
+joint-greedywarm    1.95568     0.981602,0.974077   0.978527  0.000241336   6.36e-05
+joint-high-random   1.95568     0.974077,0.981602   0.978527  0.000241336   4.19e-05
+joint-slsqp         1.95568     0.981602,0.974077   0.978527  0.000241336   1.29e-08
+joint-over1-svd     1.95552     0.981434,0.974082   0.978419  0.000239716   1.44e-02
+
+Conclusion from same-state final-block comparison:
+  With the previous greedy state fixed, all score-based methods collapse to
+  essentially the same final-block solution. High random starts do not reveal
+  a better final-block basin for that fixed state.
+
+Same-state summary by block:
+
+block    best score method       best score   greedy score   best align method                 best align
+----------------------------------------------------------------------------------------------------------
+1:32     joint-old / SLSQP       1.80235      1.80203        joint-over1-svd                    0.500357
+33:64    joint variants          1.85428      1.85425        joint-old / warm / high / SLSQP    0.696788
+65:96    joint variants          1.90457      1.90376        joint-over1-svd                    0.853107
+97:128   joint variants          1.95568      1.95567        joint-old / warm / high / SLSQP    0.978527
+
+Interpretation:
+  The high-random whole-stream improvement to 0.999259 is path dependence.
+  It likely came from better earlier carried states, not from improving the
+  final block given a fixed greedy previous state.
+
+
+Current interpretation
+----------------------
+1. The true joint Stiefel optimizer is implemented and works.
+2. Tightening tolerances does not fix the old greedy failure.
+3. SLSQP/quasi-Newton solves the same score objective more cleanly but does
+   not improve alignment.
+4. Rotations and local tangent perturbations around greedy warm starts do not
+   beat the unrotated greedy warm start.
+5. Oversample=1 + SVD rotate can improve whole-stream alignment to 0.9850, but
+   it breaks the per-column score stationarity diagnostics after compression.
+6. High-random joint with expansion path can get close to perfect alignment
+   (0.9993), but only by changing the streaming trajectory and at high cost.
+7. Fair same-state comparisons show that on a fixed previous state, all
+   score-based final-block optimizers mostly agree.
+
+
+Recommended next experiments
+----------------------------
+1. Extend compare_joint_same_state.py to allow the reference previous state to
+   be generated by high-random joint through rows 1:96. Then compare all
+   final-block optimizers on that high-random previous state.
+
+2. Run a budget sweep for high-random joint whole-stream:
+     num_restarts in {16, 32, 64}
+     maxit in {250, 500, 1000}
+     post_expansion_maxit in {120, 250, 500}
+   Goal: find the cheapest setting that still gets align near 0.04.
+
+3. Track per-block carried-state quality:
+     alignment of state["V"] after each block,
+     candidate score sums,
+     subspace dimension,
+     grad_perp_ratio.
+   This will show where the high-random trajectory diverges beneficially from
+   greedy.
+
+4. Add a diagnostic alignment selector among candidate frames using V_exact.
+   This is not for production, but it can answer whether good-alignment
+   candidates are being generated and rejected by score.

@@ -1,0 +1,253 @@
+Objective-design repeated block-only support synthesis
+======================================================
+
+Date: 2026-04-23
+
+Purpose
+-------
+The corrected block-only recheck showed that fresh-row support is real, but it
+also showed that raw block gain can promote SVD-complement directions instead
+of oracle q2. This pass tests what "repeated block-only support" should mean if
+we want it to be useful for objective design.
+
+Code added
+----------
+Added:
+
+  objective_design_repeated_block_support.py
+
+Outputs from the n=1024, win=32 run:
+
+  summary/objective_design_repeated_block_support.json
+  summary/objective_design_repeated_block_support.csv
+
+Commands run:
+
+  python objective_design_repeated_block_support.py \
+    --matrices static-cex diffuse-diffuse mixed-tail-sharp residual-spiky-shocks \
+    --n 1024 --win 32 --rank 2 --dtype float32
+
+Smoke / syntax checks:
+
+  python objective_design_repeated_block_support.py \
+    --matrices static-cex --n 256 --win 32 --rank 2 --dtype float32
+
+  python -m py_compile objective_design_repeated_block_support.py \
+    objective_design_block_only_probe.py
+
+
+Ideas tested
+------------
+1. Direct q2-vs-SVD current-block support
+
+For each block, compare candidates under corrected block-only gain:
+
+  gain2(v) = ||A_block v||^2
+
+Candidates:
+
+  opt2
+  q2_vs_q1oracle
+  svd_complement_mgain
+  block_svd_complement
+  prev_opt2
+
+where `block_svd_complement` is the best current-block right singular direction
+orthogonal to selected v1.
+
+2. Repeated support index
+
+For each candidate:
+
+  gain_share_t(v) = gain2_t(v) / max_candidate gain2_t
+  repeated_support_index(v) = mean_t gain_share_t(v)^2
+
+This measures recurring fresh-row energy, but does not know whether that energy
+is oracle-consistent.
+
+3. Oracle-repeat index
+
+For each candidate:
+
+  oracle_mass_t(v) = ||Q_oracle,t^T v||^2
+  oracle_repeat_index(v) = mean_t gain_share_t(v) * oracle_mass_t(v)
+
+This is the important correction. It says fresh-row support only counts as
+oracle support when the direction also lies in the projected oracle frame.
+
+4. Stability and anti-spike checks
+
+Also logged:
+
+  mean_stability = mean_t |v_t^T v_{t-1}|
+  stable_support_index = mean_t gain_share_t(v) * |v_t^T v_{t-1}|
+  current_relH = entropy(A_block v) / log(block_rows)
+  anti_spike_support_index = mean_t gain_share_t(v) * current_relH_t(v)
+  max_frac, top4_frac = largest response-energy concentration in A_block v
+
+These are guards against two bad cases:
+
+  - current-block SVD complement chasing;
+  - one-row or few-row spikes masquerading as support.
+
+
+n=1024 results
+--------------
+Best raw block-gain winner:
+
+  matrix                  opt2   q2   svd_mgain   block_svd   prev_opt2
+  static-cex              0/32   0/32 7/32        25/32       0/32
+  diffuse-diffuse         0/32   0/32 1/32        31/32       0/32
+  mixed-tail-sharp        0/32   0/32 13/32       19/32       0/32
+  residual-spiky-shocks   0/32   0/32 1/32        31/32       0/32
+
+This is the main negative result:
+
+  "maximize repeated block-only gain" is not enough.
+
+The best raw current-block direction is almost always the block-local SVD
+complement. That direction is exactly what the earlier correction warned about:
+it has fresh-row support but is usually not oracle support.
+
+Index summary:
+
+  matrix                  q2 repeat   q2 oracle-repeat   block_svd repeat   block_svd oracle-repeat
+  static-cex              0.069281    0.163941           0.999843           0.007003
+  diffuse-diffuse         0.925603    0.961516           1.000000           0.160769
+  mixed-tail-sharp        0.107410    0.240491           0.999582           0.040001
+  residual-spiky-shocks   0.335836    0.561226           1.000000           0.197721
+
+Readout:
+
+  - block_svd has near-perfect repeated raw support by construction, but poor
+    oracle-repeat support.
+  - q2 has weaker raw support than block_svd, but much stronger oracle-repeat
+    support in every matrix.
+  - diffuse-diffuse is the cleanest q2 case: q2 gain_share is high and
+    oracle_mass is essentially 1, while block_svd has low oracle mass.
+  - mixed-tail-sharp remains hard: q2 is oracle-consistent when present, but
+    its fresh-row gain_share is much weaker than block_svd/mgain complements.
+
+Anti-spike readout:
+
+  matrix                  q2 anti-spike support   block_svd anti-spike support
+  static-cex              0.163264                0.009688
+  diffuse-diffuse         0.955817                0.806583
+  mixed-tail-sharp        0.215058                0.039636
+  residual-spiky-shocks   0.441004                0.704133
+
+The anti-spike check is useful but not sufficient. It rejects the block_svd
+direction clearly in static-cex and mixed-tail-sharp, but not in
+diffuse-diffuse or residual-spiky-shocks, where block_svd response is diffuse
+across rows despite being geometrically non-oracle.
+
+Stability readout:
+
+  matrix                  q2 mean stability   block_svd mean stability
+  static-cex              0.900040            0.000131
+  diffuse-diffuse         0.037901            0.001429
+  mixed-tail-sharp        0.815615            0.001336
+  residual-spiky-shocks   0.464631            0.006743
+
+Raw direction-to-direction stability is a good anti-SVD-complement check, but
+it is not a universal oracle-support check. In diffuse-diffuse, q2 has very
+high oracle-repeat support but low direct vector stability because the projected
+row-space/oracle representative changes across blocks. So stability should be
+used as a guard against block-local complements, not as a required q2 selector.
+
+
+What worked
+-----------
+The useful repeated-support signal is:
+
+  repeated fresh-row support
+  AND oracle consistency
+  AND not spike/concentration dominated
+  AND not merely block-local SVD complement support
+
+In scalar diagnostic form:
+
+  oracle_repeat_index(v) = mean_t gain_share_t(v) * oracle_mass_t(v)
+
+is the best compact statistic from this pass.
+
+It cleanly separates q2 from block_svd in all four matrices:
+
+  static-cex:            q2 0.163941 vs block_svd 0.007003
+  diffuse-diffuse:       q2 0.961516 vs block_svd 0.160769
+  mixed-tail-sharp:      q2 0.240491 vs block_svd 0.040001
+  residual-spiky-shocks: q2 0.561226 vs block_svd 0.197721
+
+This also explains why the corrected block-only gain result was not enough.
+Block-only gain exposes fresh-row energy, but the fresh-row maximizer is often
+not the oracle candidate.
+
+
+What failed
+-----------
+1. Raw block-only gain winner
+
+Failed as a selector. It picks block_svd in 19/32 to 31/32 blocks depending on
+the matrix.
+
+2. Repeated raw gain alone
+
+Failed as a selector. block_svd has repeat_support_index almost exactly 1.0 in
+all matrices because it is usually the strongest raw block direction.
+
+3. Direct vector persistence alone
+
+Mixed. It rejects block_svd, whose mean stability is near zero, but it would
+also falsely demote diffuse-diffuse q2.
+
+4. Anti-spike alone
+
+Mixed. It rejects obvious concentrated complements in static-cex and
+mixed-tail-sharp, but diffuse block_svd directions can have high response
+entropy while still being non-oracle.
+
+
+Objective-design implication
+----------------------------
+Do not change the objective to simply maximize block-only gain, repeated
+block-only gain, or block-only score.
+
+The diagnostic support stack should be:
+
+  1. Fresh support:
+       gain_share_t(v) from corrected block-only gain.
+
+  2. Oracle consistency:
+       oracle_mass_t(v), or an online proxy if oracle is unavailable.
+
+  3. Complement rejection:
+       explicit comparison against block_svd_complement / current-block SVD
+       residual directions.
+
+  4. Anti-spike/stability guards:
+       current_relH, max_frac/top4_frac, and cross-block direction stability.
+
+For objective design, the hard part is replacing oracle_mass with an online
+proxy. The current diagnostics say that a viable proxy should reward directions
+that keep recurring across independent row blocks while not matching the
+current block's top orthogonal SVD complement. Old sketch score alone is not
+that proxy, because it preserves stale tail/history opt2.
+
+
+Next recommended diagnostic
+---------------------------
+Test oracle-free proxies for `oracle_mass_t(v)`:
+
+  - held-out future-block gain consistency over the next K blocks;
+  - agreement with a small reservoir of independent old raw rows, excluding the
+    carried sketch rows;
+  - recurrence across disjoint row-block SVD subspaces rather than recurrence
+    in a single block's top complement;
+  - penalize high alignment to the current block's orthogonal SVD complement
+    unless that alignment recurs in independent blocks.
+
+The target is not "q2 wins current block". The target is:
+
+  a direction receives fresh-row support repeatedly across independent blocks
+  and that support cannot be explained by the current block's local SVD
+  complement or by stale carried sketch state.

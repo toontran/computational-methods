@@ -1,0 +1,198 @@
+\paragraph{Upper-bound companion to the combined score.}
+The combined score of \texttt{new\_approx\_combined.txt} is derived as a lower
+bound on $\|Av\|_2^2$, where $A\in\mathbb R^{n\times d}$ is the full matrix,
+$M=A_B\in\mathbb R^{k\times d}$ is the block, $y:=Mv$, $x:=Av$, and
+$p_w:=k/n$. This note derives a companion \emph{upper} bound on $\|Av\|_2^2$
+using the same two-ingredient template (deterministic $L^p$ inequality plus an
+entropy-scaling assumption), and shows that the natural upper-bound
+counterpart is
+\begin{align}
+\operatorname{obj}_{\mathrm{UB}}(v)
+:=
+\frac{\|Mv\|_2^2 \cdot k_{\mathrm{eff}}(v)}{p_w}
+=
+\frac{\|Mv\|_2^6}{p_w\,\|Mv\|_4^4},
+\end{align}
+where $k_{\mathrm{eff}}(v):=\|Mv\|_2^4/\|Mv\|_4^4=e^{h_2(y)}$ is the block
+participation ratio and $h_2(y)=-\log(\|y\|_4^4/\|y\|_2^4)$ is the block
+collision (R\'enyi-2) entropy.
+
+\paragraph{Template recap.}
+The combined-score lower bound uses:
+\begin{itemize}
+\item (D1) Deterministic $L^p$ inequality
+$\|y\|_4 \le \|x\|_4$, from the fact that $y$ is a subvector of $x$.
+\item (D2) Dimension-scaled entropy heuristic
+$\frac{h_2(x/\|x\|_2)}{\log n}\approx\frac{h_2(y/\|y\|_2)}{\log k}$.
+\end{itemize}
+Combining (D1) and (D2) yields
+\begin{align}
+\|Av\|_2^2
+\ge
+\|Mv\|_2^2 \cdot p_w^{-h_2(y)/(2\log k)},
+\end{align}
+which is the combined-score lower bound (with the $(s+k)$ denominator of the
+combined-score formula replaced by its large-$k$ asymptote $2\log k$).
+
+\paragraph{Upper-bound ingredients.}
+The upper-bound proof swaps in two opposite-direction ingredients:
+\begin{itemize}
+\item (U1) Deterministic intra-block inequality
+$k_{\mathrm{eff}}(y)\ge 1$, from the power-mean inequality
+\begin{align}
+\|y\|_2^4
+=\Big(\sum_i y_i^2\Big)^2
+\ge \sum_i y_i^4
+=\|y\|_4^4.
+\end{align}
+Equality iff $y$ is a pure block-spike (support size one).
+\item (U2) i.i.d.\ entropy-scaling assumption.
+Block rows are i.i.d.\ uniform samples of the $n$ full rows, so
+\begin{align}
+\mathbb E\big[\|Mv\|_2^2\big]=p_w\cdot\|Av\|_2^2.
+\end{align}
+At the participation-ratio level this is equivalent to
+\begin{align}
+h_2(x) = h_2(y) + |\log p_w|,
+\end{align}
+i.e.\ the block collision entropy is lower than the full entropy by exactly
+$|\log p_w|$. This is the relative-entropy analog of (D2): instead of
+preserving $h_2$ as a \emph{fraction} of $\log(\dim)$, it preserves $h_2$ as
+an \emph{absolute gap} of $|\log p_w|$.
+\end{itemize}
+
+\paragraph{Theorem.}
+Under (U1) and (U2),
+\begin{align}
+\|Av\|_2^2
+\;\le\;
+\mathbb E\!\left[\,\frac{\|Mv\|_2^2\cdot k_{\mathrm{eff}}(v)}{p_w}\,\right]
+=
+\mathbb E[\operatorname{obj}_{\mathrm{UB}}(v)].
+\end{align}
+
+\paragraph{Proof.}
+From (U2), after rearranging,
+\begin{align}
+\|Av\|_2^2
+=
+\frac{\mathbb E[\|Mv\|_2^2]}{p_w}.
+\tag{$\star$}
+\end{align}
+From (U1), pointwise $k_{\mathrm{eff}}(y)\ge 1$, so
+\begin{align}
+\|Mv\|_2^2
+\;\le\;
+\|Mv\|_2^2\cdot k_{\mathrm{eff}}(v).
+\tag{$\dagger$}
+\end{align}
+Taking expectation of $(\dagger)$ and dividing by $p_w$,
+\begin{align}
+\frac{\mathbb E[\|Mv\|_2^2]}{p_w}
+\;\le\;
+\frac{\mathbb E\!\left[\|Mv\|_2^2\cdot k_{\mathrm{eff}}(v)\right]}{p_w}
+=
+\mathbb E[\operatorname{obj}_{\mathrm{UB}}(v)].
+\end{align}
+Chaining with $(\star)$ gives $\|Av\|_2^2\le\mathbb E[\operatorname{obj}_{\mathrm{UB}}(v)]$.
+\hfill$\blacksquare$
+
+\paragraph{Tightness.}
+Both $(\dagger)$ and $(\star)$ are tight exactly when:
+\begin{itemize}
+\item $(\dagger)$ tight: $k_{\mathrm{eff}}(y)=1$, i.e.\ $y$ is a block-spike.
+\item $(\star)$ tight: the i.i.d.\ unbiasedness $\mathbb E[\|Mv\|_2^2]=p_w\|Av\|_2^2$ is exact.
+\end{itemize}
+Under both, the single-row spike carries exactly $p_w$ fraction of $\|Av\|_2^2$.
+Since this is unusual, the upper bound is typically loose; the looseness is
+concentrated on high-$k_{\mathrm{eff}}$ (flat) directions, which is the
+mechanism by which the argmax of $\operatorname{obj}_{\mathrm{UB}}$ favors flat
+directions over spike directions even when the spike direction has larger raw
+block energy.
+
+\paragraph{Side-by-side with the combined-score lower bound.}
+Both bounds have the form
+$\|Mv\|_2^2\cdot\phi(v)$
+with $\phi(v)\ge 1$ an entropy multiplier:
+\begin{itemize}
+\item Combined-score LB: $\phi_{\mathrm{LB}}(v)=p_w^{-h_2(y)/(2\log k)}$.
+\item UB companion:      $\phi_{\mathrm{UB}}(v)=k_{\mathrm{eff}}(y)/p_w=e^{h_2(y)}/p_w$.
+\end{itemize}
+Writing both in the form $C\cdot e^{\alpha\, h_2(y)}$ with $C$ a $v$-independent
+constant:
+\begin{align}
+\alpha_{\mathrm{LB}} = \frac{|\log p_w|}{2\log k},
+\qquad
+\alpha_{\mathrm{UB}} = 1.
+\end{align}
+The ratio $\alpha_{\mathrm{UB}}/\alpha_{\mathrm{LB}}=2\log k/|\log p_w|$; for
+$k=32,\,n=128,\,p_w=1/4$ this is $\approx 5$, so the UB multiplier is
+aggressively stronger in $h_2$ than the LB multiplier.
+
+\paragraph{Alternative: doc-faithful UB under dim-scaled (D2).}
+If we keep doc's dim-scaled entropy assumption (D2) but also require the
+i.i.d.\ $L^4$ analog $\|x\|_4^4\le\mathbb E[\|y\|_4^4]/p_w$, then combining
+(D2)+i.i.d.\ gives the symmetric UB
+\begin{align}
+\|Av\|_2^2
+\le
+\|Mv\|_2^2\cdot p_w^{-1/2 - h_2(y)/(2\log k)}.
+\end{align}
+This UB differs from the combined-score LB only by the $v$-independent factor
+$p_w^{-1/2}$, so it preserves the $v$-ranking of the LB and does not improve
+separation between flat and spike directions.
+
+The aggressive $k_{\mathrm{eff}}$ multiplier of $\operatorname{obj}_{\mathrm{UB}}$
+is only recovered when the entropy-scaling assumption is the i.i.d.\ absolute-gap
+form (U2), not the dim-scaled fractional form (D2). The two scalings agree
+at flat directions ($h_2(x)=\log n$, $h_2(y)=\log k$) but diverge sharply for
+spike directions, where (D2) predicts $h_2(x)=h_2(y)\log n/\log k=0$ (since
+$h_2(y)=0$) while (U2) predicts $h_2(x)=0$ as well but with a definite
+$|\log p_w|$ gap elsewhere --- reflecting that i.i.d.\ sampling concentrates
+entropy more aggressively than dim-scaling predicts.
+
+\paragraph{Gradient.}
+The objective
+\begin{align}
+\operatorname{obj}_{\mathrm{UB}}(v)
+=
+\frac{\|Mv\|_2^6}{p_w\,\|Mv\|_4^4}
+\end{align}
+has $\log\operatorname{obj}_{\mathrm{UB}}(v)
+= 6\log\|Mv\|_2 - 4\log\|Mv\|_4 - \log p_w$, so
+\begin{align}
+\nabla\log\operatorname{obj}_{\mathrm{UB}}(v)
+=
+6\,\frac{M^\top Mv}{\|Mv\|_2^2}
+-
+4\,\frac{M^\top(Mv)^{\odot 3}}{\|Mv\|_4^4}.
+\end{align}
+No new optimizer machinery is required relative to the combined score: drop
+the $c_w$ scaling on the entropy gradient piece in favor of the fixed
+coefficients $(6,-4)$ for the $(\log\|\cdot\|_2,\log\|\cdot\|_4)$ terms.
+
+\paragraph{Extension to streaming (pooled operator $C_w=[R;A_w]$).}
+When a carried sketch $B$ and a row memory $R$ are present, the natural
+streaming form replaces the single block $M=A_w$ with the pooled row-memory
+operator $C_w=[R;A_w]$ for the entropy factor and the pooled energy operator
+$M_w=[B;A_w]$ for the energy factor, following the same separation used in
+the combined score:
+\begin{align}
+\operatorname{obj}_{\mathrm{UB},w}(v)
+:=
+\frac{
+(\|Bv\|_2^2 + \|A_wv\|_2^2)\cdot k_{\mathrm{eff}}^{(R,w)}(v)
+}{p_w},
+\end{align}
+with
+\begin{align}
+k_{\mathrm{eff}}^{(R,w)}(v)
+:=
+\frac{\|C_wv\|_2^4}{\|C_wv\|_4^4},
+\qquad
+p_w:=\frac{n_{\mathrm{seen}}+k}{n}.
+\end{align}
+The proof carries through: (U1) becomes $k_{\mathrm{eff}}^{(R,w)}(v)\ge 1$
+(same power-mean argument on $C_wv$), and (U2) becomes the expectation
+identity that the carried sketch plus current window form an unbiased energy
+estimator of the full operator on direction $v$.

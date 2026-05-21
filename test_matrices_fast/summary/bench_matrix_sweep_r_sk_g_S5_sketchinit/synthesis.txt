@@ -1,0 +1,240 @@
+Multi-matrix benchmark — combined / hybrid / iSVD / future_hmean_online / future_hmean_evidence / future_hmean_r_sk_g (variant S5, sketch-init)
+================================================================================================
+
+Date: 2026-04-27
+
+Scope
+-----
+3-matrix subset (static-cex, mixed-tail-sharp, diffuse-diffuse) on the
+same harness as `summary/bench_matrix_sweep_evidence/synthesis.txt`,
+extended to a new slot-2 score variant S5 of `r_sk_g_score.py` plus a
+"sketch-init" streaming-warm-start change.
+
+  - rank=2, float32, --shuffle-rows, seed=0, row_shuffle_seed=0
+  - half_win=32 (pair=64 sliding), sliding-mode metrics
+  - all 6 policies streamed in parallel, OPENBLAS_NUM_THREADS=2
+  - same M_gain construction (state = diag(s)·V_prev.T stacked on A_half1)
+  - JSON / CSV / TXT outputs in this directory; logs side-by-side
+
+Note: there was no prior synthesis for the r_sk_g family on this 3-
+matrix subset (only per-matrix files in `summary/bench_matrix_sweep_r_sk_g/`
+for variant S4). This document covers the new S5 + sketch-init variant.
+
+
+Score (S5)
+----------
+For each candidate v on the union sphere at block k ≥ 2:
+
+    raw_sk(v) = ‖B_top v‖²,    B_top   = state.s · state.V.T  (rank-r carry)
+    raw_g1(v) = ‖A_cur v‖²
+    raw_g2(v) = ‖A_fut v‖²
+    T         = ‖A_seen‖²_F / N_seen                          (typical past row energy)
+    r_sk_excess(v) = (raw_sk(v) − T) / T = c_sk · raw_sk − 1
+
+S5 score:
+
+    score(v) = HM3(r_sk_excess, raw_g1, raw_g2) · relH1(A_cur v)
+                  if  raw_sk(v) ≥ T   (i.e. r_sk_excess ≥ 0)
+    score(v) = 0   otherwise          (and grad := 0)
+
+where HM3(a, b, c) = 3 / (1/a + 1/b + 1/c) and relH1 is the normalised
+Shannon entropy of the A_cur·v row energy distribution (same as S4).
+
+Block-1 fall-through (no carry yet, A_sketch is None): score = HM2(raw_g1,
+raw_g2) · relH1, identical to S4 block-1.
+
+The gate: `r_sk_excess ≥ 0` ⇔ v captures at least typical-row sketch
+energy. Below the gate the score is identically zero, killing the
+"orthogonal-to-carry" plateau that S4 climbed (the S4 cheat where v
+trivialises r_sk → 1 by going carry-orthogonal). The gradient is the
+S4 gradient with the sign flip on the sketch term:
+
+    d r_sk_excess / dv = +2 c_sk · A_sk^T y_sk    (S4 had −2 c_sk; same magnitude)
+
+Finite-difference check passes: rel < 1e-7 across blocks 1, 2, 12, 31
+on mixed-tail-sharp at carry-aligned probe points.
+
+
+Sketch-init streaming wiring
+----------------------------
+Per-block streaming optimizer (`half_window_sliding_hmean_experiment.py`
+~L590) prepends the carried right singular vectors `state.V[:, 0..min(rank, 2)]`
+to the warm-start list `starts_rsk` of `optimize_r_sk_g_in_basis`. The
+per-block diagnostic (`r_sk_g_score.py`, blocks 2/6/12/31 across the
+three matrices) showed that the carry directions are the *only* points
+on the union sphere that exceed T at early blocks, so without those
+starts the optimizer sat in the score=0 zone for blocks ~2 through ~27.
+
+Diagnostic-only sketch-init optimizer (B_union, no V_default[:, 0]
+deflation) achieves:
+
+  matrix             block  default-v1   sketch-init-v1   cos²(oracle_v1)  cos²(oracle_v2)
+  static-cex             2  0            4.94e-3          0.171            0.074    (sketchInit-v1 vs oracle_v1; sketchInit-v2 vs oracle_v2)
+  static-cex             6  0            9.72e-3          0.750            0.619
+  static-cex            12  0            2.10e-2          0.913            0.865
+  static-cex            31  5.4e-2       5.44e-2          0.992            0.996
+  mixed-tail-sharp       2  0            9.75e-4          0.072            0.014
+  mixed-tail-sharp       6  0            2.81e-3          0.258            0.032
+  mixed-tail-sharp      12  0            7.97e-3          0.730            0.153
+  mixed-tail-sharp      31  4.1e-2       4.11e-2          0.985            0.034
+  diffuse-diffuse        2  0            2.29e-3          0.001            0.016
+  diffuse-diffuse        6  0            3.27e-3          0.002            0.013
+  diffuse-diffuse       12  0            7.45e-3          0.001            0.027
+  diffuse-diffuse       31  0            1.88e-2          0.045            0.060
+
+i.e. on counterexample matrices the sketch-init *reaches oracle quality*
+on slot-1 by block 12 (cos² ≥ 0.73) and on slot-2 by block 31 (cos² 0.996
+on static-cex).
+
+
+Sliding-mode results (3 matrices)
+---------------------------------
+
+  matrix              policy                   mEx1    mEx2    fEx1    fEx2    tail    relerr   elapsed
+  static-cex          combined                 0.6844  0.5301  0.9595  0.7797  0.1304  0.00336    8.2s
+                      hybrid                   0.6470  0.0311  0.9137  0.0009  0.5427  0.00102    3.7s
+                      isvd                     0.0636  0.0105  0.0020  0.0019  0.9980  0.00101    0.8s
+                      future_hmean_online      0.6920  0.6548  0.9582  0.8808  0.0805  0.00344   11.0s
+                      future_hmean_evidence    0.6931  0.2779  0.9693  0.0748  0.4779  0.00247   44.1s
+                      r_sk_g  (S5_sketchinit)  0.6861  0.2297  0.9623  0.1680  0.4348  0.00290   14.6s
+
+  mixed-tail-sharp    combined                 0.5261  0.0404  0.7849  0.0016  0.6068  0.02078   11.0s
+                      hybrid                   0.3295  0.0279  0.0081  0.0008  0.9956  0.01527    5.1s
+                      isvd                     0.0738  0.0264  0.0062  0.0002  0.9968  0.01353    0.7s
+                      future_hmean_online      0.6892  0.4153  0.9630  0.5594  0.2388  0.00503    8.8s
+                      future_hmean_evidence    0.5509  0.2309  0.7818  0.0679  0.5751  0.02049   45.9s
+                      r_sk_g  (S5_sketchinit)  0.5130  0.0465  0.7292  0.0025  0.6342  0.02258   14.8s
+
+  diffuse-diffuse     combined                 0.1750  0.0878  0.0847  0.0300  0.9427  0.05033   13.0s
+                      hybrid                   0.5404  0.1069  0.7293  0.0488  0.6110  0.02221    7.2s
+                      isvd                     0.6175  0.2991  0.8306  0.2393  0.4650  0.00901    1.0s
+                      future_hmean_online      0.6876  0.3572  0.9650  0.0289  0.5031  0.00530   11.5s
+                      future_hmean_evidence    0.4072  0.1969  0.4745  0.1125  0.7065  0.03906   53.1s
+                      r_sk_g  (S5_sketchinit)  0.4304  0.0615  0.6190  0.0081  0.6864  0.03117   17.2s
+
+(mEx*/fEx* = mean / final exact_cos² to V_exact[:, j]; tail = final_tail_mass;
+ relerr = mean relative singular-value error.)
+
+
+Head-to-head: S5_sketchinit vs combined / iSVD on tail_mass
+-----------------------------------------------------------
+
+  matrix             combined   iSVD     S5_sketchinit   winner
+  static-cex          0.130     0.998       0.435         combined
+  mixed-tail-sharp    0.607     0.997       0.634         combined
+  diffuse-diffuse     0.943     0.465       0.686         iSVD
+
+S5_sketchinit beats iSVD on the two counterexample matrices (where iSVD
+has tail_mass ≈ 1) but loses to combined on all three. Beats combined
+only on diffuse-diffuse (combined collapses there); same regime split as
+the hybrid/iSVD switchover documented in
+`summary/project_kernel_stocks_structural_limit.md`.
+
+
+Diagnostic-vs-streaming gap (the open issue)
+--------------------------------------------
+S5_sketchinit's streaming numbers are *bit-identical to S5_default*
+(see `summary/bench_matrix_sweep_r_sk_g_S5/` for the prior bench): both
+runs produce the same final_exact_cos² and final_tail_mass within ≤1e-4.
+The sketch-init wire-in does NOT lift the streaming numbers despite
+the per-block diagnostic showing dramatic gains. Cause:
+
+  - The streaming wiring runs slot-2 over `B_search = B_union ⊥ V_default[:, 0]`,
+    deflating against the slot-1 column V_default[:, 0] picked by the
+    combined optimizer.
+  - sketch_v[:, 0] (the S5-friendly direction at the gate) ≈ V_default[:, 0]
+    after projection, so sketch_v[:, 0] projected onto B_search has near-
+    zero norm — the carry direction's basin is unreachable.
+  - sketch_v[:, 1] survives the projection but is already approximately
+    V_default[:, 1], which was already a warm-start. So the new starts
+    contribute no new basins.
+
+The diagnostic optimizes over the FULL B_union (no V_default[:, 0]
+deflation). That is why sketch-init dramatically lifts the per-block
+diagnostic but is a no-op in streaming: the diagnostic finds an S5-best
+*slot-1* candidate (high raw_sk, balanced g1/g2), but the streaming
+pipeline never asks for that — it locks slot-1 to V_default[:, 0].
+
+
+Algorithm details (full S5_sketchinit pipeline, current implementation)
+-----------------------------------------------------------------------
+Given the same per-block snapshot (A_sketch = state.s · state.V.T,
+A_cur, A_fut), at block k:
+
+  1. Slot-1 = V_default[:, 0] from the combined optimizer
+     (`entropy_iter_basis_forget`, score_variant="combined") on M_gain
+     = vstack([B_top, A_cur]). Unchanged from the existing pipeline.
+
+  2. Build search basis B_search = orth_basis_against(rowspace_basis(
+        vstack([A_sketch, A_cur, A_fut])), V_default[:, 0]).
+
+  3. Build start list:
+     - V_default[:, 1]
+     - online candidate pool (hm.build_candidates)
+     - up to 8 columns of diag_basis["Vbasis_final"]
+     - state.V[:, 0..min(rank, 2)]   (← sketch-init addition)
+     - 24 random unit vectors on B_search
+
+  4. Run sphere-projected gradient ascent (
+       `optimize_r_sk_g_in_basis`,  variant="S5",
+       maxit=args.maxit, tol=args.tol, random_starts=24)
+     with score = HM3(r_sk_excess, raw_g1, raw_g2) · relH1, gated to 0
+     when raw_sk < T.
+
+  5. chosen_v2 = argmax over all starts. Gradient = 0 in the clipped
+     region, so a start landing below the gate stays put — only starts
+     above T contribute. This is why warm-start choice matters.
+
+  6. Rank-2 SVD reframe: state ← rank-2 truncated SVD of
+        np.vstack([state.s · state.V.T, A_cur]).
+     (Same as combined / online; the slot-2 vector is consumed by the
+     SVD reframe, it does not become the new state V column directly.)
+
+The per-block diagnostic uses the same scoring code with
+`B_union` (no V_default deflation), which exposes the slot-1 lift that
+streaming hides.
+
+
+Wall-clock
+----------
+S5_sketchinit costs 14.6 / 14.8 / 17.2 s per matrix, comparable to
+`future_hmean_evidence`'s order (44–53 s) but with no extra optimizer
+restarts beyond the 24-random-start scaffold. iSVD remains 18–25× faster.
+
+
+Take-aways
+----------
+- Score: S5's gate (raw_sk ≥ T) successfully kills the S4 plateau cheat
+  at the diagnostic level on all three matrices. The gradient FD-checks.
+- Streaming: with V_default-fixed slot-1, S5 cannot exploit the
+  carry-aligned basin; the bench numbers are functionally those of
+  S5_default. On `static-cex` slot-2 cos² goes from S4's 0.030 to S5's
+  0.168 (5.5×); on `mixed-tail-sharp` from 0.0001 to 0.0025 (25× but
+  still ~0); on `diffuse-diffuse` slot-1 jumps 0.150 → 0.619 (4×) but
+  slot-2 stays ~0.008.
+- Diagnostic: S5 + sketch-init reaches oracle-quality directions on the
+  counterexample matrices by block 12 (cos² ≥ 0.73 on slot-1, ≥ 0.86
+  on slot-2 by block 31 for static-cex). The streaming pipeline does
+  not pick those candidates because slot-1 is locked.
+- Open question: the natural fix is to let S5 pick *both* slots (a
+  rank-2 selector that drops the V_default[:, 0] deflation), or to use
+  S5's slot-1 sketch-init candidate as the new V_default[:, 0]. Either
+  decouples slot-1 from the combined optimizer's bias and exposes the
+  diagnostic gains.
+- The S5 score, FD-checked gradient, sketch-init starts, and per-block
+  diagnostic are stable artefacts. The streaming wiring is the next
+  piece to revisit.
+
+
+Files
+-----
+- `r_sk_g_score.py`                     S5 score + gradient + diagnostic
+- `half_window_sliding_hmean_experiment.py:566–630`
+                                        future_hmean_r_sk_g policy + sketch-init
+- `summary/r_sk_g_S5_sketch_init.json`  per-block diagnostic (b 2/6/12/31)
+- `summary/bench_matrix_sweep_r_sk_g_S5_sketchinit/{matrix}_win64.{json,csv,txt,log}`
+                                        streaming-mode bench (3 matrices)
+- `summary/r_sk_g_block_transition_context.txt`
+                                        prior context (S4 cheat, F1/F2 fix proposals)
+- `summary/r_sk_g_score_implementation_context.txt`
+                                        original spec

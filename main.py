@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import re
+import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -232,21 +233,103 @@ def get_matrix_properties(matrix_name):
 
 
 if __name__ == "__main__":
-    # Require at least 2 arguments, allow an optional 3rd along with 4th
-    if len(sys.argv) < 3 or len(sys.argv) > 5:
-        print("Usage: python main.py <matrix_name> <method> [stream_size] [k]")
-        print("Example: python main.py HB/west0067 isvd 500 100")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Run streaming SVD/EntropyScore experiments."
+    )
+    parser.add_argument("matrix_name")
+    parser.add_argument("method")
+    parser.add_argument("stream_size", nargs="?", type=int)
+    parser.add_argument("k", nargs="?", type=int)
+    parser.add_argument("score_rank", nargs="?", type=int)
+    parser.add_argument(
+        "--cex-replicate",
+        action="store_true",
+        help="Use the cex reproduction forget settings: q0=200, qmax=200, restarts=8, maxit=200, expansion_maxit=0, cex optimizer, float64.",
+    )
+    parser.add_argument("--q0", dest="forget_q0", type=int, help="Initial reduced basis size for entropyscore_forget.")
+    parser.add_argument("--qmax", dest="forget_qmax", type=int, help="Maximum reduced basis size for entropyscore_forget.")
+    parser.add_argument("--num-restarts", dest="forget_num_restarts", type=int, help="Restart count for entropyscore_forget.")
+    parser.add_argument("--maxit", dest="forget_maxit", type=int, help="Optimizer iteration budget for entropyscore_forget.")
+    parser.add_argument("--expansion-maxit", dest="forget_expansion_maxit", type=int, help="Subspace expansion iteration budget for entropyscore_forget.")
+    parser.add_argument("--residual-tol", dest="forget_residual_tol", type=float, help="Full-space out-of-basis gradient tolerance for entropyscore_forget expansion.")
+    parser.add_argument(
+        "--expansion-direction",
+        dest="forget_expansion_direction",
+        choices=["krylov_v", "residual"],
+        help="Expansion direction for entropyscore_forget: old Krylov chain from v_best, or feasible out-of-basis gradient residual.",
+    )
+    parser.add_argument("--reduced-optimizer", choices=["legacy", "cex"], help="Reduced optimizer variant for entropyscore_forget.")
+    parser.add_argument("--work-dtype", choices=["float32", "float64"], help="Working dtype for entropyscore_forget.")
+    parser.add_argument(
+        "--reuse-line-search-grad",
+        dest="forget_reuse_line_search_grad",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Reuse accepted Armijo trial score/gradient in the cex reduced optimizer.",
+    )
+    parser.add_argument(
+        "--expansion-warm-start",
+        dest="forget_expansion_warm_start",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Use lifted previous reduced optimum as the first seed after expansion.",
+    )
+    parser.add_argument(
+        "--post-expansion-maxit",
+        dest="forget_post_expansion_maxit",
+        type=int,
+        help="Iteration cap for solve batches after subspace expansion.",
+    )
+    args = parser.parse_args()
 
-    matrix_name = sys.argv[1]
-    method = sys.argv[2]
+    matrix_name = args.matrix_name
+    method = args.method
+    stream_size = args.stream_size
+    k = args.k
+    score_rank = args.score_rank
 
-    # Optional parameter
-    stream_size = int(sys.argv[3]) if len(sys.argv) >= 4 and sys.argv[3].isdigit() else None
-    k = int(sys.argv[4]) if len(sys.argv) == 5 and sys.argv[4].isdigit() else None
+    forget_params = {}
+    forget_label = ""
+    if args.cex_replicate:
+        forget_params.update({
+            "q0": 200,
+            "qmax": 200,
+            "num_restarts": 8,
+            "maxit": 200,
+            "expansion_maxit": 0,
+            "reduced_optimizer": "cex",
+            "work_dtype": np.float64,
+        })
+        forget_label = "_cexrep"
+
+    explicit_forget_params = {
+        "q0": args.forget_q0,
+        "qmax": args.forget_qmax,
+        "num_restarts": args.forget_num_restarts,
+        "maxit": args.forget_maxit,
+        "expansion_maxit": args.forget_expansion_maxit,
+        "residual_tol": args.forget_residual_tol,
+        "expansion_direction": args.forget_expansion_direction,
+        "reduced_optimizer": args.reduced_optimizer,
+        "work_dtype": None if args.work_dtype is None else getattr(np, args.work_dtype),
+        "reuse_line_search_grad": args.forget_reuse_line_search_grad,
+        "expansion_warm_start": args.forget_expansion_warm_start,
+        "post_expansion_maxit": args.forget_post_expansion_maxit,
+    }
+    for param_name, param_value in explicit_forget_params.items():
+        if param_value is not None:
+            forget_params[param_name] = param_value
+    if forget_params:
+        print("EntropyScoreForget params:", {
+            key: (str(np.dtype(value)) if key == "work_dtype" else value)
+            for key, value in forget_params.items()
+        })
 
     matrix_postfix = matrix_name.split('/')[-1]
-    output_dir = "output"
+    output_dir = os.environ.get("OUTPUT_NAME", "output22")
+    scratch_output_dir = os.environ.get("SCRATCH_OUTPUT_ROOT", f"/scratch/ttran02/{output_dir}")
+    skip_completed_configs = os.environ.get("SKIP_COMPLETED_CONFIGS", "1") == "1"
+    completion_marker = os.environ.get("COMPLETION_MARKER", "other_info.txt")
     cache_dir = "cache"
     url = f'https://suitesparse-collection-website.herokuapp.com/MM/{matrix_name}.tar.gz'
     save_in_text = True
@@ -255,6 +338,12 @@ if __name__ == "__main__":
     if output_dir and not os.path.exists(output_dir):
         print("Making directory:", output_dir)
         os.makedirs(output_dir)
+
+    def is_completed_run(run_name):
+        return (
+            os.path.isfile(os.path.join(output_dir, run_name, completion_marker))
+            or os.path.isfile(os.path.join(scratch_output_dir, run_name, completion_marker))
+        )
 
     if "hyperboloid" in matrix_name and (not "sparsify" in matrix_name):
         temp = matrix_name.split("_")
@@ -330,6 +419,116 @@ if __name__ == "__main__":
         title = ""
         A_csr = Q @ np.diag(S) @ Q.T
         A_is_sym_psd = True
+    elif matrix_name in {"cex1", "cex_structured_new"}:
+        np.random.seed(0)
+
+        n = 1024
+        r_sig = 2
+        alpha_sig = 0.003
+        alpha_tail = 0.0145
+        sigma1 = 0.991
+        tail_scale = 0.99
+
+        U0 = np.zeros((n, n))
+        H = sp.linalg.hadamard(n).astype(float)
+        U0[:, :r_sig] = H[:, :r_sig] / np.sqrt(n)
+
+        a_tail = np.sqrt(1 - r_sig / n)
+        b_tail = 1 / np.sqrt(n)
+        for j in range(r_sig, n):
+            col = np.zeros(n)
+            col[j - r_sig] = a_tail
+            col[n - r_sig:n] = b_tail
+            U0[:, j] = col
+
+        U, _ = np.linalg.qr(U0)
+        for j in range(r_sig):
+            if np.dot(U[:, j], U0[:, j]) < 0:
+                U[:, j] = -U[:, j]
+
+        V, _ = np.linalg.qr(np.random.randn(n, n))
+
+        sig_block = sigma1 * np.arange(1, r_sig + 1, dtype=float) ** (-alpha_sig)
+        tail_block = tail_scale * np.arange(1, n - r_sig + 1, dtype=float) ** (-alpha_tail)
+        S = np.concatenate([sig_block, tail_block])
+        S[0] = sigma1
+
+        row_perm = np.random.permutation(n)
+        A_csr = (U @ np.diag(S) @ V.T)[row_perm, :]
+
+        title = ""
+        U_exact = U[row_perm, :]
+        S_exact = S
+        Vt_exact = V.T
+        A_is_sym_psd = False
+    elif matrix_name in {"cex1_mat", "cex1_matlab"}:
+        mat_path = os.path.join("matlab", "cex1_input.mat")
+        if not os.path.exists(mat_path):
+            raise FileNotFoundError(
+                f"{mat_path} not found. Run export_cex1_input.m in MATLAB first."
+            )
+        data = sp.io.loadmat(mat_path)
+        A_csr = np.asarray(data["A"], dtype=float)
+        S = np.asarray(data["svec"], dtype=float).reshape(-1)
+        V = np.asarray(data["V"], dtype=float)
+        U_exact = np.asarray(data["U_perm"], dtype=float)
+        S_exact = S
+        Vt_exact = V.T
+        title = ""
+        A_is_sym_psd = False
+    elif matrix_name == "mixed-tail-sharp":
+        np.random.seed(0)
+        n = 1024
+        r_sig = 2
+        alpha_sig = 0.003
+        alpha_tail = 0.0145
+        tail_scale = 0.99
+        sigma1 = 0.991
+        tail_spikiness = 0.75
+        if n & (n - 1):
+            raise ValueError("mixed-tail-sharp requires n to be a power of two.")
+
+        rng = np.random.default_rng(0)
+        H = sp.linalg.hadamard(n).astype(float)
+        U_sig = H[:, :r_sig] / np.sqrt(n)
+
+        G = rng.standard_normal((n, n - r_sig))
+        G -= U_sig @ (U_sig.T @ G)
+        U_diffuse_tail, _ = np.linalg.qr(G, mode="reduced")
+
+        U_spiky_raw = np.zeros((n, n - r_sig), dtype=float)
+        a_tail = np.sqrt(1.0 - r_sig / n)
+        b_tail = 1.0 / np.sqrt(n)
+        for j in range(n - r_sig):
+            col = np.zeros(n, dtype=float)
+            col[j] = a_tail
+            col[n - r_sig:n] = b_tail
+            U_spiky_raw[:, j] = col
+        U_spiky_raw -= U_sig @ (U_sig.T @ U_spiky_raw)
+        U_spiky_tail, _ = np.linalg.qr(U_spiky_raw, mode="reduced")
+
+        tail_raw = np.sqrt(1.0 - tail_spikiness) * U_diffuse_tail + np.sqrt(tail_spikiness) * U_spiky_tail
+        tail_raw -= U_sig @ (U_sig.T @ tail_raw)
+        U_tail, _ = np.linalg.qr(tail_raw, mode="reduced")
+
+        U0 = np.column_stack([U_sig, U_tail])
+        U, _ = np.linalg.qr(U0, mode="reduced")
+        for j in range(r_sig):
+            if float(U[:, j].T @ U_sig[:, j]) < 0:
+                U[:, j] = -U[:, j]
+
+        V, _ = np.linalg.qr(rng.standard_normal((n, n)), mode="reduced")
+        sig_block = sigma1 * np.arange(1, r_sig + 1, dtype=float) ** (-alpha_sig)
+        tail_block = tail_scale * np.arange(1, n - r_sig + 1, dtype=float) ** (-alpha_tail)
+        S = np.concatenate([sig_block, tail_block])
+        S[0] = sigma1
+
+        A_csr = (U * S[None, :]) @ V.T
+        U_exact = None
+        S_exact = S
+        Vt_exact = V.T
+        title = ""
+        A_is_sym_psd = False
     elif "bad_case1" in matrix_name:
         np.random.seed(10)
 
@@ -886,7 +1085,9 @@ if __name__ == "__main__":
         # exact_time = time.time() - start_time
         # Compute exact SVD (full
         
-        if "kernel_random" in matrix_name:
+        if matrix_name in {"cex1", "cex_structured_new", "cex1_mat", "cex1_matlab", "mixed-tail-sharp"}:
+            pass
+        elif "kernel_random" in matrix_name:
             U_exact, S_exact, Vt_exact = Q, S, Q.T 
             # np.savez(f'{output_dir}/US_exact1000_{matrix_postfix}.npz', U=U_exact[:,:1000], S=S_exact[:1000]) 
         elif "test_coherence" in matrix_name:
@@ -1070,6 +1271,8 @@ if __name__ == "__main__":
         "random_uniform_5": random_uniform_perms[4],
         # "random_wr": random_uniform_streams[0],
     }
+    if matrix_name in {"cex1", "cex_structured_new", "cex1_mat", "cex1_matlab"}:
+        permutations = {"original": np.arange(A_csr.shape[0])}
 
     # print(Vt_exact[0, permutations["decreasing_V2"][:10]])
     # print(np.linalg.norm(A_csr[permutations["decreasing_V2"][:10], :], axis=1))
@@ -1105,6 +1308,38 @@ if __name__ == "__main__":
     
     k_list = [k] if k else [k_default]
     first_window_size = stream_size + k if stream_size else first_window_size
+    if matrix_name in {"cex1", "cex_structured_new", "cex1_mat", "cex1_matlab"} and stream_size:
+        first_window_size = stream_size
+
+    if method == "future_hmean_online" and matrix_name == "mixed-tail-sharp":
+        if stream_size is None or k is None:
+            raise ValueError("future_hmean_online on mixed-tail-sharp requires stream_size and k.")
+        size = first_window_size
+        row_permutation = "original"
+        reservoir_method = "greedy"
+        name = matrix_postfix + f"_{method}_" + row_permutation + "_"
+        name += f"size_{size}"
+        name += f"_ssize_{stream_size}" if stream_size != size else ""
+        name += f"_k_{k}"
+        name += f"_sr_{score_rank}" if score_rank is not None else ""
+        name += forget_label
+        name += f"_reservoir_{reservoir_method}"
+        print("Name:", name)
+        if skip_completed_configs and is_completed_run(name):
+            print(f"Skipping completed run: {name}")
+        else:
+            run_future_hmean_online_reference_experiment(
+                matrix_name=matrix_name,
+                method=method,
+                stream_size=stream_size,
+                k=k,
+                score_rank=score_rank,
+                output_dir=output_dir,
+                run_name=name,
+                forget_params=forget_params,
+                save_in_text=save_in_text,
+            )
+        sys.exit(0)
     for k in k_list:
     # for k in [200, 400, 600, 800, 1000]:
         for size in [first_window_size]:
@@ -1142,29 +1377,36 @@ if __name__ == "__main__":
                                     name += f"size_{size}"
                                     name += f"_ssize_{stream_size}" if stream_size != size else ""
                                     name += f"_k_{k}"
+                                    name += f"_sr_{score_rank}" if score_rank is not None else ""
+                                    name += forget_label
                                     name += f"_factor_{threshold_factor}" if threshold_factor != 1e2 else ""
                                     name += f"_reservoir_{reservoir_method}" if reservoir_method != "uniform" else ""
                                     if method == "isvddemix" and reservoir_size != 10 and reservoir_method == "greedy":
                                         name += f"{reservoir_size}"
                                     print("Name:", name)
-                                    S, Vt = isvd(A_csr, 
-                                                S_exact, Vt_exact, U_exact, 
-                                                row_permutation=permutations[row_permutation].copy(),
-                                                name=name,
-                                                output_dir=output_dir,
-                                                is_sym_psd=A_is_sym_psd,
-                                                stream_size=stream_size,
-                                                first_window_size=size,
-                                                col_permutation=None,
-                                                track_reconstruction_error=True,
-                                                k=k,
-                                                use_true_matrix=use_true_matrix,
-                                                threshold_factor=threshold_factor,
-                                                reservoir_size=reservoir_size,
-                                                reservoir_method=reservoir_method,
-                                                method=method,
-                                                save_in_text=save_in_text,
-                                                )
+                                    if skip_completed_configs and is_completed_run(name):
+                                        print(f"Skipping completed run: {name}")
+                                    else:
+                                        S, Vt = isvd(A_csr, 
+                                                    S_exact, Vt_exact, U_exact, 
+                                                    row_permutation=permutations[row_permutation].copy(),
+                                                    name=name,
+                                                    output_dir=output_dir,
+                                                    is_sym_psd=A_is_sym_psd,
+                                                    stream_size=stream_size,
+                                                    first_window_size=size,
+                                                    col_permutation=None,
+                                                    track_reconstruction_error=True,
+                                                    k=k,
+                                                    use_true_matrix=use_true_matrix,
+                                                    threshold_factor=threshold_factor,
+                                                    reservoir_size=reservoir_size,
+                                                    reservoir_method=reservoir_method,
+                                                    method=method,
+                                                    score_rank=score_rank,
+                                                    forget_params=forget_params,
+                                                    save_in_text=save_in_text,
+                                                    )
                                 if row_permutation != "original" and not "random" in row_permutation and \
                                     row_permutation != "manual_perm":
                                     continue
@@ -1191,33 +1433,40 @@ if __name__ == "__main__":
                                             name += f"size_{size}"
                                             name += f"_ssize_{stream_size}" if stream_size != size else ""
                                             name += f"_k_{k}"
+                                            name += f"_sr_{score_rank}" if score_rank is not None else ""
+                                            name += forget_label
                                             name += f"_factor_{threshold_factor}" if threshold_factor != 1e2 else ""
                                             name += f"_reservoir_{reservoir_method}" if reservoir_method != "uniform" else ""
                                             if method == "isvddemix" and reservoir_size != 10 and reservoir_method == "greedy":
                                                 name += f"{reservoir_size}"
                                             print("Name:", name)
-                                            S, Vt, perm = isvd(A_csr, 
-                                                        S_exact, Vt_exact, U_exact,
-                                                        row_permutation=permutations[row_permutation].copy(), 
-                                                        #  name=matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_reversed_" + f"size_{size}_k_{k}",
-                                                        name=name, # row perm only initially
-                                                        output_dir=output_dir,
-                                                        is_sym_psd=A_is_sym_psd,
-                                                        num_Vs=num_Vs,
-                                                        with_S=with_S,
-                                                        stream_size=stream_size,
-                                                        first_window_size=size,
-                                                        k=k,
-                                                        track_reconstruction_error=True,
-                                                        reverse=is_reversed, # False default, for decreasing norm approximations
-                                                        use_true_matrix=use_true_matrix,
-                                                        threshold_factor=threshold_factor,
-                                                        reservoir_size=reservoir_size,
-                                                        reservoir_method=reservoir_method,
-                                                        method=method,
-                                                        return_row_order=True,
-                                                        save_in_text=save_in_text,
-                                                        )
+                                            if skip_completed_configs and is_completed_run(name):
+                                                print(f"Skipping completed run: {name}")
+                                            else:
+                                                S, Vt, perm = isvd(A_csr, 
+                                                            S_exact, Vt_exact, U_exact,
+                                                            row_permutation=permutations[row_permutation].copy(), 
+                                                            #  name=matrix_postfix + "_new_" + f"Vapprox_withS_{num_Vs}_" + row_permutation + "_reversed_" + f"size_{size}_k_{k}",
+                                                            name=name, # row perm only initially
+                                                            output_dir=output_dir,
+                                                            is_sym_psd=A_is_sym_psd,
+                                                            num_Vs=num_Vs,
+                                                            with_S=with_S,
+                                                            stream_size=stream_size,
+                                                            first_window_size=size,
+                                                            k=k,
+                                                            track_reconstruction_error=True,
+                                                            reverse=is_reversed, # False default, for decreasing norm approximations
+                                                            use_true_matrix=use_true_matrix,
+                                                            threshold_factor=threshold_factor,
+                                                            reservoir_size=reservoir_size,
+                                                            reservoir_method=reservoir_method,
+                                                            method=method,
+                                                            score_rank=score_rank,
+                                                            forget_params=forget_params,
+                                                            return_row_order=True,
+                                                            save_in_text=save_in_text,
+                                                            )
                                         if save_mat:
                                             filename = f'perms/matrix_data_{matrix_name}_{row_permutation}_Vapprox_withS_{num_Vs}.mat'
                                             permuted_matrix = A_csr[perm, :]

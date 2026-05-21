@@ -1,0 +1,123 @@
+Leverage compensation result
+============================
+
+Date: 2026-04-19
+
+Baseline definition
+-------------------
+The baseline used in the leverage-compensation comparison is:
+
+  baseline-greedy-oraclewarm
+
+This is the fast static-CEX combined-objective run with greedy rank-by-rank
+selection and oracle-projected restart seeds:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset fast --seed 0 \
+    --score-variant combined \
+    --no-oracle-candidate-check \
+    --joint-warm-start-oracle
+
+Important settings:
+
+  basis_selection: greedy
+  joint_warm_start_oracle: True
+  reduced_optimizer: cex
+  score_variant: combined
+  row_concentration_lambda: 0
+  row_leverage_lambda: 0
+  q0: 5
+  qmax: 200
+  dtype: float32
+  expansion_direction: residual
+
+In greedy mode, --joint-warm-start-oracle means each greedy direction receives
+an oracle-projected restart seed. It is not the joint Stiefel optimizer.
+
+
+Baseline metrics
+----------------
+Latest full-stream sweep baseline:
+
+  first block:
+    score_sum:          2.09367
+    cos_min vs oracle:  0.903957
+    outside_1:          0.0953768
+    outside_2:          0.424812
+    v3_out_2:           0.940166
+    orig_row1_frac_2:   0.887634
+
+  final stream:
+    final_align:        0.996282
+    final_relerr:       0.000256105
+    final score_sum:    1.95891
+
+
+Objective compensation tested
+-----------------------------
+The leverage-weighted compensation tested was:
+
+  score_reg(v) = score(v) - lambda * sum_i w_i p_i
+
+where:
+
+  p_i = (A_block v)_i^2 / ||A_block v||^2
+
+Two row-weight definitions were tested:
+
+  row-norm:
+    w_i proportional to ||A_block[i, :]||^2, normalized to mean 1.
+
+  top-svd:
+    w_i equal to row leverage in the top-2 left singular vectors of A_block,
+    normalized to mean 1.
+
+Command:
+
+  python test_matrices_fast/try_outside_direction_steering.py --full-stream
+
+
+Full-stream results
+-------------------
+  method              final_align   final_relerr
+  baseline            0.996282      0.000256105
+  rowconc-0.1         0.996791      0.000242993
+  rowconc-0.2         0.997074      0.000235415
+
+  rowlev-norm-0.001   0.996305      0.000254120
+  rowlev-norm-0.003   0.996370      0.000250030
+  rowlev-norm-0.01    0.996417      0.000245519
+  rowlev-norm-0.03    0.0842168     0.000238783
+
+  rowlev-top2-0.001   0.105928      0.000355105
+  rowlev-top2-0.003   0.158528      0.000688855
+  rowlev-top2-0.01    0.229720      0.001374820
+  rowlev-top2-0.03    0.257913      0.001705500
+
+
+Conclusion
+----------
+The tested leverage compensation did not beat simple row-concentration
+regularization.
+
+Row-norm leverage compensation helps slightly over baseline, but the effect is
+small and weaker than row concentration.
+
+Top-SVD leverage compensation is too blunt. It improves some first-block oracle
+geometry and reduces the row-1/v3 artifact, but it damages the full stream.
+This suggests the local top-SVD leverage rows include useful signal, not only
+bad transient outside-direction support.
+
+The best current objective compensation for this static-CEX case remains mild
+unweighted row-concentration regularization:
+
+  row_concentration_lambda ~= 0.1 to 0.2
+
+
+Next direction
+--------------
+If leverage compensation is revisited, use a more selective weight than raw row
+norm or block top-SVD leverage. A plausible next diagnostic is to penalize rows
+that are both high leverage and anomalously tail-aligned, rather than all local
+high-leverage rows.

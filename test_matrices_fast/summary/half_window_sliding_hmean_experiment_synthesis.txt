@@ -1,0 +1,178 @@
+Half-window HM experiment synthesis
+==================================
+
+Date: 2026-04-23
+
+Artifacts
+---------
+- `summary/half_window_sliding_hmean_experiment.json`
+- `summary/half_window_sliding_hmean_experiment.csv`
+- `summary/half_window_sliding_hmean_experiment.txt`
+- `summary/half_window_sliding_hmean_plain.json`
+- `summary/half_window_sliding_hmean_plain.csv`
+- `summary/half_window_sliding_hmean_plain.txt`
+
+
+Question
+--------
+Would a split-block or sliding-half-window harmonic-mean objective provide a
+useful online proxy for `future_hmean` on `mixed-tail-sharp`?
+
+
+Implemented experiments
+-----------------------
+1. Split probe
+
+   Non-overlapping pairs of halves:
+
+   - build candidates from `[sketch; first_half]`
+   - score them on `HM(first_half_support, second_half_support)`
+   - optionally apply a second-half complement guard
+   - commit once per pair
+
+2. Sliding half-window
+
+   Overlapping pairs of halves:
+
+   - build candidates from `[sketch; first_half_t]`
+   - score them on `HM(first_half_t_support, second_half_t_support)`
+   - advance by one half-window so the old second half becomes the new first
+     half
+
+Policies tested:
+
+- `combined` baseline
+- `half_hmean`
+- `half_hmean_guard`
+
+All runs used the lighter optimizer config:
+
+- `q0=4`
+- `qmax=16`
+- `num_restarts=2`
+- `maxit=40`
+- `expansion_maxit=4`
+- `post_expansion_maxit=20`
+
+
+Main result
+-----------
+The half-window HM idea does not work on `mixed-tail-sharp` in this form.
+
+Both `half_hmean` and `half_hmean_guard` mostly select
+`mgain_deflated_svd`, i.e. the same complement-like challenger we were trying
+to suppress.
+
+
+Summary table
+-------------
+1. Split probe
+
+- `combined`
+  - `mean_align = 0.063108`
+  - `mean_relerr_sval = 0.07399345`
+  - final carried exact cosines = `[0.189372, 0.061429]`
+  - selected labels = `{"opt2": 32}`
+
+- `half_hmean`
+  - `mean_align = 0.028103`
+  - `mean_relerr_sval = 0.01741950`
+  - final carried exact cosines = `[0.085699, 0.020381]`
+  - selected labels = `{"mgain_deflated_svd": 32}`
+
+- `half_hmean_guard`
+  - `mean_align = 0.060319`
+  - `mean_relerr_sval = 0.01740473`
+  - final carried exact cosines = `[0.061863, 0.025493]`
+  - selected labels = `{"mgain_deflated_svd": 32}`
+
+2. Sliding half-window
+
+- `combined`
+  - `mean_align = 0.055516`
+  - `mean_relerr_sval = 0.02594919`
+  - final carried exact cosines = `[0.085842, 0.002812]`
+  - selected labels = `{"opt2": 63}`
+
+- `half_hmean`
+  - `mean_align = 0.046570`
+  - `mean_relerr_sval = 0.02598008`
+  - final carried exact cosines = `[0.200619, 0.030037]`
+  - selected labels:
+    `{"mgain_deflated_svd": 44, "q2_raw_projected": 11, "q2_vs_q1oracle": 4, "opt2": 3, "opt2_outside": 1}`
+
+- `half_hmean_guard`
+  - `mean_align = 0.040898`
+  - `mean_relerr_sval = 0.03544410`
+  - final carried exact cosines = `[0.223836, 0.026751]`
+  - selected labels:
+    `{"mgain_deflated_svd": 48, "q2_vs_q1oracle": 6, "q2_raw_projected": 5, "opt2": 3, "opt2_outside": 1}`
+
+
+Interpretation
+--------------
+1. The failure is in the half-window signal, not in the complement guard.
+
+   Plain `half_hmean` already collapses onto `mgain_deflated_svd`:
+
+   - split probe: 32/32 `mgain_deflated_svd`
+   - sliding: 44/63 `mgain_deflated_svd`
+
+   Adding the guard does not fix that:
+
+   - split probe: 32/32 `mgain_deflated_svd`
+   - sliding: 48/63 `mgain_deflated_svd`
+
+2. Focused early-pair dump shows why.
+
+   On the first half-pair:
+
+   - oracle-like candidates have strong first-half gain but almost zero
+     second-half gain
+   - `mgain_deflated_svd` has the largest first-half gain and still the largest
+     second-half gain among the oracle-free challengers
+
+   Example from the focused dump:
+
+   - `q2_raw_projected`: `gain1 ≈ 0.8329`, `gain2 ≈ 1.1e-05`
+   - `q2_vs_q1oracle`: `gain1 ≈ 0.8248`, `gain2 ≈ 8e-06`
+   - `mgain_deflated_svd`: `gain1 ≈ 0.9123`, `gain2 ≈ 4.8e-05`
+
+   So the immediate next half-block does not behave like the useful
+   future-support signal seen in the earlier `future_hmean` experiment.
+
+3. This means "adjacent half persistence" is too local on this matrix.
+
+   The beneficial `future_hmean` signal came from support over upcoming full
+   blocks. Replacing that with support on the very next half-window is too
+   myopic here and mostly rewards the same complement-like directions that win
+   on short-horizon local structure.
+
+
+Bottom line
+-----------
+For `mixed-tail-sharp`, this half-window HM idea is not a good online proxy for
+the successful offline `future_hmean` diagnostic.
+
+The negative result is fairly robust:
+
+- plain half-HM fails
+- guarded half-HM fails
+- split and sliding versions both fail
+
+So the next online design should not be "use immediate adjacent-half harmonic
+mean" as-is.
+
+
+Practical next step
+-------------------
+The safer direction remains:
+
+- hard complement objective first
+
+and, if we want a future-style proxy online, use a less local persistence
+signal than adjacent half-windows, for example:
+
+- a short reservoir / delayed validation buffer across several later chunks, or
+- a conservative complement-gated objective with a separate stability test,
+  rather than direct half-to-half HM.

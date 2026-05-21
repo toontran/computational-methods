@@ -1,0 +1,189 @@
+No-phi HM combinations sweep report
+===================================
+
+Scope
+-----
+All 17 benchmark matrices, half_win=32, rank=2, seed=0, float32, sliding-mode metrics.
+No-phi policies remove the current-window entropy multiplier relH1 from the score.
+
+Win counts within no-phi sweep
+------------------------------
+metric                 future_hmean_onlin  future_hmean_onlin  future_hmean_tripl  future_hmean_neste  future_hmean_pairw  future_hmean_weigh 
+mean_exact_cos1        8                   1                   2                   1                   4                   1                  
+mean_exact_cos2        3                   0                   4                   5                   0                   5                  
+mean_relerr_sval       5                   3                   2                   4                   2                   1                  
+final_exact_cos1       4                   0                   0                   2                   6                   5                  
+final_exact_cos2       3                   1                   6                   2                   3                   2                  
+final_tail_mass        3                   1                   6                   2                   2                   3                  
+elapsed                4                   4                   2                   3                   2                   2                  
+sec_per_step           4                   4                   2                   3                   2                   2                  
+
+Head-to-head vs phi future_hmean_online
+---------------------------------------
+vs future_hmean_online_no_phi
+  mean_exact_cos1        W/T/L=4/0/13 mean_delta=-0.0693
+  mean_exact_cos2        W/T/L=8/0/9 mean_delta=-0.0743
+  mean_relerr_sval       W/T/L=3/6/8 mean_delta=0.0064
+  final_exact_cos1       W/T/L=3/5/9 mean_delta=-0.0902
+  final_exact_cos2       W/T/L=7/2/8 mean_delta=-0.1183
+  final_tail_mass        W/T/L=5/2/10 mean_delta=0.1231
+
+vs future_hmean_triplet_online_no_phi
+  mean_exact_cos1        W/T/L=7/0/10 mean_delta=-0.0213
+  mean_exact_cos2        W/T/L=11/0/6 mean_delta=-0.0433
+  mean_relerr_sval       W/T/L=5/3/9 mean_delta=0.0025
+  final_exact_cos1       W/T/L=4/6/7 mean_delta=-0.0076
+  final_exact_cos2       W/T/L=10/1/6 mean_delta=-0.0357
+  final_tail_mass        W/T/L=10/1/6 mean_delta=0.0365
+
+vs future_hmean_nested_online_no_phi
+  mean_exact_cos1        W/T/L=6/1/10 mean_delta=-0.0538
+  mean_exact_cos2        W/T/L=12/0/5 mean_delta=-0.0437
+  mean_relerr_sval       W/T/L=4/4/9 mean_delta=0.0034
+  final_exact_cos1       W/T/L=4/7/6 mean_delta=-0.0649
+  final_exact_cos2       W/T/L=10/1/6 mean_delta=-0.0820
+  final_tail_mass        W/T/L=9/1/7 mean_delta=0.0764
+
+vs future_hmean_pairwise_online_no_phi
+  mean_exact_cos1        W/T/L=7/0/10 mean_delta=-0.0206
+  mean_exact_cos2        W/T/L=10/0/7 mean_delta=-0.1224
+  mean_relerr_sval       W/T/L=5/2/10 mean_delta=-0.0002
+  final_exact_cos1       W/T/L=7/5/5 mean_delta=-0.0108
+  final_exact_cos2       W/T/L=7/0/10 mean_delta=-0.1993
+  final_tail_mass        W/T/L=7/0/10 mean_delta=0.1055
+
+vs future_hmean_weighted_online_no_phi
+  mean_exact_cos1        W/T/L=9/0/8 mean_delta=-0.0190
+  mean_exact_cos2        W/T/L=13/0/4 mean_delta=-0.0313
+  mean_relerr_sval       W/T/L=5/3/9 mean_delta=0.0020
+  final_exact_cos1       W/T/L=7/5/5 mean_delta=-0.0096
+  final_exact_cos2       W/T/L=10/1/6 mean_delta=-0.0058
+  final_tail_mass        W/T/L=9/1/7 mean_delta=0.0241
+
+Best phi/no-phi policy by metric
+--------------------------------
+mean_exact_cos1 (higher is better)
+  crowded-strategy               winner=future_hmean_online_no_phi              value=0.9986
+  diffuse-diffuse                winner=future_hmean_online                     value=0.6926
+  etf-basket-basis               winner=future_hmean_triplet_online_no_phi      value=0.9992
+  execution-cost-slippage        winner=future_hmean_pairwise_online            value=0.9990
+  futures-term-structure         winner=future_hmean_pairwise_online            value=0.9992
+  intraday-liquidity-shape       winner=future_hmean_weighted_online_no_phi     value=0.9994
+  macro-factor-panel             winner=future_hmean_online                     value=0.9995
+  mixed-tail-balanced            winner=future_hmean_nested_online              value=0.6906
+  mixed-tail-sharp               winner=future_hmean_nested_online              value=0.6910
+  mixed-tail-soft                winner=future_hmean_online                     value=0.6916
+  options-vol-surface            winner=future_hmean_pairwise_online_no_phi     value=0.9994
+  rates-cross-currency           winner=future_hmean_online                     value=0.9988
+  realized-vol-corr              winner=future_hmean_pairwise_online_no_phi     value=0.9992
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.5223
+  risk-residual-panel            winner=future_hmean_pairwise_online_no_phi     value=0.7288
+  stat-arb-spreads               winner=future_hmean_nested_online              value=0.9995
+  static-cex                     winner=future_hmean_nested_online              value=0.7006
+
+mean_exact_cos2 (higher is better)
+  crowded-strategy               winner=future_hmean_triplet_online_no_phi      value=0.9950
+  diffuse-diffuse                winner=future_hmean_triplet_online             value=0.5175
+  etf-basket-basis               winner=future_hmean_nested_online_no_phi       value=0.9627
+  execution-cost-slippage        winner=future_hmean_weighted_online_no_phi     value=0.9951
+  futures-term-structure         winner=future_hmean_weighted_online_no_phi     value=0.9990
+  intraday-liquidity-shape       winner=future_hmean_triplet_online_no_phi      value=0.9970
+  macro-factor-panel             winner=future_hmean_weighted_online_no_phi     value=0.9987
+  mixed-tail-balanced            winner=future_hmean_weighted_online            value=0.4580
+  mixed-tail-sharp               winner=future_hmean_weighted_online_no_phi     value=0.4254
+  mixed-tail-soft                winner=future_hmean_triplet_online             value=0.4998
+  options-vol-surface            winner=future_hmean_nested_online              value=0.9968
+  rates-cross-currency           winner=future_hmean_triplet_online_no_phi      value=0.9976
+  realized-vol-corr              winner=future_hmean_nested_online_no_phi       value=0.9946
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.3268
+  risk-residual-panel            winner=future_hmean_triplet_online             value=0.1686
+  stat-arb-spreads               winner=future_hmean_nested_online_no_phi       value=0.9987
+  static-cex                     winner=future_hmean_nested_online              value=0.6806
+
+mean_relerr_sval (lower is better)
+  crowded-strategy               winner=future_hmean_online_no_phi              value=0.0158
+  diffuse-diffuse                winner=future_hmean_online                     value=0.0047
+  etf-basket-basis               winner=future_hmean_nested_online_no_phi       value=0.0145
+  execution-cost-slippage        winner=future_hmean_triplet_online_no_phi      value=0.0149
+  futures-term-structure         winner=future_hmean_nested_online_no_phi       value=0.0146
+  intraday-liquidity-shape       winner=future_hmean_online_no_phi              value=0.0135
+  macro-factor-panel             winner=future_hmean_pairwise_online            value=0.0165
+  mixed-tail-balanced            winner=future_hmean_nested_online              value=0.0050
+  mixed-tail-sharp               winner=future_hmean_triplet_online             value=0.0049
+  mixed-tail-soft                winner=future_hmean_online                     value=0.0048
+  options-vol-surface            winner=future_hmean_online_no_phi              value=0.0159
+  rates-cross-currency           winner=future_hmean_nested_online_no_phi       value=0.0144
+  realized-vol-corr              winner=future_hmean_pairwise_online_no_phi     value=0.0173
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.1318
+  risk-residual-panel            winner=future_hmean_pairwise_online_no_phi     value=0.0439
+  stat-arb-spreads               winner=future_hmean_nested_online              value=0.0127
+  static-cex                     winner=future_hmean_pairwise_online            value=0.0028
+
+final_exact_cos1 (higher is better)
+  crowded-strategy               winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  diffuse-diffuse                winner=future_hmean_online                     value=0.9858
+  etf-basket-basis               winner=future_hmean_nested_online              value=1.0000
+  execution-cost-slippage        winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  futures-term-structure         winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  intraday-liquidity-shape       winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  macro-factor-panel             winner=future_hmean_triplet_online             value=1.0000
+  mixed-tail-balanced            winner=future_hmean_nested_online              value=0.9838
+  mixed-tail-sharp               winner=future_hmean_nested_online              value=0.9842
+  mixed-tail-soft                winner=future_hmean_online                     value=0.9850
+  options-vol-surface            winner=future_hmean_weighted_online_no_phi     value=1.0000
+  rates-cross-currency           winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  realized-vol-corr              winner=future_hmean_weighted_online_no_phi     value=1.0000
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.7912
+  risk-residual-panel            winner=future_hmean_pairwise_online_no_phi     value=0.9795
+  stat-arb-spreads               winner=future_hmean_weighted_online_no_phi     value=1.0000
+  static-cex                     winner=future_hmean_nested_online_no_phi       value=0.9858
+
+final_exact_cos2 (higher is better)
+  crowded-strategy               winner=future_hmean_triplet_online_no_phi      value=1.0000
+  diffuse-diffuse                winner=future_hmean_triplet_online             value=0.8791
+  etf-basket-basis               winner=future_hmean_nested_online_no_phi       value=0.9983
+  execution-cost-slippage        winner=future_hmean_triplet_online_no_phi      value=0.9999
+  futures-term-structure         winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  intraday-liquidity-shape       winner=future_hmean_triplet_online_no_phi      value=1.0000
+  macro-factor-panel             winner=future_hmean_pairwise_online_no_phi     value=1.0000
+  mixed-tail-balanced            winner=future_hmean_weighted_online            value=0.8568
+  mixed-tail-sharp               winner=future_hmean_weighted_online            value=0.8310
+  mixed-tail-soft                winner=future_hmean_triplet_online             value=0.8786
+  options-vol-surface            winner=future_hmean_triplet_online             value=0.9998
+  rates-cross-currency           winner=future_hmean_online_no_phi              value=1.0000
+  realized-vol-corr              winner=future_hmean_online                     value=1.0000
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.6621
+  risk-residual-panel            winner=future_hmean_triplet_online             value=0.3485
+  stat-arb-spreads               winner=future_hmean_triplet_online_no_phi      value=1.0000
+  static-cex                     winner=future_hmean_nested_online              value=0.9816
+
+final_tail_mass (lower is better)
+  crowded-strategy               winner=future_hmean_triplet_online_no_phi      value=0.0000
+  diffuse-diffuse                winner=future_hmean_triplet_online             value=0.1283
+  etf-basket-basis               winner=future_hmean_nested_online_no_phi       value=0.0017
+  execution-cost-slippage        winner=future_hmean_triplet_online_no_phi      value=0.0001
+  futures-term-structure         winner=future_hmean_pairwise_online_no_phi     value=0.0000
+  intraday-liquidity-shape       winner=future_hmean_triplet_online_no_phi      value=0.0000
+  macro-factor-panel             winner=future_hmean_weighted_online_no_phi     value=0.0000
+  mixed-tail-balanced            winner=future_hmean_weighted_online            value=0.1530
+  mixed-tail-sharp               winner=future_hmean_weighted_online            value=0.1721
+  mixed-tail-soft                winner=future_hmean_triplet_online             value=0.1322
+  options-vol-surface            winner=future_hmean_nested_online              value=0.0002
+  rates-cross-currency           winner=future_hmean_online_no_phi              value=0.0000
+  realized-vol-corr              winner=future_hmean_online                     value=0.0000
+  residual-spiky-shocks          winner=future_hmean_nested_online_no_phi       value=0.4678
+  risk-residual-panel            winner=future_hmean_pairwise_online_no_phi     value=0.4976
+  stat-arb-spreads               winner=future_hmean_triplet_online_no_phi      value=0.0001
+  static-cex                     winner=future_hmean_nested_online              value=0.0331
+
+Elapsed summary
+---------------
+policy                                   median_s   mean_s     total_s   
+future_hmean_online                      6.544      7.383      125.514   
+future_hmean_online_no_phi               6.446      7.447      126.591   
+future_hmean_triplet_online_no_phi       6.814      7.754      131.810   
+future_hmean_nested_online_no_phi        6.756      7.605      129.284   
+future_hmean_pairwise_online_no_phi      7.014      7.684      130.621   
+future_hmean_weighted_online_no_phi      6.579      7.818      132.901   
+
+Raw per-matrix metrics CSV: /home/ttran02/pj/computational-methods/test_matrices_fast/summary/hmean_no_phi_sweep/matrix_metrics.csv

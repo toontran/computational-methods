@@ -1,0 +1,267 @@
+Tail-Conspiracy Python Diagnostic Handoff
+=========================================
+
+Date: 2026-04-22
+
+Purpose
+-------
+This is a compact handoff for continuing the tail-conspiracy/sketch-bias work.
+It keeps only the context needed for next steps.
+
+
+Core Claim To Test
+------------------
+The combined algorithm can retain a wrong tail-biased second slot because the
+carried sketch B gives that previously selected direction old-energy credit in
+later blocks.
+
+The precise failure pattern is:
+
+  opt2 is not aligned with oracle2
+  prev opt2 remains tail-persistent
+  prev opt2 remains score-competitive
+  opt2 wins under actual_B
+  opt2 loses or collapses under zero_B
+  static-cex does not show rank-2 failure even though sketch influence is high
+
+So the conclusion should be:
+
+  Not all sketch influence is bad. Harmful sketch bias means high sketch
+  influence plus persistent low opt2-vs-oracle2.
+
+
+Terminology
+-----------
+opt1:
+  First optimizer-selected direction in the current block.
+
+opt2:
+  Second optimizer-selected direction in the current block.
+
+oracle1 / oracle2:
+  Offline diagnostic target directions. They are built from the known target
+  top-2 subspace projected into the current sketch-plus-window geometry. The
+  algorithm does not know them.
+
+oracle2_vs_opt1:
+  oracle2 after orthogonalizing against opt1. This is the fair greedy-frame
+  comparison for the second slot because opt2 is chosen after opt1.
+
+actual_B:
+  Normal carried sketch context.
+
+zero_B:
+  Current-window-only gain context, with old sketch energy removed.
+
+oracle_B:
+  Parallel oracle-forced carried sketch context.
+
+
+Current Python Script
+---------------------
+Main script:
+
+  cex_structured_combined_hybrid_tail.py
+
+It is a Python counterpart to the MATLAB tail-conspiracy diagnostics. It runs
+the combined trajectory and writes assistant-readable outputs.
+
+Command used for the full run:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --old-memory-size 32 \
+    --dtype float32 \
+    --q0 8 --qmax 48 \
+    --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --output-dir summary/tail_conspiracy_python
+
+Full run completed in about 103 seconds.
+
+
+Output Files
+------------
+Directory:
+
+  summary/tail_conspiracy_python/
+
+Key files:
+
+  tail_diagnostics_interpretation.txt
+    Human-readable summary of whether the story holds.
+
+  tail_diagnostics_interpretation.json
+    Same summary in JSON.
+
+  tail_diagnostics_all.csv
+    Per-block table for all matrices.
+
+  mixed-tail-sharp_tail_diagnostics.jsonl
+  diffuse-diffuse_tail_diagnostics.jsonl
+  static-cex_tail_diagnostics.jsonl
+    Per-block JSONL records for each matrix.
+
+
+Important Output Fields
+-----------------------
+opt1_vs_oracle1:
+  Absolute cosine between opt1 and oracle1. High means slot 1 found the first
+  target direction.
+
+opt2_vs_oracle2:
+  Absolute cosine between opt2 and oracle2. Low means slot 2 is not the target
+  second direction.
+
+subspace_cos1 / subspace_cos2:
+  Principal cosines between the selected rank-2 subspace and the oracle rank-2
+  subspace. Use these when column ordering is unstable.
+
+prev_opt2_tail_cos:
+  Cosine between the tail component of current opt2 and previous opt2. High
+  means the tail region persists.
+
+prev_opt2_score_ratio:
+  Score of previous opt2 under the current objective divided by current opt2
+  score. Near 1 means previous opt2 remains competitive.
+
+opt2_actualB_score:
+  Score of opt2 under normal carried sketch B.
+
+opt2_zeroB_score:
+  Score of opt2 with old sketch energy removed.
+
+oracle2_vs_opt1_actualB_score:
+  Score of the oracle2 candidate orthogonalized against opt1 under actual_B.
+
+oracle2_vs_opt1_zeroB_score:
+  Same candidate under zero_B.
+
+opt2_sketch_score_share:
+  (opt2_actualB_score - opt2_zeroB_score) / opt2_actualB_score.
+
+opt2_actual_margin_vs_oracle2_vs_opt1:
+  opt2_actualB_score - oracle2_vs_opt1_actualB_score.
+  Positive means opt2 beats the fair oracle2 second-slot candidate under
+  actual_B.
+
+opt2_zero_margin_vs_oracle2_vs_opt1:
+  opt2_zeroB_score - oracle2_vs_opt1_zeroB_score.
+  Negative means opt2 loses when old sketch energy is removed.
+
+
+Latest Result
+-------------
+mixed-tail-sharp:
+
+  final opt2_vs_oracle2 = 0.033704
+  mean prev_opt2_tail_cos b>=3 = 0.879650
+  mean prev_opt2_score_ratio b>=3 = 0.937254
+  mean opt2 actual/zero b>=3 = 18.782300
+  mean margin opt2 - oracle2_vs_opt1:
+    actualB = +0.205273
+    zeroB   = -0.734593
+  story_holds_by_threshold = True
+
+Interpretation:
+  Sketch-bias story holds, but this case also has slot/frame instability. opt1
+  can align more with oracle2 than oracle1, so use subspace cosines as well as
+  per-slot cosines.
+
+diffuse-diffuse:
+
+  final opt1_vs_oracle1 = 0.999757
+  final opt2_vs_oracle2 = 0.186016
+  mean prev_opt2_tail_cos b>=3 = 0.915061
+  mean prev_opt2_score_ratio b>=3 = 0.932197
+  mean opt2 actual/zero b>=3 = 11.484777
+  mean margin opt2 - oracle2_vs_opt1:
+    actualB = +0.118990
+    zeroB   = -0.972094
+  story_holds_by_threshold = True
+
+Interpretation:
+  Clean case. opt1 recovers oracle1, opt2 remains wrong, and the opt2 advantage
+  disappears when B is removed.
+
+static-cex:
+
+  final opt1_vs_oracle1 = 0.999128
+  final opt2_vs_oracle2 = 0.999105
+  final subspace_cos2 = 0.999976
+  mean prev_opt2_tail_cos b>=3 = 0.914841
+  mean opt2 actual/zero b>=3 = 15.439331
+  story_holds_by_threshold = False
+  control_converges_by_threshold = True
+
+Interpretation:
+  Control passes. Sketch influence is high, but it reinforces the correct
+  subspace. This separates benign sketch memory from harmful sketch bias.
+
+
+Next Steps
+----------
+1. Add optional plotting to cex_structured_combined_hybrid_tail.py.
+
+   Plot from CSV/records:
+
+     panel 1:
+       opt1_vs_oracle1, opt2_vs_oracle2,
+       opt1_tail_mass, opt2_tail_mass
+
+     panel 2:
+       prev_opt1_tail_cos, prev_opt2_tail_cos,
+       prev_opt1_score_ratio, prev_opt2_score_ratio
+
+     panel 3:
+       opt1_actualB_score, opt1_zeroB_score, oracle1_actualB_score,
+       opt2_actualB_score, opt2_zeroB_score,
+       oracle2_vs_opt1_actualB_score
+
+     panel 4:
+       opt1_sketch_score_share, opt2_sketch_score_share,
+       opt1_actual_margin_vs_oracle1,
+       opt2_actual_margin_vs_oracle2_vs_opt1
+
+   Do not plot degrees; cosines are sufficient.
+
+2. Add a Hybrid branch to the Python diagnostic.
+
+   Current script only runs the combined trajectory. Add hybrid selection:
+
+     first combined_rank directions from combined optimizer;
+     remaining directions from deflated SVD of M_gain;
+     then same left-projected sketch extraction.
+
+   Compare Combined vs Hybrid on the same fields.
+
+3. Run internal-rank tests.
+
+   Test internal ranks:
+
+     4, 8, 16
+
+   Then compress/evaluate final rank 2. Distinguish:
+
+     oracle2 absent internally:
+       objective/search still misses it.
+
+     oracle2 present internally but final rank-2 compression drops it:
+       compression/left-projected operator reinforces wrong geometry.
+
+     oracle2 present and final rank-2 recovers:
+       early candidate deletion was the main problem.
+
+4. Update synthesis after plotting/hybrid/internal-rank results.
+
+   Existing synthesis:
+
+     summary/tail_conspiracy_insights_synthesis.txt
+
+   Keep final framing:
+
+     Harmful sketch bias = sketch influence plus persistent wrong retention,
+     not sketch influence alone.

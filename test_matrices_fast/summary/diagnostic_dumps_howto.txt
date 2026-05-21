@@ -1,0 +1,228 @@
+# Diagnostic dumps — how-to
+
+Operational notes for the score-component, oracle-projection, and old-row
+response dumps on `cex_restricted_space_probe.py`. Written for runs with
+`score_variant=combined` (or `oldcorrected`). All dumps are diagnostic-only —
+they use `V_exact` and do not affect the sketch that is carried across blocks.
+
+
+## The five diagnostic hooks
+
+1. `--oracle-candidate-check`  (on by default for combined / oldcorrected)
+   At each block, build the oracle-projection basis
+     Q_oracle = orth( P_row(M_gain) @ V_exact[:, :rank] )
+   score it under the current variant, and replace the optimizer's pick iff
+     candidate_score_sum > optimizer_score_sum + 1e-10.
+   Prints the sums and whether the replacement was accepted. Use this to see
+   whether the optimizer is actually finding the best direction available or
+   losing to the oracle-projected target.
+
+2. `--dump-score-components`
+   At each block, print the per-direction score breakdown for:
+   - `oracle_raw_v{j}`: P_row(M_gain) V_exact[:, j], normalized. This is the
+     oracle target *before* QR.
+   - `optimizer_v{j}`: the direction the optimizer actually returned.
+   For `score_variant=combined` the fields are:
+     total, gain2, phi, pooled_y2, pooled_y4, pooled_H, pooled_rel_H,
+     combined_c, rows_entropy, rows_seen,
+     new_y2, new_y4, new_H, new_rel_H,
+     old_y2, old_y4, old_H, old_rel_H, old_rows.
+   For `score_variant=oldcorrected` you also get new_psi, new_c, old_psi,
+   old_E, old_phi, old_r2, old_r4, old_c.
+   For `score_variant=l4l2` the fields replace phi/combined_c with theta and
+   pooled_l4l2_sq, where total = gain2 * theta and
+   theta = pooled_y2 / sqrt(pooled_y4).
+   Use this to see *why* one direction beats another: gain2 vs phi/theta
+   tradeoff, new-rows vs old-rows concentration split, and correction
+   magnitude.
+
+3. `--dump-oracle-old-row-responses`
+   At the specified block (`--dump-oracle-old-row-response-block`, 1-based,
+   0 means every block), print the raw response vector
+     old_row_memory @ (P_row(M_gain) V_exact[:, j]).normalized
+   along with its entropy stats. Use this when a score-component dump shows
+   suspicious old_H / old_rel_H values and you want to see which rows in the
+   old_row_memory are actually carrying the mass.
+
+4. `--debug-mode {combined, summary}`
+   Convenience flag that enables oracle-candidate-check, dump-score-components,
+   and dump-oracle-old-row-responses (with block=0) in one go. `combined` also
+   forces `score_variant=combined` and `mode=combined` unless overridden.
+
+5. Outside-direction decomposition
+   This is not currently a built-in CLI flag in `cex_restricted_space_probe.py`;
+   run it as a focused in-process diagnostic when the score/projection dumps
+   show that the optimizer beats or nearly beats the oracle QR frame and you
+   need to know what non-oracle direction is being used.
+
+   For each selected optimizer column `v_j`, decompose against the current
+   projected oracle frame:
+
+     Q_oracle = orth( P_row(M_gain) @ V_exact[:, :rank] )
+     outside_j = v_j - Q_oracle Q_oracle' v_j
+     outside_norm_j = ||outside_j||
+     w_j = outside_j / outside_norm_j
+
+   Then compare `w_j` against:
+
+   - global exact right singular vectors `V_exact[:, k]`;
+   - top/right singular vectors of `M_gain = [sketch; current block]`;
+   - top/right singular vectors of the raw current block `A_t`;
+   - right singular vectors of the carried sketch rows alone;
+   - row responses `M_gain @ w_j` and `A_t @ w_j`;
+   - normalized row cosines `|row_i @ w_j| / ||row_i||`.
+
+   Use this when `principal_cosines(V_score, Q_oracle)` or
+   `opt_proj_norms` say the optimizer span is partly outside/rotated, but the
+   score-component dump does not tell whether the outside component is a single
+   row artifact, a block-SVD complement, a sketch-memory direction, or a diffuse
+   tail mixture.
+
+The probe also prints an `opt_proj_norms` / `opt_vs_qoracle_cosines` pair from
+`oracle_projection_diagnostics` regardless of these flags — those are the
+projection norms of each oracle direction onto the optimizer span and the
+principal cosines between V_opt and Q_oracle. Small `opt_proj_norms` on a
+direction means the optimizer missed that oracle direction; small principal
+cosines mean the two subspaces are near-orthogonal.
+
+
+## How to invoke
+
+### Quick path: `diag_score_components.py`
+
+Wrapper preconfigured for the medium combined config with row-norm seeding
+on all blocks, oracle-candidate-check on, score-component dump on, and
+old-row-response dump off. Edit fields in `make()` if you need a different
+configuration; most of the time the CLI path is what you want instead.
+
+    python diag_score_components.py <matrix> <n> <win>
+
+Example:
+
+    python diag_score_components.py risk-residual-panel 1024 128
+
+Prints everything to stdout. Redirect to a file when capturing for later
+analysis.
+
+
+### Full path: direct CLI
+
+    python cex_restricted_space_probe.py \
+        --matrix <matrix> --n 1024 --win 128 --rank 2 \
+        --shuffle-rows --row-shuffle-seed 0 \
+        --mode restricted --score-variant combined \
+        --basis-selection greedy --reduced-optimizer cex \
+        --rownorm-seed-first-block --rownorm-seed-all-blocks \
+        --q0 8 --qmax 48 --num-restarts 8 --maxit 120 \
+        --expansion-maxit 8 --post-expansion-maxit 80 \
+        --expansion-direction residual --dtype float32 \
+        --oracle-candidate-check \
+        --dump-score-components \
+        --dump-oracle-old-row-responses \
+        --dump-oracle-old-row-response-block 0
+
+Or with the shorthand:
+
+    python cex_restricted_space_probe.py \
+        --matrix <matrix> --n 1024 --win 128 --rank 2 \
+        --shuffle-rows --row-shuffle-seed 0 \
+        --rownorm-seed-first-block --rownorm-seed-all-blocks \
+        --debug-mode combined
+
+Note: `oracle-candidate-check` is silently ignored when `V_exact` is None or
+when `score_variant not in {oldcorrected, combined}` or when
+`row_concentration_lambda != 0`.
+
+
+## When to reach for which dump
+
+| Symptom | Dump to run |
+|---|---|
+| Optimizer picks a direction but alignment is bad | oracle-candidate-check — does oracle beat optimizer on score? If yes, optimizer is the problem; if no, objective is the problem. |
+| oracle-candidate-check says objective is the problem | dump-score-components — compare oracle_raw_v vs optimizer_v on gain2, phi/theta, pooled/new/old entropy or L4/L2. Look for: optimizer wins both gain and correction (objective mismatched); or splits one and loses the other (tunable). |
+| old_H / old_rel_H look implausible | dump-oracle-old-row-responses — inspect old_row_memory @ v directly, see which rows carry mass. |
+| opt_proj_norms on some direction near 1, others near 0 | optimizer captured some oracle dirs and missed others — check the low-norm direction's score components vs the captured one. |
+
+
+## Interpreting key score-component fields (combined)
+
+- `gain2` = ‖M_gain v‖². Pure quadratic gain, no correction.
+- `phi` = 1 + |combined_c| * pooled_rel_H, roughly. Entropy multiplier.
+- `combined_c` = log(p_w) / (2 log(rows_entropy)), with
+  p_w = (rows_seen + window) / n. Larger |c| means entropy matters more.
+- `pooled_rel_H` = pooled_H / log(rows_entropy). Normalized entropy in [0, 1].
+- `total` = gain2 * phi. What the optimizer maximizes.
+- y4 / y2² ratio (computed from dumped values) is the inverse-participation
+  ratio: high means row-concentrated, low means row-diffuse.
+
+Relative patterns to watch:
+
+- optimizer_v wins gain2 and phi simultaneously → noise direction coincides
+  with max-entropy direction; this is the risk-residual-panel regime.
+- optimizer_v trades gain2 for phi (or vice versa) vs oracle_raw_v → tunable
+  via combined_c scaling; this is the static-cex regime.
+- pooled_rel_H ≈ 1 for both oracle and optimizer → entropy uninformative
+  (both directions diffuse); combined-score degrades to gain-only.
+
+
+## Outside-direction decomposition recipe
+
+Minimal in-process recipe after reconstructing the block state (`M_gain`,
+`A_block`, optimizer frame `V_score[:, :rank]`, and `V_exact`):
+
+    Q_oracle, _ = projected_true_span_oracle(
+        M_gain, V_exact[:, :rank], rank, dtype=np.float64
+    )
+    Q_oracle = orthonormalize_columns(Q_oracle, dtype=np.float64)
+
+    _, sM, VhM = np.linalg.svd(np.asarray(M_gain, dtype=np.float64),
+                               full_matrices=False)
+    _, sA, VhA = np.linalg.svd(np.asarray(A_block, dtype=np.float64),
+                               full_matrices=False)
+
+    # If a carried sketch exists:
+    B_top = state["s"][:, None] * state["V"].T
+    _, sB, VhB = np.linalg.svd(np.asarray(B_top, dtype=np.float64),
+                               full_matrices=False)
+
+    for j in range(rank):
+        v = np.asarray(V_score[:, j], dtype=np.float64)
+        outside = v - Q_oracle @ (Q_oracle.T @ v)
+        outside_norm = np.linalg.norm(outside)
+        if outside_norm <= 1e-12:
+            continue
+        w = outside / outside_norm
+
+        exact_align = np.abs(V_exact.T @ w)
+        mgain_align = np.abs(VhM @ w)
+        block_align = np.abs(VhA @ w)
+        sketch_align = np.abs(VhB @ w)
+
+        yM = M_gain @ w
+        yA = A_block @ w
+        row_cos = np.abs((M_gain @ w) / np.maximum(np.linalg.norm(M_gain, axis=1), 1e-30))
+
+Print:
+
+- `outside_norm` and `outside_energy`;
+- top global exact alignments, especially whether `v3` or a small set of tail
+  directions dominates;
+- top `M_gain` and `A_block` right-singular-vector alignments with singular
+  values;
+- top sketch right-singular-vector alignments;
+- response energy split between sketch rows and current block rows;
+- top response rows and their energy fractions;
+- top normalized row cosines.
+
+Interpretation guide:
+
+- One dominant global exact tail vector and one dominant row response means a
+  row-local tail artifact.
+- Strong alignment with the top `A_block` right singular vector means a
+  current-block SVD complement. This is the case targeted by complement
+  penalties in `summary/objective_design_oracle_free_full_benchmark_synthesis.txt`.
+- Strong sketch-row response with weak current-block concentration means the
+  outside direction is mainly carried-memory/stale support.
+- Broad alignments across many mid-rank local singular vectors plus many
+  response rows means a diffuse tail mixture; entropy/anti-spike checks may not
+  reject it because the response itself is diffuse.

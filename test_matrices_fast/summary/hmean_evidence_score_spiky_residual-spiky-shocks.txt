@@ -1,0 +1,33 @@
+== block 2  matrix=residual-spiky-shocks  N_sk=32  union_dim=66 ==
+  c_sk=1.5600e+00  c_g1=1.5624e+00  c_g2=1.5635e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.5125   0.5010   0.0004  8.4960e-04  0.9973  8.4729e-04 2.5818e+00     0.0025    0.0014
+  hm_triplet_norm_best           0.4158   0.5951   0.0139  2.8009e-02  0.9997  2.8002e-02 2.5110e+00     0.0002    0.0004
+  hm_triplet_raw_best            0.3428   0.3462   0.3462  3.4611e-01  0.9998  3.4603e-01 1.7263e+00     0.0000    0.0001
+  hm_triplet_evidence_best       0.1145   0.4649   0.4631  4.2471e-01  0.9996  4.2454e-01 1.3235e+00     0.0055    0.0026
+  oracle_v1_proj_S+G1+G2         0.0724   0.7129   0.2558  3.3397e-01  0.4228  1.4122e-01 6.7750e-01     0.0912    0.0000
+  oracle_v2_proj_S+G1+G2         0.0751   0.6266   0.3284  3.7679e-01  0.7855  2.9599e-01 1.0763e+00     0.0000    0.0907
+
+== block 6  matrix=residual-spiky-shocks  N_sk=160  union_dim=66 ==
+  c_sk=1.5618e+00  c_g1=1.5640e+00  c_g2=1.5600e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.8309   0.1997   0.0005  1.0565e-03  0.9993  1.0558e-03 1.5180e+00     0.0004    0.0007
+  hm_triplet_norm_best           0.4892   0.5403   0.0158  3.1610e-02  0.9996  3.1599e-02 1.4234e+00     0.0000    0.0033
+  hm_triplet_raw_best            0.3536   0.3496   0.3514  3.5061e-01  0.9998  3.5054e-01 9.7871e-01     0.0000    0.0043
+  hm_triplet_evidence_best       0.1174   0.4641   0.4672  4.2723e-01  0.9997  4.2711e-01 7.6627e-01     0.0001    0.0591
+  oracle_v1_proj_S+G1+G2         0.0475   0.4769   0.4764  3.7412e-01  0.9017  3.3734e-01 6.0796e-01     0.0431    0.0017
+  oracle_v2_proj_S+G1+G2         0.2355   0.4185   0.4052  4.0259e-01  0.8580  3.4542e-01 7.4034e-01     0.0005    0.1317
+
+== block 12  matrix=residual-spiky-shocks  N_sk=352  union_dim=66 ==
+  c_sk=1.5621e+00  c_g1=1.5624e+00  c_g2=1.5607e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.9566   0.1062   0.0007  1.5065e-03  0.9995  1.5057e-03 1.1104e+00     0.0080    0.0000
+  hm_triplet_norm_best           0.5180   0.5271   0.0185  3.6754e-02  0.9996  3.6740e-02 1.0299e+00     0.0045    0.0045
+  hm_triplet_raw_best            0.3623   0.3532   0.3539  3.5383e-01  0.9997  3.5374e-01 7.0587e-01     0.0047    0.0115
+  hm_triplet_evidence_best       0.1205   0.4702   0.4682  4.3134e-01  0.9996  4.3117e-01 5.7254e-01     0.0002    0.0084
+  oracle_v1_proj_S+G1+G2         0.1615   0.3784   0.4820  4.0405e-01  0.8442  3.4110e-01 4.7788e-01     0.0522    0.0074
+  oracle_v2_proj_S+G1+G2         0.3573   0.3095   0.4001  3.4925e-01  0.8288  2.8946e-01 5.9124e-01     0.0025    0.1540
+

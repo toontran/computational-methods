@@ -1,0 +1,243 @@
+# kernel_stocks lengthscale sweep: can we push stocks into the hybrid-wins regime?
+
+Session: 2026-04-21
+Ancestors:
+  - test_matrices_fast/summary/utils_combined_hybrid_port_session_notes.txt §5
+  - test_matrices_fast/summary/diffuse_diffuse_and_residual_spiky_journey.txt
+
+
+## Question
+
+The port session (utils_combined_hybrid_port_session_notes.txt §4) concluded
+that `entropyscore_hybrid` / `entropyscore_combined` only beat `isvd` when
+σ₁/σ₂ is near-tied, and speculated that lowering the RBF lengthscale on
+`kernel_stocks` would close the gap and move the matrix into that regime.
+The parked experiment (§5) was left for a follow-up.
+
+This session ran that experiment at N=1000.
+
+
+## Headline finding
+
+**Lowering the lengthscale closes σ₁/σ₂, but does NOT move kernel_stocks
+into the regime where hybrid/combined uniformly beat iSVD.** The picture at
+ls=0.02 is k-dependent and overall still favors iSVD, for two intertwined
+reasons — summarized in §3 ("why") and §4 ("empirical table").
+
+
+## 1. σ-gap vs row-entropy scan (N=1000 stocks, first 14 singular vectors)
+
+  ls       σ₁/σ₂     row_H (mean)   r80    off-diag mass
+  0.2236   1.4905    1.561          186.8  0.976
+  0.15     1.4354    1.378          144.4  0.950
+  0.1      1.3379    0.916           73.2  0.899
+  0.07     1.2285    0.705           34.8  0.817
+  0.05     1.0926    0.603           20.4  0.700
+  0.035    1.0580    0.355            8.2  0.540
+  0.025    1.1158    0.365            5.1  0.378
+  0.02     1.0230    0.373            3.5  0.282    <-- tightest gap
+  0.015    1.1341    0.291            2.9  0.183
+  0.01     1.0661    0.236            2.3  0.095
+
+Reference — synthetic diffuse-diffuse n=1024 (the hybrid-wins target regime):
+                    σ₁/σ₂ ≈ 1.002,  row_H ≈ 2.09,  r80 ≈ 397 (~n/2)
+
+  row_H    = Shannon entropy of |V[i, :k]|^2 normalised per row (higher = more diffuse)
+  r80      = # of rows required to accumulate 80% of squared mass per top-k column
+             (higher = more diffuse)
+  off-diag = 1 - trace(K)/sum(K)  (higher = less diagonal)
+
+
+## 2. Structural lesson
+
+On a real point cloud, RBF kernel lengthscale trades σ-gap *against*
+row-entropy — cannot get both near the diffuse-diffuse corner:
+  - Small ls → kernel ≈ identity → top singular vectors collapse on
+    ~3–5 rows (r80 → 3.5) → row-entropy collapses → concentrated U.
+  - Large ls → U diffuse (r80 → 187) → spectrum spreads → σ-gap grows.
+
+Diffuse-diffuse achieves close-σ via Hadamard-seeded U (all rows ~1/√n),
+*independent* of spectrum. RBF on a spatial point cloud cannot replicate
+that geometry.
+
+
+## 3. Score-component diagnostic (diag_hybrid_stocks_ls002.py)
+
+Simulated single greedy-step, N=1000, ls=0.02, 10 prior blocks × 10 rows
+as streaming history, rows_ref = N = 1000, evaluated on current block of
+10 rows.
+
+                            phi range        gain^2 range
+  oracle (top-5 of full K)  [1.00, 1.05]     [0.00, 0.06]
+  iSVD pick (current block) [1.00, 1.16]     [1.01, 2.39]
+  iSVD pick (all seen)      [1.00, 1.18]     [0.00, 2.24]
+  random orthonormal        [2.27, 2.48]     [0.006, 0.016]
+
+**φ's dynamic range ~2.5×** across candidate directions, while **gain²'s
+dynamic range is ~400×** per block. Head-to-head ranking of {oracle /
+iSVD / random} column-0 vectors is identical by gain² and by combined
+score on this matrix → φ cannot reorder top candidates. This predicts
+combined-score ≈ gain² → equivalent to iSVD.
+
+Reality (§4) is more nuanced because the actual sweep runs a multi-block
+greedy with warm-start, not a single-shot scoring of pre-selected
+candidates. What §3 shows: the *scoring signal* on kernel_stocks does not
+point in a different direction from gain² alone. Any hybrid-vs-iSVD
+divergence in §4 comes from optimizer trajectory differences, not
+from the combined score steering toward a different goal.
+
+
+## 4. Empirical sweep results (N=1000, ls=0.02, win=10, 5 row-perms/config)
+
+Metric: `align_i = sqrt(i - ||C[:, :i]||_F^2)` per block, averaged over
+blocks and permutations, where C = Vt @ Vt_exact[:k, :]^T is saved in
+each `canonical_angles_data_*.txt`. Equals
+  ||(I - V_r V_r^T) V_exact[:, :i]||_F
+— the residual when projecting the true top-i singular vectors onto the
+estimate V_r's orthogonal complement. 0 = perfect, √i = orthogonal.
+LOWER IS BETTER.
+
+  k   sr  perms(h/i)  i=1          i=2          i=3          i=4          i=5          i=6
+  1    1   5/5        0.871/0.874 -
+  2    1   5/5        0.875/0.722 I  1.187/1.160 I
+  2    2   3/5        0.792/0.722 I  1.242/1.160 I
+  6    1   4/5        0.732/0.558 I  0.987/0.775 I  1.143/0.853 I  1.293/1.027 I  1.640/1.465 I  1.840/1.731 I
+  6    2   1/5        0.822/0.558 I  1.300/0.775 I  1.398/0.853 I  1.419/1.027 I  1.671/1.465 I  1.903/1.731 I
+  6    4   1/5        0.693/0.558 I  1.009/0.775 I  1.333/0.853 I  1.356/1.027 I  1.670/1.465 I  1.854/1.731 I
+ 14    1   1/5        0.363/0.386 H  0.618/0.569 I  0.764/0.661 I  0.795/0.806 -  0.801/0.919 H  0.829/1.027 H
+ 35    1   1/5        0.272/0.342 H  0.543/0.535 -  0.705/0.615 I  0.734/0.702 I  0.740/0.738 -  0.764/0.797 H
+ 85    1   1/5        0.235/0.266 H  0.488/0.460 I  0.593/0.520 I  0.602/0.589 I  0.607/0.624 H  0.626/0.674 H
+206    1   2/3        0.127/0.165 H  0.428/0.373 I  0.480/0.421 I  0.584/0.493 I  0.589/0.519 I  0.635/0.556 I
+500    1   1/1        all tied at 0.03-0.11 (k=N/2, both methods recover full subspace)
+
+  H = hybrid >2% lower, I = iSVD >2% lower, '-' = within 2%
+  Overall winner (by majority across i slots): hybrid=1 config, iSVD=6, tie/mixed=4
+
+Patterns:
+  a) Small k (≤ 6): iSVD wins every i-slot. Top rows of the near-diagonal
+     kernel are trivially found by local SVD; greedy optimization adds
+     no value and sometimes overshoots.
+  b) Mid k (14, 35, 85): hybrid consistently wins i=1 and i=4..6, iSVD
+     wins i=2..3. Hybrid captures the single strongest direction and
+     the "tail" direction well, but misses the mid-band.
+  c) Large k (206): with more permutations, iSVD takes back i=2..6.
+     (Earlier 1-perm snapshot gave the opposite — noisy at small sample.)
+  d) k=N/2: trivially tied.
+
+Sweep progress at this snapshot: 11 paired (k, win, sr) configs, still
+filling in. Final picture may shift at higher score_rank values (sr > 2)
+which are under-represented in this snapshot.
+
+
+## 5. Takeaway
+
+For a real-kernel matrix like kernel_stocks, lengthscale tuning can
+narrow σ₁/σ₂ but cannot provide the row-diffuse geometry combined-score
+was designed to exploit. On this matrix hybrid ≤ iSVD in most
+(k, i) slots; the only regime where hybrid shows promise is mid-k on
+*specific* directions (i=1 and the tail), not uniformly.
+
+To exercise the hybrid-wins regime on "real" data, prefer matrices where
+close-σ does NOT imply near-identity:
+  - Graph Laplacians on expander / pseudo-random graphs
+  - Well-mixed Markov chain transition matrices at small spectral gap
+  - Kernels on (near-)uniform-on-sphere points rather than clustered
+    financial data
+  - Synthetic diffuse-diffuse (already in
+    cex_restricted_space_probe.py:3085 generate_diffuse_diffuse_input)
+
+
+## 6. How to replicate
+
+### 6a. Prerequisites
+
+  - Python with numpy, scipy, and the project utils on path
+  - ~/data/data_2m.mtx  (stocks point cloud, 2-D)
+  - systemd user scope available (for CPU throttling in the sweep)
+
+### 6b. Files in this session (in /home/ttran02/pj/computational-methods)
+
+  run_sweep.sh                                     # main driver (20 machines)
+  diag_hybrid_stocks_ls002.py                      # score-component diagnostic
+  test_matrices_fast/compare_hybrid_isvd.py        # post-hoc comparison
+                                                   # (also kept at /tmp/compare_hybrid_isvd.py)
+
+### 6c. Config changes applied
+
+  run_sweep.sh:
+    method_name="${METHOD_NAME:-entropyscore_hybrid}"   # env-overridable
+    matrix_name="kernel_stocks_${N}_0.02"               # tightest σ-gap
+    FORGET_ARGS: --num-restarts 8                       # (was 2, bumped
+      per utils_combined_hybrid_port_session_notes.txt §3: --num-restarts 2
+      is nondeterministic at close-σ due to float32/BLAS path divergence)
+    N=1000
+
+### 6d. Sweep launch
+
+  chmod +x run_sweep.sh  # once, if needed
+
+  mkdir -p logs/sweep_driver
+  for m in $(seq 0 19); do
+    nohup env METHOD_NAME=entropyscore_hybrid OUTPUT_NAME=output \
+      bash run_sweep.sh $m > logs/sweep_driver/hybrid_m${m}.log 2>&1 &
+  done
+  for m in $(seq 0 19); do
+    nohup env METHOD_NAME=isvd OUTPUT_NAME=output \
+      bash run_sweep.sh $m > logs/sweep_driver/isvd_m${m}.log 2>&1 &
+  done
+  disown -a
+
+Notes:
+  - 40 concurrent workers. CPUQuota=50% of nproc per scope (8 cores on a
+    16-core box). Heavy CPU contention but OK on a 125GB-RAM node.
+  - Each main.py invocation runs 5 row-permutations internally.
+  - Per-machine grid: 8 distinct (k, win, sr) configs after dedup. Total
+    work per method = 20 machines × ~8 configs × 5 perms = 800 runs.
+  - For N=1000, iSVD runs finish in minutes; hybrid greedy runs take
+    hours at large k (k=206+ can be >24h per permutation).
+
+### 6e. Progress monitoring (optional)
+
+  # Once:
+  find output -maxdepth 1 -type d -name 'kernel_stocks_1000_0.02_entropyscore_hybrid*' \
+    -exec test -f '{}/other_info.txt' \; -print | wc -l
+  find output -maxdepth 1 -type d -name 'kernel_stocks_1000_0.02_isvd*' \
+    -exec test -f '{}/other_info.txt' \; -print | wc -l
+
+### 6f. Comparison script
+
+The comparator test_matrices_fast/compare_hybrid_isvd.py reads
+canonical_angles_data_*.txt from every completed output folder, computes
+`align_i` per block, and averages over blocks then row-perms. Point it
+at a different matrix prefix by editing the regex `PAT`.
+
+  python3 test_matrices_fast/compare_hybrid_isvd.py
+
+Key transform (for completeness):
+    C = Vt @ Vt_exact[:k, :]^T   # saved directly in canonical_angles file
+    align_i = sqrt(max(i - ||C[:, :i]||_F^2, 0))   # Frobenius residual
+
+### 6g. Single-shot score-component diagnostic
+
+  python3 diag_hybrid_stocks_ls002.py
+
+Runs once on kernel_stocks N=1000 at ls=0.02 and ls=0.2236, with a
+simulated 10-block streaming state, and prints per-direction
+gain² and φ for oracle / iSVD-pick / random candidates. Useful as a
+fast sanity check of whether the combined score is being driven by
+gain² alone on a new matrix.
+
+
+## 7. Open questions / future runs
+
+  - High-score_rank slots (sr ∈ {4, 8, 12, 16}) are under-sampled in the
+    snapshot of §4. Sweep is still running; rerun `compare_hybrid_isvd.py`
+    when more are done.
+  - Medium ls values (0.05–0.1) have σ₁/σ₂ in (1.09, 1.34) with partially
+    informative row-entropy (0.6–0.9). Those might be a better compromise
+    than ls=0.02 — not tested here.
+  - The diag script only evaluates *single-step* scoring; it cannot
+    reveal optimizer-trajectory effects that explain hybrid wins at
+    mid-k. For that, need a full-run diagnostic dump with
+    --dump-score-components across blocks (requires extending main.py
+    CLI; not done yet).

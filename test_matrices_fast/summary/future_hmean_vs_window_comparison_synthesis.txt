@@ -1,0 +1,175 @@
+Future-hmean vs doubled-window combined synthesis
+================================================
+
+Date: 2026-04-23
+
+Artifacts
+---------
+- `summary/future_hmean_vs_window_comparison.json`
+- `summary/future_hmean_vs_window_comparison_checkpoints.csv`
+- `summary/future_hmean_vs_window_comparison.txt`
+
+
+Question
+--------
+How does the offline `future_hmean` second-slot policy compare against simply
+doubling the window size of regular `combined` on `mixed-tail-sharp`?
+
+
+Setup
+-----
+The comparison uses the same matrix / seed / optimizer stack and varies only:
+
+- selection policy: `combined` vs `future_hmean`
+- window size: `win=32` vs `win=64`
+
+For `future_hmean`, the first slot is kept from the regular combined optimizer,
+and the second slot is chosen from the existing candidate set:
+
+- `opt2`
+- `q2_vs_q1oracle`
+- `q2_raw_projected`
+- `block_complement`
+- `mgain_deflated_svd`
+- `opt2_outside`
+
+The selected frame is then carried forward through the same compression step as
+regular combined.
+
+
+Headline result
+---------------
+`future_hmean` is much better than doubling the window for second-slot recovery.
+
+Key final metrics:
+
+- `combined win=32`
+  - `mean_align = 0.045486`
+  - `mean_relerr_sval = 0.01256781`
+  - final carried exact cosines = `[0.936212, 0.033101]`
+  - final selected / carried oracle cosines = `[0.999936, 0.16747]`
+
+- `combined win=64`
+  - `mean_align = 0.040411`
+  - `mean_relerr_sval = 0.02479430`
+  - final carried exact cosines = `[0.841823, 0.026441]`
+  - final selected / carried oracle cosines = `[0.999500, 0.097371]`
+
+- `future_hmean win=32`
+  - `mean_align = 0.717376`
+  - `mean_relerr_sval = 0.00272993`
+  - final carried exact cosines = `[0.994147, 0.716531]`
+  - final selected / carried oracle cosines = `[0.999985, 0.974205]`
+
+- `future_hmean win=64`
+  - `mean_align = 0.098646`
+  - `mean_relerr_sval = 0.00255084`
+  - final carried exact cosines = `[0.996681, 0.098515]`
+  - final selected / carried oracle cosines = `[0.999992, 0.346165]`
+
+
+Interpretation
+--------------
+1. Doubling the window does not reproduce the benefit of `future_hmean`.
+
+   `combined win=64` is not an improvement over `combined win=32` on the key
+   second-slot metrics:
+
+   - final carried exact cosine on slot 2 gets worse:
+     `0.02644` vs `0.03310`
+   - mean second oracle cosine gets worse:
+     `0.16378` vs `0.26664`
+   - top singular-value error gets worse:
+     `0.02479` vs `0.01257`
+
+   So larger current blocks do not substitute for future-consistency.
+
+2. `future_hmean win=32` is the strongest configuration in this experiment.
+
+   It dominates both regular combined runs on:
+
+   - final second oracle cosine
+   - final carried second exact cosine
+   - tail mass
+   - singular-value error
+   - mean second oracle cosine across blocks
+
+   This is the clearest direct evidence in the repo that a future-consistency
+   signal is more valuable here than simply making the current block larger.
+
+3. `future_hmean win=64` still beats regular combined, but much less than
+   `future_hmean win=32`.
+
+   Relative to `combined win=64`, it improves:
+
+   - final carried exact cosine on slot 2:
+     `0.09852` vs `0.02644`
+   - mean second oracle cosine:
+     `0.55236` vs `0.16378`
+   - top singular-value error:
+     `0.00255` vs `0.02479`
+
+   But it is far weaker than `future_hmean win=32` on second-slot retention:
+
+   - final carried exact cosine on slot 2:
+     `0.09852` vs `0.71653`
+   - final carried oracle cosine on slot 2:
+     `0.34617` vs `0.97421`
+
+   So larger windows still hurt even when the second-slot choice is guided by
+   future support.
+
+
+Checkpoint picture
+------------------
+At common row counts, the same pattern already appears early:
+
+- rows seen = `256`
+  - `combined win=64`: carried exact cosines `[0.156805, 0.009082]`
+  - `future_hmean win=64`: carried exact cosines `[0.530434, 0.313301]`
+  - `combined win=32`: carried exact cosines `[0.392186, 0.019038]`
+  - `future_hmean win=32`: carried exact cosines `[0.526382, 0.169707]`
+
+- rows seen = `512`
+  - `combined win=64`: carried exact cosines `[0.464212, 0.069135]`
+  - `future_hmean win=64`: carried exact cosines `[0.731092, 0.209165]`
+  - `combined win=32`: carried exact cosines `[0.631603, 0.059737]`
+  - `future_hmean win=32`: carried exact cosines `[0.730909, 0.356686]`
+
+- rows seen = `768`
+  - `combined win=64`: carried exact cosines `[0.682762, 0.118315]`
+  - `future_hmean win=64`: carried exact cosines `[0.879299, 0.361005]`
+  - `combined win=32`: carried exact cosines `[0.805089, 0.105932]`
+  - `future_hmean win=32`: carried exact cosines `[0.878097, 0.544567]`
+
+By the final row count, the gap remains large.
+
+
+What this says mechanistically
+------------------------------
+This direct comparison supports the earlier interpretation:
+
+- doubling the window strengthens the current-block evidence;
+- `future_hmean` rewards persistence across nearby future blocks.
+
+Those are not interchangeable.
+
+On `mixed-tail-sharp`, persistence is the useful signal.
+Increasing block size does not recover it, and in this comparison often makes
+the second-slot behavior worse.
+
+
+Bottom line
+-----------
+If the choice is:
+
+- "keep regular combined and double the window", or
+- "keep the smaller window and add future-consistency pressure",
+
+the second option is substantially better on this matrix.
+
+The strongest result in this experiment is:
+
+- `future_hmean win=32`  >>  `combined win=64`
+
+not just marginally, but on every important second-slot metric.

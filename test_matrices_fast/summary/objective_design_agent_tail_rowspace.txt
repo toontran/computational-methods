@@ -1,0 +1,174 @@
+Tail-Origin / Row-Space-Mismatch / Fake-Direction Attribution
+=============================================================
+
+Date: 2026-04-22
+
+Scope
+-----
+This note answers four questions for the combined streaming objective on
+`mixed-tail-sharp` and `static-cex` using existing diagnostics plus one live
+row-space probe.
+
+Commands used
+-------------
+Existing diagnostics inspected:
+
+  sed -n '1,240p' summary/tail_conspiracy_insights_synthesis.txt
+  sed -n '1,220p' summary/second_slot_tail_bias_verification.txt
+  sed -n '1,220p' summary/rotation_handoff_mixed_static_raw.txt
+  sed -n '1,240p' summary/consecutive_tail_conspiracy_diagnostic.txt
+  sed -n '1,220p' summary/mixed_tail_sharp_diagnostic.txt
+
+Live probes:
+
+  python - <<'PY'
+  ... mixed-tail-sharp row-space projection probe ...
+  PY
+
+  python - <<'PY'
+  ... static-cex row-space projection probe ...
+  PY
+
+1. Are fake high-score directions mostly tail-supported rather than oracle-supported?
+----------------------------------------------------------------------------------
+Yes, for the failing cases they are much closer to a persistent tail basin than
+to the projected oracle span.
+
+Key evidence:
+
+  - `summary/second_slot_tail_bias_verification.txt`:
+    mixed-tail-sharp normal trajectory ends with
+    `final oracle cos = 0.999936, 0.167467` and `final tail_mass = 0.561206`.
+    The second slot stays tail-heavy while oracle-2 remains weak.
+
+  - `summary/rotation_handoff_mixed_static_raw.txt`:
+    mixed-tail-sharp block 1:
+      `sel_oracle_cos=[0.635624 0.257128]`
+      `sel_tail=0.990438`
+    block 32:
+      `sel_oracle_cos=[0.999893 0.147133]`
+      `sel_tail=0.589914`
+
+  - Live probe on `mixed-tail-sharp`:
+    block 12:
+      `opt2 seen=0.944911 current=0.327943 future=0.018432`
+      `q2   seen=0.339968 current=0.941336 future=0.030313`
+    block 32:
+      `opt2 seen=0.993918 current=0.122503`
+      `q2   seen=0.145126 current=0.989631`
+
+Interpretation:
+  The fake second direction is not oracle-like. It is a stable tail-heavy
+  direction that survives handoff and keeps winning score comparisons.
+
+2. Are fake directions local row-space artifacts?
+-------------------------------------------------
+Not in the simple sense of "current-block-only" artifacts.
+
+The live row-space probe shows that on `mixed-tail-sharp` the fake opt2 is
+more aligned with the seen row space than with the current row space, while
+the projected oracle-2 is the opposite:
+
+  block 3:
+    opt2 seen/current/future = 0.815767 / 0.579928 / 0.033241
+    q2   seen/current/future = 0.068284 / 0.997603 / 0.033681
+
+  block 12:
+    opt2 seen/current/future = 0.944911 / 0.327943 / 0.018432
+    q2   seen/current/future = 0.339968 / 0.941336 / 0.030313
+
+  block 32:
+    opt2 seen/current = 0.993918 / 0.122503
+    q2   seen/current = 0.145126 / 0.989631
+
+The same qualitative pattern appears on `static-cex`, though the matrix
+eventually converges:
+
+  block 12:
+    opt2 seen/current/future = 0.952323 / 0.315152 / 0.051025
+    q2   seen/current/future = 0.878862 / 0.486597 / 0.052179
+
+So the fake direction is not just a transient current-row-space spike. It is a
+persistent historical basin carried through the stream. Row-space mismatch is
+real, but it is not a narrow "local current block" artifact.
+
+3. Is overestimation tied to row-space mismatch, tail concentration, entropy bias, or score normalization?
+----------------------------------------------------------------------------------------------------------
+It is tied to all four, but the strongest driver is the entropy / score
+normalization interacting with carried sketch state.
+
+Evidence:
+
+  - `summary/mixed_tail_sharp_diagnostic.txt`:
+    the optimizer prefers directions with very high pooled relative entropy,
+    while the QR oracle candidate loses after orthogonalization.
+    Block 3:
+      train opt score_sum = 5.392017
+      train oracle score  = 4.596384
+      holdout opt score   = 5.377188
+      holdout oracle     = 4.596502
+    This is not just overfitting the training memory.
+
+  - `summary/second_slot_tail_bias_verification.txt`:
+    mixed-tail-sharp block 3:
+      actual_B opt2 score = 2.696395
+      zero_B   opt2 score = 0.897058
+      oracle_B q2_vs_q1oracle score = 1.771598
+    The carried sketch B is what makes the tail slot competitive.
+
+  - `summary/consecutive_tail_conspiracy_diagnostic.txt`:
+    mixed-tail-sharp blocks 3-32 have
+      `prev_cos_min = 0.843769`
+      `tail_prev_min = 0.825613`
+      `oracle_cos_min = 0.380551`
+    and holdout entropy remains high. That is a persistent basin, not a
+    one-off sample glitch.
+
+Bottom line:
+  Row-space mismatch creates the opening, tail concentration supplies a stable
+  wrong direction, and the entropy/normalization term plus carried-energy B
+  overestimates it. The score is not merely "too optimistic"; it is biased
+  toward a high-entropy tail basin once that basin is in the sketch.
+
+4. What matrix designs should be added to isolate tail-origin vs row-space-mismatch failures?
+---------------------------------------------------------------------------------------------
+Add designs that independently control tail support, row-space support, and
+entropy shape.
+
+Recommended families:
+
+  1. Tail-fixed / row-space-swept:
+     Keep the same tail basis and tail entropy, but vary the current/seen/future
+     row-space overlap of oracle-2. This isolates row-space mismatch.
+
+  2. Row-space-matched / tail-swept:
+     Force fake and oracle candidates to have similar current/seen/future
+     projection norms, then change only tail concentration / spectral weight.
+     This isolates tail-origin and entropy bias.
+
+  3. Current-vs-seen support swap:
+     Make one family where the fake direction is supported mainly by current
+     rows and another where it is supported mainly by seen rows. The optimizer
+     should behave differently if the failure is truly local row-space
+     capture.
+
+  4. Oracle-span feasible, QR-frame hostile:
+     Keep the projected oracle span feasible but make the QR frame lose score
+     after orthogonalization. This directly tests the row-space/frame mismatch
+     seen in `mixed-tail-sharp`.
+
+  5. Entropy-neutral tail competitor:
+     Match gain2 but flatten pooled row responses, so only the entropy term
+     changes. This isolates score normalization / phi bias.
+
+  6. Handoff-stability stress test:
+     Keep the same block geometry but vary the carried sketch B. The existing
+     interventions already show B matters; a matrix family that preserves B-like
+     geometry while changing tail support would sharpen that conclusion.
+
+Short conclusion
+----------------
+The failing cases are best described as persistent tail-heavy row-space
+basins whose score is amplified by the combined objective's pooled entropy
+normalization and carried sketch state. They are not just a current-block row
+space artifact, and they are not explained by tail concentration alone.

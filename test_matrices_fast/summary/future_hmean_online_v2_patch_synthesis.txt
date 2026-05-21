@@ -1,0 +1,156 @@
+future_hmean_online v2 — candidate-pool + rank-2 SVD patch synthesis
+====================================================================
+
+Date: 2026-04-23
+
+
+Recommendations executed
+------------------------
+From `summary/joint_win32_vanishing_analysis.txt` and
+`summary/future_hmean_online_synthesis.txt`:
+
+  A. Align the online candidate pool to the benchmark's five-candidate set.
+     Before: {opt2, q2_vs_q1oracle, q2_raw_projected, mgain_deflated_svd,
+              opt2_outside}
+     After:  {opt2, q2_vs_q1oracle, mgain_deflated_svd,
+              block_complement(A_half1), prev_opt2}
+
+  B. Replace the Gram-Schmidt orthonormalization of (v_1, chosen_v2) with
+     a rank-2 SVD step inside span{v_1, chosen_v2}:
+         C = [v_1, chosen_v2]
+         Qc, _ = qr(C)
+         _, _, Vt = svd(M_gain @ Qc)
+         V_selected = Qc @ Vt.T
+     This preserves the 2D span but reorders the frame by local singular
+     dominance on M_gain, avoiding the step-27 cancellation.
+
+Both changes applied only to the `future_hmean_online` (and
+`future_hmean_online_joint`) policies. `combined`, `half_hmean`,
+`half_hmean_guard` retain their previous behaviour.
+
+
+Patched file
+------------
+`half_window_sliding_hmean_experiment.py`:
+  - `build_candidates` now also emits `block_complement` (block_svd_complement
+    on A_half1) and `prev_opt2` (orthogonalised against v_1). The full
+    candidate dictionary still carries `half2_complement`, `q2_raw_projected`,
+    `opt2_outside` so `combined` / `half_hmean*` policies are unchanged.
+  - Online policies filter to `ONLINE_POOL =
+    ('opt2', 'q2_vs_q1oracle', 'mgain_deflated_svd',
+     'block_complement', 'prev_opt2')`.
+  - New helper `rank2_svd_frame(v1, chosen_v2, M_gain, rank)` returns the
+    rank-2 SVD-ordered frame; online policies use it in place of
+    `probe.orthonormalize_columns`. Falls back to Gram-Schmidt if the 2D
+    span is rank-deficient.
+  - Every row in the CSV/JSON now carries `svd_frame_used` (0/1).
+
+
+Runs
+----
+Matrix `mixed-tail-sharp`, n=1024, rank=2, default heavy-optimizer args,
+float32, --shuffle-rows. Only `future_hmean_online`.
+
+  - `summary/half_window_online_v2_win64.{json,csv,txt}`   half_win=32
+  - `summary/half_window_online_v2_win128.{json,csv,txt}`  half_win=64
+
+
+Sliding results on mixed-tail-sharp (before vs after patch)
+-----------------------------------------------------------
+Reference: benchmark `obj_future_hmean` on mixed-tail-sharp win=32 blocks,
+mean_winner_oracle_mass = 0.9701.
+
+  half_win   version    steps   labels                         mean_align  mean_exact_cos1  mean_exact_cos2  mean_oracle_mass  relerr
+  32         pre-patch   31     q2=21 mgain=0 opt2=10          0.1860      0.6911           0.1776           0.8978            0.04103
+  32         post-patch  31     q2=11 mgain=1 opt2=19          0.7491      0.6896           0.3513           0.9336            0.00506
+  64         pre-patch   15     q2=12 mgain=0 opt2=3           0.4252      0.6966           0.2192           0.9751            0.04190
+  64         post-patch  15     q2=6  mgain=0 opt2=9           0.6904      0.6954           0.3320           0.8985            0.00720
+
+
+Step-27 crash: resolved
+-----------------------
+The pre-patch diagnostic at half_win=32 showed V_selected[:,1] losing
+V_exact[:,0] at step 27 (ex2 crashed from 0.399 to 0.015 and stayed there
+through step 31). Post-patch, steps 24..31 look like:
+
+  step  selected         svd_used   ex1     ex2     oracle_mass
+   24   opt2             1          0.877   0.582   0.999
+   25   opt2             1          0.893   0.609   0.999
+   26   opt2             1          0.909   0.635   0.999
+   27   opt2             1          0.922   0.660   0.999
+   28   opt2             1          0.937   0.684   0.999
+   29   opt2             1          0.951   0.707   0.999
+   30   opt2             1          0.966   0.728   0.999
+   31   opt2             1          0.979   0.749   1.000
+
+Two mechanisms contribute: (1) the Gram-Schmidt cancellation is replaced by
+a rank-2 SVD step that reorders the span by singular dominance — the
+V_exact[:,0] component cannot be wiped because it is a strong singular
+direction of M_gain inside the span; (2) `q2_raw_projected`, the candidate
+that was causing the co-linear pick at step 27, is no longer in the online
+pool, so the greedy never chooses it. Either change alone likely suffices,
+but they were applied together per the recommendations.
+
+
+Summary metrics
+---------------
+- half_win=32 sliding: mean_align 0.186 → 0.749 (+0.563), exact_cos2 0.178 →
+  0.351 (+0.173), mean_oracle_mass 0.898 → 0.934 (+0.036), relerr 0.041 →
+  0.0051 (~8x better).
+- half_win=64 sliding: mean_align 0.425 → 0.690 (+0.265), exact_cos2 0.219
+  → 0.332 (+0.113), mean_oracle_mass 0.975 → 0.898 (-0.077), relerr 0.042
+  → 0.0072 (~6x better).
+
+The subspace-quality metrics (mean_align, exact_cos2, relerr_sval) improve
+at both sizes. The mean_winner_oracle_mass moves in opposite directions:
+closer to benchmark at half_win=32 (+0.036), but away from benchmark at
+half_win=64 (-0.077). At half_win=64 the label distribution shifts toward
+`opt2` (9/15 vs 3/15 pre-patch) — removing `q2_raw_projected` and
+`opt2_outside` from the pool reshapes the max-gain normaliser and lets
+`opt2` win more often even when a q2-like pick would be better.
+
+This residual gap is the exact mechanism the parent synthesis flagged
+("...when `opt2_outside` has high current-block gain it can inflate
+max_gain1, shrinking shares for the oracle candidate and occasionally
+letting `opt2` win the HM."). Aligning the pool removed the
+`opt2_outside` inflator, which explains why opt2 wins *more* at
+half_win=64, not less. Sample sizes at half_win=64 are small (15
+decisions), so this effect is noisy.
+
+
+Remaining gap and possible next steps
+-------------------------------------
+1. `mean_winner_oracle_mass` at half_win=32 is 0.934 vs benchmark 0.970 —
+   a 3.6-point residual. The pre-patch residual was 7.2 points; the patch
+   has closed half of it.
+
+2. Candidate pool is now aligned with the benchmark on counts and
+   identity, but the score numerator/denominator (max-normalisation of
+   gain1, gain2) still uses the online pool's current-half shares, not
+   future-block gain. Swapping `relH1` for a future-block entropy proxy
+   (e.g. using the carried-state singular vector gain instead of A_half1
+   entropy) could close more of the gap while staying online.
+
+3. At half_win=64 the patch improves subspace quality but worsens
+   `mean_winner_oracle_mass` because opt2 crowds out q2 wins. Worth
+   checking whether adding a mild q2-preference tiebreaker (or applying
+   the max-normalisation over a more stable candidate set) recovers the
+   pre-patch half_win=64 oracle_mass while keeping the half_win=32 gains.
+
+4. The rank-2 SVD reframe could in principle be worth applying to the
+   `combined` / `half_hmean*` policies too. Not tested here; would need a
+   separate ablation to confirm it doesn't disturb cases where the
+   Gram-Schmidt behaviour is currently benign.
+
+
+Bottom line
+-----------
+- The step-27 V_exact[:,0] collapse at half_win=32 sliding is fully
+  resolved. mean_align jumps 0.186 → 0.749.
+- mean_winner_oracle_mass closes about half the gap to the benchmark at
+  half_win=32 (0.898 → 0.934 vs target 0.970).
+- At half_win=64 the patch improves subspace alignment but shifts label
+  counts toward opt2, lowering oracle_mass on this small-sample test.
+- Root cause of residual gap: candidate pool is aligned, but the
+  max-normalisation denominator in the HM score still rewards the online
+  pool's opt2 too strongly.

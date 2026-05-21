@@ -1,0 +1,119 @@
+Future-HM optimizer investigation synthesis
+===========================================
+
+Date: 2026-04-25
+
+Starting point
+--------------
+`summary/future_hmean_retention_diagnostic.txt` showed that projecting the
+selected second-slot direction into rowspan([A_w; A_{w+1}]) often improves the
+future-HM score, raising the question: why does the optimizer not converge to
+those apparently better in-union points?
+
+New diagnostic
+--------------
+Added `future_hmean_optimizer_diagnostic.py`.
+
+For each block it:
+1. Replays the normal streaming combined-score optimizer on M_gain =
+   [sketch; A_w].
+2. Takes the optimizer's v1.
+3. Builds B = rowspan([A_w; A_{w+1}]) orthogonalized against v1.
+4. Locally optimizes the single-slot objective
+      HM(||A_w v||^2, ||A_{w+1} v||^2) * relH(A_w v)
+   inside B.
+5. Compares that union optimum against the optimizer's v2 under both:
+   - the future-HM diagnostic objective, and
+   - the optimizer's actual combined forgetting objective.
+
+Artifacts
+---------
+- `future_hmean_optimizer_diagnostic.py`
+- `summary/future_hmean_optimizer_diagnostic.csv`
+- `summary/future_hmean_optimizer_diagnostic.json`
+- `summary/future_hmean_optimizer_diagnostic.txt`
+
+Run
+---
+Eight matrix families, n=1024, half_win=32, rank=2, first 8 overlapping
+half-window pairs. Defaults otherwise match the retention diagnostic.
+
+Key result
+----------
+Across all 56 post-first-block checks:
+- 56/56 had a better future-HM point inside rowspan([A_w; A_{w+1}]).
+- 56/56 of those better future-HM points had lower combined forgetting score
+  than the optimizer's v2.
+
+So the observed gap is primarily objective mismatch, not a numerical failure
+of the optimizer to converge.
+
+Summary numbers
+---------------
+Mean best-union future-HM / optimizer-v2 future-HM:
+- mixed-tail-sharp:      13406.8x
+- mixed-tail-balanced:    9444.5x
+- mixed-tail-soft:       11121.2x
+- static-cex:            80455.1x
+- diffuse-diffuse:        5835.9x
+- residual-spiky-shocks:   546.1x
+- risk-residual-panel:      89.3x
+- etf-basket-basis:          1.56x
+
+Mean best-union combined-score / optimizer-v2 combined-score:
+- most matrices: about 0.43x
+- etf-basket-basis: 0.52x
+
+Interpretation
+--------------
+The union future-HM optimizer finds directions with balanced response on
+A_w and A_{w+1}. The streaming optimizer is not optimizing that objective.
+It optimizes:
+
+    gain on M_gain = [sketch; A_w] times a pooled row-diffuseness factor
+
+where entropy is computed on A_w plus sampled old rows, not A_{w+1}. That
+objective strongly prefers the carried/sketch-supported direction even when a
+two-half future-HM direction would be much better under the diagnostic score.
+
+Visibility also matters, but it is secondary:
+- For most matrices, the better union point has only about 0.50 mass in
+  rowspan(M_gain). That means roughly half of it is lookahead-only structure
+  from A_{w+1}, which the streaming optimizer cannot see.
+- On etf-basket-basis, the better union point has 0.98 mass in M_gain, so it
+  is visible. It still loses under combined score. This isolates the objective
+  mismatch even when search-space visibility is not the blocker.
+
+What this says about convergence
+--------------------------------
+The optimizer is doing what it was asked to do:
+- It expands the reduced search basis and usually drives the combined-score
+  residual reasonably low.
+- It chooses v2 with higher combined score.
+- The "more optimal" in-union points are more optimal only for a different
+  objective that includes A_{w+1}.
+
+The retained-memory behaviour is therefore structural:
+1. M_gain includes the sketch, so old directions remain high-energy.
+2. The combined objective rewards M_gain energy.
+3. The future-HM candidate scorer can later identify better two-half points,
+   but only from a tiny candidate pool; it is not the optimizer's objective.
+4. Rank-2 SVD reframing on M_gain then rotates within the chosen span back
+   toward M_gain-dominant carried directions.
+
+Next useful intervention
+------------------------
+Do not try to tune line search or convergence tolerances first. The diagnostic
+does not support that theory.
+
+The next meaningful experiment is an objective-level one:
+- add a second-slot/refinement objective that explicitly optimizes a
+  two-half HM proxy after v1 is fixed, or
+- add an online-deployable surrogate for A_{w+1} into the optimizer's v2
+  objective, or
+- constrain the rank-2 SVD reframe so it cannot undo the future-HM-selected
+  direction when the M_gain SVD rotation lowers the two-half score.
+
+Among these, the least invasive patch is to add a post-v1 second-slot polish
+inside the online candidate/union proxy span and accept it only if its
+future-HM score improves without dropping combined score below a tunable floor.

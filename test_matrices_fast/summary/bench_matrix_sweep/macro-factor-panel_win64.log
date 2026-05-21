@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:601: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999888 mean_relerr_sval=0.28498181
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999995 mean_relerr_sval=0.01653527
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.999888 mean_relerr_sval=0.28498197
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.999995 mean_relerr_sval=0.01653534
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.999889 mean_relerr_sval=0.28498371
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999995 mean_relerr_sval=0.01653819
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999888 mean_relerr_sval=0.28498187
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999995 mean_relerr_sval=0.01653535
+wrote_json=summary/bench_matrix_sweep/macro-factor-panel_win64.json wrote_csv=summary/bench_matrix_sweep/macro-factor-panel_win64.csv wrote_text=summary/bench_matrix_sweep/macro-factor-panel_win64.txt elapsed=11.710

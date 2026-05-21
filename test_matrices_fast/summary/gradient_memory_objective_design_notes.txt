@@ -1,0 +1,360 @@
+Gradient-memory objective design notes
+=====================================
+
+Date: 2026-04-22
+
+Purpose
+-------
+Record the design insight from the tail-conspiracy investigation:
+
+  The current sketch stores selected energy directions. It does not store where
+  new data wanted to rotate or correct those directions. If oracle-2 fails to
+  win a rank slot early, the sketch can reinforce a tail-biased second slot and
+  discard the correction information that might have helped oracle-2 stand out
+  later.
+
+This suggests tracking gradient/innovation information as a matrix or subspace,
+not only scalar metadata attached to retained directions.
+
+
+Why Scalars Are Not Enough
+--------------------------
+Suppose the retained sketch directions are:
+
+  V = [v1, v2].
+
+A future useful direction may be a combination:
+
+  u = (v1 + v2) / sqrt(2),
+
+or a direction outside span(V) that earlier gradients were pointing toward.
+
+If we only store scalar diagnostics per direction, such as:
+
+  fresh_support(v1), fresh_support(v2),
+  entropy(v1), entropy(v2),
+  stability(v1), stability(v2),
+
+then we cannot evaluate how the remembered evidence applies to u. Scalars do
+not define a response for combinations. They cannot say whether a candidate
+direction lies in the direction that previous fresh rows wanted to move toward.
+
+The old sketch avoids this problem for energy by storing an operator:
+
+  ||Bv||^2 = v^T B^T B v.
+
+For any candidate v, the sketch can answer an energy question. A comparable
+gradient/innovation memory should also be at least a subspace or low-rank
+operator, not a set of unrelated scalars.
+
+
+Gradient Decomposition
+----------------------
+For the combined score:
+
+  S(v) = E(v) * phi(v),
+
+where
+
+  E(v)   = ||Bv||^2 + ||A_w v||^2,
+  phi(v) = pooled entropy multiplier from [R; A_w]v.
+
+The gradient decomposes as:
+
+  grad S(v) = phi(v) * grad E(v) + E(v) * grad phi(v),
+
+with
+
+  grad E(v) = 2 B^T B v + 2 A_w^T A_w v.
+
+So the useful pieces are:
+
+  g_old     = 2 B^T B v,
+  g_new     = 2 A_w^T A_w v,
+  g_entropy = E(v) * grad phi(v).
+
+On the unit sphere, the relevant part is the tangent gradient:
+
+  P_tan(v) = I - vv^T,
+
+  g_old_tan     = P_tan g_old,
+  g_new_tan     = P_tan g_new,
+  g_entropy_tan = P_tan g_entropy,
+  g_total_tan   = P_tan grad S(v).
+
+These tangent components answer:
+
+  - Is the current objective locally trying to rotate v?
+  - Does the fresh block agree with the old sketch?
+  - Does entropy push toward or away from the fresh-block direction?
+  - Does the total score gradient point toward the missing oracle direction?
+
+
+What To Measure First
+---------------------
+For each candidate:
+
+  opt2,
+  prev_opt2,
+  q2_vs_v1opt,
+  q2_vs_q1oracle,
+  svd_complement,
+
+log:
+
+  score,
+  old_E = ||Bv||^2,
+  new_E = ||A_w v||^2,
+  phi,
+  rel_H,
+  ||g_total_tan||,
+  ||g_old_tan||,
+  ||g_new_tan||,
+  ||g_entropy_tan||,
+  cos(g_old_tan, g_new_tan),
+  cos(g_new_tan, g_entropy_tan).
+
+Most important oracle-directed diagnostic:
+
+  direction_to_oracle(v)
+    = normalized tangent component of q_oracle - (v^T q_oracle)v.
+
+Then compute:
+
+  cos_total_to_oracle
+    = cos(g_total_tan, direction_to_oracle),
+
+and similarly:
+
+  cos_old_to_oracle,
+  cos_new_to_oracle,
+  cos_entropy_to_oracle.
+
+Interpretation:
+
+  cos_total_to_oracle > 0:
+    the objective locally wants to rotate v toward oracle.
+
+  cos_total_to_oracle < 0:
+    the objective locally wants to rotate v away from oracle.
+
+  g_new points toward oracle but g_old or g_entropy points away:
+    old sketch or entropy is blocking repair.
+
+  g_total points toward oracle but optimizer still misses:
+    search/reduced-space/retention issue rather than objective-level issue.
+
+
+Matrix/Subspace Memory Options
+------------------------------
+1. Store gradient vectors
+
+For retained directions v_i, store:
+
+  g_i = P_tan(v_i) grad_new_score(v_i).
+
+Carry:
+
+  G = [g_1, ..., g_r].
+
+This allows future diagnostics such as:
+
+  Does a candidate lie in the direction previous fresh rows wanted to move?
+  Are future gradients aligned with past gradients?
+
+Limitation:
+
+  Gradients are stored only at selected basis vectors.
+
+
+2. Store a gradient subspace
+
+Carry an orthonormal basis:
+
+  G_basis = orth([recent tangent gradients, residual gradients]).
+
+Use it to expand the next candidate space:
+
+  candidate_space = span(V_sketch, G_basis, current_block_svd, rownorm_seeds).
+
+Or add a weak support term:
+
+  gradient_memory_support(v) = ||G_basis^T v||^2.
+
+This is useful when oracle-2 does not win a rank slot but appears in the
+direction that fresh rows wanted to move.
+
+
+3. Store a positive semidefinite gradient memory
+
+Accumulate:
+
+  K_pos += beta^t g_new_tan g_new_tan^T.
+
+Then:
+
+  v^T K_pos v
+
+measures whether v lies in historically important fresh-gradient directions.
+
+This is a memory of promoted/innovative directions, but it does not encode
+signed rotation pressure.
+
+
+4. Store a signed rotation operator
+
+Accumulate:
+
+  K_rot += g_new_tan v^T,
+
+or symmetrize:
+
+  K_sym += 0.5 * (g_new_tan v^T + v g_new_tan^T).
+
+Then:
+
+  K_rot u
+
+approximates how past fresh data wanted to rotate nearby directions u.
+
+This is closer to modifying the objective directly, but it is more delicate
+because signed operators can add unstable incentives.
+
+
+5. Store a fresh innovation sketch
+
+Instead of storing arbitrary gradients, carry an auxiliary low-rank sketch of
+fresh-block innovation:
+
+  B_energy:
+    rank-r energy sketch used by the current method.
+
+  G_innov:
+    rank-p sketch of recent fresh tangent gradients / residual directions.
+
+Then next-window candidate generation uses:
+
+  span(B_energy right vectors, G_innov, current block SVD, rownorm seeds).
+
+This is the most practical first design. It avoids trusting a single scalar
+objective to retain oracle-2, while keeping memory bounded.
+
+
+Connection To The Observed Failure
+----------------------------------
+The tail-conspiracy diagnostics showed:
+
+  1. The second oracle direction is weak early.
+  2. A tail/high-entropy/high-gain direction occupies the second slot.
+  3. The carried sketch B gives that direction old-energy credit.
+  4. The previous opt2 survives into the next selected frame.
+  5. Under actual_B, opt2 can beat oracle-like second-slot candidates.
+  6. Under zero_B or oracle_B, opt2 often collapses and oracle-like candidates
+     become competitive or win.
+
+This means the current memory stores what was selected, not necessarily where
+new rows were trying to move the selection.
+
+If oracle-2 is present in:
+
+  span(V_selected, g_new_tan),
+
+but absent from:
+
+  span(V_selected),
+
+then gradient memory is exactly the missing ingredient.
+
+
+Key Diagnostic Before Implementing
+----------------------------------
+For each block, at opt2 and prev_opt2, compute:
+
+  g_total_tan,
+  g_old_tan,
+  g_new_tan,
+  g_entropy_tan.
+
+Then measure:
+
+  projection of q2_oracle onto span(V_selected),
+  projection of q2_oracle onto span(V_selected, g_total_tan),
+  projection of q2_oracle onto span(V_selected, g_new_tan),
+  projection of q2_oracle onto span(V_selected, g_entropy_tan).
+
+Expected positive result:
+
+  q2_oracle is poorly represented in V_selected
+  but well represented in span(V_selected, g_new_tan).
+
+That would show that fresh-gradient memory could keep the missing oracle
+direction alive even when rank-2 greedy retention deletes it.
+
+Negative result:
+
+  q2_oracle is not represented in the gradient-augmented spans either.
+
+Then gradient memory probably will not fix this matrix; the method would need
+larger candidate retention, stronger SVD-like gating, or a different assumption.
+
+
+Potential Objective Guardrails
+------------------------------
+If gradient diagnostics show old sketch bias:
+
+  downweight old energy when old and new tangent gradients disagree:
+
+    alpha(v) = sigmoid(cos(g_old_tan, g_new_tan)),
+
+    E_weighted(v) = alpha(v) ||Bv||^2 + ||A_w v||^2.
+
+If entropy pushes away from fresh-block support:
+
+  downweight entropy when entropy and fresh gradients disagree:
+
+    phi_eff(v)
+      = phi(v) * exp(-lambda * max(0, -cos(g_entropy_tan, g_new_tan))).
+
+If total gradient points toward oracle-like candidates but greedy retention
+still deletes them:
+
+  keep a gradient/innovation subspace and use it for candidate expansion rather
+  than changing the scalar objective.
+
+
+Current Design Preference
+-------------------------
+Do not immediately replace the objective with a gradient term.
+
+First, add a diagnostic and then likely an auxiliary memory:
+
+  B_energy:
+    bounded rank-r energy sketch.
+
+  G_innov:
+    bounded rank-p gradient/innovation sketch.
+
+Selection should use:
+
+  - combined score,
+  - fresh-block support,
+  - gradient agreement/stability,
+  - and candidate retention from G_innov.
+
+The principle is:
+
+  A direction earns retention by being repeatedly supported by new independent
+  blocks, not merely by being present in the sketch produced by previous
+  retention choices.
+
+
+Next Step
+---------
+Implement the gradient diagnostic first:
+
+  For mixed-tail-sharp, diffuse-diffuse, and static-cex, compute whether
+  oracle-2 is recovered by adding g_new_tan or g_total_tan to the selected
+  rank-2 frame.
+
+If the gradient-augmented span recovers oracle-2 in the failure cases and is
+well behaved on static-cex, implement a small `G_innov` memory sketch.

@@ -50,6 +50,37 @@ Six variants (chosen via --variant):
         gradient:  ∇D0 = relH1·∇S6 + S6·∇relH1.
         Hyperparameter: none.
         See summary/score_family_row_concentration_guard/variants/D0/spec.md.
+    S7 (full-sum × stacked entropy, past+current search domain):
+        raw_total(v) = raw_sk(v) + raw_g1(v) + raw_g2(v) = ||M_full v||²,
+                       M_full = [A_sketch; A_cur; A_fut]
+        relH_full(v) = relH1 of (M_full v) energies stacked over all rows
+        score(v)     = raw_total(v) · relH_full(v)
+        Block-1 fall-through (no sketch yet): M_full = [A_cur; A_fut].
+        Search domain is set externally to rowspace([A_sketch; A_cur]) — score
+        peeks at A_fut as evidence but constrains v to a domain reachable from
+        already-seen rows only. Generalizes the original combined score from
+        [B; A_cur] to [B; A_cur; A_fut].
+    S8 (full-sum, no entropy, past+current search domain):
+        score(v) = raw_sk(v) + raw_g1(v) + raw_g2(v) = ||M_full v||²
+        Block-1 fall-through: raw_g1 + raw_g2.
+        Same restricted search basis as S7. Without the entropy bias the
+        optimum on rowspace([A_sketch; A_cur]) is the leading right singular
+        direction of M_full reachable from that subspace.
+    S6_E2 (per-direction-sigma-weighted HM3, no gate, no relH1) — WEIGHTING ABLATION (AB-03):
+        Same HM3 aggregator as S6, but the per-block UNIT-FIXER for each
+        source X ∈ {sk, g1, g2} is per-direction:
+            w_X(v) = sigma_X[k_X(v)]^2,
+            k_X(v) = argmax_i (V_X[:, i]^T v)^2,
+        where (V_X, sigma_X) is the rank-r SVD of A_X (and for sk = state).
+        u_X(v) = raw_X(v) / w_X(v); HM3(u_sk, u_g1, u_g2) when sketch present
+        and HM2(u_g1, u_g2) at block 1.
+        argmax is locally constant generically, so the analytic gradient
+        treats w_X as a constant in a neighborhood of v. (Verified by FD
+        gradient check at all probed blocks.)
+        Hypothesis (DIAG-04b): per-direction reweighting can drive
+        oracle u-imbalance to <5x simultaneously on slot-1 and slot-2
+        on at least one §6 high-entropy matrix where scalar weighting
+        cannot. See summary/score_family_aggregator_ablation/synthesis_S6_E2.md.
     S6_OP (op-norm-weighted HM3, no gate, no relH1) — WEIGHTING ABLATION (AB-02):
         Same HM3 aggregator as S6, but the per-block UNIT-FIXER divides by
         sigma_max(A_X)^2 instead of ||A_X||_F^2:
@@ -116,11 +147,29 @@ from subspace_metrics import principal_angles
 # --------------------------------------------------------------------------
 
 
+def _per_direction_w_e2(V_top, s2_top, v, fallback):
+    """E2 per-direction weight: sigma[k(v)]² where k=argmax_i (V[:,i]^T v)².
+
+    Treated as locally constant for gradient purposes (the argmax is
+    locally constant generically on the sphere).
+    """
+    if V_top is None or s2_top is None:
+        return float(fallback)
+    V = np.asarray(V_top, dtype=np.float64)
+    s2 = np.asarray(s2_top, dtype=np.float64)
+    if V.size == 0 or s2.size == 0:
+        return float(fallback)
+    proj = V.T @ v
+    k = int(np.argmax(proj * proj))
+    return float(s2[k])
+
+
 def r_sk_g_value_grad(
     A_sketch, A_cur, A_fut, c_sk, v,
     variant="S1", alpha=1.0, beta=2.0, gamma=1.0, V_state=None,
     cur_F2=None, fut_F2=None, sk_F2_low=None,
     cur_op2=None, fut_op2=None, sk_op2_low=None,
+    e2_data=None,
 ):
     """Return (score, grad, r_sk, raw_g1, raw_g2, hm_g, sat_term, state_align).
 
@@ -520,9 +569,116 @@ def r_sk_g_value_grad(
                         coef2 * (1.0 / (u_g1 * u_g1)) * (1.0 / W_c) * (2.0 * (A_c.T @ y_c))
                         + coef2 * (1.0 / (u_g2 * u_g2)) * (1.0 / W_f) * (2.0 * (A_f.T @ y_f))
                     )
+    elif variant == "S6_E2":
+        # Per-direction-sigma-weighted HM3 (no gate, no relH1) — AB-03.
+        #   w_X(v) = sigma_X[k_X(v)]^2 with k_X(v) = argmax_i (V_X[:,i]^T v)^2,
+        #   u_X(v) = raw_X(v) / w_X(v).
+        # Block-1 fall-through: HM2(u_g1, u_g2). The argmax is locally
+        # constant in v, so the gradient treats w_X as constant.
+        if e2_data is None:
+            raise ValueError("S6_E2 requires e2_data kwarg (see r_sk_g_score docstring)")
+        V_cur_e2 = e2_data.get("V_cur"); s2_cur_e2 = e2_data.get("s2_cur")
+        V_fut_e2 = e2_data.get("V_fut"); s2_fut_e2 = e2_data.get("s2_fut")
+        V_sk_e2  = e2_data.get("V_sk");  s2_sk_e2  = e2_data.get("s2_sk")
+
+        # Window weights (always available; fall back to F-norm if not given).
+        W_c = _per_direction_w_e2(V_cur_e2, s2_cur_e2, v,
+                                  cur_F2 if cur_F2 is not None else 0.0)
+        W_f = _per_direction_w_e2(V_fut_e2, s2_fut_e2, v,
+                                  fut_F2 if fut_F2 is not None else 0.0)
+        if W_c <= eps or W_f <= eps:
+            sat_term = 0.0
+            score = 0.0
+            grad = np.zeros_like(v)
+        else:
+            u_g1 = raw_g1 / W_c
+            u_g2 = raw_g2 / W_f
+            have_sketch = (
+                A_sk is not None
+                and V_sk_e2 is not None
+                and s2_sk_e2 is not None
+                and np.asarray(s2_sk_e2).size
+            )
+            if have_sketch:
+                W_sk = _per_direction_w_e2(V_sk_e2, s2_sk_e2, v,
+                                           sk_F2_low if sk_F2_low is not None else 0.0)
+                if W_sk <= eps:
+                    sat_term = 0.0
+                    score = 0.0
+                    grad = np.zeros_like(v)
+                else:
+                    u_sk = raw_sk / W_sk
+                    sat_term = float(u_sk)
+                    if u_sk <= eps or u_g1 <= eps or u_g2 <= eps:
+                        score = 0.0
+                        grad = np.zeros_like(v)
+                    else:
+                        D = 1.0 / u_sk + 1.0 / u_g1 + 1.0 / u_g2
+                        HM3 = 3.0 / D
+                        score = float(HM3)
+                        coef = (HM3 * HM3) / 3.0
+                        grad = (
+                            coef * (1.0 / (u_sk * u_sk)) * (1.0 / W_sk) * (2.0 * (A_sk.T @ y_sk))
+                            + coef * (1.0 / (u_g1 * u_g1)) * (1.0 / W_c) * (2.0 * (A_c.T @ y_c))
+                            + coef * (1.0 / (u_g2 * u_g2)) * (1.0 / W_f) * (2.0 * (A_f.T @ y_f))
+                        )
+            else:
+                sat_term = 0.0
+                if u_g1 <= eps or u_g2 <= eps:
+                    score = 0.0
+                    grad = np.zeros_like(v)
+                else:
+                    D2 = 1.0 / u_g1 + 1.0 / u_g2
+                    HM2 = 2.0 / D2
+                    score = float(HM2)
+                    coef2 = (HM2 * HM2) / 2.0
+                    grad = (
+                        coef2 * (1.0 / (u_g1 * u_g1)) * (1.0 / W_c) * (2.0 * (A_c.T @ y_c))
+                        + coef2 * (1.0 / (u_g2 * u_g2)) * (1.0 / W_f) * (2.0 * (A_f.T @ y_f))
+                    )
+    elif variant == "S7":
+        # Full-sum × stacked-entropy on M_full = [A_sketch; A_cur; A_fut].
+        #   raw_total = raw_sk + raw_g1 + raw_g2 = ||M_full v||²
+        #   relH_full = relH1 of (M_full v) energies (over all stacked rows)
+        #   score     = raw_total · relH_full
+        # Block-1 fall-through (no sketch): M_full = [A_cur; A_fut].
+        # Search domain is set externally to rowspace([A_sketch; A_cur]).
+        # Note on scale: raw_sk grows ~linearly with block_id while raw_g1/g2
+        # stay on half-window scale, so the sum is dominated by raw_sk at
+        # late blocks. This is by user request (raw, not F-normalized).
+        if A_sk is not None:
+            M_full = np.vstack([A_sk, A_c, A_f])
+            raw_total = raw_sk + raw_g1 + raw_g2
+        else:
+            M_full = np.vstack([A_c, A_f])
+            raw_total = raw_g1 + raw_g2
+        relH, grad_relH = entropy_relH1_value_grad(M_full, v)
+        sat_term = float(raw_total)
+        score = float(raw_total * relH)
+        # ∇raw_total = 2·M_full^T (M_full v) = 2·(A_sk^T y_sk + A_c^T y_c + A_f^T y_f)
+        grad_raw = np.zeros_like(v)
+        if A_sk is not None and y_sk is not None:
+            grad_raw = grad_raw + 2.0 * (A_sk.T @ y_sk)
+        grad_raw = grad_raw + 2.0 * (A_c.T @ y_c)
+        grad_raw = grad_raw + 2.0 * (A_f.T @ y_f)
+        grad = relH * grad_raw + raw_total * grad_relH
+    elif variant == "S8":
+        # Full-sum, no entropy: score = raw_sk + raw_g1 + raw_g2 = ||M_full v||².
+        # Block-1 fall-through: raw_g1 + raw_g2.
+        # Search domain is set externally to rowspace([A_sketch; A_cur]).
+        if A_sk is not None:
+            sat_term = raw_sk + raw_g1 + raw_g2
+        else:
+            sat_term = raw_g1 + raw_g2
+        score = float(sat_term)
+        grad = np.zeros_like(v)
+        if A_sk is not None and y_sk is not None:
+            grad = grad + 2.0 * (A_sk.T @ y_sk)
+        grad = grad + 2.0 * (A_c.T @ y_c)
+        grad = grad + 2.0 * (A_f.T @ y_f)
     else:
         raise ValueError(
-            f"unknown variant {variant!r}; expected S1, S2, S3, S4, S5, S6, S6_GM, S6_OP, or D0"
+            f"unknown variant {variant!r}; expected S1, S2, S3, S4, S5, S6, S6_GM, S6_OP, S6_E2, S7, S8, or D0"
         )
 
     return (
@@ -547,6 +703,7 @@ def make_r_sk_g_optimizer(
     variant="S1", alpha=1.0, beta=2.0, gamma=1.0, V_state=None,
     cur_F2=None, fut_F2=None, sk_F2_low=None,
     cur_op2=None, fut_op2=None, sk_op2_low=None,
+    e2_data=None,
 ):
     def value_grad(_unused_cur, _unused_fut, v):
         del _unused_cur, _unused_fut
@@ -555,6 +712,7 @@ def make_r_sk_g_optimizer(
             variant=variant, alpha=alpha, beta=beta, gamma=gamma, V_state=V_state,
             cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low,
             cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low,
+            e2_data=e2_data,
         )
         # Optimizer's expected signature: (val, grad, gain1, gain2, relH1).
         # We repurpose the share slots to carry diagnostics: raw_g1, raw_g2, r_sk.
@@ -569,6 +727,7 @@ def optimize_r_sk_g_in_basis(
     variant="S1", alpha=1.0, beta=2.0, gamma=1.0, V_state=None,
     cur_F2=None, fut_F2=None, sk_F2_low=None,
     cur_op2=None, fut_op2=None, sk_op2_low=None,
+    e2_data=None,
 ):
     original = optimize_future_hmean_in_basis.__globals__["future_hmean_value_grad"]
     optimize_future_hmean_in_basis.__globals__["future_hmean_value_grad"] = make_r_sk_g_optimizer(
@@ -576,6 +735,7 @@ def optimize_r_sk_g_in_basis(
         variant=variant, alpha=alpha, beta=beta, gamma=gamma, V_state=V_state,
         cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low,
         cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low,
+        e2_data=e2_data,
     )
     try:
         return optimize_future_hmean_in_basis(
@@ -588,6 +748,42 @@ def optimize_r_sk_g_in_basis(
 # --------------------------------------------------------------------------
 # Per-block diagnostic
 # --------------------------------------------------------------------------
+
+
+def build_e2_data(A_cur, A_fut, A_sketch, state, rank):
+    """Construct the e2 dict for S6_E2: top-r SVDs of A_cur, A_fut and the
+    carried state (V_sk = state["V"], s²_sk = state["s"]²).
+
+    Windows are tall and skinny (half_win × n) with half_win small, so the
+    SVDs are cheap. Returns a dict with keys V_cur, s2_cur, V_fut, s2_fut,
+    V_sk, s2_sk; missing-source slots get None.
+    """
+    def top_r(A):
+        if A is None or A.size == 0:
+            return None, None
+        Aw = np.asarray(A, dtype=np.float64)
+        _, s, Vt = np.linalg.svd(Aw, full_matrices=False)
+        k = min(int(rank), s.size)
+        return np.ascontiguousarray(Vt[:k].T), np.ascontiguousarray(s[:k] ** 2)
+
+    V_cur, s2_cur = top_r(A_cur)
+    V_fut, s2_fut = top_r(A_fut)
+    V_sk = None
+    s2_sk = None
+    if A_sketch is not None and np.asarray(A_sketch).size:
+        if state is not None and state.get("V") is not None and state.get("s") is not None:
+            V_sk = np.asarray(state["V"], dtype=np.float64)
+            s2_sk = np.asarray(state["s"], dtype=np.float64) ** 2
+            if V_sk.size == 0 or s2_sk.size == 0:
+                V_sk = s2_sk = None
+        if V_sk is None:
+            # Fall back to top-r SVD of A_sketch.
+            V_sk, s2_sk = top_r(A_sketch)
+    return {
+        "V_cur": V_cur, "s2_cur": s2_cur,
+        "V_fut": V_fut, "s2_fut": s2_fut,
+        "V_sk":  V_sk,  "s2_sk":  s2_sk,
+    }
 
 
 def _state_V(state):
@@ -1209,6 +1405,10 @@ def gradient_check(A, V_exact, args, matrix, block_id):
     else:
         sk_op2_low = 0.0
 
+    # E2 per-direction weighting data (AB-03): top-r SVD of each window
+    # plus the carried state's right singular vectors.
+    e2_data = build_e2_data(A_cur, A_fut, A_sketch, snap.get("state"), rank)
+
     rng = np.random.default_rng(0)
     n = A.shape[1]
     v = rng.standard_normal(n)
@@ -1225,12 +1425,13 @@ def gradient_check(A, V_exact, args, matrix, block_id):
     sample = rng.choice(n, size=20, replace=False)
     h = 1e-6
     rel_errs = {}
-    for variant in ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP"):
+    for variant in ("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP", "S6_E2", "S7", "S8"):
         kwargs = dict(variant=variant, alpha=float(args.alpha),
                       beta=float(args.beta), gamma=float(args.gamma),
                       V_state=V_state,
                       cur_F2=cur_F2, fut_F2=fut_F2, sk_F2_low=sk_F2_low,
-                      cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low)
+                      cur_op2=cur_op2, fut_op2=fut_op2, sk_op2_low=sk_op2_low,
+                      e2_data=e2_data)
         v_use = v_S5 if variant == "S5" else v
         score0, grad, *_ = r_sk_g_value_grad(A_sketch, A_cur, A_fut, c_sk, v_use, **kwargs)
         fd = np.zeros(len(sample))
@@ -1373,7 +1574,7 @@ def parse_args():
                    help="If given, run multiple matrices.")
     p.add_argument("--out-prefix", default="summary/r_sk_g_score")
     p.add_argument("--blocks", nargs="+", type=int, default=[2, 6, 12, 31])
-    p.add_argument("--variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP"), default="S6",
+    p.add_argument("--variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP", "S6_E2", "S7", "S8"), default="S6",
                    help="Variant to use when wiring streaming. Diagnostic always reports all variants.")
     p.add_argument("--alpha", type=float, default=1.0)
     p.add_argument("--beta", type=float, default=2.0)

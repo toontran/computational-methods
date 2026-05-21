@@ -1,0 +1,685 @@
+\paragraph{Subset-mass upper-bound score, stated first.}
+At window $w$, score a candidate right direction $v\in\mathbb S^{d-1}$ by
+\begin{align}
+\operatorname{score}_w^{\mathrm{UB}}(v)
+:=
+\frac{\|Bv\|_2^2+\|A_wv\|_2^2}{1-\psi_w(v)},
+\end{align}
+where the leak factor is
+\begin{align}
+\psi_w(v)
+:=
+\sqrt{
+(n-n_{\mathrm{seen}}-k)\,
+n^{-h_2^{(R,w)}(v)/\log(s+k)}
+},
+\end{align}
+and $h_2^{(R,w)}(v)$ is the pooled row-response collision entropy computed
+from the raw rows currently available for entropy estimation,
+\begin{align}
+h_2^{(R,w)}(v)
+:=
+-\log\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right)
+=
+4\log\|C_wv\|_2-4\log\|C_wv\|_4,
+\end{align}
+with
+\begin{align}
+C_w:=
+\begin{pmatrix}
+R\\
+A_w
+\end{pmatrix}\in\mathbb R^{(s+k)\times d},
+\qquad
+C_wv=
+\begin{pmatrix}
+Rv\\
+A_wv
+\end{pmatrix}.
+\end{align}
+If this is the first window, take
+$R=\varnothing$, $s=0$, $n_{\mathrm{seen}}=0$, and $B=0$. If this is a later
+window with no old row sample, take only $R=\varnothing$ and $s=0$; the old
+sketch $B$ and the count $n_{\mathrm{seen}}$ still describe the rows processed
+before the current window. The score is well-defined only when
+$\psi_w(v)<1$; see the practical-remarks paragraph for the treatment of the
+vacuous regime.
+
+\paragraph{Notation in detail.}
+Let $\mathrm{row}(X)$ denote the number of rows of a matrix $X$. Let
+\begin{align}
+A \in \mathbb R^{n\times d}
+\end{align}
+be the full data matrix, let $A_w$ denote the current row-window, and let
+$B \in \mathbb R^{r\times d}$ denote the sketch carried from the previous
+windows. In addition to the sketch, carry a small row sample of old data
+\begin{align}
+R \in \mathbb R^{s\times d}.
+\end{align}
+Write
+\begin{align}
+A_w &\in \mathbb R^{k\times d},
+\qquad
+k=\mathrm{row}(A_w),
+\\
+n_{\mathrm{seen}}&:=\text{\# raw rows processed before this window},
+\\
+n&:=\text{total number of rows in the full matrix or stream},
+\\
+v&\in\mathbb S^{d-1}.
+\end{align}
+Use $[n]:=\{1,\dots,n\}$ for row indices.
+Denote the number of raw rows represented after the current window, the
+seen-fraction, and the unseen complement-count by
+\begin{align}
+m_w
+:=
+n_{\mathrm{seen}}+k,
+\qquad
+p_w
+:=
+\frac{m_w}{n},
+\qquad
+q_w
+:=
+n-m_w
+=
+n(1-p_w).
+\end{align}
+Assume $s+k>1$ when the pooled entropy proxy is used, and assume
+$0<m_w\le n$.
+
+\paragraph{Explanation of the subset-mass upper bound.}
+This note builds an \emph{upper} estimate for $\|Av\|_2^2$ from a
+Cauchy--Schwarz subset-mass lemma and a dimension-normalized
+entropy-preservation heuristic. The only data available at window $w$ are the
+old sketch $B$, the current raw window $A_w$, and the old raw row memory $R$.
+The sketch and current window provide an energy estimate, while the raw row
+memory and current window provide the pooled row-response entropy proxy.
+
+The underlying lemma is purely a statement about a probability distribution
+\begin{align}
+p_i
+:=
+\frac{(Av)_i^2}{\|Av\|_2^2},
+\qquad
+\sum_{i\in[n]}p_i=1,
+\end{align}
+and a subset $S\subseteq[n]$ with $|S|=m_w=n_{\mathrm{seen}}+k$
+corresponding to the raw rows processed through the current window. The old
+sketch summarizes the first $n_{\mathrm{seen}}$ processed rows, and the
+current window contributes the next $k$ raw rows. Under this identification
+the ``seen-row subset mass'' is
+\begin{align}
+Z_S
+:=
+\sum_{i\in S}p_i
+\approx
+\frac{\|Bv\|_2^2+\|A_wv\|_2^2}{\|Av\|_2^2}
+=
+\frac{E_w(v)}{\|Av\|_2^2},
+\end{align}
+where $E_w(v):=\|Bv\|_2^2+\|A_wv\|_2^2$ is the available seen-row energy
+surrogate. The approximate equality becomes exact when the sketch $B$
+preserves the old seen-row response energy on direction $v$.
+
+\paragraph{Subset-mass lemma.}
+Let $p=(p_1,\dots,p_n)$ satisfy $p_i\ge 0$ and $\sum_{i=1}^n p_i=1$, and let
+$S\subseteq[n]$ with $|S|=m$. Let
+$H_2^{\mathrm{full}}(v)
+:=-\log(\sum_{i=1}^n p_i^2)
+=4\log\|Av\|_2-4\log\|Av\|_4$.
+Then
+\begin{align}
+Z_S
+=
+\sum_{i\in S}p_i
+\ge
+\max\!\left\{
+0,\;
+1-\sqrt{(n-m)\,e^{-H_2^{\mathrm{full}}(v)}}
+\right\}.
+\end{align}
+
+\paragraph{Proof of the lemma.}
+Let $S^c=[n]\setminus S$ with $|S^c|=n-m$ and $Z_{S^c}=1-Z_S$. Since
+$p_i^2\ge 0$, the subset of squared masses lies below the total:
+\begin{align}
+\sum_{i\in S^c}p_i^2
+\le
+\sum_{i\in[n]}p_i^2
+=
+e^{-H_2^{\mathrm{full}}(v)}.
+\end{align}
+By Cauchy--Schwarz applied to the constant-one vector on $S^c$,
+\begin{align}
+Z_{S^c}^2
+=
+\Big(\sum_{i\in S^c}p_i\cdot 1\Big)^2
+\le
+|S^c|\,\sum_{i\in S^c}p_i^2
+=
+(n-m)\sum_{i\in S^c}p_i^2.
+\end{align}
+Combining the two displays yields
+\begin{align}
+Z_{S^c}^2
+\le
+(n-m)\,e^{-H_2^{\mathrm{full}}(v)}
+\;\Longrightarrow\;
+Z_{S^c}\le\sqrt{(n-m)\,e^{-H_2^{\mathrm{full}}(v)}}.
+\end{align}
+Hence $Z_S=1-Z_{S^c}\ge 1-\sqrt{(n-m)\,e^{-H_2^{\mathrm{full}}(v)}}$, and the
+bound $Z_S\ge 0$ is trivial.\hfill$\square$
+
+\paragraph{From the lemma to an upper bound on $\|Av\|_2^2$.}
+Applying the lemma with $m=m_w=n_{\mathrm{seen}}+k$ and rearranging
+$Z_S=E_w(v)/\|Av\|_2^2$ gives, whenever the right side is positive,
+\begin{align}
+\|Av\|_2^2
+\le
+\frac{E_w(v)}
+{1-\sqrt{q_w\,e^{-H_2^{\mathrm{full}}(v)}}}.
+\end{align}
+This bound requires one quantity not directly observable from the window plus
+sketch: $H_2^{\mathrm{full}}(v)$, the full-matrix collision entropy on
+direction $v$.
+
+\paragraph{Dimension-normalized entropy heuristic.}
+Approximate the full-matrix collision entropy by the pooled row-response
+collision entropy, rescaled by the ratio of the logarithmic support sizes:
+\begin{align}
+\frac{H_2^{\mathrm{full}}(v)}{\log n}
+\approx
+\frac{h_2^{(R,w)}(v)}{\log(s+k)}.
+\end{align}
+The pooled proxy uses the available rows $C_w=[R;A_w]$ of size $s+k$;
+the full matrix has $n$ rows. Exponentiating the heuristic,
+\begin{align}
+e^{-H_2^{\mathrm{full}}(v)}
+\approx
+e^{-h_2^{(R,w)}(v)\,\log n/\log(s+k)}
+=
+n^{-h_2^{(R,w)}(v)/\log(s+k)}.
+\end{align}
+Substituting into the upper bound and collecting constants gives
+\begin{align}
+\|Av\|_2^2
+\;\lesssim\;
+\frac{E_w(v)}
+{1-\psi_w(v)},
+\qquad
+\psi_w(v)
+=
+\sqrt{q_w\,n^{-h_2^{(R,w)}(v)/\log(s+k)}},
+\end{align}
+which is $\operatorname{score}_w^{\mathrm{UB}}(v)$ as declared.
+
+\paragraph{Simplified form.}
+Define the constants
+\begin{align}
+q_w&:=n-n_{\mathrm{seen}}-k,
+\\
+\tau_w&:=\frac{\log n}{\log(s+k)},
+\\
+E_w(v)&:=\|Bv\|_2^2+\|A_wv\|_2^2,
+\\
+y&:=C_wv.
+\end{align}
+Then
+\begin{align}
+\psi_w(v)
+=
+\sqrt{q_w}\,
+\exp\!\left(-\frac{\tau_w}{2}\,h_2^{(R,w)}(v)\right),
+\end{align}
+and the score factors as
+\begin{align}
+\operatorname{score}_w^{\mathrm{UB}}(v)
+=
+E_w(v)\,\gamma_w(v),
+\qquad
+\gamma_w(v)
+:=
+\frac{1}{1-\psi_w(v)}.
+\end{align}
+When $\psi_w(v)<1$, $\gamma_w(v)>1$ is a flatness-dependent inflation factor.
+The inflation factor appears as a pole: small $h_2^{(R,w)}(v)$ drives
+$\psi_w\to 1^-$ and $\gamma_w\to+\infty$.
+
+\paragraph{Exact gradient.}
+Let
+\begin{align}
+y_B:=Bv,
+\qquad
+z:=A_wv,
+\qquad
+y:=C_wv,
+\end{align}
+and assume $E_w(v)>0$, $\|y\|_2>0$, $\|y\|_4>0$, and $\psi_w(v)<1$. The
+energy gradient is
+\begin{align}
+\nabla E_w(v)
+=
+2B^\top Bv+2A_w^\top A_wv.
+\end{align}
+The pooled entropy gradient follows by differentiating
+$4\log\|C_wv\|_2-4\log\|C_wv\|_4$:
+\begin{align}
+\nabla h_2^{(R,w)}(v)
+=
+4\,\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-
+4\,C_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right).
+\end{align}
+Here $x^{\odot 3}$ denotes componentwise cubing.
+For the derivative of $\psi_w$, assume first that $q_w>0$. Since
+$\log\psi_w(v)=\tfrac{1}{2}\log q_w-\tfrac{\tau_w}{2}h_2^{(R,w)}(v)$,
+\begin{align}
+\nabla\log\psi_w(v)
+=
+-\frac{\tau_w}{2}\,\nabla h_2^{(R,w)}(v),
+\end{align}
+so
+\begin{align}
+\nabla\psi_w(v)
+=
+\psi_w(v)\,\nabla\log\psi_w(v)
+=
+-\frac{\tau_w\,\psi_w(v)}{2}\,\nabla h_2^{(R,w)}(v).
+\end{align}
+The gradient of the denominator log is
+\begin{align}
+\nabla\log(1-\psi_w(v))
+=
+-\frac{\nabla\psi_w(v)}{1-\psi_w(v)}
+=
+\frac{\tau_w\,\psi_w(v)}{2(1-\psi_w(v))}\,\nabla h_2^{(R,w)}(v).
+\end{align}
+Taking logs of the score,
+\begin{align}
+\log\operatorname{score}_w^{\mathrm{UB}}(v)
+=
+\log E_w(v)-\log(1-\psi_w(v)),
+\end{align}
+and differentiating,
+\begin{align}
+\nabla\log\operatorname{score}_w^{\mathrm{UB}}(v)
+=
+\frac{\nabla E_w(v)}{E_w(v)}
+-
+\frac{\tau_w\,\psi_w(v)}{2(1-\psi_w(v))}\,\nabla h_2^{(R,w)}(v).
+\end{align}
+Equivalently,
+\begin{align}
+\nabla\operatorname{score}_w^{\mathrm{UB}}(v)
+=
+\operatorname{score}_w^{\mathrm{UB}}(v)
+\left[
+\frac{2B^\top Bv+2A_w^\top A_wv}{E_w(v)}
+-
+2\kappa_w(v)
+\left(
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-
+C_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+\right)
+\right],
+\end{align}
+where the direction-dependent coupling coefficient is
+\begin{align}
+\kappa_w(v)
+:=
+\frac{\tau_w\,\psi_w(v)}{1-\psi_w(v)}
+=
+\frac{\log n}{\log(s+k)}\cdot
+\frac{\psi_w(v)}{1-\psi_w(v)}.
+\end{align}
+The coefficient $\kappa_w(v)$ grows as $\psi_w(v)$ approaches $1$, so the
+entropy-gradient part becomes dominant near the boundary of the non-vacuity
+region.
+If $q_w=0$, then $\psi_w(v)=0$ for every feasible direction and
+$\nabla\operatorname{score}_w^{\mathrm{UB}}(v)=\nabla E_w(v)$.
+
+\paragraph{Sign and monotonicity of the entropy term.}
+The entropy contribution to the upper-bound gradient is
+\begin{align}
+-2\kappa_w(v)
+\left(
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+-
+C_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+\right)
+=
+2\kappa_w(v)
+\left(
+\frac{C_w^\top(C_wv)^{\odot 3}}{\|C_wv\|_4^4}
+-
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+\right),
+\end{align}
+which pushes $v$ toward \emph{lower} $h_2^{(R,w)}(v)$ (since
+$\kappa_w(v)>0$ whenever $\psi_w(v)\in(0,1)$). Thus maximizing this
+upper-bound score favors higher-leakage directions inside the feasible
+region: lowering the entropy increases $\psi_w(v)$, enlarges the denominator
+inflation, and raises the score until the non-vacuity boundary is reached.
+
+\paragraph{Expanded row-memory form.}
+Because
+\begin{align}
+C_w^\top C_wv=R^\top Rv+A_w^\top A_wv,
+\end{align}
+and
+\begin{align}
+C_w^\top(C_wv)^{\odot 3}
+=
+R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3},
+\end{align}
+the pooled entropy gradient can be evaluated without explicitly forming
+$C_w$:
+\begin{align}
+C_w^\top\!\left(\frac{(C_wv)^{\odot 3}}{\|C_wv\|_4^4}\right)
+=
+\frac{
+R^\top(Rv)^{\odot 3}+A_w^\top(A_wv)^{\odot 3}
+}{
+\|Rv\|_4^4+\|A_wv\|_4^4
+},
+\end{align}
+and
+\begin{align}
+\frac{C_w^\top C_wv}{\|C_wv\|_2^2}
+=
+\frac{R^\top Rv+A_w^\top A_wv}
+{\|Rv\|_2^2+\|A_wv\|_2^2}.
+\end{align}
+Likewise,
+\begin{align}
+\psi_w(v)
+=
+\sqrt{q_w}\,
+\left(
+\frac{\|Rv\|_4^4+\|A_wv\|_4^4}
+{\left(\|Rv\|_2^2+\|A_wv\|_2^2\right)^2}
+\right)^{\tau_w/2}.
+\end{align}
+The last identity uses
+$e^{-h_2^{(R,w)}(v)}=\|C_wv\|_4^4/\|C_wv\|_2^4$ raised to the power
+$\tau_w/2$, simplified via the pooled-norm expansions.
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+B=SV^\top,
+\qquad
+V=[v_1,\dots,v_r],
+\qquad
+S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+then
+\begin{align}
+\|Bv\|_2^2
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2,
+\qquad
+B^\top Bv
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)v_j,
+\end{align}
+so the energy part of the subset-mass gradient is
+\begin{align}
+2B^\top Bv+2A_w^\top A_wv
+=
+2\sum_{j=1}^r s_j^2(v_j^\top v)v_j
++2A_w^\top A_wv.
+\end{align}
+The pooled entropy part is independent of this stored-basis representation of
+$B$, since $B$ does not appear in $C_w$.
+
+\paragraph{Optimization problem.}
+To extract a direction, solve
+\begin{align}
+\max_{v\in\mathbb S^{d-1},\ Q^\top v=0,\ \psi_w(v)<1}
+\operatorname{score}_w^{\mathrm{UB}}(v),
+\end{align}
+where the columns of $Q$ are the previously accepted directions. The extra
+$\psi_w(v)<1$ constraint restricts the feasible set to directions on which
+the upper bound is non-vacuous. In practice this constraint restricts
+attention to directions whose pooled collision entropy exceeds the minimum
+non-vacuity threshold
+\begin{align}
+h_2^{(R,w)}(v)
+>
+h_{\mathrm{crit}}
+:=
+\frac{\log q_w}{\tau_w}
+=
+\frac{\log q_w\cdot\log(s+k)}{\log n}.
+\end{align}
+Directions with $h_2^{(R,w)}(v)\le h_{\mathrm{crit}}$ are declared infeasible
+under this score.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the subset-mass upper-bound score. Project it onto
+the feasible tangent space:
+\begin{align}
+g_{\mathrm{tan}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w^{\mathrm{UB}}(v).
+\end{align}
+Take
+\begin{align}
+\widetilde v^+=v+\eta\,g_{\mathrm{tan}}(v),
+\qquad
+v^+=\frac{(I-QQ^\top)\widetilde v^+}
+{\|(I-QQ^\top)\widetilde v^+\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on
+$\operatorname{score}_w^{\mathrm{UB}}$. Reject any step that leaves the
+non-vacuity region $\psi_w(v)<1$.
+
+\paragraph{Basis-expansion interpretation.}
+If one is building a local search subspace rather than taking a pure
+steepest-ascent step, the new direction added to the basis is the projected
+full gradient
+\begin{align}
+g_{\mathrm{basis}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w^{\mathrm{UB}}(v).
+\end{align}
+In a reduced-subspace version with current local right search basis
+$Z\in\mathbb R^{d\times q}$, $Z^\top Z=I$, the expansion residual after
+solving inside $\operatorname{span}(Z)$ is
+\begin{align}
+r_Z(v)
+:=
+\left(I-ZZ^\top\right)
+\left(I-QQ^\top-vv^\top\right)
+\nabla\operatorname{score}_w^{\mathrm{UB}}(v).
+\end{align}
+The local basis should be expanded when
+$\|r_Z(v)\|_2
+/
+\|\left(I-QQ^\top-vv^\top\right)\nabla\operatorname{score}_w^{\mathrm{UB}}(v)\|_2
+>\tau$.
+
+\paragraph{Operator extraction from the retained right subspace.}
+After the scored directions and any auxiliary directions are assembled into an
+orthonormal right basis $V\in\mathbb R^{d\times r}$, form
+\begin{align}
+M_w:=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix},
+\qquad
+Y:=M_wV,
+\qquad
+U_{\hat{}}:=\operatorname{orth}(Y),
+\end{align}
+and compress $M_w$ to the left image of the retained right space,
+\begin{align}
+\widetilde M:=U_{\hat{}}^\top M_w
+=U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top.
+\end{align}
+Here $\operatorname{orth}(Y)$ denotes any matrix with orthonormal columns
+spanning the column space of $Y$. Equivalently,
+$P_U:=U_{\hat{}}U_{\hat{}}^\top$ is the orthogonal projector onto the left
+image of the retained right space.
+The carried sketch is
+\begin{align}
+B_{\mathrm{next}}:=\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+so the next window receives a compact right-action representation of the
+compressed operator selected by the optimized basis $V$.
+
+\paragraph{Why this is the sketch carried into the next window.}
+For any direction $v$,
+\begin{align}
+\|B_{\mathrm{next}}v\|_2
+=
+\|\Sigma V_{\mathrm{new}}^\top v\|_2
+=
+\|P_UM_wv\|_2,
+\end{align}
+so $\|B_{\mathrm{next}}v\|_2^2$ equals the quadratic old energy on the
+retained compressed operator. The row memory $R_{\mathrm{next}}$ supplies the
+pooled row-level entropy proxy for the next window's
+$h_2^{(R,w+1)}$.
+
+\paragraph{First-window special case.}
+If $B=0$, $R=\varnothing$, $s=0$, and $n_{\mathrm{seen}}=0$, then
+\begin{align}
+p_1=\frac{k}{n},
+\qquad
+q_1=n-k,
+\qquad
+\tau_1=\frac{\log n}{\log k},
+\qquad
+C_1=A_1,
+\end{align}
+and the first-window score reduces to
+\begin{align}
+\operatorname{score}_1^{\mathrm{UB}}(v)
+=
+\frac{\|A_1v\|_2^2}
+{1-\psi_1(v)},
+\qquad
+\psi_1(v)
+=
+\sqrt{n-k}\,
+\left(
+\frac{\|A_1v\|_4^4}{\|A_1v\|_2^4}
+\right)^{\tau_1/2}.
+\end{align}
+The full gradient reduces to
+\begin{align}
+\nabla\operatorname{score}_1^{\mathrm{UB}}(v)
+=
+\operatorname{score}_1^{\mathrm{UB}}(v)
+\left[
+\frac{2A_1^\top A_1v}{\|A_1v\|_2^2}
+-
+2\kappa_1(v)
+\left(
+\frac{A_1^\top A_1v}{\|A_1v\|_2^2}
+-
+A_1^\top\!\left(\frac{(A_1v)^{\odot 3}}{\|A_1v\|_4^4}\right)
+\right)
+\right],
+\end{align}
+with
+\begin{align}
+\kappa_1(v)=\frac{\tau_1\,\psi_1(v)}{1-\psi_1(v)}.
+\end{align}
+Compute retained directions $v_1,\dots,v_r$ sequentially by solving
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v=0\ \forall i<j,\ \psi_1(v)<1}
+\operatorname{score}_1^{\mathrm{UB}}(v).
+\end{align}
+
+\paragraph{Non-vacuity and the valid direction regime.}
+The score is finite and positive only when $\psi_w(v)<1$, i.e.
+\begin{align}
+h_2^{(R,w)}(v)
+>
+h_{\mathrm{crit}}
+:=
+\frac{\log q_w}{\tau_w}.
+\end{align}
+This threshold statement assumes $q_w>0$. If $q_w=0$, all rows have been
+processed, $\psi_w(v)=0$, and the subset-mass denominator is exactly $1$.
+For the first window with $n=128$, $k=32$, $\tau_1=\log 128/\log 32=7/5$,
+$q_1=96$:
+\begin{align}
+h_{\mathrm{crit}}
+=
+\frac{\log 96}{7/5}
+\approx
+\frac{4.564}{1.4}
+\approx
+3.26.
+\end{align}
+The first-window maximum pooled entropy is $\log k=\log 32\approx 3.47$, so
+the feasible region is narrow and includes essentially only block-flat
+directions. Spike-like directions (low $h_2^{(R,w)}$) are declared infeasible
+by this score, implicitly filtering them out rather than scoring them low.
+As $n_{\mathrm{seen}}+k$ grows, $q_w$ shrinks and the feasible region
+widens.
+
+\paragraph{Interpretation of the monotonicity flip.}
+The subset-mass upper bound is a statement of the form
+``the fraction of full-matrix energy captured by the seen rows is at
+least $1-\psi_w(v)$'': flat directions leak little energy to the unseen
+complement, while spike directions can leak essentially all of it if the
+spike lies in the unseen block. Maximizing
+$\operatorname{score}_w^{\mathrm{UB}}(v)=E_w(v)/(1-\psi_w(v))$
+drives $v$ toward directions on which the block energy could plausibly come
+from a much larger full-matrix energy, i.e.\ toward higher-leakage (spikier)
+directions within the feasible region. An objective that instead maximizes a
+lower estimate obtained by rewarding high pooled entropy would have the
+opposite preference: it would favor flat directions because their energy is
+less likely to be hidden in unseen rows.
+
+The upper-bound score is therefore most naturally used either as a
+\emph{diagnostic} on candidate directions (large
+$\operatorname{score}_w^{\mathrm{UB}}$ means the block evidence is
+consistent with a large full-matrix energy, but does not imply it) or as a
+\emph{gate}: the feasibility constraint $\psi_w(v)<1$ prunes directions on
+which block evidence cannot support any bounded claim about $\|Av\|_2^2$.
+One natural streaming use is therefore to optimize a separate lower-estimate
+score for selecting directions, while using the upper-bound non-vacuity
+condition as a gate on whether the available block evidence supports a bounded
+claim.
+
+\paragraph{Practical remarks.}
+The objective is nonconvex in the feasible region, and becomes singular at
+its boundary $\psi_w(v)=1$. Steps should be rejected or dampened when
+$1-\psi_w(v)$ is numerically tiny; a practical guard is to replace the
+denominator by $\max(1-\psi_w(v),\epsilon)$ for small $\epsilon>0$ during
+line search, while keeping the feasibility check $\psi_w(v)<1$ on accepted
+iterates. When $\|C_wv\|_2$ or $\|C_wv\|_4$ is numerically tiny, regularize
+by adding $\delta\cdot\|v\|_2^2$ to both $\|C_wv\|_2^2$ and
+$\|C_wv\|_4^4$, or reject the step.
+
+The expanded gradient form avoids forming $C_w$ explicitly, but the pooled
+response norms must still include both $Rv$ and $A_wv$.
+
+The row memory should not be interpreted as a replacement for the old
+sketch. The sketch $B$ supplies retained old energy, while $R$ supplies old
+raw-row responses for the pooled entropy proxy. A pure reservoir sample
+gives coverage, but it can miss rare large rows that dominate $\ell_4$
+terms. A practical memory should therefore combine a uniform reservoir with
+a small high-response set selected using current sketch directions.
+
+The non-vacuity constraint $\psi_w(v)<1$ is more restrictive for the first
+window and loosens as $p_w\to 1$. A safe implementation caps
+$\operatorname{score}_w^{\mathrm{UB}}(v)$ at a large finite value when
+$\psi_w(v)$ approaches $1$ from below, and marks the direction as
+``upper-bound inconclusive'' rather than selecting it on the strength of a
+near-singular denominator.

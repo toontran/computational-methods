@@ -1,0 +1,387 @@
+HM-evidence redesign — context and constraints
+================================================
+
+Date: 2026-04-27
+Audience: someone redesigning the slot-2 selection objective after the
+current HM-evidence design fell short on the streaming benchmark.
+
+
+1. Goal
+-------
+
+In the streaming sliding-window benchmark
+(`half_window_sliding_hmean_experiment.py`, half_win=32, rank=2):
+
+  - Slot 0 of V_selected is decided by combined-greedy
+    (`entropy_iter_basis_forget(score_variant="combined")`).
+  - Slot 1 ("slot-2 pick") is the open design choice.
+  - V_selected goes through a rank-2 SVD reframe in M_gain before
+    being carried as state for the next block.
+
+The objective for slot-2 is to deliver, on the same matrix family the
+existing benchmark covers (17 matrices, see
+`summary/bench_matrix_sweep/synthesis.txt`), final-step subspace
+quality competitive with `future_hmean_online`'s pool-based pick:
+
+    final_exact_cos2 ≥ online's value, on tail-dominant matrices.
+    final_tail_mass ≤ online's value.
+
+Quality on slot-1 (final_exact_cos1) is already saturated by the
+combined-greedy pick — the redesign should not regress that.
+
+Constraints on the redesigned objective:
+
+  - Functional in v on the unit sphere, computable from
+    {A_sketch, A_cur, A_fut, V_default[:, 0]} only (NO oracle, NO
+    full-history A[:sk_end] beyond cumulative scalars).
+  - Per-block cost ≤ a few seconds (current evi spends ~46 s/matrix
+    median; that's ~15× online and is the main wall-clock blocker).
+
+
+2. What the current HM-evidence score is
+----------------------------------------
+
+For block k with N_block = half_win:
+
+    raw_sk(v) = ||A_sketch v||²,   A_sketch = state["s"][:,None] · state["V"].T
+    raw_g1(v) = ||A_cur    v||²
+    raw_g2(v) = ||A_fut    v||²
+
+    c_sk = N_sk / ||A[:N_sk]||_F²   (= 1 / mean_row_F2_sk)
+    c_g1 = N_block / ||A_cur||_F²
+    c_g2 = N_block / ||A_fut||_F²
+
+    u_k(v) = c_k · raw_k(v)         (rows-of-mean-row-energy on v)
+
+    w_sk = r = 2,   w_g1 = w_g2 = N_block = 32,   W = 66
+
+    HM_evi(v) = W / (w_sk/u_sk + w_g1/u_g1 + w_g2/u_g2)
+    score(v)  = HM_evi(v) · relH1(v)        (relH1 = entropy of A_cur v)
+
+Block 1 path drops the sketch term entirely.
+
+Per-block diagnostic on this score
+(`summary/hmean_evidence_score_synthesis.txt`):
+
+  - Gradient verified to 1e-10 relative error.
+  - In a fixed B_search = rowspan(A_sketch ∪ A_cur ∪ A_fut) ⊥
+    V_default[:,0], the optimizer's vec beats the projected-oracle
+    direction on score(v) on 7/8 matrices and beats every static
+    HM-triplet baseline by 1–2 orders of magnitude on every cell.
+  - i.e. the score and its optimizer are correct in the per-block
+    sense — they find the optimum of the stated objective.
+
+That confirms the score is well-defined and well-optimized; it does
+NOT confirm the score is the right thing to optimize.
+
+
+3. How it plugs into the streaming harness
+-------------------------------------------
+
+`future_hmean_evidence` policy in
+`half_window_sliding_hmean_experiment.py`:
+
+  - V_default = combined-greedy result (slot 0 = V_default[:, 0]).
+  - B_search = orth_basis_against(rowspace(A_sketch ∪ A_cur ∪ A_fut),
+                                  V_default[:, 0])
+  - Starts: V_default[:, 1], all online-pool candidates
+    (opt2, q2_vs_q1oracle, mgain_deflated_svd, block_complement,
+    prev_opt2), top ≤8 columns of diag["Vbasis_final"], 24 random
+    unit vectors. NO oracle warm starts.
+  - chosen_v2 = optimize_hm_evi_in_basis(...)["vec"]
+  - Same rank-2 SVD reframe in M_gain as `future_hmean_online`,
+    same state advance via `make_state` + old_row_memory selection.
+
+Cost: ~46 s/matrix on 31 sliding blocks (≈1.5 s/block); dominated
+by 30+ start sphere ascents in float64 in R^n=1024.
+
+
+4. Empirical findings on the 17-matrix sweep
+---------------------------------------------
+
+Files:
+  summary/bench_matrix_sweep_evidence/aggregated_table.txt
+  summary/bench_matrix_sweep_evidence/synthesis.txt
+
+Win counts (out of 17, sliding mode):
+
+  metric              comb  hybr  isvd  online  evidence
+  mean_exact_cos1      1    1     8    4       3
+  mean_exact_cos2      3    2     7    4       1
+  mean_relerr_sval     1    1     8    3       4
+  final_exact_cos1     2    4     5    4       2
+  final_exact_cos2     3    2     5    7       0    <-- evi: 0 wins
+  final_tail_mass      3    1     5    8       0    <-- evi: 0 wins
+
+Head-to-head vs `future_hmean_online`:
+
+    metric                  W /  T  / L
+    mean_exact_cos1        11 / 0 /  6     evi marginally better
+    mean_exact_cos2         3 / 0 / 14     online dominates
+    mean_relerr_sval        9 / 1 /  7     evi marginally better
+    final_exact_cos1        4 / 5 /  8     online ahead
+    final_exact_cos2        5 / 0 / 12     online dominates
+    final_tail_mass         3 / 0 / 14     online dominates
+    elapsed                 0 / 0 / 17     online ~13× faster
+
+The slot-2 carry is decisively worse than `future_hmean_online`'s
+discrete pool pick across nearly every matrix family.
+
+
+5. Per-block dynamics — two failure regimes
+--------------------------------------------
+
+Pattern A — STEADY DIVERGENCE (static-cex archetype)
+
+    block:   1     6     12    20    31
+    comb_e2: 0.17  0.27  0.50  0.71  0.91   monotonic climb
+    evi_e2:  0.19  0.22  0.27  0.32  0.27   plateaus near 0.27
+    gap:    -0.01 +0.05 +0.23 +0.39 +0.64
+
+  evi finds a per-block balanced direction at every block; that
+  direction drifts every block (no carry through state); over 31
+  blocks comb's slot-2 mass accumulates while evi's flat-rotates.
+  Same pattern occurs on rates-cross-currency and macro-factor-panel
+  in milder form.
+
+Pattern B — EPISODIC CRASHES (well-conditioned matrices)
+
+  options-vol-surface:    b3 (gap 0.09), b5 (0.72), b9 (0.49),
+                          b27 (0.65), b31 (0.31)
+  execution-cost-slippage: b1 (0.13), b20 (0.75!), b21 (0.41), b22 (0.29)
+  realized-vol-corr:      b7 (0.18), then oscillates 0.95–0.99
+  stat-arb-spreads:       b25 (0.46) one-block dropout
+  intraday-liquidity-shape: b20 (0.09)
+
+  Optimizer occasionally lands at a non-signal local maximum; that
+  vector goes through the SVD reframe into state; the next 1–4 blocks
+  recover via the carry. Crash points are matrix-specific and look
+  random (no systematic block index).
+
+Pattern C — MIXED-TAIL FAMILY (counter to expected: evi BEATS comb on slot 2)
+
+  mixed-tail-sharp:
+    block:    1    8    12   20   31
+    comb_e2: 0.02 0.06 0.07 0.08 0.03    flat-zero throughout
+    evi_e2:  0.03 0.15 0.28 0.28 0.28    crosses comb at block 8
+    onl_e2:  0.05 0.17 0.44 0.65 0.85    online keeps climbing
+
+  Same shape on mixed-tail-balanced (final 0.04/0.17/0.44 c/e/o)
+  and mixed-tail-soft (0.11/0.23/0.02 — mixed-tail-soft is the
+  one matrix where online itself is bad, and evi sits between comb
+  and online in the wrong direction).
+
+  evi extracts ~30% of online's slot-2 mass on these matrices.
+  It carries some signal — visibly more than comb — but plateaus
+  early and oscillates rather than monotonically climbing.
+
+Implication: the score correctly identifies that slot-2 should
+have non-trivial sketch + future-window mass (evi's u_g2 is ≈0.45
+where comb's is ≈0). But the SPECIFIC direction picked is not the
+one that carries to V_exact[:,1] under the rank-2 SVD reframe.
+
+
+6. Why the score isn't "the right thing to optimize"
+-----------------------------------------------------
+
+Hypotheses to consider in the redesign (each may explain part of
+the gap):
+
+a) PER-BLOCK GREEDY DOES NOT IMPLY MULTI-BLOCK CARRY.
+   evi_best at block k has high HM_evi on (sketch_k, A_cur_k, A_fut_k)
+   but HM_evi(v_chosen at block k+1) on the NEXT (sketch, cur, fut)
+   triple is unrelated. The trajectory shows v jumping around the
+   sphere while comb's "naively greedy" pick happens to align with
+   a slowly-changing signal direction.
+
+b) SKETCH WEIGHT w_sk = r = 2 IS TOO SMALL TO PIN SLOT-2.
+   With w_g1 = w_g2 = 32 and w_sk = 2, the sketch term contributes
+   only 3% of the HM denominator at parity. The optimizer can dump
+   u_sk to ~0.05 (from 0.45 baseline) at almost zero cost as long
+   as u_g1 ≈ u_g2 ≈ 0.45. That's exactly what evi_best does on the
+   mixed-tail-sharp diagnostic at every block. Increasing w_sk
+   penalises low u_sk but also pulls evi back toward signal directions
+   the sketch already encodes — which is the carry the slot-2 search
+   is supposed to find.
+
+c) raw_sk WEIGHTS THE RANK-r SKETCH, NOT A_seen.
+   ||A_sketch v||² = ||state["s"] · (state["V"]^T v)||² uses only the
+   top-r summary of past data. If V_exact[:,1] has small overlap with
+   state["V"], raw_sk is small even if A_seen·V_exact[:,1] is large.
+   The c_sk = N_sk / ||A[:N_sk]||_F² normalization assumes the sketch
+   represents A_seen on average — it does not on directions outside
+   state["V"]'s span.
+
+d) relH1 IS A FLATNESS GUARD ON A_cur ONLY, NOT A CARRY OBJECTIVE.
+   It penalises spike-row alignment in the current block but doesn't
+   reward consistency with state["V"]. On residual-spiky-shocks and
+   risk-residual-panel, relH1 of oracle_v?_proj drops to 0.42–0.55
+   (spike-aligned) while evi's pick has relH1 0.99 — the score
+   structurally rejects the oracle on these matrices.
+
+e) NO ORTHOGONALITY-TO-CARRY TERM.
+   The score is invariant under v → -v and across the orthogonal
+   complement of v in span(A_sketch ∪ A_cur ∪ A_fut). Two distinct
+   v's with the same u_sk, u_g1, u_g2 are equivalent under the score.
+   If we want v to specifically carry the second principal direction
+   of M_gain (which is what online's rank-2 SVD reframe rewards),
+   the score is missing that term.
+
+f) ONLINE'S DISCRETE POOL HAPPENS TO INCLUDE q2-LIKE CANDIDATES.
+   `future_hmean_online` ranks {opt2, q2_vs_q1oracle, mgain_deflated_svd,
+   block_complement, prev_opt2}. q2_vs_q1oracle and mgain_deflated_svd
+   are explicitly second-singular-direction proposals. evi optimizes
+   over a continuous space with these as warm starts but the gradient
+   ascent moves AWAY from them toward the HM_evi optimum — i.e. the
+   score actively rejects the q2 direction in favor of mass-balanced
+   alternatives.
+
+
+7. What's locked vs what's open
+-------------------------------
+
+LOCKED (don't change):
+
+  - Slot 0 selection: combined-greedy via entropy_iter_basis_forget.
+  - State carry: rank-2 SVD reframe of [V_default[:,0], chosen_v2]
+    in M_gain, then make_state.
+  - Per-block geometry: half_win=32, rank=2, B_search ⊥ V_default[:,0]
+    in rowspan(A_sketch ∪ A_cur ∪ A_fut).
+  - Inputs available to the objective: A_sketch (state["s"]·state["V"].T),
+    A_cur, A_fut, V_default[:, 0]. NO A[:sk_end], NO V_exact, NO
+    cumulative score history beyond what state encodes.
+  - Existing diagnostic optimizer (`optimize_future_hmean_in_basis`,
+    `optimize_combination_in_basis`) — those are reused; redesign
+    should be pluggable through the same monkey-patch path.
+
+OPEN (degrees of freedom):
+
+  - Choice of objective function in v (the score itself).
+  - Constraint set (sphere only? Stiefel pair (V_default[:,0], v)?
+    intersected with span of state["V"]?).
+  - Search basis B_search and warm starts.
+  - Whether to use a discrete pool, a continuous optimum, or a hybrid.
+  - Whether to integrate state ("how does the candidate v look against
+    state["V"]?") explicitly into the objective.
+  - Optimization budget per block (fewer restarts → speed, more
+    restarts → quality).
+
+
+8. Concrete redesign directions to try
+---------------------------------------
+
+D1. RAISE w_sk WITH STATE FIDELITY.
+    w_sk(k) = r · (||V_carried[:,:r]^T V_default[:,:r]||_F² / r)
+    Soft-gate by cross-block agreement (open question §8 of the
+    original instructions). When state and current local frame
+    agree, weight the sketch heavily; when they don't, treat it as
+    a noisy stale prior. Predicted effect: pushes evi back toward
+    state["V"]'s span when it's reliable.
+
+D2. ADD A "CARRY" TERM PENALISING ORTHOGONALITY TO state["V"].
+    score(v) = HM_evi(v) · relH1(v) · max(state["V"]^T v, ε)
+    Or a softer version:
+      align_state(v) = (||state["V"]^T v||² + δ) / (1 + δ)
+    This explicitly rewards v's that the sketch already encodes —
+    the missing carry term. Risk: degenerates to "always pick the
+    state direction" if too strong; tune δ.
+
+D3. SCORE A PAIR (v0, v1) JOINTLY (Stiefel rank-2).
+    Replace per-v sphere optimization with joint optimization over
+    a 2-frame W ∈ R^{n×2}. Objective: HM_evi extended to the pair
+    (e.g. min over directions in span(W) of u_k, harmonic-mean'd
+    with weights; or rank-2 trace formulation). This is the
+    `future_hmean_online_joint` policy's motivation but with the
+    HM-evidence target instead of the pool-discrete one.
+
+D4. REPLACE relH1(v) ON A_cur WITH relH ON A_sketch ∪ A_cur.
+    Open question §8 of the original instructions. Rewards a
+    candidate that is flat across the sketch's encoded mass too,
+    not just the next 32 rows. Changes the gradient — easy.
+
+D5. MULTI-BLOCK LOOKAHEAD.
+    raw_g_future = ||A[mid:mid + K·N_block] v||² for K ∈ {2, 4, 8}.
+    Already raised in §8. Increases stability of per-block target
+    (smooths over the next several windows) at cost of needing
+    K·N_block-row lookahead. The benchmark currently allows
+    K=1; pushing to K=2 with the same harness is straightforward.
+
+D6. DISCRETE-CONTINUOUS HYBRID.
+    Run online's pool ranker first to pick a "continuous start";
+    polish with a few iters of HM-evidence ascent; accept the
+    polished vec only if HM_evi(polished) > HM_evi(start) by a
+    structural margin and align(polished, online's pick) > τ.
+    Cheaper than 24 random restarts; biases toward online's
+    known-good directions.
+
+D7. SCORE THE STATE-PROJECTED VECTOR INSTEAD.
+    Compute v_proj = state["V"] · (state["V"]^T v) and define
+    score on v_proj rather than v directly. Forces the slot-2
+    objective into the carried subspace; loses the ability to
+    discover new directions. Worth one ablation cell.
+
+
+9. Files to read first
+----------------------
+
+  - summary/hmean_evidence_score_instructions.txt
+      original score derivation, gradient, optimizer scaffold,
+      open-question list (§8). Read this before changing the score.
+
+  - summary/hmean_evidence_score_synthesis.txt
+      per-block diagnostic results — confirms current score is
+      well-optimized; lists per-matrix u_sk / u_g1 / u_g2 / HM_evi
+      for the chosen v at blocks 2, 6, 12.
+
+  - summary/bench_matrix_sweep_evidence/synthesis.txt
+      streaming benchmark write-up — head-to-head vs the 4 baseline
+      policies on 17 matrices.
+
+  - summary/bench_matrix_sweep_evidence/aggregated_table.txt
+      per-matrix per-metric raw numbers for all 5 policies.
+
+  - hmean_evidence_score.py
+      score implementation (`hm_evi_value_grad`), per-block
+      diagnostic driver, monkey-patched optimizer adapter.
+
+  - half_window_sliding_hmean_experiment.py (search "future_hmean_evidence")
+      streaming policy wiring — the entry point any redesigned
+      objective will replace.
+
+  - future_hmean_optimizer_diagnostic.py
+      shared sphere-projected ascent + B_search machinery.
+      DO NOT MODIFY (per §7 of the original instructions); reuse
+      via the monkey-patch trick `optimize_hm_evi_in_basis` uses.
+
+
+10. Sanity checks any redesign should pass
+-------------------------------------------
+
+  S1. Gradient check (same protocol as
+      `hmean_evidence_score.py::gradient_check`): max relative error
+      < 1e-8 in float64, 20 sampled coords, h = 1e-6, SAME indices
+      for FD and analytic readout.
+
+  S2. Per-block diagnostic on mixed-tail-sharp at blocks 2, 6, 12:
+      score(redesigned_best) >= score(oracle_v?_proj) - epsilon for
+      epsilon = 0.01. If the redesigned score makes the projected
+      oracles unreachable, the streaming carry will not match online.
+
+  S3. Streaming sliding-mode run on at least these three matrices
+      before scaling to 17:
+        mixed-tail-sharp     (counterexample tail)
+        static-cex           (steady divergence regime)
+        etf-basket-basis     (oracle_v1_proj structurally
+                              unreachable in slot-2 search; sanity
+                              that the redesigned slot-2 still
+                              tracks oracle_v2_proj here)
+
+      Acceptance: final_exact_cos2 ≥ 0.6 on the first two,
+      final_exact_cos2 ≥ 0.9 on etf-basket-basis. Wall-clock
+      ≤ 10 s/matrix.
+
+  S4. Spiky-residual regression: residual-spiky-shocks +
+      risk-residual-panel should NOT regress vs the current evi
+      numbers (mEx1 0.31 / 0.19, fEx2 0.23 / 0.07). These are
+      the matrices where iSVD already wins; the slot-2 redesign
+      shouldn't make them worse.

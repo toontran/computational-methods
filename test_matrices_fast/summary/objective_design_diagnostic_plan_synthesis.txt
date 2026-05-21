@@ -1,0 +1,512 @@
+Objective-design diagnostic synthesis
+=====================================
+
+Date: 2026-04-23
+
+Purpose
+-------
+Systematically list what we need to check next before changing the streaming
+objective, using the agent reports:
+
+  summary/objective_design_agent_score_rank.txt
+  summary/objective_design_agent_block_evidence.txt
+  summary/objective_design_agent_tail_rowspace.txt
+  summary/objective_design_agent_mixture_memory.txt
+  summary/objective_design_agent_matrix_suite.txt
+
+Core thesis
+-----------
+The current objective is trying to predict future usefulness from local blocks
+and a restricted sketch. Without a structural global assumption, the local
+optimum does not have to be the true oracle projection. The only defensible
+oracle signal is probabilistic: as more randomized rows arrive, a true oracle
+direction should receive repeated support more consistently than fake
+high-score tail directions.
+
+Current evidence says the raw combined score is a poor primary separator:
+
+  - selected fake/tail directions can be overestimated by the carried sketch B;
+  - score decay is too noisy to distinguish fake from oracle cleanly;
+  - raw score can reject QR-oracle candidates even when current-block energy
+    favors the oracle candidate;
+  - once a fake second slot enters memory, the next objective inherits a
+    biased competition rather than starting from oracle-vs-fake neutrality.
+
+The next diagnostic pass should therefore separate:
+
+  1. fresh block evidence,
+  2. carried-sketch evidence,
+  3. oracle/tail geometry,
+  4. row-space support,
+  5. rank/slot identity movement,
+  6. tangent-gradient/innovation directions.
+
+
+Immediate checks to run
+-----------------------
+
+1. Score overestimation check
+
+For every candidate v and block t, log:
+
+  score_t(v)
+  actual_seen_t(v) = ||A_seen,t v||_2
+  current_gain_t(v) = ||B_t v||_2
+  score_t(v) / actual_seen_t(v)
+  score_t(v) - actual_seen_t(v)
+
+Current answer:
+
+  Early overestimation is real. In the second-slot dump, the optimizer's opt2
+  often beats q2-like candidates under actual_B, but collapses under zero_B.
+  Example mixed-tail-sharp:
+
+    block 2: opt2 actual_B=3.300717, q2_vs_q1oracle actual_B=3.028255
+             opt2 zero_B=1.642572,   q2_vs_q1oracle zero_B=2.254454
+
+    block 3: opt2 actual_B=2.696395, q2_vs_q1oracle actual_B=2.285385
+             opt2 zero_B=0.897058,   q2_vs_q1oracle zero_B=1.307932
+
+Interpretation:
+
+  The apparent strength of the fake direction is largely a carried-sketch
+  effect. It is not enough to know that score is large; we need to know whether
+  the score comes from fresh rows, old sketch rows, entropy, or tail geometry.
+
+
+2. Score decay / rate-of-change check
+
+For every candidate v, log:
+
+  delta_score_t(v) = score_t(v) - score_{t-1}(v)
+  score_ratio_t(v) = score_t(v) / score_{t-1}(v)
+  gap_to_oracle_t = score_t(v_oracle) - score_t(v_fake)
+
+Current answer:
+
+  No clean evidence yet that fake directions decay faster than oracle
+  directions. Both opt2 and q2-like candidates decay over the stream, and the
+  fake/oracle score gap can shrink without giving a reliable decision rule.
+  In mixed-tail-sharp, opt2 and q2_vs_q1oracle are still close by block 32:
+
+    opt2 actual_B=0.860594
+    q2_vs_q1oracle actual_B=0.830316
+
+Interpretation:
+
+  Score rate-of-change should be logged, but not used as the main objective
+  signal until proven otherwise.
+
+
+3. Rank/order and slot-identity movement check
+
+For every block, log:
+
+  rank_t(v)
+  rank_gain_t(v)
+  |v2_t^T v2_{t-1}|
+  ||V_t V_t^T v2_{t-1}||
+  principal cosines between V_t and V_{t-1}
+
+Current answer:
+
+  Rank/order movement is more informative than score deltas, especially when a
+  carried second slot changes identity while its score remains competitive.
+  Examples from the score-rank agent:
+
+    mixed-tail-sharp block 7:
+      prev_opt2_dot_curr_opt2=0.174288
+      prev2_score_ratio=0.881487
+
+    residual-spiky-shocks block 2:
+      survive_v2=0.070622
+      prev2_score_ratio=0.890534
+
+Interpretation:
+
+  A high score ratio can hide a slot identity change. The objective-design
+  diagnostic should track whether the same direction is being carried, whether
+  it rotates toward oracle, and whether its rank improves relative to q2-like
+  candidates.
+
+
+4. Current-block oracle-vs-fake evidence
+
+For each block, compare:
+
+  ||B_t v_oracle||_2
+  ||B_t v_fake||_2
+  gain2_oracle - gain2_fake
+  score_oracle - score_fake
+  win_rate over blocks
+
+Current answer:
+
+  This is the strongest observed separator. In
+  summary/second_slot_scores_failures_raw.txt, using actual_B and comparing
+  q2_vs_q1oracle against opt2:
+
+    mixed-tail-sharp:
+      gain2 wins 32/32
+      score wins 18/32
+
+    diffuse-diffuse:
+      gain2 wins 32/32
+      score wins 0/32
+
+Interpretation:
+
+  Fresh current-block energy is the earliest reliable scalar signal found so
+  far. It should be the first gate in the diagnostic. Full score should be
+  secondary because it is contaminated by carried sketch state.
+
+
+5. Pairwise ordering check
+
+For every oracle/fake pair, log:
+
+  score_t(o) - score_t(f)
+  gain2_t(o) - gain2_t(f)
+  rank_t(o) - rank_t(f)
+  alignment_t(o) - alignment_t(f)
+
+Current answer:
+
+  Pairwise current-block gain separates earlier than pairwise score. The
+  q2_vs_q1oracle candidate can have stronger fresh-block response while losing
+  the full score. q2_vs_v1opt is much weaker, so the orthogonalization frame is
+  part of the failure mode.
+
+Interpretation:
+
+  Always compare both q2_vs_q1oracle and q2_vs_v1opt. If q2_vs_q1oracle wins
+  but q2_vs_v1opt loses, the objective is partly failing because the selected
+  v1 frame blocks the useful q2 direction.
+
+
+6. Tail-origin check
+
+For every selected direction, log:
+
+  oracle_alignment(v) = ||V_oracle^T v||_2^2
+  tail_alignment(v) = 1 - oracle_alignment(v)
+  tail component persistence across blocks
+
+Current answer:
+
+  In failing cases, the fake second slot is mostly a persistent tail basin, not
+  an oracle-supported direction. Mixed-tail-sharp evidence:
+
+    final oracle cos = 0.999936, 0.167467
+    final tail_mass = 0.561206
+
+  Consecutive-tail diagnostics show persistent selected tail components:
+
+    mixed-tail-sharp blocks 3-32:
+      prev_cos_min = 0.843769
+      tail_prev_min = 0.825613
+      oracle_cos_min = 0.380551
+
+Interpretation:
+
+  The fake direction is not a one-off sample glitch. The objective can settle
+  into a stable tail-heavy basin and keep it alive through the sketch.
+
+
+7. Row-space mismatch check
+
+For every candidate, log:
+
+  seen_row_alignment_t(v)
+  current_row_alignment_t(v)
+  future_row_alignment_t(v)    diagnostic only
+
+Current answer:
+
+  The fake direction is not simply a current-block row-space artifact. In
+  mixed-tail-sharp, opt2 aligns with the seen row space while q2 aligns with
+  the current row space:
+
+    block 12:
+      opt2 seen/current/future = 0.944911 / 0.327943 / 0.018432
+      q2   seen/current/future = 0.339968 / 0.941336 / 0.030313
+
+    block 32:
+      opt2 seen/current = 0.993918 / 0.122503
+      q2   seen/current = 0.145126 / 0.989631
+
+Interpretation:
+
+  Row-space mismatch matters, but the fake is better described as a historical
+  seen-row basin amplified by memory, not as a narrow current-block artifact.
+
+
+8. Block consistency / win-rate check
+
+For each candidate, log:
+
+  per-block current_gain_t(v)
+  win_rate(v)
+  mean and variance of current_gain_t(v)
+  coefficient of variation
+
+Current answer:
+
+  Win rate is more useful than raw score change. The q2_vs_q1oracle gain2
+  win-rate was 32/32 in both parsed mixed-tail-sharp and diffuse-diffuse
+  segments, while the full-score win-rate was much weaker.
+
+Interpretation:
+
+  A true oracle direction should win repeated fresh-block evidence under row
+  randomization. The diagnostic should report this as a primary statistic.
+
+
+9. Candidate mixture / innovation check
+
+For selected V, oracle q2, and fresh tangent gradients, log:
+
+  ||P_span(V) q2||
+  ||P_span(V, G_new) q2||
+  ||P_span(V, g_total_tan) q2||
+  best score in span(V)
+  best score in span(V, innovation)
+
+Current answer:
+
+  Retained rank-2 memory alone is not enough. The live
+  debug_combined_objective_probe.py run showed that a one-dimensional outside
+  move improved the score:
+
+    best in-subspace oracle score = 3.5243978717
+    rotate_q2_toward_exact_v3 total = 3.5570236713
+
+  The outside component is tied to fresh block evidence and high-leverage rows.
+
+Interpretation:
+
+  Scalar score history cannot answer how evidence should apply to a future
+  mixture direction. The next memory candidate should carry a small innovation
+  or tangent-gradient subspace.
+
+
+10. Objective failure attribution
+
+For every failure block, classify:
+
+  A. fake has larger actual_B score
+  B. fake wins only because carried B is present
+  C. oracle wins current gain but loses full score
+  D. oracle-like direction loses only after orthogonalization against selected v1
+  E. selected subspace cannot express oracle-2
+  F. fake is persistent tail basin
+  G. entropy/normalization amplifies the fake direction
+
+Current answer:
+
+  The dominant failure pattern is B + C + D + F + G:
+
+    carried B makes opt2 competitive;
+    q2-like candidates often win current gain;
+    the selected frame can block q2;
+    the fake second slot lives in a persistent tail basin;
+    entropy/normalization plus carried sketch state overestimates that basin.
+
+
+Minimum diagnostic table
+------------------------
+For each matrix/block, print one row per candidate:
+
+  matrix
+  block
+  candidate
+  candidate_type              oracle, selected, previous, fake, gradient_augmented
+  score_actual_B
+  score_zero_B
+  score_oracle_B
+  gain2_current
+  actual_seen
+  score_over_actual
+  rank_by_score
+  rank_by_gain2
+  oracle_alignment
+  tail_alignment
+  seen_row_alignment
+  current_row_alignment
+  future_row_alignment        diagnostic only
+  prev_slot_survival
+  win_rate_so_far_gain2
+  win_rate_so_far_score
+
+Candidates to include:
+
+  opt1
+  opt2
+  prev_opt2
+  q2_vs_v1opt
+  q2_vs_q1oracle
+  svd_complement
+  gradient_augmented_best
+  oracle_QR
+
+
+Recommended matrix suite
+------------------------
+
+Minimal next suite:
+
+  1. static-cex
+     Control. Should converge and should expose false positives in any new
+     penalty.
+
+  2. mixed-tail-soft
+     Mild localized-tail stress. Checks when tail localization first starts to
+     bias the objective.
+
+  3. mixed-tail-sharp
+     Strong tail-local competitor. Best current failure case for persistent
+     tail basin and carried-sketch contamination.
+
+  4. residual-spiky-shocks
+     Sparse shock stress. Good for slot identity movement and row-local
+     disturbance.
+
+  5. risk-residual-panel with shuffled rows
+     Realistic residual-panel check. Tests whether fake-vs-oracle separation
+     survives randomized rows outside the synthetic CEX family.
+
+Optional second tier:
+
+  etf-basket-basis with shuffled rows
+  intraday-liquidity-shape with shuffled rows
+  crowded-strategy
+  execution-cost-slippage
+  options-vol-surface
+
+Low-priority for this specific objective-design pass:
+
+  alternative-data-signals
+
+Reason:
+
+  Existing runs suggest it saturates too easily and does not stress the
+  fake-vs-oracle separation mechanism.
+
+
+New matrix structures to design
+-------------------------------
+
+1. Diffuse oracle + localized decoy row spike
+
+  Dense global top-2 oracle directions plus one or two high-leverage rows
+  aligned with a near-orthogonal fake direction.
+
+  Purpose:
+    isolate whether the objective chases a few row responses.
+
+2. Near-tied oracle pair + third fake row-local competitor
+
+  Two nearly equal oracle singular directions and a slightly weaker third
+  direction that is much more row-localized.
+
+  Purpose:
+    separate true top-r subspace from a locally attractive score basin.
+
+3. Tail-fixed / row-space-swept family
+
+  Keep the tail basis and entropy shape fixed, but vary seen/current/future
+  row-space overlap for q2 and opt2.
+
+  Purpose:
+    isolate row-space mismatch.
+
+4. Row-space-matched / tail-swept family
+
+  Force fake and oracle candidates to have similar row-space projection norms,
+  then vary tail concentration and spectral weight.
+
+  Purpose:
+    isolate tail-origin and entropy bias.
+
+5. Oracle-span feasible, QR-frame hostile
+
+  Make the oracle span feasible but make q2_vs_v1opt lose after
+  orthogonalization against selected v1.
+
+  Purpose:
+    isolate frame/orthogonalization failure.
+
+6. Entropy-neutral tail competitor
+
+  Match current gain but flatten or equalize pooled row responses.
+
+  Purpose:
+    isolate the entropy multiplier phi from gain.
+
+
+Objective-design implications
+-----------------------------
+
+Do not yet design the next objective from score decay. The evidence is too
+weak. The stronger design direction is:
+
+  score should be decomposed into old/carry support and fresh support;
+  fresh current-block evidence should be tracked explicitly;
+  directions that repeatedly win fresh-block gain should receive memory support;
+  persistent tail basins should be penalized or at least identified;
+  memory should include a small gradient/innovation subspace, not only scalar
+  score histories.
+
+A possible future objective skeleton is:
+
+  total(v) =
+      combined_score(v)
+    + lambda_fresh * repeated_fresh_support(v)
+    + lambda_rank * rank_improvement_signal(v)
+    + lambda_grad * innovation_memory_support(v)
+    - lambda_tail * persistent_tail_basin_penalty(v)
+    - lambda_over * carried_B_overestimate_penalty(v)
+
+But the next step is diagnostic, not formula tuning.
+
+
+Most useful next implementation
+-------------------------------
+
+Implement one blockwise diagnostic driver:
+
+  objective_design_block_diagnostic.py
+
+Required behavior:
+
+  - run the minimal matrix suite;
+  - support win sizes 16, 32, 64;
+  - compute actual_B, zero_B, and oracle_B scores;
+  - print the minimum diagnostic table above;
+  - compute win rates for score and gain2;
+  - compute row-space alignment for seen/current/future rows;
+  - compute tangent-gradient attribution:
+
+      g_old_tan
+      g_new_tan
+      g_entropy_tan
+      g_total_tan
+      cos(each, direction_to_oracle)
+
+  - test whether span(V_selected, G_innovation) represents q2 better than
+    span(V_selected) alone.
+
+Decision rule after that diagnostic:
+
+  If q2 wins fresh gain repeatedly but loses actual_B score, fix carried-sketch
+  bias or add a fresh-support term.
+
+  If q2 is not expressible in retained V but is expressible after adding fresh
+  tangent gradients, implement innovation-gradient memory.
+
+  If q2_vs_q1oracle wins but q2_vs_v1opt loses, fix candidate framing /
+  orthogonalization before changing the scalar score.
+
+  If fake remains high under zero_B and has high current/future support, it may
+  not be fake; revisit the oracle definition or matrix construction.
+

@@ -1,0 +1,904 @@
+\section*{1. Where we are, and the current goal}
+
+\paragraph{What changed about the objective (read this first).}
+The companion derivation (\texttt{new\_approx\_combined.txt}) builds
+$\operatorname{score}_w(v)$ as a \emph{lower bound} on $\|Av\|_2^2$
+under assumptions (A1), (A2), and $\|N_wv\|_4\le\|Av\|_4$, using only
+data seen through window $w$ (sketch $B$, current rows $A_w$, row
+sample $R$). The argmax of a lower bound is not, in general, the
+argmax of the bounded quantity. The present report changes the
+demand: in the experiments below, with $r=2$, we now ask the score to
+\emph{recover the top two right singular vectors $V_2$ of $A$}, i.e.\
+to be argmax-correct, not just value-correct. We also relax the
+streaming scope to allow a future half-window $A_{\mathrm{fut}}$. So
+before reading on, note the two shifts relative to the derivation:
+\begin{itemize}
+\item \textbf{Argmax-recovery, not lower-bounding.} M1 and M2 below
+are points where the lower-bound's argmax disagrees with $V_2$. M3 is
+the first repair signal for the single-window case where the argmax is
+far from the projected oracle. None of these is a bug in the
+inequality of \texttt{new\_approx\_combined.txt}; they are
+consequences of using a lower bound for a task it was not derived to
+solve.
+\item \textbf{Future rows allowed.} M3 and the replacement family $S_6$
+introduce $A_{\mathrm{fut}}$, the next half-window after the current
+half-window block $A_w$. Thus the sweep treats $A_w$ itself as the
+current half-window and pairs it with the following same-size
+half-window. The original derivation excluded future rows. The
+experiments below add them because the recovery task needs more than
+past and current rows on some matrices.
+\end{itemize}
+
+\paragraph{Recap of the combined score.}
+Specialising to the regime in which the earlier rows are measured at
+the scale of $C_w$ (i.e.\ taking
+$\mathrm{row}(N_w)\!\leftarrow\!\mathrm{row}(C_w)$ in the base of the
+derivation's correction factor, with
+$h_2(N_wv)/\log\mathrm{row}(N_w)$ replaced by
+$h_2(C_wv)/\log\mathrm{row}(C_w)$ in the exponent under (A2)), the
+combined score from the derivation can be written
+\begin{align}
+\operatorname{score}_w(v)
+=\bigl(\|Bv\|_2^2+\|A_wv\|_2^2\bigr)\,\phi_w(v),
+\qquad
+\phi_w(v) :=
+\left(\frac{n}{\mathrm{row}(C_w)}\right)^{
+h_2(C_w v)/(2\log\mathrm{row}(C_w))},
+\end{align}
+where $n$ is the total number of rows of $A$,
+$C_w=(R^\top, A_w^\top)^\top$ stacks the row sample $R$ with $A_w$,
+$h_2(y):=4\log\|y\|_2-4\log\|y\|_4$.
+
+This paragraph introduces a diagnostic normalisation of the entropy
+multiplier used to discuss the claims below; it does not change the
+per-block measurements in Appendix~A, which were collected with the
+implemented multiplier from the derivation's notation at each block.
+Concretely, starting from the
+derivation's
+$(\mathrm{row}(N_w)/n)^{-h_2(C_wv)/(2\log\mathrm{row}(C_w))}$ and
+replacing $\mathrm{row}(N_w)$ by $\mathrm{row}(C_w)$ in that base gives
+$(\mathrm{row}(C_w)/n)^{-h_2/(2\log\mathrm{row}(C_w))}
+=(n/\mathrm{row}(C_w))^{h_2/(2\log\mathrm{row}(C_w))}$, the recap
+form.
+Equivalently, using the identity
+$h_2(y)=-\log(\|y\|_4^4/\|y\|_2^4)$, this is the same object as the
+derivation's $\|C_w v\|_4^{4c_w}\|C_w v\|_2^{-4c_w}$ once the
+substitution is applied; the $(n/\mathrm{row}(C_w))^{\cdot}$ form is just the
+entropy multiplier rewritten so its base is $\ge 1$, with the sign
+of the exponent absorbing the sign of $c_w$. Since $h_2\ge 0$
+always and $n\ge \mathrm{row}(C_w)$, the base
+$n/\mathrm{row}(C_w)\ge 1$ and $\phi_w\ge 1$ in this
+recap form, in agreement with the derivation's
+$(\mathrm{row}(N_w)/n)^{-h_2/\cdots}$ (base $\le 1$, negative
+exponent). The M1, M2, and M3 measurements below do not depend on
+this substitution, and the empirical evidence in
+Appendix~A is collected at intermediate blocks where
+$\mathrm{row}(N_w)<n$ and $c_w<0$ in the derivation's notation.
+
+\paragraph{Notation used by the diagnostics.}
+Throughout this report, ``oracle'' (the top-$r$ right singular vectors
+of $A$) is a global object defined from the full matrix; the score
+sees only window-local data. ``Deflation'' below means orthogonal
+projection of the search direction onto the orthogonal complement of
+the previously accepted $\hat v^{(\sigma)}_j$ ($j<i$): identical to the
+constraint $\hat v^{(\sigma)}_j{}^\top v=0$ in the derivation
+(\texttt{new\_approx\_combined.txt}, eq.~for $v_j$). It does \emph{not}
+mean deflating $A$ itself. Likewise, $V_{\mathrm{state}}$ refers to
+the right factor $V$ of the carried sketch $B=SV^\top$ from the
+derivation (the columns are $v_1,\ldots,v_r$ stored at the start of
+the window); $\mathrm{span}(V_{\mathrm{state}})=\mathrm{rowspan}(B)$.
+For any window-local search that uses $B$, $A_w$, and
+$A_{\mathrm{fut}}$, set
+\begin{align}
+B_{\mathrm{union}}:=\mathrm{rowspan}\!\begin{pmatrix}B\\ A_w\\ A_{\mathrm{fut}}\end{pmatrix}\subset\mathbb R^d.
+\end{align}
+This is the search subspace available from those three matrices.
+Directions are extracted greedily: let $\hat v^{(\mathrm{combined})}_i$
+denote the
+$i$-th direction, defined by
+\begin{align}
+\hat v^{(\mathrm{combined})}_i \in
+\arg\max_{v \in \mathbb S^{d-1},\ v \perp \hat v^{(\mathrm{combined})}_j\, \forall j < i}
+\operatorname{score}_w(v).
+\end{align}
+The ``oracle'' is the top-$r$ right singular vectors $V_r$ of $A$;
+$\hat v^{(\mathrm{oracle\,proj})}_i$ is the projection of the $i$-th
+oracle column $v_i^\star$ onto the feasible set actually used at slot
+$i$ --- i.e.\ onto the orthogonal complement of the previously
+accepted directions $\{\hat v^{(\sigma)}_j\}_{j<i}$ and, for a
+window-local search, also onto $B_{\mathrm{union}}$. We compare
+against $\hat v^{(\mathrm{oracle\,proj})}_i$
+rather than $v_i^\star$ because no window-local score can possibly
+recover a direction outside its own search domain; the projected
+oracle is the strongest target the score is allowed to be measured
+against.
+
+\paragraph{Two failures and one repair signal.}
+Probing on a small set of test matrices identified two mechanisms by
+which the combined score loses $\hat v^{(\mathrm{combined})}_2$ (and
+$\hat v^{(\mathrm{combined})}_r$), plus one future-window signal that
+repairs the leading-direction single-window failure.
+\begin{itemize}
+\item \textbf{(M1) $\phi_w$ ranks the combined argmax above the
+oracle.} On \texttt{mixed-tail-sharp} at block 1, the score gap
+between $\hat v^{(\mathrm{combined})}_2$ and
+$\hat v^{(\mathrm{oracle\,proj})}_2$ sits entirely inside $\phi_1$
+($5.66$ vs.\ $3.70$, energy term flat at $0.819$--$0.833$). See
+Appendix~A.1. \emph{Reconciliation with the derivation.} $\phi_w$
+enters the lower bound $(\star)$ via assumption (A2), which equates
+the (normalised) entropy of $C_w v$, $N_w v$, and $A v$. The
+inequality $\|Av\|_2^2 \gtrsim \|N_w v\|_2^2 \cdot
+(\mathrm{row}(N_w)/n)^{-h_2(N_w v)/(2\log\mathrm{row}(N_w))}$ is
+correct as a value bound under (A2); M1 simply observes that
+\emph{argmax}-ranking the bound is not the same as argmax-ranking
+$\|Av\|_2^2$. In the recap form
+$\phi_w=(n/\mathrm{row}(C_w))^{h_2(C_wv)/(2\log\mathrm{row}(C_w))}$,
+larger $\phi_w$ means larger $h_2(C_wv)$, equivalently a
+\emph{lower} $\ell_4/\ell_2$ concentration ratio. On this block the
+score-favoured direction has the larger $\phi_w$ and beats the oracle
+in the bound while contributing nothing extra to $\|Av\|_2^2$
+globally.
+\item \textbf{(M2) The sketch term aligns
+$\hat v^{(\mathrm{combined})}_2$ with $\mathrm{span}(V_{\mathrm{state}})$.}
+Once $\|Bv\|_2^2 \gg \|A_wv\|_2^2$ (empirically once
+$\rho_{\mathrm{past}}:=\|A_{1:w-1}\|_F^2/\|A_w\|_F^2\gtrsim 5$;
+this $5$ is just where the energy ratio empirically tips on the test
+matrices, not a theorem), the energy term reduces to
+$\|Bv\|_2^2$, whose argmax over the deflation complement lies in
+$\mathrm{span}(B)$. This is a directional dominance claim on the
+retained sketch subspace, not a claim that $\|B\|_F^2$ matches the
+full-history Frobenius norm; Appendix~A.2 reports both scales
+separately. At the last measured block, block 31, on
+\texttt{mixed-tail-sharp},
+$\mathrm{state\_align}(\hat v^{(\mathrm{combined})}_2)=0.989$ vs.\
+$\mathrm{state\_align}(\hat v^{(\mathrm{oracle\,proj})}_2)=0.293$; a
+joint Stiefel-2 optimisation returns the same point. See
+Appendix~A.2. \emph{Reconciliation with the derivation.}
+\texttt{new\_approx\_combined.txt} justifies $B=\Sigma V_{\mathrm{new}}^\top$
+precisely because $\|Bv\|_2=\|P_U M_w v\|_2$ on
+$\mathrm{span}(V_{\hat{}})$: the sketch is \emph{designed} to make
+the energy term faithfully track the carried earlier-row sketch on the retained
+right span. M2 is therefore not a defect of $B$. It is the
+consequence of demanding argmax-recovery from a score whose energy
+term, by construction, tracks $\mathrm{span}(V_{\mathrm{state}})$
+rather than $V_r(A)$ once $\rho_{\mathrm{past}}$ grows.
+\item \textbf{(M3) Add future rows to move the argmax toward the
+oracle projection.}
+At block 1 ($B=0$) on \texttt{diffuse-diffuse},
+$\hat v^{(\mathrm{combined})}_1$ has $\cos^2 < 0.05$ against either
+exact oracle column and $0.096$ against
+$\hat v^{(\mathrm{oracle\,proj})}_1$, while an oracle-warm
+$\mathrm{HM}_2(u_{\mathrm{cur}},u_{\mathrm{fut}})$ isolation score
+reaches $0.999$ against
+$\hat v^{(\mathrm{oracle\,proj})}_1$. See Appendix~A.3. Thus M3 is
+the repair signal for this failure: the current argmax is not near
+the projected oracle because the score sees only one half-window when
+$B=0$. Adding $A_{\mathrm{fut}}$ lets the score test the stationarity
+condition used in \texttt{new\_approx\_future\_hmean\_online.txt}:
+the current and future per-row gains should agree for a real
+population direction. The harmonic mean then penalises a direction
+that is strong on $A_w$ but weak on $A_{\mathrm{fut}}$.
+Uniform-row-space matrices like \texttt{diffuse-diffuse} show why
+earlier rows plus current rows alone cannot distinguish population
+directions from draw-specific directions.
+\end{itemize}
+Each claim rests on per-block measurements; the detailed numbers are
+in Appendix~A.
+
+\paragraph{The common thread (working hypothesis).}
+The score can prefer directions whose window-local evidence looks
+strong but is not oracle-identifying. M1 and M2 are failure modes of
+the combined score. M3 is the corresponding fix direction for the
+single-window argmax failure.
+In M1 the score gap is in $\phi_w$, which rewards the visible
+$h_2(C_wv)$ profile even when it does not correspond to
+extra global $\|Av\|_2^2$ energy. In M2 the energy term is dominated by
+$\|Bv\|_2^2$ once $\|Bv\|_2^2\gg\|A_wv\|_2^2$, so the argmax tracks the
+leading directions of the carried sketch. M3 adds
+$A_{\mathrm{fut}}$ so a candidate direction must have support in the
+current and future half-windows, which moves the block-1 argmax back
+toward the projected oracle on \texttt{diffuse-diffuse}.
+
+What the newer forward-replication diagnostics reject is only the
+narrower row-concentration version of this hypothesis. On the mixed-tail
+failure set, the score-favoured directions do \emph{not} consistently
+have elevated current-window top-row share relative to the oracle, so the
+failure is not explained by a few rare rows in $A_w$ creating a spike that
+then disappears on $A_{\mathrm{fut}}$. The verified signatures are instead
+current--future energy imbalance ($u_{\mathrm{cur}}\gg u_{\mathrm{fut}}$
+for the score-favoured direction while the oracle keeps
+$u_{\mathrm{cur}}\approx u_{\mathrm{fut}}$) and carry pinning
+($\mathrm{state\_align}$ near one for the score-favoured direction).
+Thus the failure is unstable visible evidence, not current-window row
+spikes alone.
+
+\paragraph{The replacement family $S_6$.}
+\textbf{Status note.} Unlike
+$\operatorname{score}_w$, the family
+$S_6$ below is \emph{not} the maximiser of any inequality on
+$\|Av\|_2^2$; it has no analogue of (A1)/(A2) and no lower-bound
+theorem behind it. It is a heuristic engineered to be
+argmax-correct on representative test matrices. The reader should
+not try to map $u_{\mathrm{sk}},u_{\mathrm{cur}},u_{\mathrm{fut}}$
+back onto $\|Bv\|_2^2+\|A_wv\|_2^2$ and $\phi_w$: we are no longer
+in the lower-bound framework. M1 and M2 motivate leaving the
+combined score; M3 motivates adding the future-window stationarity
+test. Together they led to a value-only,
+analytically differentiable family that
+(i) sees a future half-window $A_{\mathrm{fut}}$ from after the
+current one, (ii) avoids entropic gating, and (iii) uses a
+rank-aware sketch term that does not collapse to
+$\mathrm{span}(V_{\mathrm{state}})$. This was the best previous
+operational replacement before the frame-level sufficiency sweep in
+\S2--\S3; it is a baseline under diagnosis here, not a surviving
+recommendation. The row sample $R$ used in the
+derivation's $C_w=(R^\top,A_w^\top)^\top$ is intentionally not a slot
+in these replacement scores: the replacement line discards row-sample
+entropy evidence and substitutes current--future replication evidence
+instead. The score is
+\begin{align}
+S_6(v):=\mathrm{HM}_3\!\bigl(u_{\mathrm{sk}}(v),\,u_{\mathrm{cur}}(v),\,u_{\mathrm{fut}}(v)\bigr),
+\end{align}
+where each slot is a normalised Rayleigh quotient
+\begin{align}
+u_{\mathrm{sk}}(v):=\frac{\|Bv\|_2^2}{w_{\mathrm{sk}}},\qquad
+u_{\mathrm{cur}}(v):=\frac{\|A_wv\|_2^2}{\|A_w\|_F^2},\qquad
+u_{\mathrm{fut}}(v):=\frac{\|A_{\mathrm{fut}}v\|_2^2}{\|A_{\mathrm{fut}}\|_F^2},
+\end{align}
+and $\mathrm{HM}_3$ is the harmonic mean
+$3/(u_{\mathrm{sk}}^{-1}+u_{\mathrm{cur}}^{-1}+u_{\mathrm{fut}}^{-1})$.
+Greedy extraction yields $\hat v^{(S_6)}_i$ analogously to
+$\hat v^{(\mathrm{combined})}_i$. The harmonic mean's smallest-link
+enforcer rewards directions that \emph{simultaneously} have non-trivial
+$\|Bv\|_2^2$, $\|A_wv\|_2^2$, and $\|A_{\mathrm{fut}}v\|_2^2$ in the
+sketch, current, and future windows --- ruling out $A_w$-only and
+sketch-only directions in one shot. The weight $w_{\mathrm{sk}}$ is the
+rank-$r$ truncation of $\|B\|_F^2$, i.e.\ $w_{\mathrm{sk}}:=\sum_{j=1}^r s_j^2$
+where $s_1\ge\cdots\ge s_r$ are the singular values stored in the
+carried sketch $B=SV^\top$; this is the normalising constant that places each
+$u_X$ in $[0,\sim 1]$.
+
+\paragraph{The recent line of work: balancing $\mathrm{HM}_3$, and
+why it hit a wall.}
+$\mathrm{HM}_3$'s smallest-link property only fires correctly if the
+oracle direction itself has roughly balanced
+$(u_{\mathrm{sk}},u_{\mathrm{cur}},u_{\mathrm{fut}})$. The oracle is
+far from balanced where $S_6$ fails (the ratio
+$u_{\mathrm{sk}}/u_{\mathrm{cur}}$ at the last measured block,
+block 31, runs from $1.74\times$
+to $412\times$ across the five matrices listed in Appendix~A.4's
+slot-ratio table), so we tried a
+per-direction reweighting --- the ``$E_2$ weighting'' --- that, inside
+$u_{\mathrm{sk}}(v)=\|Bv\|_2^2/w_{\mathrm{sk}}$ only (the
+$u_{\mathrm{cur}}$ and $u_{\mathrm{fut}}$ slots are unchanged),
+replaces the scalar $w_{\mathrm{sk}}$ with $\sigma_{\ell(v)}^2$ for
+$\ell(v):=\arg\max_{j\le r}(v_j^\top v)^2$ the sketch-direction index
+most aligned with $v$ (here $v_j$ are the columns of
+$V_{\mathrm{state}}$ and $\sigma_j=s_j$ the corresponding stored
+singular values). The audit metric reports
+success ($E_2$ drives the oracle's max/min ratio across the three
+slots $(u_{\mathrm{sk}},u_{\mathrm{cur}},u_{\mathrm{fut}})$ inside
+$2.4\times$ on the regression matrices --- the three matrices on which the streaming
+benchmark regressed under $S_6$, namely \texttt{diffuse-diffuse},
+\texttt{residual-spiky-shocks}, and \texttt{mixed-tail-soft}; this
+trio is the working set for §1's landscape probe and Appendix~A.4) but the streaming benchmark \emph{regresses}
+sharply on the same matrices, and a landscape probe at the last
+measured block, block 31, finds
+the cause: under $E_2$, the score's argmax sits strictly above the
+score at the oracle by $+0.041$, $+0.047$, $+0.006$ on
+\texttt{diffuse-diffuse}, \texttt{residual-spiky-shocks},
+\texttt{mixed-tail-soft}. The gap survives a high-budget joint sweep
+($200$ random restarts, $\mathrm{maxit}=2000$,
+$\hat v^{(S_6)}_1$ anchored at $\hat v^{(\mathrm{oracle\,proj})}_1$,
+gap stays $\ge +0.122$ on \texttt{diffuse-diffuse}), ruling out
+under-optimisation. The conclusion is structural: per-direction
+reweighting balances the oracle's slot values but relocates the
+score's actual peak away from the oracle. No further scalar weight
+tuning fixes this. Detailed numbers, including the seven-matrix
+capture table under $S_6$, $E_2$, \texttt{force\_oracle\_v2}
+(abbreviated \texttt{force\_O2} in the appendix table; replaces only
+$\hat v^{(S_6)}_2$ with $\hat v^{(\mathrm{oracle\,proj})}_2$ at every
+block), and \texttt{force\_oracle\_frame} (abbreviated
+\texttt{force\_frame}; replaces both directions with the oracle
+rank-2 frame), are in Appendix~A.4.
+
+\paragraph{The singular goal.}
+The remaining question collapses to one:
+\begin{quote}
+\emph{``what minimal information, computable from window-local data,
+makes the global oracle subspace the unique maximising subspace of the score
+against every adversarial combination of component-local tails?''}
+\end{quote}
+Formally, for the rank-$2$ tests in this report: fix a feature set
+$\mathcal E$ available at window $w$. In this report,
+\emph{deployable window-local} features are
+computed from $B$, the current block $A_w$, the next half-window
+$A_{\mathrm{fut}}$, and products of those same matrices. An explicit
+$A^\top A$ or $V_r$ term is a \emph{diagnostic global} feature: it may
+be used as a ceiling or sanity check, but not as an operational score.
+Approximations to $A^\top A$ are only admissible after they are
+constructed from window-local data and pass the same sufficiency test
+as the value-only features. Given such an $\mathcal E$, define a
+frame-level score $S_{\mathcal E}(Z)$ on pairs of orthonormal
+directions $Z=[z_1,z_2]\in\mathrm{St}(d,2)$, and maximise it inside
+the already defined search subspace $B_{\mathrm{union}}$. Let
+$Q_{\mathrm{union}}$ denote any orthonormal
+basis matrix for this subspace, so
+$\mathrm{range}(Q_{\mathrm{union}})=B_{\mathrm{union}}$, and let
+$P_{\mathrm{union}}=Q_{\mathrm{union}}Q_{\mathrm{union}}^\top$ be the
+orthogonal projector onto $B_{\mathrm{union}}$. The projected oracle frame
+$Z_{\mathrm{oracle}}$ is obtained by taking a thin QR (equivalently,
+the polar factor) of $P_{\mathrm{union}}V_2$; if
+$\mathrm{rank}(P_{\mathrm{union}}V_2)<2$, the missing direction is
+unreachable and the feature set fails the recovery test before
+optimisation. With this definition, the test is
+\begin{align}
+Z_{\mathrm{oracle}}\;\stackrel{?}{=}\;\operatorname*{arg\,max}_{Z\in\mathrm{St}(d,2),\ \mathrm{range}(Z)\subset B_{\mathrm{union}}} S_{\mathcal E}(Z).
+\end{align}
+For right-rotation-invariant scores such as $\|A_XZ\|_F^2$, equality
+means equality of the recovered two-plane; oriented-frame equality is
+only meaningful for scores that break the $Z\mapsto ZQ$ symmetry. If
+the projected oracle subspace is the maximiser, $\mathcal E$ is
+sufficient and an operational score can be built around it. Otherwise
+no slot reweighting recovers it and $\mathcal E$ must change.
+
+\paragraph{Why this direction (H3) among possible solutions.}
+Three broad directions are open for addressing the misleading-tail
+problem; we choose the third.
+
+\begin{itemize}
+\item \textbf{H1: keep $\{u_{\mathrm{sk}},u_{\mathrm{cur}},
+u_{\mathrm{fut}}\}$, design a smarter aggregator or weighting.}
+The line that produced $E_2$ and the broader balance-tuning family.
+The AB-03 closure (the high-budget joint sweep summarised in
+Appendix~A.4; ``AB-03'' is the internal experiment ID for the
+$E_2$-vs-$S_6$ landscape probe) refutes it as a controlling
+principle: balance-tuning fails structurally
+($\Delta_{S_6+E_2}\!\ge\!+0.122$ even at high optimisation budget
+with the oracle anchor) because the feature set itself does not
+distinguish the oracle from adversarial component-tail combinations.
+Reweighting cannot create information the features do not carry.
+
+\item \textbf{H2: replace value-only features with an explicit global
+quantity (e.g.\ $A^\top A$ or its leading invariant subspace).}
+Closes the gap by construction --- $A^\top A$'s leading invariant
+subspace \emph{is} the oracle --- but abandons the streaming,
+window-local, value-only constraints that motivated the score family.
+Worth investigating eventually, but not before the cheaper options
+are exhausted.
+
+\item \textbf{H3 (chosen): treat the problem as one of evidence
+sufficiency, sweep candidate features in increasing intrusiveness,
+and use a frame-level audit to decide each one.}
+H3 sits between H1 and H2: it preserves the value-only,
+streaming-compatible setting but stops reweighting a fixed feature
+set; instead, for each candidate addition $\Delta\mathcal E$, it
+asks whether $Z_{\mathrm{oracle}}$ becomes the maximiser on
+$\mathrm{St}(d,2)\cap B_{\mathrm{union}}$ under joint optimisation.
+Three properties of H3 motivate the choice:
+\begin{enumerate}
+\item \emph{Per-feature, falsifiable output.} A feature either makes
+the oracle the argmax (the test passes) or it does not (the test
+fails). There is no tuning loop and no audit metric whose
+correlation with bench has to be assumed.
+\item \emph{Separation of score-design failure from optimiser
+failure.} Greedy and joint Stiefel ascent are run side by side
+($j-g$ in Appendix~B); when $j-g$ is small both routines reach the
+same maximum, so any residual $\Delta_{\mathrm{joint}}>0$ is a
+property of the feature set, not the search.
+\item \emph{Reusable screens.} The canonical screens used in H3
+(oracle-vs-winner gap at vector and frame level, force-oracle
+ceilings, anchor sensitivity, and the existing vector-level
+row-cheat dominance screen --- checking that a vector score does not
+collapse onto a direction that merely picks out a single high-norm row
+of $A_w$ or $A_{\mathrm{fut}}$) are also the acceptance gates that any
+future H1- or H2-style proposal must pass. The analogous frame-level
+row-cheat screen is still open work.
+\end{enumerate}
+H3 also preserves the value-only, streaming, window-local
+constraints that motivated the score family, and it requires no new
+infrastructure beyond the Stiefel ascent already built for $S_6$.
+\end{itemize}
+
+\section*{2. Method: a sequential evidence-sufficiency sweep}
+
+\paragraph{Lifting to frames.}
+Throughout this section, $X\in\{\mathrm{sk},\mathrm{cur},\mathrm{fut}\}$
+indexes the three sources, with $A_{\mathrm{sk}}:=B$,
+$A_{\mathrm{cur}}:=A_w$ the current half-window block, and
+$A_{\mathrm{fut}}$ the following same-size half-window. Extend
+each $u_X$ to an orthonormal pair
+$Z=[z_1,z_2]\in\mathrm{St}(d,2)$ via
+\begin{align}
+u_X(Z):=\frac{\|A_X Z\|_F^2}{\|A_X\|_F^2}
+       =\frac{\|A_X z_1\|_2^2+\|A_X z_2\|_2^2}{\|A_X\|_F^2}.
+\end{align}
+A small bookkeeping change relative to the §1 vector definitions: the
+sketch slot at the frame level uses the full $\|B\|_F^2$ as denominator
+for symmetry with $\|A_w\|_F^2$ and $\|A_{\mathrm{fut}}\|_F^2$, whereas
+the vector-level $u_{\mathrm{sk}}(v)$ in §1 uses the rank-$r$ truncation
+$w_{\mathrm{sk}}=\sum_{j=1}^r s_j^2$. Since the carried sketch
+$B=SV^\top$ has exactly $r$ stored singular values, $\|B\|_F^2=
+\sum_{j=1}^r s_j^2=w_{\mathrm{sk}}$ \emph{identically} in this setting;
+the two normalisations agree. We retain the $\|B\|_F^2$ notation at the
+frame level for symmetry with the other two slots. Even were the two
+constants to differ, they would scale $u_{\mathrm{sk}}$ uniformly in $v$
+and so leave every argmax inside a fixed window unchanged.
+This is invariant under $Z\mapsto ZQ$, $Q\in O(2)$, hence depends only on $\mathrm{span}(Z)$. The base frame score is
+\begin{align}
+S_{\mathrm{HM}}(Z):=\mathrm{HM}_3\!\bigl(u_{\mathrm{sk}}(Z),u_{\mathrm{cur}}(Z),u_{\mathrm{fut}}(Z)\bigr).
+\end{align}
+
+\paragraph{The four feature sets we tried, in order.}
+We test increasingly intrusive feature sets and ask whether each makes $\hat Z^{(\sigma)}=Z_{\mathrm{oracle}}$. Mapping back to the H1/H2/H3 taxonomy of §1: V1 and V2 are H3-style $\Delta\mathcal E$ additions (a new $A_{\mathrm{fut}}$-only feature; a new current--future cross feature); V3 is an optimisation-control baseline using the original H1 feature set $\{u_{\mathrm{sk}},u_{\mathrm{cur}},u_{\mathrm{fut}}\}$ with no aggregator or weighting change, so it isolates the joint-optimisation question from the feature question; V4 is the H2 ceiling-diagnostic (oracle information injected explicitly to upper-bound how much closure any window-local feature could buy).
+
+\begin{enumerate}
+\item[\textbf{V1.}] \textbf{HM with a future-direction term.}
+\begin{align}
+S_1(Z):=S_{\mathrm{HM}}(Z)\cdot
+\frac{\|A_{\mathrm{fut}}^\top A_{\mathrm{fut}} Z\|_F^2}{\|A_{\mathrm{fut}} Z\|_F^2}.
+\end{align}
+Multiplies the harmonic mean by a Rayleigh-style future-direction
+strength, weighted by $A_{\mathrm{fut}}Z$. Tests whether
+$Z_{\mathrm{oracle}}$ aligns with the leading singular directions of
+$A_{\mathrm{fut}}$ alone.
+
+\item[\textbf{V2.}] \textbf{HM with a current-future cross term.}
+\begin{align}
+S_2(Z):=S_{\mathrm{HM}}(Z)\cdot
+\frac{\langle A_{\mathrm{cur}} Z,\,A_{\mathrm{fut}} Z\rangle_F}
+     {\|A_{\mathrm{cur}} Z\|_F\,\|A_{\mathrm{fut}} Z\|_F}.
+\end{align}
+This diagnostic uses the same-size-half-window convention:
+$A_{\mathrm{cur}}$ and $A_{\mathrm{fut}}$ have the same row count, and
+the Frobenius inner product pairs row $i$ of the current half-window
+with row $i$ of the future half-window. It boosts subspaces along which
+$A_{\mathrm{cur}} Z$ and $A_{\mathrm{fut}} Z$ are aligned in
+$\mathbb R^{n_w\times 2}$ under that row-paired convention. The
+raw cosine factor is allowed to be negative; no clipping is applied.
+In the reported windows the denominators are nonzero, and a zero
+denominator would make the candidate frame inadmissible for this
+diagnostic. Tests whether $Z_{\mathrm{oracle}}$ sits where current and
+future windows agree directionally.
+
+\item[\textbf{V3.}] \textbf{HM, joint Stiefel optimization.}
+\begin{align}
+S_3(Z):=S_{\mathrm{HM}}(Z),\qquad\text{maximised jointly over }Z\in\mathrm{St}(d,2).
+\end{align}
+Same feature set, but replaces the sequential ``rank-1, deflate, rank-1'' with a joint 2-frame ascent. Tests whether the per-direction decomposition was the bottleneck.
+
+\item[\textbf{V4.}] \textbf{HM plus an oracle subspace reward.}
+\begin{align}
+S_4(Z):=S_{\mathrm{HM}}(Z)+\tfrac{\lambda}{2}\,\|V_r^\top Z\|_F^2.
+\end{align}
+Adds a term rewarding $Z$ for lying in $\mathrm{span}(V_r)$. Uses information \emph{not} available from $B$, $A_w$, $A_{\mathrm{fut}}$ alone---a diagnostic, not a deployable score. Quantifies how much oracle information must be injected before $\hat Z^{(S_4)}=Z_{\mathrm{oracle}}$.
+\end{enumerate}
+
+\paragraph{Optimizer.}
+For each of V1--V4 we maximise $S(Z)$ over 2-frames $Z$ whose range lies in $B_{\mathrm{union}}$. Write $Z=Q_{\mathrm{union}} W$ with $W\in\mathrm{St}(m,2)$, where $m=\dim B_{\mathrm{union}}$. The Euclidean gradient of every $u_X$ is closed-form,
+\begin{align}
+\nabla_Z u_X(Z)=\frac{2 A_X^\top A_X Z}{\|A_X\|_F^2},
+\end{align}
+so $\nabla S_{\mathrm{HM}}$ is closed-form by the chain rule on $\mathrm{HM}_3$, and likewise for $S_1,S_2,S_4$. Pull the gradient back to $W$ and run \emph{polar retraction} on $\mathrm{St}(m,2)$:
+\begin{align}
+W^+\leftarrow\mathrm{polar}\!\bigl(W+\eta\,(I-WW^\top)G_W\bigr),
+\end{align}
+where $G_W$ is the Euclidean gradient with respect to $W$ and $\eta$ is set by backtracking line search on the score. Random restarts are warm-started from (i) the feasible projected oracle $Z_{\mathrm{oracle}}=\mathrm{polar}(P_{\mathrm{union}}V_2)$, (ii) the projection of the streaming state's leading directions into $B_{\mathrm{union}}$, and (iii) uniform Stiefel samples in the $Q_{\mathrm{union}}$ coordinates. For each matrix and each feature set we report two numbers side by side:
+\begin{itemize}
+\item \emph{Greedy}: per-direction procedure (rank-1 ascent, deflate, rank-1 ascent on the orthogonal complement), yielding $\hat v^{(\sigma)}_1,\hat v^{(\sigma)}_2$;
+\item \emph{Joint}: the joint $\mathrm{St}(d,2)$ ascent above, yielding $\hat Z^{(\sigma)}$.
+\end{itemize}
+The difference $j-g$ is the optimization audit: large means the per-direction decomposition left score on the table; near zero means both routines reach the same maximum and the gap to $Z_{\mathrm{oracle}}$ is a property of the score, not the optimizer.
+
+\section*{3. Evidence and conclusion}
+
+\paragraph{Headline outcome.}
+On \texttt{diffuse-diffuse}, \texttt{residual-spiky-shocks}, and \texttt{mixed-tail-soft} at block 31, the four feature sets close as follows:
+\begin{itemize}
+\item \textbf{V1 (HM with future-direction term): fail.} The
+$A_{\mathrm{fut}}$ direction term changes both
+$S_1(Z_{\mathrm{oracle}})$ and the score at the non-oracle argmax, so
+$\Delta_{\mathrm{joint}}$ \emph{shrinks} numerically (compare V1 and V3
+rows in Appendix~B.1) without making the oracle the maximiser. Because
+V1 multiplies HM by a squared-energy scale, the V1 and V3 score values
+should be compared as within-feature oracle-vs-winner gaps, not as
+absolute cross-feature scores. The oracle does not align strongly
+enough with the leading singular directions of $A_{\mathrm{fut}}$
+alone.
+\item \textbf{V2 (HM with current-future cross term): fail harder.} $S_2(Z_{\mathrm{oracle}})\approx 0$ on two of three matrices, so the oracle is actively \emph{anti-selected}: $Z_{\mathrm{oracle}}$ is not where $A_w Z$ and $A_{\mathrm{fut}} Z$ agree directionally under the normalised Frobenius inner product. ``Fail harder'' here means the feature is not merely uninformative but pathological --- it ranks $Z_{\mathrm{oracle}}$ near the bottom rather than near the top.
+\item \textbf{V3 (joint Stiefel ascent on plain HM): fail.} Joint matches greedy to within $|j{-}g|\le +0.0004$, so per-direction decomposition is not the bottleneck. $\hat Z^{(S_3)}$ remains strictly above $Z_{\mathrm{oracle}}$ by $\Delta_{\mathrm{joint}}\in[+0.014,\,+0.032]$.
+\item \textbf{V4 (HM plus $\lambda\|V_r^\top Z\|_F^2$): partial closure at the span level.} On \texttt{residual-spiky-shocks} and \texttt{mixed-tail-soft}, $\lambda=0.1$ pushes both squared principal cosines into $[0.85,0.99]$ (specifically $\mathrm{pa}^2[0]\in\{0.99,0.99\}$ and $\mathrm{pa}^2[1]\in\{0.85,0.93\}$, see Appendix~B.2); \texttt{diffuse-diffuse} needs $\lambda=0.5$. A residual gap $\sim 0.003$--$0.005$ survives at $\lambda=0.5$ because $\|V_r^\top Z\|_F^2$ is invariant under right-rotations of $Z$ inside $\mathrm{span}(V_r)\cap B_{\mathrm{union}}$.
+\end{itemize}
+The full V1--V3 score table and the V4 $\lambda$-sweep with principal-angle data are in Appendix~B.
+
+\paragraph{Implication.}
+The feature set $\{u_{\mathrm{sk}},u_{\mathrm{cur}},u_{\mathrm{fut}}\}$---even augmented with rotation-invariant terms built from $A_{\mathrm{fut}}$ alone or from a current-future cross product---is \emph{insufficient at rank 2 to identify $\mathrm{span}(V_2)$}. $Z_{\mathrm{oracle}}$ is defined by global geometry of $A^\top A$, while the available features are window-local energies. Closing the gap requires either
+\begin{itemize}
+\item (a) actual oracle-direction information ($V_4$-style; diagnostic only, not deployable), or
+\item (b) a window-local quantity approximating the leading invariant subspace of $A^\top A$ from streaming data---e.g.\ a power-iteration-style inner product using stacked current-and-future rows in place of $A^\top A$. Any such quantity must itself pass the same evidence-sufficiency test (V3-style joint sweep) before entering the operational score.
+\end{itemize}
+The cheaper feature additions have been ruled out.
+
+\paragraph{Status.}
+The closure is now the operating principle for any future change to the
+combined score: any new feature must first pass a joint
+$\mathrm{St}(d,2)$ ascent against the oracle frame $Z_{\mathrm{oracle}}$,
+with $Z_{\mathrm{oracle}}$ as the argmax, before any operational
+benchmark. Open work, in priority order:
+\begin{enumerate}
+\item Reconcile a small numerical discrepancy in the oracle-frame
+score on \texttt{diffuse-diffuse} between an earlier landscape probe
+(score at $\hat v^{(\mathrm{oracle\,proj})}_2$ logged at $\sim 0.297$,
+not reproduced in the tables of this report) and the high-budget
+probe in Appendix~A.4 ($\sigma(\hat v^{(\mathrm{oracle\,proj})}_2)
+=0.2164$ under $S_6{+}E_2$). Likely a streaming-state seeding
+difference; pin the RNG.
+\item Build a frame-level row-cheat diagnostic to complement V4.
+\item Investigate window-local approximations of the leading invariant
+subspace of $A^\top A$, each gated by its own V3-style sufficiency
+test before any aggregator change.
+\end{enumerate}
+
+\appendix
+
+\section*{Appendix A. Evidence for the combined-score failures and
+the future-window repair signal}
+
+\subsection*{A.1 \;(M1) The entropy term $\phi_w$ penalises the oracle}
+
+\textit{Setup.} \texttt{mixed-tail-sharp}, block 1 ($B=0$,
+isolating $\phi_w$ from any sketch effect). Restrict to the deflation
+complement of $\hat v^{(\mathrm{combined})}_1$. Inside this complement
+$\|A_wv\|_2^2$ is essentially flat ($0.819$--$0.833$), so score variation
+is driven entirely by $\phi_1$.
+
+\textit{Measurements.} For two named directions and five random
+controls we record $\phi_1$, the score, and squared alignments with
+the oracle directions
+$\hat v^{(\mathrm{oracle\,proj})}_2$ and $v_1^\star$ (the latter
+confirms we are testing the second slot):
+\begin{center}
+\begin{tabular}{lcccc}
+\hline
+direction & $\phi_1$ & $\operatorname{score}_1$ & $\mathrm{align}_{v_2^\star}$ & $\mathrm{align}_{v_1^\star}$ \\
+\hline
+$\hat v^{(\mathrm{combined})}_2$ (score argmax) & $5.66$ & $4.68$ & $0.016$ & $\le 10^{-3}$ \\
+$\hat v^{(\mathrm{oracle\,proj})}_2$            & $3.70$ & $3.08$ & $0.749$ & $\le 10^{-3}$ \\
+random direction $0$                            & $3.11$ & $2.57$ & $0.022$ & $\le 10^{-3}$ \\
+random direction $1$                            & $3.43$ & $2.83$ & $0.038$ & $\le 10^{-3}$ \\
+random direction $2$                            & $3.62$ & $2.99$ & $0.012$ & $\le 10^{-3}$ \\
+random direction $3$                            & $3.89$ & $3.21$ & $0.008$ & $\le 10^{-3}$ \\
+random direction $4$                            & $3.04$ & $2.51$ & $0.031$ & $\le 10^{-3}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Reading.} $\hat v^{(\mathrm{combined})}_2$ has $\phi_1=5.66$,
+$\hat v^{(\mathrm{oracle\,proj})}_2$ has $\phi_1=3.70$, and every
+random direction sits in $\phi_1\in[3.0,3.9]$. The score gap
+$4.68-3.08=1.60$ is contained entirely in the $\phi_1$ multiplier;
+the energy term cancels by construction. With $B=0$, the gap does
+not involve any sketch term, so $\phi_w$ alone is responsible. The
+ranking $\phi_1(\hat v^{(\mathrm{combined})}_2) >
+\phi_1(\hat v^{(\mathrm{oracle\,proj})}_2)$ on this matrix is the
+direct measurement of M1.
+
+\subsection*{A.2 \;(M2) The sketch term aligns
+$\hat v^{(\mathrm{combined})}_2$ with $\mathrm{span}(V_{\mathrm{state}})$}
+
+\textit{Setup.} Same matrix \texttt{mixed-tail-sharp}, blocks
+$b\in\{1,6,12,31\}$; block 31 is the last measured block. Define
+$\mathrm{state\_align}(v):=\|V_{\mathrm{state}}^\top v\|_2^2$
+and evaluate it at $\hat v^{(\mathrm{combined})}_2$ and at
+$\hat v^{(\mathrm{oracle\,proj})}_2$. DIAG-05 (the per-block diagnostic probe on
+\texttt{mixed-tail-sharp}) logs the full-history
+scale $\rho_{\mathrm{past}}:=\|A_{1:w-1}\|_F^2/\|A_w\|_F^2$ and the
+sketch scale $\rho_B:=\|B\|_F^2/\|A_w\|_F^2$; $\rho_{\mathrm{past}}$
+is the ``$\rho\gtrsim 5$'' sketch-dominance scale used in the
+original note, while $\rho_B$ remains small because $B$ stores only
+the retained rank-2 action.
+
+\begin{center}
+\begin{tabular}{cccccc}
+\hline
+$b$ & $\rho_{\mathrm{past}}$ & $\rho_B$ & $\mathrm{state\_align}(\hat v^{(\mathrm{combined})}_2)$ & $\mathrm{state\_align}(\hat v^{(\mathrm{oracle\,proj})}_2)$ & $\mathrm{state\_align}(\hat v^{(\mathrm{combined,joint})}_2)$ \\
+\hline
+$1$  & $0$       & $0$      & ---    & ---    & --- \\
+$6$  & $5.006$   & $0.063$  & $0.837$ & $0.167$ & $0.834$ \\
+$12$ & $11.011$  & $0.063$  & $0.882$ & $0.297$ & $0.897$ \\
+$31$ & $30.275$  & $0.071$  & $0.988$ & $0.293$ & $0.988$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Reading.} Once $\rho_{\mathrm{past}}\gtrsim 5$, the energy
+term reduces to $\|Bv\|_2^2$, whose argmax over the deflation
+complement of $\hat v^{(\mathrm{combined})}_1$ lies in
+$\mathrm{span}(B)=\mathrm{span}(V_{\mathrm{state}})$. At the last
+measured block, block 31,
+$\mathrm{state\_align}(\hat v^{(\mathrm{combined})}_2)=0.988$ while
+$\mathrm{state\_align}(\hat v^{(\mathrm{oracle\,proj})}_2)=0.293$. The
+older appendix note recorded $0.103$ for the oracle;
+DIAG-05 attributes the difference to a current-code
+projection/deflation detail.
+
+\textit{Joint Stiefel-2 control.} Replacing the greedy rank-1,
+deflate, rank-1 procedure with a joint Stiefel-2 optimisation under
+the same combined score gives the tabled joint state alignments
+$0.834$, $0.897$, and $0.988$ at $b=6,12,31$, respectively, with
+alignments to $v_2^\star$ matching the greedy run to the reported
+precision.
+At block 1 it nudges the alignment to $0.247$ but at strictly lower
+score --- a different stationary point, not a higher maximum. The
+failure of the second direction is therefore intrinsic to the score on
+$\mathrm{St}(d,r)$, not an artefact of the deflation order.
+
+\subsection*{A.3 \;(M3) Adding $A_{\mathrm{fut}}$ moves the argmax
+toward the oracle projection}
+
+\textit{Setup.} \texttt{diffuse-diffuse}, where the population
+row-space is uniform: a single half-window's top right singular
+vector is a draw-specific noise direction rather than a population
+direction. We compare four scores at block 1 ($B=0$, isolating
+the effect of not using $A_{\mathrm{fut}}$ from M1/M2) and across the
+streaming benchmark to the last measured block, block 31. The block-1
+row labelled
+``$\mathrm{HM}_2(u_{\mathrm{cur}},u_{\mathrm{fut}})$'' is the
+two-slot variant of $S_6$ used for this M3-isolation experiment
+($u_{\mathrm{sk}}$ is dropped because $B=0$); the streaming-bench
+``$S_6$'' row below uses the full $\mathrm{HM}_3$ form from §1.
+
+\textit{Block-1 alignments to $\hat v^{(\mathrm{oracle\,proj})}_1$ on
+\texttt{diffuse-diffuse}.}
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+score & $\cos^2(\hat v_1,\hat v^{(\mathrm{oracle\,proj})}_1)$ & reading \\
+\hline
+combined (no $A_{\mathrm{fut}}$)   & $0.096$ & $u_{\mathrm{fut}}$ nearly zero \\
+$\mathrm{HM}_2(u_{\mathrm{cur}},u_{\mathrm{fut}})$, oracle-warm & $0.999$ & balanced current/future image \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Streaming-bench, terminal $\cos_1^2$ at the last measured
+block, block 31, same
+matrix.} Here $\cos_1^2$ is the one-based shorthand for the leading
+direction's squared oracle alignment; Appendix~A.4 later uses
+zero-based slot indices for a two-direction capture sum.
+\begin{center}
+\begin{tabular}{lc}
+\hline
+method & terminal $\cos_1^2$ \\
+\hline
+combined          & $0.030$ \\
+$S_6$             & $0.005$ \\
+incremental SVD   & $0.239$ \\
+$\mathrm{future\_hmean\_online}$ (oracle-aware ceiling) & $0.528$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Reading.} At block 1 with $B=0$, the combined score
+maximises $\|A_wv\|_2^2$ alone; on a uniform-row-space matrix this
+selects the top right singular vector of a single half-window, a
+draw-specific direction far from the projected oracle. Adding
+$A_{\mathrm{fut}}$ gives the score a persistence test across two
+halves. $\mathrm{HM}_2$ across both halves then recovers the
+population direction ($0.999$) because the harmonic mean rewards
+directions with non-trivial $\|A_Xv\|_2^2$ in both halves. M3 is
+therefore the repair signal for the leading-direction failure on
+uniform-row-space matrices: on
+\texttt{mixed-tail-sharp}, where the population top direction is
+dominant, $\hat v^{(\mathrm{combined})}_1$ has $\cos_0^2=0.891$ in the
+current DIAG-05 single-matrix streaming control (older bench note:
+$0.785$); M1 and M2 explain the second-direction failure there, so the
+future-row repair is not the main issue for that case.
+
+\subsection*{A.4 \;Why $\mathrm{HM}_3$ balance-tuning hit a wall}
+
+\textit{Oracle slot ratio across matrices.} The ratio
+$u_{\mathrm{sk}}/u_{\mathrm{cur}}$ at $v_1^\star$ at block 31, taken
+from a per-block component-time-series probe:
+\begin{center}
+\begin{tabular}{lccc}
+\hline
+matrix & $u_{\mathrm{sk}}/u_{\mathrm{cur}}$ at $b{=}6$ & at $b{=}31$ & $S_6$ terminal $\cos_1^2$ \\
+\hline
+\texttt{etf-basket-basis}     & $1.36\times$ & $1.74\times$ & $0.652$ \\
+\texttt{mixed-tail-balanced}  & $2.49\times$ & $0.85\times$ & $0.0004$ \\
+\texttt{mixed-tail-sharp}     & $3.10\times$ & $0.60\times$ & $0.013$ \\
+\texttt{diffuse-diffuse}      & $0.70\times$ & $21.5\times$ & $0.005$ \\
+\texttt{static-cex}           & $72\times$   & $412\times$  & $0.025$ \\
+\hline
+\end{tabular}
+\end{center}
+This table shows \texttt{etf-basket-basis} as the only matrix
+where the displayed sketch/current oracle ratio is near balance, and
+it is the only matrix where $S_6$ partially works. The matrices on
+which $S_6$ fails worst exhibit the largest displayed sketch/current
+oracle imbalance; the full max/min slot-ratio audit used for $E_2$ is
+summarised in §1.
+
+\textit{Landscape probe under the $E_2$ reweighting.} Compare the
+score at its own argmax against the score at
+$\hat v^{(\mathrm{oracle\,proj})}_2$ at block 31, across three
+regression matrices. $\Delta$ is reported for both $S_6$ (baseline)
+and $S_6{+}E_2$:
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+matrix & $\Delta_{S_6}$ & $\Delta_{S_6+E_2}$ \\
+\hline
+\texttt{diffuse-diffuse}        & $+0.007$ & $+0.041$ \\
+\texttt{residual-spiky-shocks}  & $+0.007$ & $+0.047$ \\
+\texttt{mixed-tail-soft}        & $+0.004$ & $+0.006$ \\
+\hline
+\end{tabular}
+\end{center}
+Under baseline $S_6$, the winner is effectively tied with the oracle
+at this vector-level probe (gap $\le 0.007$), but still not a strict
+oracle win; under $S_6{+}E_2$, the argmax sits strictly above the
+oracle.
+
+\textit{High-budget joint sweep on \texttt{diffuse-diffuse} at
+$b{=}31$.} 200 random restarts, $\mathrm{maxit}=2000$,
+$\mathrm{tol}=10^{-12}$; second-direction ascent under three choices
+of the leading direction $\hat v^{(\sigma)}_1$:
+\begin{center}
+\begin{tabular}{llccc}
+\hline
+$\hat v^{(\sigma)}_1$ & score $\sigma$ & $\sigma(\hat v^{(\sigma)}_2)$ & $\sigma(\hat v^{(\mathrm{oracle\,proj})}_2)$ & $\Delta$ \\
+\hline
+high-budget winner of $S_6{+}E_2$ over $B_{\mathrm{union}}$ & $S_6$       & $0.0190$ & $0.0188$ & $+0.0001$ \\
+high-budget winner of $S_6{+}E_2$ over $B_{\mathrm{union}}$ & $S_6{+}E_2$ & $0.3390$ & $0.2164$ & $\mathbf{+0.1226}$ \\
+$\hat v^{(\mathrm{oracle\,proj})}_1$                       & $S_6$       & $0.0189$ & $0.0188$ & $+0.0002$ \\
+$\hat v^{(\mathrm{oracle\,proj})}_1$                       & $S_6{+}E_2$ & $0.3387$ & $0.2164$ & $\mathbf{+0.1223}$ \\
+$V_{\mathrm{state}}[:,0]$                                  & $S_6$       & $0.0189$ & $0.0188$ & $+0.0002$ \\
+$V_{\mathrm{state}}[:,0]$                                  & $S_6{+}E_2$ & $0.3398$ & $0.2164$ & $\mathbf{+0.1235}$ \\
+\hline
+\end{tabular}
+\end{center}
+Anchoring the leading direction at $v_1^\star$ does not help: the gap
+holds at $+0.122$. The gap is structural, not a greedy-anchoring
+artefact.
+
+\textit{Force-oracle ceiling probe (seven matrices, capture
+$=\cos_0^2+\cos_1^2$ where $\cos_i^2:=(\hat v^{(\sigma)}_{i+1}{}^\top
+v_{i+1}^\star)^2$ is the squared alignment of the $(i{+}1)$-th
+extracted direction with the $(i{+}1)$-th oracle column --- the
+$0,1$ indices here are zero-based slot indices, distinct from the
+$\cos_1^2$ first-direction shorthand used in the §1 streaming-bench
+table; max $2.00$, half-window $64$).} ``$S_6$ cap''
+is the operational $S_6$ score-function pipeline; ``$E_2$ cap'' is
+$S_6{+}E_2$; ``\texttt{force\_O2} cap'' replaces only
+$\hat v^{(S_6)}_2$ with $\hat v^{(\mathrm{oracle\,proj})}_2$ at every
+block; ``\texttt{force\_frame} cap'' replaces both directions with the
+rank-2 SVD frame of $[v_1^\star,v_2^\star]$:
+\begin{center}
+\begin{tabular}{lcccc}
+\hline
+matrix & $S_6$ cap & $E_2$ cap & \texttt{force\_O2} cap & \texttt{force\_frame} cap \\
+\hline
+\texttt{diffuse-diffuse}       & $1.05$ & $0.66$ & $1.00$ & $1.95$ \\
+\texttt{residual-spiky-shocks} & $1.18$ & $1.02$ & $1.01$ & $1.92$ \\
+\texttt{mixed-tail-soft}       & $1.08$ & $1.55$ & $1.00$ & $1.95$ \\
+\texttt{mixed-tail-sharp}      & $1.07$ & $1.09$ & $1.00$ & $1.95$ \\
+\texttt{static-cex}            & $1.12$ & $1.05$ & $1.00$ & $1.95$ \\
+\texttt{mixed-tail-balanced}   & $1.09$ & $1.19$ & $1.00$ & $1.95$ \\
+\texttt{etf-basket-basis}      & $1.64$ & $1.54$ & $2.00$ & $2.00$ \\
+\hline
+\end{tabular}
+\end{center}
+Two readings. (i) The $\cos^2$ ceiling is $\approx 1.95/2.00$ on every
+matrix --- $\mathrm{rowspan}(B_{\mathrm{union}})$ contains both oracle
+directions, so the bench is nowhere near its information-theoretic
+ceiling and the operational regression is not a reachability problem.
+(ii) Forcing only $\hat v^{(S_6)}_2 \mapsto
+\hat v^{(\mathrm{oracle\,proj})}_2$ recovers $\approx 1.00$ of the
+$1.95$ ceiling on the six regression-prone matrices:
+$V_{\mathrm{default}}[:,0]$ (the leading direction
+produced by the unmodified operational $S_6$ pipeline, i.e.\
+$\hat v^{(S_6)}_1$) from streaming is itself a poor approximation of
+$v_1^\star$ on those matrices, so the
+rank-2 frame $[V_{\mathrm{default}}[:,0], v_2^\star]$ catches one
+oracle direction only. The leading direction is also broken;
+replacing the second alone is insufficient. The lone exception is
+\texttt{etf-basket-basis}, where \texttt{force\_O2} reaches $2.00$
+(matching \texttt{force\_frame}): on this matrix
+$\hat v^{(S_6)}_1\approx v_1^\star$ already, so replacing the second
+direction alone closes both slots. This is consistent with §1's
+observation that \texttt{etf-basket-basis} is the only matrix on
+which $S_6$ partially works (oracle slots are roughly balanced there).
+
+\section*{Appendix B. The V1--V4 sweep, in full}
+
+All numbers are at block $31$. ``oracle'' is the score at
+$Z_{\mathrm{oracle}}$, ``greedy'' is the score at $\hat
+Z^{(\sigma)}_{\mathrm{greedy}}$ (slot-by-slot ascent), ``joint'' is
+the score at $\hat Z^{(\sigma)}_{\mathrm{joint}}$ (Stiefel-$(d,2)$
+ascent), $\Delta_{\mathrm{joint}}=\text{joint}-\text{oracle}$, and
+$j-g=\text{joint}-\text{greedy}$ is the optimisation audit.
+
+\subsection*{B.1 \;V1, V2, V3 (no oracle term)}
+
+\begin{center}
+\begin{tabular}{lcccccc}
+\hline
+feature set & matrix & oracle & greedy & joint & $\Delta_{\mathrm{joint}}$ & $j-g$ \\
+\hline
+HM (V3)              & \texttt{diffuse-diffuse}       & $0.0066$ & $0.0380$ & $0.0383$ & $+0.0316$ & $+0.0003$ \\
+HM (V3)              & \texttt{residual-spiky-shocks} & $0.0270$ & $0.0409$ & $0.0409$ & $+0.0140$ & $+0.0001$ \\
+HM (V3)              & \texttt{mixed-tail-soft}       & $0.0215$ & $0.0382$ & $0.0386$ & $+0.0170$ & $+0.0004$ \\
+HM $\times$ futdir (V1)   & \texttt{diffuse-diffuse}       & $0.0099$ & $0.0315$ & $0.0318$ & $+0.0219$ & $+0.0002$ \\
+HM $\times$ futdir (V1)   & \texttt{residual-spiky-shocks} & $0.0188$ & $0.0278$ & $0.0279$ & $+0.0091$ & $+0.0001$ \\
+HM $\times$ futdir (V1)   & \texttt{mixed-tail-soft}       & $0.0223$ & $0.0322$ & $0.0324$ & $+0.0101$ & $+0.0002$ \\
+HM $\times$ crosscorr (V2) & \texttt{diffuse-diffuse}       & $0.0128$ & $0.0374$ & $0.0376$ & $+0.0248$ & $+0.0002$ \\
+HM $\times$ crosscorr (V2) & \texttt{residual-spiky-shocks} & $0.0000$ & $0.0392$ & $0.0393$ & $+0.0393$ & $+0.0001$ \\
+HM $\times$ crosscorr (V2) & \texttt{mixed-tail-soft}       & $0.0008$ & $0.0381$ & $0.0383$ & $+0.0375$ & $+0.0002$ \\
+\hline
+\end{tabular}
+\end{center}
+
+Three readings, each load-bearing.
+\begin{enumerate}
+\item $|j-g|\le +0.0004$ uniformly: the joint optimiser matches the
+greedy one to within tolerance, so the slot-by-slot decomposition is
+not the bottleneck and the optimiser is well-tuned.
+\item $\Delta_{\mathrm{joint}}>0$ on every cell: the score's argmax
+strictly beats $Z_{\mathrm{oracle}}$.
+\item V1 changes the oracle score but still leaves
+$\Delta_{\mathrm{joint}}>0$; the future-direction feature is therefore
+insufficient rather than corrective. V2 is more severe: it drives the
+oracle score to $\approx 0$ on \texttt{residual-spiky-shocks} and
+\texttt{mixed-tail-soft}, so the current--future cross product is not
+merely insufficient --- it actively ranks $Z_{\mathrm{oracle}}$ below
+alternatives.
+\end{enumerate}
+
+\subsection*{B.2 \;V4 ($\lambda$-sweep with the oracle subspace
+reward)}
+
+$S_4(Z)=S_{\mathrm{HM}}(Z)+(\lambda/2)\|V_r^\top Z\|_F^2$.
+$\mathrm{pa}^2[i]\in[0,1]$ for $i\in\{0,1\}$ are the two squared
+canonical cosines (sorted descending: $\mathrm{pa}^2[0]\ge
+\mathrm{pa}^2[1]$) between $\mathrm{span}(\hat Z^{(\sigma)}_{\mathrm{joint}})$
+and $\mathrm{span}(V_2)$; both equal $1$ iff the two 2-planes
+coincide, $\mathrm{pa}^2[1]=0$ means one direction of $\hat
+Z^{(\sigma)}_{\mathrm{joint}}$ is orthogonal to the oracle plane.
+\begin{center}
+\begin{tabular}{lcccccc}
+\hline
+$\lambda$ & matrix & oracle & joint & $\Delta_{\mathrm{joint}}$ & $\mathrm{pa}^2[0]$ & $\mathrm{pa}^2[1]$ \\
+\hline
+$0$    & \texttt{diffuse-diffuse}       & $0.0066$ & $0.0383$ & $+0.0316$ & $0.45$ & $0.30$ \\
+$0$    & \texttt{residual-spiky-shocks} & $0.0270$ & $0.0409$ & $+0.0140$ & $0.88$ & $0.56$ \\
+$0$    & \texttt{mixed-tail-soft}       & $0.0215$ & $0.0386$ & $+0.0170$ & $0.48$ & $0.01$ \\
+$0.01$ & \texttt{diffuse-diffuse}       & $0.0294$ & $0.0396$ & $+0.0102$ & $0.93$ & $0.61$ \\
+$0.01$ & \texttt{residual-spiky-shocks} & $0.0326$ & $0.0429$ & $+0.0103$ & $0.94$ & $0.71$ \\
+$0.01$ & \texttt{mixed-tail-soft}       & $0.0294$ & $0.0405$ & $+0.0112$ & $0.65$ & $0.50$ \\
+$0.05$ & \texttt{diffuse-diffuse}       & $0.0344$ & $0.0439$ & $+0.0095$ & $0.90$ & $0.81$ \\
+$0.05$ & \texttt{residual-spiky-shocks} & $0.0389$ & $0.0536$ & $+0.0147$ & $0.89$ & $0.70$ \\
+$0.05$ & \texttt{mixed-tail-soft}       & $0.0307$ & $0.0481$ & $+0.0174$ & $0.68$ & $0.59$ \\
+$0.1$  & \texttt{diffuse-diffuse}       & $0.0407$ & $0.0542$ & $+0.0135$ & $0.77$ & $0.74$ \\
+$0.1$  & \texttt{residual-spiky-shocks} & $0.0563$ & $0.0633$ & $+0.0070$ & $0.99$ & $0.85$ \\
+$0.1$  & \texttt{mixed-tail-soft}       & $0.0675$ & $0.0695$ & $+0.0020$ & $0.99$ & $0.93$ \\
+$0.5$  & \texttt{diffuse-diffuse}       & $0.1077$ & $0.1125$ & $+0.0048$ & $0.97$ & $0.93$ \\
+$0.5$  & \texttt{residual-spiky-shocks} & $0.1775$ & $0.1816$ & $+0.0041$ & $0.99$ & $0.96$ \\
+$0.5$  & \texttt{mixed-tail-soft}       & $0.1856$ & $0.1887$ & $+0.0030$ & $0.99$ & $0.96$ \\
+\hline
+\end{tabular}
+\end{center}
+
+At $\lambda=0$, $\hat Z^{(\sigma)}_{\mathrm{joint}}$ on
+\texttt{mixed-tail-soft} has $\mathrm{pa}^2[1]=0.01$: its second
+direction is essentially \emph{orthogonal} to $\mathrm{span}(V_2)$.
+By $\lambda=0.1$, the squared principal cosines on
+\texttt{residual-spiky-shocks} and \texttt{mixed-tail-soft} reach
+$0.93$--$0.99$ and the score gap shrinks to $+0.002$--$+0.007$;
+\texttt{diffuse-diffuse} requires $\lambda\ge 0.5$. The residual gap
+at $\lambda=0.5$ is structural: $\|V_r^\top Z\|_F^2$ is invariant
+under right-rotations of $Z$ inside $\mathrm{span}(V_r)\cap
+B_{\mathrm{union}}$, so within that 2-plane the HM landscape retains
+its own argmax, generically distinct from the specific
+orthonormalised $Z_{\mathrm{oracle}}$.

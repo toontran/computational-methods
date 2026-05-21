@@ -1,0 +1,332 @@
+Objective-design block-only score recheck
+=========================================
+
+Date: 2026-04-23
+
+Clarification being addressed
+-----------------------------
+The previous diagnostic language used `gain2` too loosely. In several existing
+diagnostics, after block 1:
+
+  M_gain = [carried sketch rows; current raw block]
+
+and `combined_score_component_details(M_gain, A_block, ...)` computes:
+
+  gain2 = ||M_gain v||^2
+
+That is not the quantity we now want for the objective-design check.
+
+Corrected diagnostic:
+
+  block_gain2(v) = ||A_block v||^2
+
+while entropy may still use row sampling / old row memory:
+
+  pooled entropy rows = [A_block v; old_row_memory v]
+
+So the corrected score for diagnostics is:
+
+  block_only_score(v) = ||A_block v||^2 * phi_pooled(v)
+
+where `phi_pooled` is the same combined entropy multiplier computed from the
+current block plus sampled old rows.
+
+
+Code added
+----------
+Added:
+
+  objective_design_block_only_probe.py
+
+The probe keeps the optimizer trajectory unchanged, then rescoring candidate
+directions under block-only gain:
+
+  probe.combined_score_component_details(
+      A_block,
+      A_block,
+      v,
+      rows_ref,
+      state_prev=state,
+      old_row_memory=old_row_memory,
+  )
+
+Because `M_gain` is replaced by `A_block`, the reported `gain2` is exactly
+`||A_block v||^2`, while `old_row_memory` still participates in entropy.
+
+
+Commands run locally
+--------------------
+
+  python objective_design_block_only_probe.py \
+    --matrices static-cex diffuse-diffuse mixed-tail-sharp residual-spiky-shocks \
+    --n 1024 --win 32 --rank 2 --dtype float32
+
+Also checked the same script at:
+
+  --n 256 --win 32 --rank 2
+
+Agent reports used:
+
+  summary/objective_design_agent_block_only_score_semantics.txt
+  summary/objective_design_agent_block_only_empirics.txt
+
+
+Important semantic correction
+-----------------------------
+Prior claims of the form:
+
+  "q2 wins gain2 in 32/32 blocks"
+
+are invalid if the source was a streaming `actual_B` context where `gain2` was
+computed from stacked `M_gain`. Those claims were about sketch-inclusive gain,
+not raw current-block gain.
+
+Still valid from earlier reports:
+
+  - first-block score/gain observations, because M_gain == A_block;
+  - entropy observations: phi, pooled_H, pooled_rel_H;
+  - alignment / tail-mass / row-space geometry;
+  - path dependence and previous-slot survival;
+  - actual_B vs zero_B evidence as evidence about carried-sketch bias, not as
+    evidence about raw block energy.
+
+
+n=1024 block-only recheck
+-------------------------
+
+The main local run used 32 blocks. Each result compares q2_vs_q1oracle against
+the optimizer's opt2 under block-only gain and pooled entropy.
+
+  matrix                  q2 score wins   q2 gain wins   mean q2/opt score   mean q2/opt gain   mean full-score q2/opt
+  static-cex              22/32           23/32          1.150302            1.165718           0.990550
+  diffuse-diffuse         31/32           32/32          9.916927            10.374675          0.923950
+  mixed-tail-sharp        28/32           29/32          2.125670            2.260632           0.987535
+  residual-spiky-shocks   31/32           32/32          5.285012            5.930246           0.831052
+
+Readout:
+
+  1. The previous exact `32/32` claim survives only for diffuse-diffuse and
+     residual-spiky-shocks under block-only gain. It does not survive for
+     static-cex or mixed-tail-sharp.
+
+  2. The broad conclusion still holds at n=1024: q2-like oracle candidates
+     often receive stronger current-block energy than opt2, even when the
+     full sketch-inclusive score favors opt2.
+
+  3. The full-score ratio remains below or near 1.0 in all four matrices. That
+     means carried/sketch-inclusive scoring suppresses the q2 advantage that is
+     visible under block-only gain.
+
+Representative n=1024 lines:
+
+  static-cex block 2:
+    opt2 block score=1.638898, gain2=0.409843
+    q2_vs_q1oracle block score=2.057184, gain2=0.543600
+    full q2/opt score ratio=0.949997
+
+  diffuse-diffuse block 12:
+    opt2 block score=0.159979, gain2=0.098345
+    q2_vs_q1oracle block score=1.246538, gain2=0.828347
+    full q2/opt score ratio=0.923781
+
+  mixed-tail-sharp block 3:
+    opt2 block score=0.897058, gain2=0.274836
+    q2_vs_q1oracle block score=1.307932, gain2=0.476166
+    full q2/opt score ratio=0.847571
+
+  residual-spiky-shocks block 12:
+    opt2 block score=0.113667, gain2=0.069658
+    q2_vs_q1oracle block score=0.526596, gain2=0.384639
+    full q2/opt score ratio=0.811823
+
+
+n=256 caveat
+------------
+
+The block-only empirical agent ran a smaller n=256 check and found weaker q2
+competitiveness, especially for mixed-tail-sharp. My local script at n=256
+showed matrix-dependent behavior:
+
+  matrix                  q2 score wins   q2 gain wins
+  static-cex              5/8             6/8
+  diffuse-diffuse         7/8             8/8
+  mixed-tail-sharp        2/8             3/8
+  residual-spiky-shocks   7/8             8/8
+
+This means the block-only conclusion is sensitive to scale, window count,
+candidate construction, and possibly row-shuffle details. We should stop using
+a single small-n result as the objective-design arbiter.
+
+
+What changes in the earlier conclusions
+---------------------------------------
+
+1. "Current-block gain is the strongest separator"
+
+  Revised:
+
+    Current-block gain is still a necessary diagnostic and often exposes q2
+    support hidden by full sketch-inclusive score, but it is not automatically
+    an oracle selector. It also promotes high raw-block SVD complements.
+
+2. "q2_vs_q1oracle wins gain in every block"
+
+  Revised:
+
+    Only true in some matrices under corrected block-only semantics. At n=1024
+    it was true for diffuse-diffuse and residual-spiky-shocks, nearly true for
+    mixed-tail-sharp, and not true for static-cex.
+
+3. "The fake direction is mainly exposed by block energy"
+
+  Revised:
+
+    Block energy exposes that opt2 can be weak on fresh rows, but the strongest
+    fresh-row direction may be `svd_complement`, not oracle q2. Therefore, an
+    objective cannot simply maximize block-only gain.
+
+4. "Entropy makes q2 stand out"
+
+  Revised:
+
+    Entropy is mixed. q2 often has lower phi than opt2 in the n=1024 run:
+
+      static-cex:            mean opt2 phi=1.756828, q2 phi=1.720958
+      diffuse-diffuse:       mean opt2 phi=1.754521, q2 phi=1.592649
+      mixed-tail-sharp:      mean opt2 phi=1.747229, q2 phi=1.607641
+      residual-spiky-shocks: mean opt2 phi=1.754391, q2 phi=1.392950
+
+    q2 wins mainly because its raw current-block gain can be much larger, not
+    because pooled entropy always favors it.
+
+5. "Sketch-inclusive score is biased"
+
+  Still true:
+
+    In the n=1024 recheck, the full sketch-inclusive q2/opt2 score ratio is
+    below 1.0 on average for every matrix, even when block-only q2/opt2 gain is
+    well above 1.0. That is direct evidence that carried/sketch-inclusive score
+    changes the ordering.
+
+
+Updated answers to the relevant questions
+-----------------------------------------
+
+Score overestimation:
+
+  Recheck using block-only score says the overestimation story should be split
+  into two parts:
+
+    - carried-sketch overestimation: opt2 can look competitive under full score
+      even when current-block gain is weak;
+    - block-only competition: q2 often beats opt2 on raw fresh rows, but raw
+      block gain can also favor unrelated SVD-complement directions.
+
+Score decay:
+
+  Still not a reliable separator. Under block-only score, late-stream phi
+  approaches 1.0 as rows_seen reaches rows_ref, so score and gain become the
+  same in the final block. The time series is dominated by changing block
+  geometry and the diminishing entropy multiplier.
+
+Rank/order:
+
+  Still useful, but now rank should be tracked twice:
+
+    rank_by_full_score
+    rank_by_block_only_score
+    rank_by_block_only_gain
+
+  A direction that rises by block-only gain but falls by full score is exactly
+  the carried-memory conflict we need to study.
+
+Oracle-vs-fake block comparison:
+
+  Must use `||A_block v||^2`, not the previous `actual_B gain2`.
+  q2_vs_q1oracle often beats opt2 at n=1024, but not uniformly across sizes or
+  matrices. Also compare against `svd_complement`; otherwise we may confuse
+  "fresh row support" with "oracle support."
+
+Tail-origin:
+
+  Still relevant. The alignment/tail-mass evidence is unchanged by the scoring
+  correction. What changes is interpretation: a tail-heavy opt2 can have weak
+  current-block gain while still surviving in the full sketch score.
+
+Row-space mismatch:
+
+  Still relevant. The corrected score makes the seen/current mismatch sharper:
+  opt2 may be supported by historical/sketch rows, while q2 or another
+  complement is supported by the current raw block.
+
+Candidate mixture / memory:
+
+  Still points toward an innovation memory, but with an important constraint:
+  the innovation memory must not blindly promote the top block-only SVD
+  complement. It needs oracle-consistency / repeated-support / anti-spike
+  checks.
+
+
+Updated minimum diagnostic table
+--------------------------------
+
+For each candidate and block, log all of the following separately:
+
+  score_full              = ||M_gain v||^2 * phi_pooled
+  gain2_full              = ||M_gain v||^2
+  score_block_only        = ||A_block v||^2 * phi_pooled
+  gain2_block_only        = ||A_block v||^2
+  phi_pooled
+  pooled_relH
+  rank_full_score
+  rank_block_score
+  rank_block_gain
+  oracle_alignment
+  tail_alignment
+  current_row_alignment
+  seen_row_alignment
+  future_row_alignment    diagnostic only
+
+Candidates:
+
+  opt2
+  q2_vs_v1opt
+  q2_vs_q1oracle
+  prev_opt2
+  svd_complement
+  current_block_top_svd
+  gradient_augmented_best
+
+
+Objective-design implication
+----------------------------
+
+The next objective should not maximize block-only score alone. That would chase
+raw current-block SVD complements. But the objective also should not trust the
+current full sketch-inclusive score alone, because that can preserve a stale
+tail/historical second slot.
+
+The useful signal is a conflict diagnostic:
+
+  q2-like / oracle-consistent direction:
+    high repeated block-only gain
+    reasonable entropy
+    improving rank by block-only score
+    stable alignment across randomized blocks
+    not merely top current-block SVD complement
+
+  fake/historical tail direction:
+    competitive full score
+    weak current-block gain
+    high seen-row/sketch alignment
+    persistent tail mass
+
+  block-local decoy:
+    very high block-only gain
+    low repeated support
+    weak oracle alignment
+    high row concentration or unstable across blocks
+
+The next diagnostic should explicitly classify directions into these three
+cases before changing the objective.
+

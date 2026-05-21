@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:907: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.043225 mean_relerr_sval=0.00115050
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.044362 mean_relerr_sval=0.00101172
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.717097 mean_relerr_sval=0.04232387
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.975356 mean_relerr_sval=0.00395560
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.717014 mean_relerr_sval=0.04246090
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.980265 mean_relerr_sval=0.00317371
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.718298 mean_relerr_sval=0.04234652
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.976716 mean_relerr_sval=0.00408206
+wrote_json=summary/score_family_aggregator_ablation/static-cex_S6_OP_win64.json wrote_csv=summary/score_family_aggregator_ablation/static-cex_S6_OP_win64.csv wrote_text=summary/score_family_aggregator_ablation/static-cex_S6_OP_win64.txt elapsed=1592.081

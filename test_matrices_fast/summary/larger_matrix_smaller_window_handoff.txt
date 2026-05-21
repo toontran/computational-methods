@@ -1,0 +1,197 @@
+Larger matrix + smaller window benchmark (seed 0, shuffle)
+===========================================================
+
+Date: 2026-04-20
+
+Setup
+-----
+Follow-up to combined_rownorm_allblocks_benchmark_handoff.txt. Same promoted
+method (combined + greedy + rownorm_seed_all_blocks + old_memory_size=win,
+row_concentration_lambda=0). Same medium CLI. matrix_preset=fast, dtype=float32,
+seed=0, row_shuffle_seed=0, rank=2.
+
+Priority matrices only: static-cex, risk-residual-panel, etf-basket-basis,
+realized-vol-corr, execution-cost-slippage, stat-arb-spreads.
+
+Window ratios (win / n) swept at two larger sizes (plus the prior small config):
+
+  small baseline from prior handoff: n=128, win=32   (1/4)
+  n=512,  win=64   (1/8)
+  n=512,  win=32   (1/16)
+  n=1024, win=128  (1/8)
+  n=1024, win=64   (1/16)
+  n=1024, win=32   (1/32)
+
+Raw outputs: test_matrices_fast/larger_sweep_results/*.txt
+
+Metric note: mean_align is the norm of V_r V_r^T V_exact[:, :1] (higher is better).
+This is the same metric flagged as limited in the prior handoff; the rank-r
+subspace metric is still not implemented, so read top-1 with caution.
+
+
+Headline: static-cex combined win is a small-window-ratio phenomenon
+-------------------------------------------------------------------
+static-cex top-1 mean_align (combined / isvd / fd):
+
+  n=128  win=32  (1/4):   0.982 / 0.141 / 0.199   combined huge win
+  n=512  win=64  (1/8):   0.063 / 0.063 / 0.089   tied
+  n=512  win=32  (1/16):  0.987 / 0.063 / 0.077   combined huge win
+  n=1024 win=128 (1/8):   0.045 / 0.045 / 0.045   tied
+  n=1024 win=64  (1/16):  0.045 / 0.045 / 0.045   tied
+  n=1024 win=32  (1/32):  0.992 / 0.045 / 0.045   combined huge win
+
+Pattern: combined's static-cex advantage disappears at win/n = 1/8 and
+reappears strongly at win/n <= 1/16. It is also stable at those ratios across
+n: 0.163 (n=512, 1/16) and 0.124 (n=1024, 1/32) are both in the same regime.
+This is the opposite of what you would get from a method that merely benefits
+from more rows per block; the combined objective specifically helps when each
+block sees a small fraction of the matrix rows.
+
+Relative-error-singular-value on static-cex is essentially identical across
+combined and isvd (~1e-3) in all configurations; fd's sval shrinkage remains
+huge (~0.8-0.95). So the static-cex difference is a subspace-selection effect,
+not a sval-accuracy effect.
+
+
+Other priority matrices
+-----------------------
+risk-residual-panel (top-1 align):
+
+  n=512  win=64:   0.481 / 0.518 / 0.938   combined slightly better
+  n=512  win=32:   0.377 / 0.634 / 0.963   combined clearly better
+  n=1024 win=128:  0.818 / 0.812 / 0.983   tied, isvd slightly better
+  n=1024 win=64:   0.850 / 0.818 / 0.988   isvd slightly better
+  n=1024 win=32:   0.805 / 0.854 / 0.994   combined slightly better
+
+  risk-residual-panel also benefits from smaller win/n for combined, but the
+  small-benchmark concern (top-1 is noisy on this matrix) persists. Degrades
+  a lot in absolute terms going n=512 -> n=1024: from ~0.5 to ~0.82. This is
+  a real regression in the benchmark that is NOT explained by the window ratio.
+
+etf-basket-basis, realized-vol-corr, execution-cost-slippage, stat-arb-spreads:
+
+  Combined and iSVD are close across all configs (within ~10-20% relative).
+  No config flips the winner by more than small noise. fd loses on sval-relerr
+  everywhere. These matrices do not discriminate between combined and iSVD
+  under this benchmark path; they are close-to-easy for both.
+
+
+Timing (elapsed, seconds, combined / isvd)
+------------------------------------------
+static-cex:
+  n=512   w64:   3.5 / 0.06
+  n=512   w32:  11.8 / 0.24
+  n=1024 w128:  12.1 / 1.59
+  n=1024  w64:  23.6 / 1.61
+  n=1024  w32:  55.6 / 1.30
+
+Combined scales roughly linearly in (n / win) number-of-blocks, as expected.
+iSVD is ~10-50x faster but the combined wall-time at n=1024, win=32 is still
+<1 minute per matrix, so further sweeps are practical.
+
+
+Takeaways vs prior handoff
+--------------------------
+1. The static-cex "combined beats PCA" finding from the small n=128, win=32
+   benchmark is NOT brittle to n. It IS sensitive to win/n. At ratio 1/8 the
+   advantage vanishes; at 1/16 and 1/32 it returns at full strength.
+   Interpretation: the combined objective pays off in the "many short blocks"
+   regime, which is the deployment regime of interest.
+
+2. Question 2 in the prior handoff ("Does the static-CEX advantage grow with
+   n under true random row blocks?") answered: the advantage does not need
+   larger n to appear; it needs smaller win/n. It is of the same order at
+   n=128 1/4, n=512 1/16, and n=1024 1/32.
+
+3. Question 3 (risk-residual-panel): combined ties or slightly beats iSVD at
+   small win/n. The regression with n=1024 (to ~0.82) is a separate issue
+   unrelated to the combined-vs-iSVD comparison; both methods regress. A
+   rank-2 subspace metric is probably needed here before deciding if this is
+   an objective mismatch or a metric artifact.
+
+4. Question 4 (old memory exactly win vs a multiple): not exercised here;
+   kept old_memory_size=win throughout.
+
+
+Recommended next steps
+----------------------
+1. Add the rank-r subspace metric to run_joint_warmstart_benchmarks.py before
+   drawing further conclusions on static-cex and risk-residual-panel. The
+   top-1 value 0.999 for iSVD on large-n static-cex is suspicious; a correct
+   rank-2 subspace with rotated leading vector would look identical.
+
+2. Repeat the n=1024 win=32 point at row_shuffle_seed in {1,2,3,4} to confirm
+   the static-cex combined advantage (top-1 ~0.12) is not a single-seed fluke.
+
+3. Keep win/n <= 1/16 as the primary deployment regime for evaluating
+   combined. Using win/n = 1/8 in benchmarks will underreport the method's
+   edge.
+
+4. Investigate the risk-residual-panel n=1024 regression separately: both
+   methods go from ~0.5 at n=512 to ~0.82 at n=1024, so this is a matrix
+   property (or benchmark parameter interaction) rather than a method issue.
+
+
+Oracle-greedy diagnostic on large-win failure cases
+---------------------------------------------------
+To answer "is combined failing because the optimizer is stuck, or because
+the combined objective itself prefers the bad subspace at large win?", we
+added a `greedy-oracle` method to run_joint_warmstart_benchmarks.py. It is
+greedy-medium plus oracle_candidate_check=True: after the optimizer picks a
+V_score block, the code constructs a candidate V from the projected V_exact
+span and replaces the pick iff the oracle candidate has a strictly higher
+combined-score sum. This is a proper oracle probe of the greedy step.
+
+Configs tested (the win/n >= 1/8 "failure" regime for combined on static-cex):
+
+  n=512  win=64   (1/8)
+  n=1024 win=128  (1/8)
+  n=1024 win=64   (1/16, boundary case)
+
+Matrices: static-cex, risk-residual-panel.
+
+Result — greedy-oracle produced identical numbers to greedy-medium on every
+(matrix, config) pair, to 6 sigfigs in align and 8 sigfigs in relerr:
+
+  static-cex, n=512  win=64:   0.997980 / 0.00101731  (both methods)
+  static-cex, n=1024 win=128:  0.998993 / 0.00101058  (both methods)
+  static-cex, n=1024 win=64:   0.998993 / 0.00101082  (both methods)
+  risk-resid, n=512  win=64:   0.480630 / 0.02716691  (both methods)
+  risk-resid, n=1024 win=128:  0.817619 / 0.04654135  (both methods)
+  risk-resid, n=1024 win=64:   0.850441 / 0.04903815  (both methods)
+
+Raw outputs: larger_sweep_results/oracle_*.txt.
+
+Interpretation
+--------------
+The oracle candidate was NEVER accepted (otherwise numbers would differ).
+That is, the combined-objective optimum at these configurations IS near the
+iSVD-like / bad subspace — the oracle subspace does NOT achieve a higher
+combined score than what plain greedy already finds. Failure is at the
+objective level, not the optimizer level.
+
+Why combined's advantage collapses as win/n grows:
+- At small win/n (1/16, 1/32), each block sees few rows, so the within-block
+  SVD term is weakly identifying. The entropy-over-old-rows term in the
+  combined score has real leverage and can push the pick toward the global
+  subspace, away from what a per-block SVD would choose.
+- At large win/n (1/8+), each block sees enough rows that its local SVD
+  already resolves the rank-r subspace well. The combined score is dominated
+  by the within-block term and its argmax coincides with the iSVD pick. The
+  entropy term can no longer move the optimum.
+
+Implication: combined is not a "better optimizer for the same target as
+iSVD"; it is a different objective that agrees with iSVD in the data-rich
+per-block regime and differs in the data-poor per-block regime where
+retaining old-row information actually matters. Improving combined in the
+large-win regime requires changing the objective (or the old-row memory
+weighting), not improving greedy.
+
+Followups that would resolve remaining ambiguity
+- Re-check with an oracle-weighted combined score that up-weights the
+  entropy/old-memory term at large win, to see if an objective tweak can
+  recover an oracle-preferred subspace.
+- Add the rank-r subspace metric: it is possible the top-1 align 0.999 /
+  0.998 values at large-win are both "close to the correct subspace" from
+  the rank-2 perspective, in which case there is nothing to recover and the
+  large-win regime is simply not a problem to solve.

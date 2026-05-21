@@ -1,0 +1,1984 @@
+{
+  "rows": [
+    {
+      "block": 2,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.12837931551017365,
+      "hm_with_implied_w_raw": 0.3681130380791844,
+      "implied_w_sketch_for_balance": 0.01974527529299185,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.14051788246693675,
+      "raw_gain1": 0.39012470896570345,
+      "raw_gain2": 0.3901247120048922,
+      "raw_gain_avg_g1g2": 0.39012471048529784,
+      "raw_sketch": 0.05481949821542081,
+      "rows_seen_before": 32,
+      "sigma_top_seen": [
+        0.9582387831091976,
+        0.9317435116655838
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.12636970439042822,
+        0.02739682261663425
+      ],
+      "sketch_quality_ratio": [
+        0.9527228372572665,
+        0.9745931696052027
+      ],
+      "sketch_singvals": [
+        0.9129359722137451,
+        0.9080708622932434
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 2,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2079742504148169,
+      "hm_with_implied_w_raw": 0.32738422154826513,
+      "implied_w_sketch_for_balance": 0.09730573991035917,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.311938679727858,
+      "raw_gain1": 0.36088788777094416,
+      "raw_gain2": 0.3608878939158775,
+      "raw_gain_avg_g1g2": 0.36088789084341083,
+      "raw_sketch": 0.1125748921994649,
+      "rows_seen_before": 32,
+      "sigma_top_seen": [
+        0.9582387831091976,
+        0.9317435116655838
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.12636970439042822,
+        0.02739682261663425
+      ],
+      "sketch_quality_ratio": [
+        0.9527228372572665,
+        0.9745931696052027
+      ],
+      "sketch_singvals": [
+        0.9129359722137451,
+        0.9080708622932434
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 3,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.05408155373615285,
+      "hm_with_implied_w_raw": 0.397327096216097,
+      "implied_w_sketch_for_balance": 0.00236796952370886,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.048661787099415696,
+      "raw_gain1": 0.406513114592315,
+      "raw_gain2": 0.406513113739443,
+      "raw_gain_avg_g1g2": 0.406513114165879,
+      "raw_sketch": 0.01978165461466047,
+      "rows_seen_before": 64,
+      "sigma_top_seen": [
+        0.9588770570322543,
+        0.9468996155172844
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.15592805829289666,
+        0.014248121277257492
+      ],
+      "sketch_quality_ratio": [
+        0.9495424879359414,
+        0.959640269257771
+      ],
+      "sketch_singvals": [
+        0.9104945063591003,
+        0.9086830019950867
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 3,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2645101491370005,
+      "hm_with_implied_w_raw": 0.29056865944852595,
+      "implied_w_sketch_for_balance": 0.37957938268622193,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.6161001401446212,
+      "raw_gain1": 0.3194500335088791,
+      "raw_gain2": 0.3194500311292753,
+      "raw_gain_avg_g1g2": 0.3194500323190772,
+      "raw_sketch": 0.19681320968098726,
+      "rows_seen_before": 64,
+      "sigma_top_seen": [
+        0.9588770570322543,
+        0.9468996155172844
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.15592805829289666,
+        0.014248121277257492
+      ],
+      "sketch_quality_ratio": [
+        0.9495424879359414,
+        0.959640269257771
+      ],
+      "sketch_singvals": [
+        0.9104945063591003,
+        0.9086830019950867
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 4,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11298350534631824,
+      "hm_with_implied_w_raw": 0.37521466206998805,
+      "implied_w_sketch_for_balance": 0.013914025022131099,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.11795772557205017,
+      "raw_gain1": 0.39459916542956086,
+      "raw_gain2": 0.3945991641965556,
+      "raw_gain_avg_g1g2": 0.39459916481305823,
+      "raw_sketch": 0.04654601999397892,
+      "rows_seen_before": 96,
+      "sigma_top_seen": [
+        0.9593376881908688,
+        0.947301792248281
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.14863663700457252,
+        0.023186543899747565
+      ],
+      "sketch_quality_ratio": [
+        0.949245491186472,
+        0.9593278011722265
+      ],
+      "sketch_singvals": [
+        0.9106469750404358,
+        0.9087729454040527
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 4,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.25020071835420626,
+      "hm_with_implied_w_raw": 0.3018814820840329,
+      "implied_w_sketch_for_balance": 0.24439340152125283,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.49436161008036694,
+      "raw_gain1": 0.33550338524217904,
+      "raw_gain2": 0.3355033813916833,
+      "raw_gain_avg_g1g2": 0.3355033833169312,
+      "raw_sketch": 0.16585999276396862,
+      "rows_seen_before": 96,
+      "sigma_top_seen": [
+        0.9593376881908688,
+        0.947301792248281
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.14863663700457252,
+        0.023186543899747565
+      ],
+      "sketch_quality_ratio": [
+        0.949245491186472,
+        0.9593278011722265
+      ],
+      "sketch_singvals": [
+        0.9106469750404358,
+        0.9087729454040527
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 5,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1013185819871908,
+      "hm_with_implied_w_raw": 0.3800196611898006,
+      "implied_w_sketch_for_balance": 0.010483671236309116,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.10238980045057769,
+      "raw_gain1": 0.3973916670764579,
+      "raw_gain2": 0.3973916689800066,
+      "raw_gain_avg_g1g2": 0.3973916680282322,
+      "raw_sketch": 0.04068885359013291,
+      "rows_seen_before": 128,
+      "sigma_top_seen": [
+        0.9598255420742747,
+        0.952816739899503
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.17604206512141599,
+        0.00405045980776488
+      ],
+      "sketch_quality_ratio": [
+        0.9503782838330629,
+        0.9524285187429528
+      ],
+      "sketch_singvals": [
+        0.9121973514556885,
+        0.9074898362159729
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 5,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2742420019134768,
+      "hm_with_implied_w_raw": 0.284940305915931,
+      "implied_w_sketch_for_balance": 0.5461487873383354,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.7390188003957243,
+      "raw_gain1": 0.30652444886206964,
+      "raw_gain2": 0.3065244497532459,
+      "raw_gain_avg_g1g2": 0.30652444930765776,
+      "raw_sketch": 0.22652733081930526,
+      "rows_seen_before": 128,
+      "sigma_top_seen": [
+        0.9598255420742747,
+        0.952816739899503
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.17604206512141599,
+        0.00405045980776488
+      ],
+      "sketch_quality_ratio": [
+        0.9503782838330629,
+        0.9524285187429528
+      ],
+      "sketch_singvals": [
+        0.9121973514556885,
+        0.9074898362159729
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 6,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14106286601994142,
+      "hm_with_implied_w_raw": 0.3649965523000364,
+      "implied_w_sketch_for_balance": 0.02538992531447787,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.15934216427072237,
+      "raw_gain1": 0.38913615451104455,
+      "raw_gain2": 0.38913615280532343,
+      "raw_gain_avg_g1g2": 0.389136153658184,
+      "raw_sketch": 0.06200579691987941,
+      "rows_seen_before": 160,
+      "sigma_top_seen": [
+        0.9602920058948116,
+        0.9532418823276179
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19954753224799887,
+        0.008549193275626124
+      ],
+      "sketch_quality_ratio": [
+        0.9507629504178234,
+        0.9521847586535701
+      ],
+      "sketch_singvals": [
+        0.9130100607872009,
+        0.9076623916625977
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 6,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2811668872353349,
+      "hm_with_implied_w_raw": 0.28188369531716895,
+      "implied_w_sketch_for_balance": 0.8586478847248362,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 0.9266325510820544,
+      "raw_gain1": 0.28858748424254355,
+      "raw_gain2": 0.28858748210622853,
+      "raw_gain_avg_g1g2": 0.28858748317438604,
+      "raw_sketch": 0.2674145557442308,
+      "rows_seen_before": 160,
+      "sigma_top_seen": [
+        0.9602920058948116,
+        0.9532418823276179
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.19954753224799887,
+        0.008549193275626124
+      ],
+      "sketch_quality_ratio": [
+        0.9507629504178234,
+        0.9521847586535701
+      ],
+      "sketch_singvals": [
+        0.9130100607872009,
+        0.9076623916625977
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 7,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.14985079858561653,
+      "hm_with_implied_w_raw": 0.36068860951305776,
+      "implied_w_sketch_for_balance": 0.03042454555937767,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.17442633275792296,
+      "raw_gain1": 0.38626937326370814,
+      "raw_gain2": 0.3862693671354947,
+      "raw_gain_avg_g1g2": 0.3862693701996014,
+      "raw_sketch": 0.067375549700629,
+      "rows_seen_before": 192,
+      "sigma_top_seen": [
+        0.9608391934699397,
+        0.9538093497697585
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.23740992360653912,
+        0.03994188817753434
+      ],
+      "sketch_quality_ratio": [
+        0.9514035579586246,
+        0.9516518155079438
+      ],
+      "sketch_singvals": [
+        0.914145827293396,
+        0.907694399356842
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 7,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.2748677950737603,
+      "hm_with_implied_w_raw": 0.2901942022752417,
+      "implied_w_sketch_for_balance": 1.9832658695782077,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.40828472603313,
+      "raw_gain1": 0.24830490737938904,
+      "raw_gain2": 0.24830490958108806,
+      "raw_gain_avg_g1g2": 0.24830490848023856,
+      "raw_sketch": 0.3496840100117742,
+      "rows_seen_before": 192,
+      "sigma_top_seen": [
+        0.9608391934699397,
+        0.9538093497697585
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.23740992360653912,
+        0.03994188817753434
+      ],
+      "sketch_quality_ratio": [
+        0.9514035579586246,
+        0.9516518155079438
+      ],
+      "sketch_singvals": [
+        0.914145827293396,
+        0.907694399356842
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 8,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.20646363539362514,
+      "hm_with_implied_w_raw": 0.3292818177850457,
+      "implied_w_sketch_for_balance": 0.09353213377931147,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.30583023686239963,
+      "raw_gain1": 0.36267318650554353,
+      "raw_gain2": 0.3626731883094621,
+      "raw_gain_avg_g1g2": 0.3626731874075028,
+      "raw_sketch": 0.11091642680847805,
+      "rows_seen_before": 224,
+      "sigma_top_seen": [
+        0.9613341054511579,
+        0.9543832422992925
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.28037730558866353,
+        0.047839152543877446
+      ],
+      "sketch_quality_ratio": [
+        0.9540983055291694,
+        0.9518837801248013
+      ],
+      "sketch_singvals": [
+        0.9172072410583496,
+        0.9084619283676147
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 8,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.25705060915851485,
+      "hm_with_implied_w_raw": 0.3131430943347781,
+      "implied_w_sketch_for_balance": 3.679330002314666,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 1.9181579711573982,
+      "raw_gain1": 0.216036770773182,
+      "raw_gain2": 0.2160367698313086,
+      "raw_gain_avg_g1g2": 0.2160367703022453,
+      "raw_sketch": 0.4143926530183517,
+      "rows_seen_before": 224,
+      "sigma_top_seen": [
+        0.9613341054511579,
+        0.9543832422992925
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.28037730558866353,
+        0.047839152543877446
+      ],
+      "sketch_quality_ratio": [
+        0.9540983055291694,
+        0.9518837801248013
+      ],
+      "sketch_singvals": [
+        0.9172072410583496,
+        0.9084619283676147
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 9,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22235981932698823,
+      "hm_with_implied_w_raw": 0.32018781676190483,
+      "implied_w_sketch_for_balance": 0.12876724489929478,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.35884153173691413,
+      "raw_gain1": 0.3547932799209135,
+      "raw_gain2": 0.35479328661786247,
+      "raw_gain_avg_g1g2": 0.35479328326938797,
+      "raw_sketch": 0.12731456521835605,
+      "rows_seen_before": 256,
+      "sigma_top_seen": [
+        0.9618732454593847,
+        0.9549185469818279
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.32803929898748857,
+        0.07667259758895796
+      ],
+      "sketch_quality_ratio": [
+        0.955275306910929,
+        0.951711580148164
+      ],
+      "sketch_singvals": [
+        0.918853759765625,
+        0.9088070392608643
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 9,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.22670428794366998,
+      "hm_with_implied_w_raw": 0.36192355089245604,
+      "implied_w_sketch_for_balance": 7.6787875416511895,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 2.771062529365079,
+      "raw_gain1": 0.1784066318768472,
+      "raw_gain2": 0.1784066331580353,
+      "raw_gain_avg_g1g2": 0.17840663251744124,
+      "raw_sketch": 0.49437593435928684,
+      "rows_seen_before": 256,
+      "sigma_top_seen": [
+        0.9618732454593847,
+        0.9549185469818279
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.32803929898748857,
+        0.07667259758895796
+      ],
+      "sketch_quality_ratio": [
+        0.955275306910929,
+        0.951711580148164
+      ],
+      "sketch_singvals": [
+        0.918853759765625,
+        0.9088070392608643
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 10,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.15927306063040808,
+      "hm_with_implied_w_raw": 0.3542101393996599,
+      "implied_w_sketch_for_balance": 0.03724267228059053,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.19298360624827834,
+      "raw_gain1": 0.38128841762195226,
+      "raw_gain2": 0.3812884117754105,
+      "raw_gain_avg_g1g2": 0.38128841469868135,
+      "raw_sketch": 0.07358241328924059,
+      "rows_seen_before": 288,
+      "sigma_top_seen": [
+        0.9625723057622101,
+        0.9553779473069008
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3680275638563072,
+        0.04571576802025369
+      ],
+      "sketch_quality_ratio": [
+        0.9564585952155346,
+        0.9505380342114447
+      ],
+      "sketch_singvals": [
+        0.9206605553627014,
+        0.9081230759620667
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 10,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.20059223085919675,
+      "hm_with_implied_w_raw": 0.4089296469787193,
+      "implied_w_sketch_for_balance": 13.096307871672884,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 3.6188821301159955,
+      "raw_gain1": 0.1522045986491387,
+      "raw_gain2": 0.1522045993369312,
+      "raw_gain_avg_g1g2": 0.15220459899303496,
+      "raw_sketch": 0.5508105034173653,
+      "rows_seen_before": 288,
+      "sigma_top_seen": [
+        0.9625723057622101,
+        0.9553779473069008
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.3680275638563072,
+        0.04571576802025369
+      ],
+      "sketch_quality_ratio": [
+        0.9564585952155346,
+        0.9505380342114447
+      ],
+      "sketch_singvals": [
+        0.9206605553627014,
+        0.9081230759620667
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 11,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11830084987136764,
+      "hm_with_implied_w_raw": 0.3729749123929749,
+      "implied_w_sketch_for_balance": 0.01573100048487362,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.1254232852578564,
+      "raw_gain1": 0.39327150446762893,
+      "raw_gain2": 0.39327150491839624,
+      "raw_gain_avg_g1g2": 0.3932715046930126,
+      "raw_sketch": 0.04932540411689813,
+      "rows_seen_before": 320,
+      "sigma_top_seen": [
+        0.9631068008468658,
+        0.9558520311929938
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4014940496439709,
+        0.03286461459610774
+      ],
+      "sketch_quality_ratio": [
+        0.9579887800934678,
+        0.9502847752287056
+      ],
+      "sketch_singvals": [
+        0.9226455092430115,
+        0.9083316326141357
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 11,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.18062086107566025,
+      "hm_with_implied_w_raw": 0.44679461912519725,
+      "implied_w_sketch_for_balance": 19.296189912130778,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 4.392742868883948,
+      "raw_gain1": 0.13411991255391204,
+      "raw_gain2": 0.13411991128813078,
+      "raw_gain_avg_g1g2": 0.1341199119210214,
+      "raw_sketch": 0.58915428666641,
+      "rows_seen_before": 320,
+      "sigma_top_seen": [
+        0.9631068008468658,
+        0.9558520311929938
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4014940496439709,
+        0.03286461459610774
+      ],
+      "sketch_quality_ratio": [
+        0.9579887800934678,
+        0.9502847752287056
+      ],
+      "sketch_singvals": [
+        0.9226455092430115,
+        0.9083316326141357
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 12,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.08017715749988454,
+      "hm_with_implied_w_raw": 0.38978758249702533,
+      "implied_w_sketch_for_balance": 0.005829384236555592,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.07635040429857325,
+      "raw_gain1": 0.40349174655974074,
+      "raw_gain2": 0.403491749512938,
+      "raw_gain_avg_g1g2": 0.40349174803633936,
+      "raw_sketch": 0.030806758093712555,
+      "rows_seen_before": 352,
+      "sigma_top_seen": [
+        0.9636465177782494,
+        0.9561088107315001
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4350252878211438,
+        0.04568662642766303
+      ],
+      "sketch_quality_ratio": [
+        0.9593681355756942,
+        0.9509191638967149
+      ],
+      "sketch_singvals": [
+        0.9244917631149292,
+        0.9091821908950806
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 12,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.16240360600600573,
+      "hm_with_implied_w_raw": 0.48566110204052076,
+      "implied_w_sketch_for_balance": 27.794382405150706,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 5.2720377848750966,
+      "raw_gain1": 0.11853730747584629,
+      "raw_gain2": 0.11853730858145418,
+      "raw_gain_avg_g1g2": 0.11853730802865023,
+      "raw_sketch": 0.6249331668444221,
+      "rows_seen_before": 352,
+      "sigma_top_seen": [
+        0.9636465177782494,
+        0.9561088107315001
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4350252878211438,
+        0.04568662642766303
+      ],
+      "sketch_quality_ratio": [
+        0.9593681355756942,
+        0.9509191638967149
+      ],
+      "sketch_singvals": [
+        0.9244917631149292,
+        0.9091821908950806
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 13,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.12088591236678904,
+      "hm_with_implied_w_raw": 0.37266027647454086,
+      "implied_w_sketch_for_balance": 0.016594049638814664,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.1288178933177168,
+      "raw_gain1": 0.39339889303017844,
+      "raw_gain2": 0.3933988909162931,
+      "raw_gain_avg_g1g2": 0.39339889197323574,
+      "raw_sketch": 0.05067681649751628,
+      "rows_seen_before": 384,
+      "sigma_top_seen": [
+        0.9641300542021858,
+        0.9568221663454346
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4612704998881408,
+        0.06129288289040412
+      ],
+      "sketch_quality_ratio": [
+        0.9601972471674041,
+        0.9500342276199059
+      ],
+      "sketch_singvals": [
+        0.9257550239562988,
+        0.9090138077735901
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 13,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1509745941493582,
+      "hm_with_implied_w_raw": 0.5122241980582176,
+      "implied_w_sketch_for_balance": 35.26087322872977,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 5.93808666396254,
+      "raw_gain1": 0.10912465913630953,
+      "raw_gain2": 0.10912465835041636,
+      "raw_gain_avg_g1g2": 0.10912465874336294,
+      "raw_sketch": 0.6479916807934267,
+      "rows_seen_before": 384,
+      "sigma_top_seen": [
+        0.9641300542021858,
+        0.9568221663454346
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.4612704998881408,
+        0.06129288289040412
+      ],
+      "sketch_quality_ratio": [
+        0.9601972471674041,
+        0.9500342276199059
+      ],
+      "sketch_singvals": [
+        0.9257550239562988,
+        0.9090138077735901
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 14,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11532028434312067,
+      "hm_with_implied_w_raw": 0.37273799343623676,
+      "implied_w_sketch_for_balance": 0.014831150578261516,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.12178321139739055,
+      "raw_gain1": 0.39252381659089813,
+      "raw_gain2": 0.3925238202753242,
+      "raw_gain_avg_g1g2": 0.3925238184331111,
+      "raw_sketch": 0.04780281115875052,
+      "rows_seen_before": 416,
+      "sigma_top_seen": [
+        0.9646694698427712,
+        0.9572472473714356
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.49673790284650626,
+        0.057190570821768094
+      ],
+      "sketch_quality_ratio": [
+        0.9621137338757774,
+        0.9503918666987023
+      ],
+      "sketch_singvals": [
+        0.9281217455863953,
+        0.9097599983215332
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 14,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.13647228030919747,
+      "hm_with_implied_w_raw": 0.5456426782344004,
+      "implied_w_sketch_for_balance": 47.894598153478896,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 6.92059232677947,
+      "raw_gain1": 0.09755476661189366,
+      "raw_gain2": 0.09755476703535985,
+      "raw_gain_avg_g1g2": 0.09755476682362677,
+      "raw_sketch": 0.6751367707203518,
+      "rows_seen_before": 416,
+      "sigma_top_seen": [
+        0.9646694698427712,
+        0.9572472473714356
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.49673790284650626,
+        0.057190570821768094
+      ],
+      "sketch_quality_ratio": [
+        0.9621137338757774,
+        0.9503918666987023
+      ],
+      "sketch_singvals": [
+        0.9281217455863953,
+        0.9097599983215332
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 15,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.1493890439494013,
+      "hm_with_implied_w_raw": 0.3580805901981287,
+      "implied_w_sketch_for_balance": 0.03074702320133317,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.17534829112749623,
+      "raw_gain1": 0.38357805964611125,
+      "raw_gain2": 0.3835780568705226,
+      "raw_gain_avg_g1g2": 0.3835780582583169,
+      "raw_sketch": 0.06725975702959906,
+      "rows_seen_before": 448,
+      "sigma_top_seen": [
+        0.9652310754380904,
+        0.9576794797706804
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.529874935617047,
+        0.0659018865081168
+      ],
+      "sketch_quality_ratio": [
+        0.9642539727102384,
+        0.949773220140479
+      ],
+      "sketch_singvals": [
+        0.9307278990745544,
+        0.9095783233642578
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 15,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.12459567007078491,
+      "hm_with_implied_w_raw": 0.5745232294070068,
+      "implied_w_sketch_for_balance": 62.390211784817794,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 7.898747482026362,
+      "raw_gain1": 0.08832181513424775,
+      "raw_gain2": 0.08832181478464568,
+      "raw_gain_avg_g1g2": 0.08832181495944672,
+      "raw_sketch": 0.697631713518928,
+      "rows_seen_before": 448,
+      "sigma_top_seen": [
+        0.9652310754380904,
+        0.9576794797706804
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.529874935617047,
+        0.0659018865081168
+      ],
+      "sketch_quality_ratio": [
+        0.9642539727102384,
+        0.949773220140479
+      ],
+      "sketch_singvals": [
+        0.9307278990745544,
+        0.9095783233642578
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 16,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.0848092917958475,
+      "hm_with_implied_w_raw": 0.3873626247742605,
+      "implied_w_sketch_for_balance": 0.006701488073668594,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.08186261707072767,
+      "raw_gain1": 0.40187131568385215,
+      "raw_gain2": 0.40187131625296435,
+      "raw_gain_avg_g1g2": 0.40187131596840825,
+      "raw_sketch": 0.03289823765083121,
+      "rows_seen_before": 480,
+      "sigma_top_seen": [
+        0.9658815036045553,
+        0.9581780345389637
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5591821409536081,
+        0.045155817006175505
+      ],
+      "sketch_quality_ratio": [
+        0.965865822036034,
+        0.9490592639099864
+      ],
+      "sketch_singvals": [
+        0.9329119324684143,
+        0.9093677401542664
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 16,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.11478549940871373,
+      "hm_with_implied_w_raw": 0.6004169317089691,
+      "implied_w_sketch_for_balance": 78.78473753585945,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 8.87607669727225,
+      "raw_gain1": 0.08083433625707487,
+      "raw_gain2": 0.0808343352963593,
+      "raw_gain_avg_g1g2": 0.08083433577671709,
+      "raw_sketch": 0.7174917641271991,
+      "rows_seen_before": 480,
+      "sigma_top_seen": [
+        0.9658815036045553,
+        0.9581780345389637
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5591821409536081,
+        0.045155817006175505
+      ],
+      "sketch_quality_ratio": [
+        0.965865822036034,
+        0.9490592639099864
+      ],
+      "sketch_singvals": [
+        0.9329119324684143,
+        0.9093677401542664
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 17,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.04582444787836243,
+      "hm_with_implied_w_raw": 0.4022176316701632,
+      "implied_w_sketch_for_balance": 0.001620632088575185,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.04025707501266312,
+      "raw_gain1": 0.4099814675239177,
+      "raw_gain2": 0.40998147206030394,
+      "raw_gain_avg_g1g2": 0.4099814697921108,
+      "raw_sketch": 0.016504654783222883,
+      "rows_seen_before": 512,
+      "sigma_top_seen": [
+        0.9663146605439421,
+        0.9586485116157379
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5876781515408528,
+        0.030331027488410243
+      ],
+      "sketch_quality_ratio": [
+        0.9676974136620072,
+        0.9489638114445844
+      ],
+      "sketch_singvals": [
+        0.9351001977920532,
+        0.9097227454185486
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 17,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.10632905850236549,
+      "hm_with_implied_w_raw": 0.6233971530355843,
+      "implied_w_sketch_for_balance": 97.3060600961334,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 9.8643834118577,
+      "raw_gain1": 0.07447906803149645,
+      "raw_gain2": 0.07447906874917491,
+      "raw_gain_avg_g1g2": 0.07447906839033569,
+      "raw_sketch": 0.7346900867602426,
+      "rows_seen_before": 512,
+      "sigma_top_seen": [
+        0.9663146605439421,
+        0.9586485116157379
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.5876781515408528,
+        0.030331027488410243
+      ],
+      "sketch_quality_ratio": [
+        0.9676974136620072,
+        0.9489638114445844
+      ],
+      "sketch_singvals": [
+        0.9351001977920532,
+        0.9097227454185486
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 18,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.03125943287043959,
+      "hm_with_implied_w_raw": 0.40640306066127324,
+      "implied_w_sketch_for_balance": 0.0007107776048340793,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.026660412690618262,
+      "raw_gain1": 0.4116741957559946,
+      "raw_gain2": 0.4116741900856956,
+      "raw_gain_avg_g1g2": 0.4116741929208451,
+      "raw_sketch": 0.01097540387734693,
+      "rows_seen_before": 544,
+      "sigma_top_seen": [
+        0.9671021578467881,
+        0.9592384170532559
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6124391242643953,
+        0.02172666393090075
+      ],
+      "sketch_quality_ratio": [
+        0.9695955483266047,
+        0.9486261647004591
+      ],
+      "sketch_singvals": [
+        0.9376979470252991,
+        0.9099586606025696
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 18,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.09968195633445999,
+      "hm_with_implied_w_raw": 0.6428937777375275,
+      "implied_w_sketch_for_balance": 116.11221285145439,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 10.775537705908434,
+      "raw_gain1": 0.06953822550898756,
+      "raw_gain2": 0.06953822560634795,
+      "raw_gain_avg_g1g2": 0.06953822555766775,
+      "raw_sketch": 0.7493117714986144,
+      "rows_seen_before": 544,
+      "sigma_top_seen": [
+        0.9671021578467881,
+        0.9592384170532559
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6124391242643953,
+        0.02172666393090075
+      ],
+      "sketch_quality_ratio": [
+        0.9695955483266047,
+        0.9486261647004591
+      ],
+      "sketch_singvals": [
+        0.9376979470252991,
+        0.9099586606025696
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 19,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.011331965718937813,
+      "hm_with_implied_w_raw": 0.41245633750403327,
+      "implied_w_sketch_for_balance": 8.622014659831808e-05,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.009285480418283056,
+      "raw_gain1": 0.4143534017350069,
+      "raw_gain2": 0.41435340290725853,
+      "raw_gain_avg_g1g2": 0.4143534023211327,
+      "raw_sketch": 0.003847470403501839,
+      "rows_seen_before": 576,
+      "sigma_top_seen": [
+        0.9675543342588595,
+        0.9599264595679102
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6382792497701238,
+        0.010555641902236393
+      ],
+      "sketch_quality_ratio": [
+        0.9715707011256642,
+        0.9485638602086405
+      ],
+      "sketch_singvals": [
+        0.9400474429130554,
+        0.9105515480041504
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 19,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.09329479967057493,
+      "hm_with_implied_w_raw": 0.6618605284827409,
+      "implied_w_sketch_for_balance": 138.58516514339354,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 11.77222006009884,
+      "raw_gain1": 0.06483819830617849,
+      "raw_gain2": 0.06483819874553381,
+      "raw_gain_avg_g1g2": 0.06483819852585615,
+      "raw_sketch": 0.7632895413467549,
+      "rows_seen_before": 576,
+      "sigma_top_seen": [
+        0.9675543342588595,
+        0.9599264595679102
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6382792497701238,
+        0.010555641902236393
+      ],
+      "sketch_quality_ratio": [
+        0.9715707011256642,
+        0.9485638602086405
+      ],
+      "sketch_singvals": [
+        0.9400474429130554,
+        0.9105515480041504
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 20,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.015486947679396923,
+      "hm_with_implied_w_raw": 0.4127227622055528,
+      "implied_w_sketch_for_balance": 0.00016247638811174426,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.012746622615883168,
+      "raw_gain1": 0.4153194356398967,
+      "raw_gain2": 0.41531943046463315,
+      "raw_gain_avg_g1g2": 0.41531943305226493,
+      "raw_sketch": 0.005293920078159775,
+      "rows_seen_before": 608,
+      "sigma_top_seen": [
+        0.9679824162188225,
+        0.9610683944654369
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6628451986716933,
+        0.012229760359187762
+      ],
+      "sketch_quality_ratio": [
+        0.9737527853069229,
+        0.9475180281995584
+      ],
+      "sketch_singvals": [
+        0.9425755739212036,
+        0.9106296300888062
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 20,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.08778726606896069,
+      "hm_with_implied_w_raw": 0.6792599430975906,
+      "implied_w_sketch_for_balance": 162.8774412287506,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 12.762344660318126,
+      "raw_gain1": 0.06081771604777286,
+      "raw_gain2": 0.06081771593400593,
+      "raw_gain_avg_g1g2": 0.06081771599088939,
+      "raw_sketch": 0.7761766529290716,
+      "rows_seen_before": 608,
+      "sigma_top_seen": [
+        0.9679824162188225,
+        0.9610683944654369
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6628451986716933,
+        0.012229760359187762
+      ],
+      "sketch_quality_ratio": [
+        0.9737527853069229,
+        0.9475180281995584
+      ],
+      "sketch_singvals": [
+        0.9425755739212036,
+        0.9106296300888062
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 21,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.0010083104862065601,
+      "hm_with_implied_w_raw": 0.4179135614687737,
+      "implied_w_sketch_for_balance": 6.483678245334742e-07,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.0008052129063381152,
+      "raw_gain1": 0.4180816787637761,
+      "raw_gain2": 0.41808168249649,
+      "raw_gain_avg_g1g2": 0.41808168063013307,
+      "raw_sketch": 0.0003366447651469131,
+      "rows_seen_before": 640,
+      "sigma_top_seen": [
+        0.9824199353538647,
+        0.9683030376189354
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6841102892755934,
+        0.0004175125011939457
+      ],
+      "sketch_quality_ratio": [
+        0.9619583708634862,
+        0.9409426982287202
+      ],
+      "sketch_singvals": [
+        0.9450470805168152,
+        0.911117672920227
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 21,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.0833339922150879,
+      "hm_with_implied_w_raw": 0.69428458544311,
+      "implied_w_sketch_for_balance": 186.9603517246112,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 13.67334456980483,
+      "raw_gain1": 0.05758753838711865,
+      "raw_gain2": 0.05758753868950457,
+      "raw_gain_avg_g1g2": 0.05758753853831161,
+      "raw_sketch": 0.7874142573612494,
+      "rows_seen_before": 640,
+      "sigma_top_seen": [
+        0.9824199353538647,
+        0.9683030376189354
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.6841102892755934,
+        0.0004175125011939457
+      ],
+      "sketch_quality_ratio": [
+        0.9619583708634862,
+        0.9409426982287202
+      ],
+      "sketch_singvals": [
+        0.9450470805168152,
+        0.911117672920227
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 22,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.004416218085209615,
+      "hm_with_implied_w_raw": 0.41501165506520954,
+      "implied_w_sketch_for_balance": 1.2716539914170003e-05,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.003566025787087077,
+      "raw_gain1": 0.4157489849337713,
+      "raw_gain2": 0.4157489805720184,
+      "raw_gain_avg_g1g2": 0.41574898275289485,
+      "raw_sketch": 0.0014825715934520434,
+      "rows_seen_before": 672,
+      "sigma_top_seen": [
+        0.9830731907551996,
+        0.9689322763743247
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.706762362967487,
+        0.002788863840479283
+      ],
+      "sketch_quality_ratio": [
+        0.963920637772901,
+        0.9408694074431502
+      ],
+      "sketch_singvals": [
+        0.9476045370101929,
+        0.9116387367248535
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 22,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.07894922628116458,
+      "hm_with_implied_w_raw": 0.7092249386662868,
+      "implied_w_sketch_for_balance": 215.23662879590015,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 14.670945054627536,
+      "raw_gain1": 0.054426594909525824,
+      "raw_gain2": 0.05442659480725727,
+      "raw_gain_avg_g1g2": 0.05442659485839155,
+      "raw_sketch": 0.7984895826779359,
+      "rows_seen_before": 672,
+      "sigma_top_seen": [
+        0.9830731907551996,
+        0.9689322763743247
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.706762362967487,
+        0.002788863840479283
+      ],
+      "sketch_quality_ratio": [
+        0.963920637772901,
+        0.9408694074431502
+      ],
+      "sketch_singvals": [
+        0.9476045370101929,
+        0.9116387367248535
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 23,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.021147450063451406,
+      "hm_with_implied_w_raw": 0.4094924270898189,
+      "implied_w_sketch_for_balance": 0.00031220672840475913,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.017669372609256932,
+      "raw_gain1": 0.4130456852885914,
+      "raw_gain2": 0.413045687523531,
+      "raw_gain_avg_g1g2": 0.4130456864060612,
+      "raw_sketch": 0.007298258137754986,
+      "rows_seen_before": 704,
+      "sigma_top_seen": [
+        0.9838046799814237,
+        0.969572572340131
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7287256680600115,
+        0.012266599906013302
+      ],
+      "sketch_quality_ratio": [
+        0.9657316958661464,
+        0.9399540309904573
+      ],
+      "sketch_singvals": [
+        0.9500913619995117,
+        0.9113536477088928
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 23,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.07501945128875649,
+      "hm_with_implied_w_raw": 0.7229565456218313,
+      "implied_w_sketch_for_balance": 245.51081955234636,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 15.668784877977819,
+      "raw_gain1": 0.051608910187491905,
+      "raw_gain2": 0.05160891038149178,
+      "raw_gain_avg_g1g2": 0.05160891028449184,
+      "raw_sketch": 0.8086489130345597,
+      "rows_seen_before": 704,
+      "sigma_top_seen": [
+        0.9838046799814237,
+        0.969572572340131
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7287256680600115,
+        0.012266599906013302
+      ],
+      "sketch_quality_ratio": [
+        0.9657316958661464,
+        0.9399540309904573
+      ],
+      "sketch_singvals": [
+        0.9500913619995117,
+        0.9113536477088928
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 24,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.07683275336233204,
+      "hm_with_implied_w_raw": 0.3919830490370196,
+      "implied_w_sketch_for_balance": 0.005237540910028967,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.07237085677279886,
+      "raw_gain1": 0.405106239824672,
+      "raw_gain2": 0.4051062468262651,
+      "raw_gain_avg_g1g2": 0.4051062433254685,
+      "raw_sketch": 0.02931788591347409,
+      "rows_seen_before": 736,
+      "sigma_top_seen": [
+        0.9843353142269092,
+        0.9700644845259088
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7503368034990843,
+        0.02763245371520538
+      ],
+      "sketch_quality_ratio": [
+        0.9677488746913505,
+        0.939311980327243
+      ],
+      "sketch_singvals": [
+        0.9525893926620483,
+        0.9111931920051575
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 24,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.07152152771824306,
+      "hm_with_implied_w_raw": 0.7358549717805686,
+      "implied_w_sketch_for_balance": 277.61311690578174,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 16.661726108233257,
+      "raw_gain1": 0.049111873482825946,
+      "raw_gain2": 0.04911187289011634,
+      "raw_gain_avg_g1g2": 0.049111873186471144,
+      "raw_sketch": 0.818288579695267,
+      "rows_seen_before": 736,
+      "sigma_top_seen": [
+        0.9843353142269092,
+        0.9700644845259088
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7503368034990843,
+        0.02763245371520538
+      ],
+      "sketch_quality_ratio": [
+        0.9677488746913505,
+        0.939311980327243
+      ],
+      "sketch_singvals": [
+        0.9525893926620483,
+        0.9111931920051575
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 25,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.04626428149098252,
+      "hm_with_implied_w_raw": 0.40303016244687195,
+      "implied_w_sketch_for_balance": 0.0016467263604120236,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.0405798762986289,
+      "raw_gain1": 0.4108693270783642,
+      "raw_gain2": 0.4108693226041894,
+      "raw_gain_avg_g1g2": 0.4108693248412768,
+      "raw_sketch": 0.016673026376960186,
+      "rows_seen_before": 768,
+      "sigma_top_seen": [
+        0.9849661876347685,
+        0.9715839643599677
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7700439385406632,
+        0.016981742162635427
+      ],
+      "sketch_quality_ratio": [
+        0.9695354449266551,
+        0.9380098376153244
+      ],
+      "sketch_singvals": [
+        0.9549596309661865,
+        0.9113553166389465
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 25,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06835213039025656,
+      "hm_with_implied_w_raw": 0.7480195885463753,
+      "implied_w_sketch_for_balance": 311.8119945141891,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 17.65819907335369,
+      "raw_gain1": 0.046858368348179934,
+      "raw_gain2": 0.04685836803837577,
+      "raw_gain_avg_g1g2": 0.04685836819327785,
+      "raw_sketch": 0.827434393809405,
+      "rows_seen_before": 768,
+      "sigma_top_seen": [
+        0.9849661876347685,
+        0.9715839643599677
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7700439385406632,
+        0.016981742162635427
+      ],
+      "sketch_quality_ratio": [
+        0.9695354449266551,
+        0.9380098376153244
+      ],
+      "sketch_singvals": [
+        0.9549596309661865,
+        0.9113553166389465
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 26,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06116580043850405,
+      "hm_with_implied_w_raw": 0.3965249276710333,
+      "implied_w_sketch_for_balance": 0.0031005657435579695,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.05568272392365489,
+      "raw_gain1": 0.4069338557204741,
+      "raw_gain2": 0.4069338625144726,
+      "raw_gain_avg_g1g2": 0.4069338591174734,
+      "raw_sketch": 0.022659185732425743,
+      "rows_seen_before": 800,
+      "sigma_top_seen": [
+        0.9854756250292026,
+        0.9741174741274273
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7895896525257616,
+        0.022096248563046858
+      ],
+      "sketch_quality_ratio": [
+        0.971486415050545,
+        0.9363463505983278
+      ],
+      "sketch_singvals": [
+        0.9573761820793152,
+        0.9121113419532776
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 26,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06546629118835184,
+      "hm_with_implied_w_raw": 0.7592951151505638,
+      "implied_w_sketch_for_balance": 347.92307226058466,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 18.65269611237434,
+      "raw_gain1": 0.04481411074457654,
+      "raw_gain2": 0.044814110518507255,
+      "raw_gain_avg_g1g2": 0.04481411063154189,
+      "raw_sketch": 0.835903987156475,
+      "rows_seen_before": 800,
+      "sigma_top_seen": [
+        0.9854756250292026,
+        0.9741174741274273
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.7895896525257616,
+        0.022096248563046858
+      ],
+      "sketch_quality_ratio": [
+        0.971486415050545,
+        0.9363463505983278
+      ],
+      "sketch_singvals": [
+        0.9573761820793152,
+        0.9121113419532776
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 27,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.029658640318807907,
+      "hm_with_implied_w_raw": 0.409480190222419,
+      "implied_w_sketch_for_balance": 0.0006273541333226244,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.025047038414204272,
+      "raw_gain1": 0.4144783130086338,
+      "raw_gain2": 0.4144783088090396,
+      "raw_gain_avg_g1g2": 0.4144783109088367,
+      "raw_sketch": 0.010381454175188135,
+      "rows_seen_before": 832,
+      "sigma_top_seen": [
+        0.9862386268809128,
+        0.9763161289749471
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8078837488662992,
+        0.0035639423557482512
+      ],
+      "sketch_quality_ratio": [
+        0.9731855799088429,
+        0.9344390520615451
+      ],
+      "sketch_singvals": [
+        0.959793210029602,
+        0.9123079180717468
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 27,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06286119692482454,
+      "hm_with_implied_w_raw": 0.7702233558129574,
+      "implied_w_sketch_for_balance": 385.9575146115136,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 19.645801449966697,
+      "raw_gain1": 0.04297403997840285,
+      "raw_gain2": 0.042974040438336386,
+      "raw_gain_avg_g1g2": 0.04297404020836962,
+      "raw_sketch": 0.844259461436515,
+      "rows_seen_before": 832,
+      "sigma_top_seen": [
+        0.9862386268809128,
+        0.9763161289749471
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8078837488662992,
+        0.0035639423557482512
+      ],
+      "sketch_quality_ratio": [
+        0.9731855799088429,
+        0.9344390520615451
+      ],
+      "sketch_singvals": [
+        0.959793210029602,
+        0.9123079180717468
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 28,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.07512951549679833,
+      "hm_with_implied_w_raw": 0.3929833990810655,
+      "implied_w_sketch_for_balance": 0.004956225624520249,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.07040046608169756,
+      "raw_gain1": 0.40581086182052883,
+      "raw_gain2": 0.40581086061021476,
+      "raw_gain_avg_g1g2": 0.4058108612153718,
+      "raw_sketch": 0.02856927377057726,
+      "rows_seen_before": 864,
+      "sigma_top_seen": [
+        0.9867097426449187,
+        0.9787580838588742
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8253790645924715,
+        0.04077728083181714
+      ],
+      "sketch_quality_ratio": [
+        0.9750471528905117,
+        0.9828165394047559
+      ],
+      "sketch_singvals": [
+        0.9620885252952576,
+        0.9619396328926086
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 28,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06055309723598025,
+      "hm_with_implied_w_raw": 0.7805182547624995,
+      "implied_w_sketch_for_balance": 424.8319026495923,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 20.611450765280747,
+      "raw_gain1": 0.04134801073580155,
+      "raw_gain2": 0.04134801071624896,
+      "raw_gain_avg_g1g2": 0.04134801072602526,
+      "raw_sketch": 0.8522424873217699,
+      "rows_seen_before": 864,
+      "sigma_top_seen": [
+        0.9867097426449187,
+        0.9787580838588742
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8253790645924715,
+        0.04077728083181714
+      ],
+      "sketch_quality_ratio": [
+        0.9750471528905117,
+        0.9828165394047559
+      ],
+      "sketch_singvals": [
+        0.9620885252952576,
+        0.9619396328926086
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 29,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.08414134076445473,
+      "hm_with_implied_w_raw": 0.3887031929259068,
+      "implied_w_sketch_for_balance": 0.006533028546509936,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.08082715228504549,
+      "raw_gain1": 0.4030953638245271,
+      "raw_gain2": 0.4030953606870096,
+      "raw_gain_avg_g1g2": 0.40309536225576836,
+      "raw_sketch": 0.03258105023044257,
+      "rows_seen_before": 896,
+      "sigma_top_seen": [
+        0.9875499102556188,
+        0.981243923101916
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8430493604747993,
+        0.04359331529951297
+      ],
+      "sketch_quality_ratio": [
+        0.9766909540641321,
+        0.9811877011009589
+      ],
+      "sketch_singvals": [
+        0.9645310640335083,
+        0.962784469127655
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 29,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.058344711129626435,
+      "hm_with_implied_w_raw": 0.7905345232256059,
+      "implied_w_sketch_for_balance": 467.006572359408,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 21.61033485070067,
+      "raw_gain1": 0.03979642489141786,
+      "raw_gain2": 0.03979642478017442,
+      "raw_gain_avg_g1g2": 0.03979642483579614,
+      "raw_sketch": 0.860014066562295,
+      "rows_seen_before": 896,
+      "sigma_top_seen": [
+        0.9875499102556188,
+        0.981243923101916
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8430493604747993,
+        0.04359331529951297
+      ],
+      "sketch_quality_ratio": [
+        0.9766909540641321,
+        0.9811877011009589
+      ],
+      "sketch_singvals": [
+        0.9645310640335083,
+        0.962784469127655
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 30,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.08650792585808707,
+      "hm_with_implied_w_raw": 0.38622294825582715,
+      "implied_w_sketch_for_balance": 0.007053147445592038,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.08398301879303957,
+      "raw_gain1": 0.4010267811487919,
+      "raw_gain2": 0.4010267834593128,
+      "raw_gain_avg_g1g2": 0.40102678230405236,
+      "raw_sketch": 0.03367943979475342,
+      "rows_seen_before": 928,
+      "sigma_top_seen": [
+        0.9880753258596877,
+        0.9840308547860187
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8604311244337144,
+        0.03784398052624164
+      ],
+      "sketch_quality_ratio": [
+        0.9786257530068297,
+        0.9787578371211609
+      ],
+      "sketch_singvals": [
+        0.9669559597969055,
+        0.9631279110908508
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 30,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.05632270503973579,
+      "hm_with_implied_w_raw": 0.8002656039451467,
+      "implied_w_sketch_for_balance": 511.1164233517305,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 22.60788409718456,
+      "raw_gain1": 0.038378898848429946,
+      "raw_gain2": 0.03837889853490015,
+      "raw_gain_avg_g1g2": 0.038378898691665046,
+      "raw_sketch": 0.8676656933987514,
+      "rows_seen_before": 928,
+      "sigma_top_seen": [
+        0.9880753258596877,
+        0.9840308547860187
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.8604311244337144,
+        0.03784398052624164
+      ],
+      "sketch_quality_ratio": [
+        0.9786257530068297,
+        0.9787578371211609
+      ],
+      "sketch_singvals": [
+        0.9669559597969055,
+        0.9631279110908508
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 31,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.06749786017345268,
+      "hm_with_implied_w_raw": 0.39334758413463666,
+      "implied_w_sketch_for_balance": 0.003909164030027291,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v1",
+      "ratio_sk_to_avg_g": 0.06252330789415489,
+      "raw_gain1": 0.40485296321322867,
+      "raw_gain2": 0.4048529605323137,
+      "raw_gain_avg_g1g2": 0.4048529618727712,
+      "raw_sketch": 0.025312746387031824,
+      "rows_seen_before": 960,
+      "sigma_top_seen": [
+        0.9887178210094905,
+        0.9861138465300497
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.876723722618704,
+        0.03457851986266579
+      ],
+      "sketch_quality_ratio": [
+        0.9804181475189556,
+        0.9773658451178093
+      ],
+      "sketch_singvals": [
+        0.969356894493103,
+        0.9637939929962158
+      ],
+      "union_dim": 66
+    },
+    {
+      "block": 31,
+      "hm_drop_sketch_raw": NaN,
+      "hm_uniform_raw": 0.05443492640306551,
+      "hm_with_implied_w_raw": 0.8093556353065596,
+      "implied_w_sketch_for_balance": 557.2218937966994,
+      "matrix": "mixed-tail-sharp",
+      "oracle": "v2",
+      "ratio_sk_to_avg_g": 23.60554794527548,
+      "raw_gain1": 0.03705862488783506,
+      "raw_gain2": 0.03705862536472766,
+      "raw_gain_avg_g1g2": 0.03705862512628136,
+      "raw_sketch": 0.8747891522044251,
+      "rows_seen_before": 960,
+      "sigma_top_seen": [
+        0.9887178210094905,
+        0.9861138465300497
+      ],
+      "sketch_dim": 2,
+      "sketch_principal_cos": [
+        0.876723722618704,
+        0.03457851986266579
+      ],
+      "sketch_quality_ratio": [
+        0.9804181475189556,
+        0.9773658451178093
+      ],
+      "sketch_singvals": [
+        0.969356894493103,
+        0.9637939929962158
+      ],
+      "union_dim": 66
+    }
+  ]
+}

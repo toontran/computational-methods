@@ -1,0 +1,161 @@
+Fully randomized rows special-cases summary
+===========================================
+
+Purpose
+-------
+This note corrects the interpretation of the recent special-case geometry
+probes. The intended problem setting is:
+
+  We only deal with fully randomized-row matrices.
+
+Therefore, diagnostics from matrix generators that preserve a natural time or
+event order should not be treated as final evidence until those matrices are
+rerun with an explicit row permutation.
+
+
+Row-order audit
+---------------
+The four recently discussed cases do not all use the same row-order model.
+
+static-cex:
+  Rows are explicitly randomized by the generator.
+
+  In cex_restricted_space_probe.py:
+
+    A_unpermuted = (U * svec[None, :]) @ V.T
+    p = np.random.permutation(n)
+    A = A_unpermuted[p, :]
+
+  Interpretation:
+    The top response rows in an early block are high-leverage original rows
+    that happened to land in that randomized streaming window.
+
+risk-residual-panel:
+  Rows are not explicitly randomized at the end of the generator.
+
+  The matrix is generated over ordered t positions with structured residual
+  events, volatility scaling, local pulses, and heavy-tailed residual noise.
+  The generator returns A directly.
+
+  Interpretation caveat:
+    The recent geometry probe mixes row geometry with the generator's ordered
+    event layout. It is not yet a fully randomized-row result.
+
+etf-basket-basis:
+  Rows are not explicitly randomized at the end of the generator.
+
+  The matrix is generated over ordered t positions with deterministic local
+  dislocations inserted at stride-spaced rows. The generator returns A
+  directly.
+
+  Interpretation caveat:
+    The large outward gradient and strong local singular-vector overlap may be
+    partly an ordered event-window effect. It must be retested after row
+    shuffling.
+
+intraday-liquidity-shape:
+  Rows are not explicitly randomized at the end of the generator.
+
+  The matrix is generated over ordered t positions with open/close waves,
+  auction pressure, venue effects, and stride-spaced local liquidity bursts.
+  The generator returns A directly.
+
+  Interpretation caveat:
+    The result that the optimizer follows local M_gain top-2 may depend on the
+    ordered intraday/event layout. It is not yet a fully randomized-row result.
+
+
+Correction to recent interpretation
+-----------------------------------
+The earlier special-case readout should be downgraded as follows:
+
+1. static-cex remains valid for the fully randomized-row setting.
+
+   It is still a controlled synthetic case for dense flat leading directions
+   competing with localized high-leverage tail rows.
+
+2. risk-residual-panel, etf-basket-basis, and intraday-liquidity-shape are
+   currently ordered-row diagnostics, not randomized-row diagnostics.
+
+   Their results are useful for understanding the generators, but they should
+   not drive objective changes or lambda sweeps until a row-randomized variant
+   is tested.
+
+3. The strongest prior statements about objective mismatch in the quant-style
+   matrices are provisional.
+
+   In particular:
+
+     - risk-residual-panel may still be an objective mismatch, but we need to
+       see whether the mismatch survives row shuffling.
+
+     - etf-basket-basis may still contain strong local row/leverage pressure,
+       but the measured block-local event concentration may be inflated by the
+       ordered row layout.
+
+     - intraday-liquidity-shape may still expose a scale-vs-alignment tradeoff,
+       but the local top-subspace chasing result should be retested under a
+       randomized stream.
+
+
+Recommended next experiment order
+---------------------------------
+Before sweeping regularization lambdas, rerun the special-case probes under a
+fully randomized-row input model.
+
+Required randomized-row cases:
+
+  risk-residual-panel-shuffled
+  etf-basket-basis-shuffled
+  intraday-liquidity-shape-shuffled
+
+Keep static-cex as the randomized-row control.
+
+For each shuffled case, compare against the unshuffled result:
+
+  final_align
+  final_relerr
+  score_sum
+  found_vs_Q_oracle
+  found_vs_M_top
+  direct-Q_oracle score and alignment
+  Q_oracle-unrestricted score and alignment
+  oracle outward gradient norm
+  top response rows
+  row concentration
+  overlap with block top singular vectors
+
+
+Decision criteria
+-----------------
+If the failure survives row shuffling:
+
+  Treat it as a row-geometry/objective issue. Then row-concentration or
+  leverage-aware regularization is a meaningful next experiment.
+
+If the failure weakens strongly after row shuffling:
+
+  Treat the previous result as an ordered event-window artifact. Do not tune a
+  row-regularization lambda against the unshuffled diagnostic.
+
+If static-cex remains the only strong randomized-row special case:
+
+  Focus first on understanding static-cex-like high-leverage row geometry
+  before broadening objective changes to all quant matrix families.
+
+
+Practical implementation note
+-----------------------------
+The safest path is to add an explicit row-shuffle option near matrix creation,
+not inside each generator, so all generated families can be tested in a common
+streaming row-order regime.
+
+Suggested behavior:
+
+  Generate A and V_exact normally.
+  Apply a deterministic row permutation to A using the experiment seed.
+  Leave V_exact and singular values unchanged, since row permutations preserve
+  right singular vectors and singular values.
+
+This makes the randomized-row assumption explicit and prevents accidentally
+mixing ordered-row and shuffled-row benchmark results.

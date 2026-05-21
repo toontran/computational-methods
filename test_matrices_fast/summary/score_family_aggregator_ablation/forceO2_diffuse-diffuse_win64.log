@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.053924 mean_relerr_sval=0.04140125
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.124112 mean_relerr_sval=0.00450831
+wrote_json=summary/score_family_aggregator_ablation/forceO2_diffuse-diffuse_win64.json wrote_csv=summary/score_family_aggregator_ablation/forceO2_diffuse-diffuse_win64.csv wrote_text=summary/score_family_aggregator_ablation/forceO2_diffuse-diffuse_win64.txt elapsed=83.079

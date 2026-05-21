@@ -1,0 +1,298 @@
+Rotation handoff diagnostic: mixed-tail-sharp vs static-cex
+===========================================================
+
+Date: 2026-04-22
+
+Question
+--------
+Now that the second-slot path dependence is known, inspect how the tails take
+the place of oracle directions and how the selected frame is rotated before it
+is carried as the next sketch. Compare the failing `mixed-tail-sharp` case to
+the successful `static-cex` control.
+
+
+Diagnostic
+----------
+Added:
+
+  rotation_handoff_diagnostic.py
+
+Raw output:
+
+  summary/rotation_handoff_mixed_static_raw.txt
+
+For each block, the diagnostic compares:
+
+  V_sel:
+    optimizer-selected rank-2 frame before handoff compression.
+
+  V_car:
+    right basis carried after `left_projected_operator_svd_factors(V_sel.T, M_gain)`.
+
+  Q_oracle:
+    projected QR oracle frame for the current block.
+
+Measures:
+
+  sel_oracle_cos:
+    principal cosines between V_sel and Q_oracle.
+
+  car_oracle_cos:
+    principal cosines between V_car and Q_oracle.
+
+  sel_car_cos:
+    principal cosines between V_sel and V_car. This tells whether handoff
+    compression changes the retained subspace.
+
+  sel_to_car:
+    flattened absolute 2x2 matrix |V_sel' V_car|. This tells whether the handoff
+    SVD rotates the basis inside the selected subspace.
+
+  oracle_coords_sel:
+    flattened absolute 2x2 matrix |Q_oracle' V_sel|.
+
+  oracle_coords_car:
+    flattened absolute 2x2 matrix |Q_oracle' V_car|.
+
+  prev_car_v2_in_sel:
+    projection of the previous carried second direction into the current
+    selected frame.
+
+  prev_car_v2_dot_sel2:
+    direct alignment between previous carried v2 and current selected v2.
+
+
+Headline
+--------
+The handoff SVD is not the main source of subspace loss. `sel_car_cos` is nearly
+1 throughout both matrices, so the carried basis stays in essentially the same
+rank-2 subspace selected by the optimizer.
+
+The important rotation is mostly an in-subspace basis rotation:
+
+  - the optimizer has already selected a rank-2 subspace where one slot is
+    tail-biased or missing oracle-2;
+  - `left_projected_operator_svd_factors` rotates the two basis vectors inside
+    that selected subspace to carry singular directions of the left-projected
+    operator;
+  - because oracle-2 is not present with enough strength in mixed-tail-sharp,
+    the rotation cannot recover it and instead carries an oracle-1/tail mixture;
+  - in static-cex, the selected subspace already contains both oracle directions
+    sufficiently well, so the same handoff rotation is harmless and eventually
+    resolves into the oracle frame.
+
+
+Mixed-Tail-Sharp: How Tail Takes the Slot
+-----------------------------------------
+Representative blocks:
+
+  block 1:
+    sel_oracle_cos = 0.635624, 0.257128
+    car_oracle_cos = 0.633557, 0.252133
+    sel_car_cos    = 0.999809, 0.999464
+    sel_tail       = 0.990438
+    car_tail       = 0.990553
+    sel_to_car     = [0.640803, 0.767184; 0.767457, 0.640591]
+
+  block 3:
+    sel_oracle_cos = 0.552599, 0.404528
+    car_oracle_cos = 0.558178, 0.402443
+    sel_car_cos    = 0.999804, 0.999370
+    sel_tail       = 0.985512
+    car_tail       = 0.985421
+    sel_to_car     = [0.637219, 0.770413; 0.770003, 0.637072]
+
+  block 12:
+    sel_oracle_cos = 0.988019, 0.376450
+    car_oracle_cos = 0.990503, 0.379350
+    sel_car_cos    = 0.999849, 0.996318
+    sel_tail       = 0.888147
+    car_tail       = 0.887533
+    sel_to_car     = [0.996597, 0.057787; 0.054261, 0.996423]
+
+  block 32:
+    sel_oracle_cos = 0.999893, 0.147133
+    car_oracle_cos = 0.999893, 0.147150
+    sel_car_cos    = 1.000000, 1.000000
+    sel_tail       = 0.589914
+    car_tail       = 0.589914
+
+Readout:
+
+  1. The selected subspace and carried subspace are almost identical. The
+     carried basis is not rotating out of V_sel into a new unrelated tail space.
+
+  2. The bad second slot is already present before handoff. The second oracle
+     cosine is low in V_sel, and it stays low in V_car.
+
+  3. Early handoff basis rotation is large. Blocks 1 and 3 have sel_to_car close
+     to a 50-degree in-subspace rotation, roughly mixing selected v1 and v2:
+
+       block 1 sel_to_car ~= [[0.641, 0.767], [0.767, 0.641]]
+       block 3 sel_to_car ~= [[0.637, 0.770], [0.770, 0.637]]
+
+     But this is a rotation inside an already tail-heavy selected subspace.
+
+  4. Once the first oracle direction becomes dominant, the handoff rotation
+     becomes small, but the second oracle direction is still not recovered. By
+     block 32 the selected and carried frames are identical, and both still have
+     second oracle cosine about 0.147.
+
+
+Mixed-Tail-Sharp: Coordinate View
+---------------------------------
+The coordinate matrices show how oracle mass is distributed across selected and
+carried columns.
+
+Block 1:
+
+  oracle_coords_sel = [0.254022, 0.249962; 0.061895, 0.582489]
+  oracle_coords_car = [0.348336, 0.029255; 0.402948, 0.424741]
+
+Interpretation:
+
+  V_sel has weak oracle content. Handoff rotation redistributes that weak oracle
+  content across carried columns; it does not create a clean oracle-2 slot.
+
+Block 12:
+
+  oracle_coords_sel = [0.010096, 0.377458; 0.982777, 0.097306]
+  oracle_coords_car = [0.011712, 0.380417; 0.989065, 0.043567]
+
+Interpretation:
+
+  One oracle direction is now strongly present, but the other is only weakly
+  represented. The carried SVD sharpens the dominant oracle direction and keeps
+  the second slot mostly as non-oracle/tail complement.
+
+
+Static-CEX: Same Rotation, Different Outcome
+--------------------------------------------
+Representative blocks:
+
+  block 1:
+    sel_oracle_cos = 0.999932, 0.703855
+    car_oracle_cos = 0.999331, 0.697164
+    sel_car_cos    = 0.999850, 0.999518
+    sel_tail       = 0.972025
+    car_tail       = 0.972187
+    sel_to_car     = [0.800949, 0.598185; 0.597934, 0.801166]
+
+  block 3:
+    sel_oracle_cos = 0.918889, 0.675623
+    car_oracle_cos = 0.918019, 0.677376
+    sel_car_cos    = 0.999838, 0.999578
+    sel_tail       = 0.942897
+    car_tail       = 0.943128
+    sel_to_car     = [0.959760, 0.280241; 0.280139, 0.959521]
+
+  block 12:
+    sel_oracle_cos = 0.999740, 0.995884
+    car_oracle_cos = 0.999799, 0.996912
+    sel_car_cos    = 0.999909, 0.999162
+    sel_tail       = 0.697517
+    car_tail       = 0.697049
+    sel_to_car     = [0.995404, 0.094805; 0.094717, 0.994663]
+
+  block 32:
+    sel_oracle_cos = 0.999997, 0.999890
+    car_oracle_cos = 0.999997, 0.999890
+    sel_car_cos    = 1.000000, 1.000000
+    sel_tail       = 0.096207
+    car_tail       = 0.096207
+
+Readout:
+
+  Static-cex also has large early tail mass and a nontrivial handoff rotation.
+  Block 1 has sel_to_car roughly:
+
+    [[0.801, 0.598], [0.598, 0.801]]
+
+  So handoff rotation itself is not a failure signature.
+
+  The difference is that static-cex's selected subspace already contains much
+  stronger oracle information, especially oracle-2. The second oracle cosine is
+  0.704 in block 1 and 0.676 in block 3, then rises to 0.996 by block 12. Since
+  both oracle directions are inside the selected subspace, the in-subspace SVD
+  rotation can preserve and eventually sharpen them.
+
+
+Static-CEX Coordinate View
+--------------------------
+Block 1:
+
+  oracle_coords_sel = [0.999926, 0.002137; 0.000469, 0.703860]
+  oracle_coords_car = [0.799280, 0.599786; 0.413606, 0.561284]
+
+Interpretation:
+
+  V_sel already has a clean oracle-1 column and a substantial oracle-2 column.
+  Handoff rotation mixes those columns, but the rank-2 subspace retains both
+  oracle directions.
+
+Block 12:
+
+  oracle_coords_sel = [0.998977, 0.038552; 0.037861, 0.995183]
+  oracle_coords_car = [0.990864, 0.133101; 0.132100, 0.988156]
+
+Interpretation:
+
+  By block 12 the selected frame is already almost oracle. The carried frame is
+  a mild rotation inside an oracle-rich subspace, so the next block receives a
+  sketch that continues to reinforce both oracle directions.
+
+
+Previous Carried v2 Survival
+----------------------------
+Mixed-tail-sharp:
+
+  block 3  prev_car_v2_in_sel=0.818044  prev_car_v2_dot_sel2=0.779217
+  block 8  prev_car_v2_in_sel=0.943255  prev_car_v2_dot_sel2=0.937169
+  block 12 prev_car_v2_in_sel=0.953648  prev_car_v2_dot_sel2=0.950802
+  block 16 prev_car_v2_in_sel=0.960285  prev_car_v2_dot_sel2=0.960249
+  block 32 prev_car_v2_in_sel=0.994008  prev_car_v2_dot_sel2=0.993980
+
+Static-cex:
+
+  block 3  prev_car_v2_in_sel=0.803481  prev_car_v2_dot_sel2=0.793647
+  block 8  prev_car_v2_in_sel=0.928139  prev_car_v2_dot_sel2=0.927719
+  block 12 prev_car_v2_in_sel=0.951090  prev_car_v2_dot_sel2=0.944958
+  block 16 prev_car_v2_in_sel=0.963044  prev_car_v2_dot_sel2=0.957788
+  block 32 prev_car_v2_in_sel=0.982952  prev_car_v2_dot_sel2=0.982895
+
+Readout:
+
+  Both matrices show strong survival of the previous carried second direction.
+  This confirms path dependence, but not failure by itself. In static-cex the
+  surviving carried v2 becomes oracle-rich; in mixed-tail-sharp it remains a
+  tail-biased second slot.
+
+
+Conclusion
+----------
+The tails take the place of oracle directions before handoff compression. The
+handoff SVD then rotates the basis inside the selected subspace and carries the
+dominant right singular directions of the left-projected operator.
+
+For mixed-tail-sharp:
+
+  - V_sel is already missing a strong oracle-2 component.
+  - V_car stays in essentially the same subspace as V_sel.
+  - the SVD handoff rotates/mixes basis columns early, but cannot recover
+    oracle-2 because oracle-2 is not strongly present in the selected subspace.
+  - the carried second slot survives and reinforces a tail-biased complement.
+
+For static-cex:
+
+  - V_sel is also tail-heavy early, and the handoff SVD also rotates columns.
+  - however, V_sel contains both oracle directions with much higher early
+    overlap.
+  - the same in-subspace rotation is harmless because the selected subspace is
+    oracle-rich enough.
+  - over time both selected and carried frames converge to the oracle span.
+
+Therefore the rotation mechanism is not "handoff SVD rotates a good oracle
+subspace away." The failure is earlier: the optimizer gives the second slot to a
+tail/high-entropy/high-gain direction. Handoff compression then faithfully
+carries and rotates that already wrong rank-2 subspace, creating path-dependent
+reinforcement.

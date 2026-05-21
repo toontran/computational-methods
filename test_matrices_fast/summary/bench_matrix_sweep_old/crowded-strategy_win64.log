@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:599: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999167 mean_relerr_sval=0.29486157
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999974 mean_relerr_sval=0.01583472
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.999210 mean_relerr_sval=0.29487627
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.999976 mean_relerr_sval=0.01584220
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.998572 mean_relerr_sval=0.29560292
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999878 mean_relerr_sval=0.01636318
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999329 mean_relerr_sval=0.29484114
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999985 mean_relerr_sval=0.01582218
+wrote_json=summary/bench_matrix_sweep/crowded-strategy_win64.json wrote_csv=summary/bench_matrix_sweep/crowded-strategy_win64.csv wrote_text=summary/bench_matrix_sweep/crowded-strategy_win64.txt elapsed=349.604

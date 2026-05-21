@@ -1,0 +1,1200 @@
+matrix=diffuse-diffuse internal_rank=2 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.107905
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_current_svd
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.040505
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_first2
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.186016
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_projected_svd
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.186016
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_score_top2
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.186016
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.023134
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.186017
+  final variant_subspace_cos2=0.186017
+  final variant_col2_vs_oracle2=0.000368
+  final variant_actualB_score_sum=1.809640
+  final variant_actualB_gain2_sum=1.809640
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=left_projected
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=0.185985
+  final variant_subspace_cos2=0.185985
+  final variant_col2_vs_oracle2=0.185985
+  final variant_actualB_score_sum=1.809641
+  final variant_actualB_gain2_sum=1.809641
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=opt1_oracle2
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.999757
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.779363
+  final variant_actualB_gain2_sum=1.779363
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=2 variant=oracle_projected
+  final internal_oracle2_projection=0.186017
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.779304
+  final variant_actualB_gain2_sum=1.779304
+  final variant_actualB_phi_mean=1.000000
+  verdict=oracle2_absent_internally
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.589238
+  final variant_subspace_cos2=0.480489
+  final variant_col2_vs_oracle2=0.497772
+  final variant_actualB_score_sum=1.816369
+  final variant_actualB_gain2_sum=1.816369
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_current_svd
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.633630
+  final variant_subspace_cos2=0.278820
+  final variant_col2_vs_oracle2=0.223756
+  final variant_actualB_score_sum=1.737393
+  final variant_actualB_gain2_sum=1.737393
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_first2
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.588924
+  final variant_subspace_cos2=0.480142
+  final variant_col2_vs_oracle2=0.496281
+  final variant_actualB_score_sum=1.816369
+  final variant_actualB_gain2_sum=1.816369
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_projected_svd
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.589238
+  final variant_subspace_cos2=0.480489
+  final variant_col2_vs_oracle2=0.497772
+  final variant_actualB_score_sum=1.816369
+  final variant_actualB_gain2_sum=1.816369
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_score_top2
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.588924
+  final variant_subspace_cos2=0.480142
+  final variant_col2_vs_oracle2=0.496281
+  final variant_actualB_score_sum=1.816369
+  final variant_actualB_gain2_sum=1.816369
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.633630
+  final variant_subspace_cos2=0.278820
+  final variant_col2_vs_oracle2=0.223756
+  final variant_actualB_score_sum=1.737393
+  final variant_actualB_gain2_sum=1.737393
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.799697
+  final variant_subspace_cos2=0.034818
+  final variant_col2_vs_oracle2=0.009808
+  final variant_actualB_score_sum=1.730840
+  final variant_actualB_gain2_sum=1.730840
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=left_projected
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=0.589240
+  final variant_subspace_cos2=0.480492
+  final variant_col2_vs_oracle2=0.497774
+  final variant_actualB_score_sum=1.816369
+  final variant_actualB_gain2_sum=1.816369
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=opt1_oracle2
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.988365
+  final variant_col2_vs_oracle2=0.948400
+  final variant_actualB_score_sum=1.803661
+  final variant_actualB_gain2_sum=1.803661
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=4 variant=oracle_projected
+  final internal_oracle2_projection=0.993150
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.802190
+  final variant_actualB_gain2_sum=1.802190
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.995729
+  final variant_subspace_cos2=0.938288
+  final variant_col2_vs_oracle2=0.104580
+  final variant_actualB_score_sum=1.876338
+  final variant_actualB_gain2_sum=1.876338
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_current_svd
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.158640
+  final variant_subspace_cos2=0.140845
+  final variant_col2_vs_oracle2=0.020435
+  final variant_actualB_score_sum=1.698638
+  final variant_actualB_gain2_sum=1.698638
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_first2
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.995730
+  final variant_subspace_cos2=0.938416
+  final variant_col2_vs_oracle2=0.106350
+  final variant_actualB_score_sum=1.876338
+  final variant_actualB_gain2_sum=1.876338
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.995729
+  final variant_subspace_cos2=0.938288
+  final variant_col2_vs_oracle2=0.104580
+  final variant_actualB_score_sum=1.876338
+  final variant_actualB_gain2_sum=1.876338
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_score_top2
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.995730
+  final variant_subspace_cos2=0.938416
+  final variant_col2_vs_oracle2=0.106350
+  final variant_actualB_score_sum=1.876338
+  final variant_actualB_gain2_sum=1.876338
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.158640
+  final variant_subspace_cos2=0.140845
+  final variant_col2_vs_oracle2=0.020435
+  final variant_actualB_score_sum=1.698638
+  final variant_actualB_gain2_sum=1.698638
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.011646
+  final variant_subspace_cos2=0.011596
+  final variant_col2_vs_oracle2=0.003399
+  final variant_actualB_score_sum=1.692429
+  final variant_actualB_gain2_sum=1.692429
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=left_projected
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=0.995729
+  final variant_subspace_cos2=0.938288
+  final variant_col2_vs_oracle2=0.104580
+  final variant_actualB_score_sum=1.876338
+  final variant_actualB_gain2_sum=1.876338
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.805822
+  final variant_col2_vs_oracle2=0.140828
+  final variant_actualB_score_sum=1.855485
+  final variant_actualB_gain2_sum=1.855485
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=8 variant=oracle_projected
+  final internal_oracle2_projection=0.999851
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.869856
+  final variant_actualB_gain2_sum=1.869856
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.632784
+  final variant_subspace_cos2=0.423453
+  final variant_col2_vs_oracle2=0.405061
+  final variant_actualB_score_sum=1.892467
+  final variant_actualB_gain2_sum=1.892467
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_current_svd
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.292523
+  final variant_subspace_cos2=0.046545
+  final variant_col2_vs_oracle2=0.285009
+  final variant_actualB_score_sum=1.694311
+  final variant_actualB_gain2_sum=1.694311
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_first2
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.633081
+  final variant_subspace_cos2=0.423874
+  final variant_col2_vs_oracle2=0.403821
+  final variant_actualB_score_sum=1.892467
+  final variant_actualB_gain2_sum=1.892467
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_projected_svd
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.632784
+  final variant_subspace_cos2=0.423453
+  final variant_col2_vs_oracle2=0.405061
+  final variant_actualB_score_sum=1.892467
+  final variant_actualB_gain2_sum=1.892467
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_score_top2
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.633081
+  final variant_subspace_cos2=0.423874
+  final variant_col2_vs_oracle2=0.403821
+  final variant_actualB_score_sum=1.892467
+  final variant_actualB_gain2_sum=1.892467
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.292523
+  final variant_subspace_cos2=0.046545
+  final variant_col2_vs_oracle2=0.285009
+  final variant_actualB_score_sum=1.694311
+  final variant_actualB_gain2_sum=1.694311
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.046877
+  final variant_subspace_cos2=0.009830
+  final variant_col2_vs_oracle2=0.012407
+  final variant_actualB_score_sum=1.674886
+  final variant_actualB_gain2_sum=1.674886
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=left_projected
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=0.632784
+  final variant_subspace_cos2=0.423453
+  final variant_col2_vs_oracle2=0.405061
+  final variant_actualB_score_sum=1.892467
+  final variant_actualB_gain2_sum=1.892467
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=opt1_oracle2
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.989254
+  final variant_col2_vs_oracle2=0.873086
+  final variant_actualB_score_sum=1.861531
+  final variant_actualB_gain2_sum=1.861531
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=diffuse-diffuse internal_rank=16 variant=oracle_projected
+  final internal_oracle2_projection=0.997981
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.859551
+  final variant_actualB_gain2_sum=1.859551
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.032896
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_current_svd
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.106886
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_first2
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.033704
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_projected_svd
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.032896
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_score_top2
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.033704
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.966374
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167467
+  final variant_col2_vs_oracle2=0.033704
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=left_projected
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=0.988028
+  final variant_subspace_cos2=0.167470
+  final variant_col2_vs_oracle2=0.032897
+  final variant_actualB_score_sum=1.890011
+  final variant_actualB_gain2_sum=1.890011
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=opt1_oracle2
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.996296
+  final variant_col2_vs_oracle2=0.157913
+  final variant_actualB_score_sum=1.794282
+  final variant_actualB_gain2_sum=1.794282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=2 variant=oracle_projected
+  final internal_oracle2_projection=0.988028
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.792735
+  final variant_actualB_gain2_sum=1.792735
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.993452
+  final variant_subspace_cos2=0.238526
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.861189
+  final variant_actualB_gain2_sum=1.861189
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_current_svd
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.984531
+  final variant_subspace_cos2=0.182649
+  final variant_col2_vs_oracle2=0.982457
+  final variant_actualB_score_sum=1.826694
+  final variant_actualB_gain2_sum=1.826694
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_first2
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.993452
+  final variant_subspace_cos2=0.238526
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.861189
+  final variant_actualB_gain2_sum=1.861189
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_projected_svd
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.993452
+  final variant_subspace_cos2=0.238526
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.861189
+  final variant_actualB_gain2_sum=1.861189
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_score_top2
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.993452
+  final variant_subspace_cos2=0.238526
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.861189
+  final variant_actualB_gain2_sum=1.861189
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.984531
+  final variant_subspace_cos2=0.182649
+  final variant_col2_vs_oracle2=0.982457
+  final variant_actualB_score_sum=1.826694
+  final variant_actualB_gain2_sum=1.826694
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.967270
+  final variant_subspace_cos2=0.189093
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.825938
+  final variant_actualB_gain2_sum=1.825938
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=left_projected
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=0.993452
+  final variant_subspace_cos2=0.238526
+  final variant_col2_vs_oracle2=0.966880
+  final variant_actualB_score_sum=1.861189
+  final variant_actualB_gain2_sum=1.861189
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=opt1_oracle2
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.221636
+  final variant_col2_vs_oracle2=0.973607
+  final variant_actualB_score_sum=1.860258
+  final variant_actualB_gain2_sum=1.860258
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=4 variant=oracle_projected
+  final internal_oracle2_projection=0.994940
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.777292
+  final variant_actualB_gain2_sum=1.777292
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.138925
+  final variant_subspace_cos2=0.121553
+  final variant_col2_vs_oracle2=0.123742
+  final variant_actualB_score_sum=1.877337
+  final variant_actualB_gain2_sum=1.877337
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_current_svd
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.859092
+  final variant_subspace_cos2=0.008724
+  final variant_col2_vs_oracle2=0.857346
+  final variant_actualB_score_sum=1.805793
+  final variant_actualB_gain2_sum=1.805793
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_first2
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.138980
+  final variant_subspace_cos2=0.121549
+  final variant_col2_vs_oracle2=0.123740
+  final variant_actualB_score_sum=1.877337
+  final variant_actualB_gain2_sum=1.877337
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_projected_svd
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.138925
+  final variant_subspace_cos2=0.121553
+  final variant_col2_vs_oracle2=0.123742
+  final variant_actualB_score_sum=1.877337
+  final variant_actualB_gain2_sum=1.877337
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_score_top2
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.138980
+  final variant_subspace_cos2=0.121549
+  final variant_col2_vs_oracle2=0.123740
+  final variant_actualB_score_sum=1.877337
+  final variant_actualB_gain2_sum=1.877337
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.859092
+  final variant_subspace_cos2=0.008724
+  final variant_col2_vs_oracle2=0.857346
+  final variant_actualB_score_sum=1.805793
+  final variant_actualB_gain2_sum=1.805793
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.931768
+  final variant_subspace_cos2=0.023939
+  final variant_col2_vs_oracle2=0.904008
+  final variant_actualB_score_sum=1.798912
+  final variant_actualB_gain2_sum=1.798912
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=left_projected
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=0.138925
+  final variant_subspace_cos2=0.121553
+  final variant_col2_vs_oracle2=0.123742
+  final variant_actualB_score_sum=1.877337
+  final variant_actualB_gain2_sum=1.877337
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=opt1_oracle2
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.997775
+  final variant_col2_vs_oracle2=0.997996
+  final variant_actualB_score_sum=1.846835
+  final variant_actualB_gain2_sum=1.846835
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=8 variant=oracle_projected
+  final internal_oracle2_projection=0.997077
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.846632
+  final variant_actualB_gain2_sum=1.846632
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.975667
+  final variant_subspace_cos2=0.469343
+  final variant_col2_vs_oracle2=0.098281
+  final variant_actualB_score_sum=1.877399
+  final variant_actualB_gain2_sum=1.877399
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_current_svd
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.065742
+  final variant_subspace_cos2=0.001314
+  final variant_col2_vs_oracle2=0.047527
+  final variant_actualB_score_sum=1.771050
+  final variant_actualB_gain2_sum=1.771050
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_first2
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.975768
+  final variant_subspace_cos2=0.469350
+  final variant_col2_vs_oracle2=0.097469
+  final variant_actualB_score_sum=1.877399
+  final variant_actualB_gain2_sum=1.877399
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.975667
+  final variant_subspace_cos2=0.469343
+  final variant_col2_vs_oracle2=0.098281
+  final variant_actualB_score_sum=1.877399
+  final variant_actualB_gain2_sum=1.877399
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_score_top2
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.975768
+  final variant_subspace_cos2=0.469350
+  final variant_col2_vs_oracle2=0.097469
+  final variant_actualB_score_sum=1.877399
+  final variant_actualB_gain2_sum=1.877399
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.065742
+  final variant_subspace_cos2=0.001314
+  final variant_col2_vs_oracle2=0.047527
+  final variant_actualB_score_sum=1.771050
+  final variant_actualB_gain2_sum=1.771050
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.006517
+  final variant_subspace_cos2=0.001706
+  final variant_col2_vs_oracle2=0.000898
+  final variant_actualB_score_sum=1.771002
+  final variant_actualB_gain2_sum=1.771002
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=left_projected
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=0.975667
+  final variant_subspace_cos2=0.469343
+  final variant_col2_vs_oracle2=0.098281
+  final variant_actualB_score_sum=1.877399
+  final variant_actualB_gain2_sum=1.877399
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.957982
+  final variant_col2_vs_oracle2=0.239533
+  final variant_actualB_score_sum=1.868355
+  final variant_actualB_gain2_sum=1.868355
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=mixed-tail-sharp internal_rank=16 variant=oracle_projected
+  final internal_oracle2_projection=0.999515
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.873175
+  final variant_actualB_gain2_sum=1.873175
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.163706
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_current_svd
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.497157
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_first2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.999105
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.999103
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_score_top2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.999105
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.730591
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.041728
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=left_projected
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.999976
+  final variant_subspace_cos2=0.999976
+  final variant_col2_vs_oracle2=0.999103
+  final variant_actualB_score_sum=1.943385
+  final variant_actualB_gain2_sum=1.943385
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.999999
+  final variant_col2_vs_oracle2=0.999129
+  final variant_actualB_score_sum=1.943381
+  final variant_actualB_gain2_sum=1.943381
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=2 variant=oracle_projected
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.943381
+  final variant_actualB_gain2_sum=1.943381
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984118
+  final variant_subspace_cos2=0.983327
+  final variant_col2_vs_oracle2=0.971991
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_current_svd
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.998972
+  final variant_subspace_cos2=0.998472
+  final variant_col2_vs_oracle2=0.532354
+  final variant_actualB_score_sum=1.937935
+  final variant_actualB_gain2_sum=1.937935
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_first2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984301
+  final variant_subspace_cos2=0.983522
+  final variant_col2_vs_oracle2=0.971689
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984118
+  final variant_subspace_cos2=0.983327
+  final variant_col2_vs_oracle2=0.971991
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_score_top2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984301
+  final variant_subspace_cos2=0.983522
+  final variant_col2_vs_oracle2=0.971689
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.998972
+  final variant_subspace_cos2=0.998472
+  final variant_col2_vs_oracle2=0.532354
+  final variant_actualB_score_sum=1.937935
+  final variant_actualB_gain2_sum=1.937935
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984301
+  final variant_subspace_cos2=0.983522
+  final variant_col2_vs_oracle2=0.971689
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=left_projected
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=0.984118
+  final variant_subspace_cos2=0.983327
+  final variant_col2_vs_oracle2=0.971991
+  final variant_actualB_score_sum=1.938201
+  final variant_actualB_gain2_sum=1.938201
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.999888
+  final variant_col2_vs_oracle2=0.987589
+  final variant_actualB_score_sum=1.938099
+  final variant_actualB_gain2_sum=1.938099
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=4 variant=oracle_projected
+  final internal_oracle2_projection=0.999976
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.938093
+  final variant_actualB_gain2_sum=1.938093
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.628234
+  final variant_subspace_cos2=0.464630
+  final variant_col2_vs_oracle2=0.501785
+  final variant_actualB_score_sum=1.922847
+  final variant_actualB_gain2_sum=1.922847
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_current_svd
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.049071
+  final variant_subspace_cos2=0.048476
+  final variant_col2_vs_oracle2=0.034237
+  final variant_actualB_score_sum=1.814241
+  final variant_actualB_gain2_sum=1.814241
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_first2
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.628049
+  final variant_subspace_cos2=0.464312
+  final variant_col2_vs_oracle2=0.501517
+  final variant_actualB_score_sum=1.922847
+  final variant_actualB_gain2_sum=1.922847
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.628234
+  final variant_subspace_cos2=0.464630
+  final variant_col2_vs_oracle2=0.501785
+  final variant_actualB_score_sum=1.922847
+  final variant_actualB_gain2_sum=1.922847
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_score_top2
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.628049
+  final variant_subspace_cos2=0.464312
+  final variant_col2_vs_oracle2=0.501517
+  final variant_actualB_score_sum=1.922847
+  final variant_actualB_gain2_sum=1.922847
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.049071
+  final variant_subspace_cos2=0.048476
+  final variant_col2_vs_oracle2=0.034237
+  final variant_actualB_score_sum=1.814241
+  final variant_actualB_gain2_sum=1.814241
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.007585
+  final variant_subspace_cos2=0.007577
+  final variant_col2_vs_oracle2=0.005021
+  final variant_actualB_score_sum=1.814102
+  final variant_actualB_gain2_sum=1.814102
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=left_projected
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=0.628234
+  final variant_subspace_cos2=0.464630
+  final variant_col2_vs_oracle2=0.501785
+  final variant_actualB_score_sum=1.922847
+  final variant_actualB_gain2_sum=1.922847
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=8 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.976723
+  final variant_col2_vs_oracle2=0.925782
+  final variant_actualB_score_sum=1.921580
+  final variant_actualB_gain2_sum=1.921580
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=8 variant=oracle_projected
+  final internal_oracle2_projection=0.999975
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.921348
+  final variant_actualB_gain2_sum=1.921348
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_actualB_score_opt
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.301768
+  final variant_subspace_cos2=0.088558
+  final variant_col2_vs_oracle2=0.093196
+  final variant_actualB_score_sum=1.921282
+  final variant_actualB_gain2_sum=1.921282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_current_svd
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.049668
+  final variant_subspace_cos2=0.049291
+  final variant_col2_vs_oracle2=0.033981
+  final variant_actualB_score_sum=1.814245
+  final variant_actualB_gain2_sum=1.814245
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_first2
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.301830
+  final variant_subspace_cos2=0.088592
+  final variant_col2_vs_oracle2=0.092732
+  final variant_actualB_score_sum=1.921282
+  final variant_actualB_gain2_sum=1.921282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_projected_svd
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.301768
+  final variant_subspace_cos2=0.088558
+  final variant_col2_vs_oracle2=0.093196
+  final variant_actualB_score_sum=1.921282
+  final variant_actualB_gain2_sum=1.921282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_score_top2
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.301830
+  final variant_subspace_cos2=0.088592
+  final variant_col2_vs_oracle2=0.092732
+  final variant_actualB_score_sum=1.921282
+  final variant_actualB_gain2_sum=1.921282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_zeroB_score_opt
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.049668
+  final variant_subspace_cos2=0.049291
+  final variant_col2_vs_oracle2=0.033981
+  final variant_actualB_score_sum=1.814245
+  final variant_actualB_gain2_sum=1.814245
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=internal_zeroB_score_top2
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.006266
+  final variant_subspace_cos2=0.005572
+  final variant_col2_vs_oracle2=0.004168
+  final variant_actualB_score_sum=1.791357
+  final variant_actualB_gain2_sum=1.791357
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=left_projected
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=0.301768
+  final variant_subspace_cos2=0.088558
+  final variant_col2_vs_oracle2=0.093196
+  final variant_actualB_score_sum=1.921282
+  final variant_actualB_gain2_sum=1.921282
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_drops_rank2
+
+matrix=static-cex internal_rank=16 variant=opt1_oracle2
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=0.810379
+  final variant_col2_vs_oracle2=0.957861
+  final variant_actualB_score_sum=1.917091
+  final variant_actualB_gain2_sum=1.917091
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+
+matrix=static-cex internal_rank=16 variant=oracle_projected
+  final internal_oracle2_projection=0.999964
+  final variant_oracle2_projection=1.000000
+  final variant_subspace_cos2=1.000000
+  final variant_col2_vs_oracle2=1.000000
+  final variant_actualB_score_sum=1.916537
+  final variant_actualB_gain2_sum=1.916537
+  final variant_actualB_phi_mean=1.000000
+  verdict=variant_recovers_rank2
+

@@ -1,0 +1,15 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:832: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.254956 mean_relerr_sval=0.06237749
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.039926 mean_relerr_sval=0.02078387
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.042750 mean_relerr_sval=0.02499091
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.067872 mean_relerr_sval=0.01526898
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.057094 mean_relerr_sval=0.02471121
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.046047 mean_relerr_sval=0.01353295
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.319133 mean_relerr_sval=0.04373000
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.748037 mean_relerr_sval=0.00502854
+half_window_run mode=split_probe policy=future_hmean_evidence half_win=32 mean_align=0.201576 mean_relerr_sval=0.05460096
+half_window_run mode=sliding policy=future_hmean_evidence half_win=32 mean_align=0.300580 mean_relerr_sval=0.02049488
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.493855 mean_relerr_sval=0.06059807
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.880476 mean_relerr_sval=0.01943396
+wrote_json=summary/bench_matrix_sweep_r_sk_g_S5/mixed-tail-sharp_win64.json wrote_csv=summary/bench_matrix_sweep_r_sk_g_S5/mixed-tail-sharp_win64.csv wrote_text=summary/bench_matrix_sweep_r_sk_g_S5/mixed-tail-sharp_win64.txt elapsed=139.590

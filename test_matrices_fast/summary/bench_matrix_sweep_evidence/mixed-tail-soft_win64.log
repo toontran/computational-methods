@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_evidence half_win=32 mean_align=0.113670 mean_relerr_sval=0.05920183
+half_window_run mode=sliding policy=future_hmean_evidence half_win=32 mean_align=0.063560 mean_relerr_sval=0.01284150
+wrote_json=summary/bench_matrix_sweep_evidence/mixed-tail-soft_win64.json wrote_csv=summary/bench_matrix_sweep_evidence/mixed-tail-soft_win64.csv wrote_text=summary/bench_matrix_sweep_evidence/mixed-tail-soft_win64.txt elapsed=73.139

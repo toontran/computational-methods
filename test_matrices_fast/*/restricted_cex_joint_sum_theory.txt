@@ -1,0 +1,441 @@
+Restricted CEX joint score-sum theory
+=====================================
+
+Purpose
+-------
+
+This note is self-contained. It describes the rank-r selection problem in the
+restricted CEX streaming sketch, the current greedy optimizer, the proposed
+joint score-sum optimizer, and why this is still distinct from preserving a
+target subspace.
+
+The setting is a streaming matrix sketch. Rows of a matrix A arrive in blocks.
+At each block, the algorithm keeps a rank-r right subspace that should preserve
+the leading right singular subspace of the full matrix seen so far.
+
+The restricted CEX optimizer does not optimize over the full ambient right
+space directly. Instead, it first builds a smaller right search space:
+
+  Vbasis in R^{n x q},     Vbasis^T Vbasis = I_q,
+
+where n is the original column dimension and q is the restricted search
+dimension. Candidate full right vectors are represented as:
+
+  v = Vbasis z,
+
+with:
+
+  z in R^q,    ||z||_2 = 1.
+
+The current restricted CEX optimizer chooses rank-r directions greedily:
+
+  1. optimize the first vector for the single-vector entropy-forget score;
+  2. optimize the second vector for the same score, constrained to be
+     orthogonal to the first;
+  3. continue until r vectors have been selected.
+
+This note describes the alternative objective:
+
+  choose r orthonormal vectors together to maximize the sum of their scores.
+
+This is different from both:
+
+  - optimizing each vector independently without orthogonality, and
+  - preserving a known target span such as the projected true top-r right
+    singular subspace.
+
+
+Streaming state and score
+-------------------------
+
+Let A_block be the current row block. Let m be the number of rows in A_block,
+and let N be the reference row count, usually the full matrix dimension in the
+synthetic experiments.
+
+For an initial block, the score of a unit vector v is computed from:
+
+  y = A_block v.
+
+The entropy-forget score used by the script is:
+
+  S(v)
+    = alpha ||y||_2^{2-c} ||y||_4^c,
+
+where:
+
+  c     = log(m / N) / log(m),
+  alpha = (m / N)^{1/4},
+  ||y||_4^4 = sum_i y_i^4.
+
+Equivalently, the implementation works with:
+
+  log S(v)
+    = log(alpha)
+      + (1 - c/2) log(||y||_2^2)
+      + (c/4) log(||y||_4^4).
+
+For a later streaming block, the score includes both the previous compressed
+state and the new block. The previous state is:
+
+  V_prev in R^{n x r},      previous right basis,
+  s_prev in R^r,            previous singular values.
+
+For a candidate v, define:
+
+  a = V_prev^T v,
+  y = A_block v.
+
+The old retained energy term is:
+
+  E_old(v) = sum_i s_prev_i^2 a_i^2.
+
+The new block contribution is the same entropy-forget block score:
+
+  psi(v) = alpha ||y||_2^{2-c} ||y||_4^c.
+
+The streaming score is:
+
+  S_stream(v) = E_old(v) + psi(v).
+
+The optimizer maximizes this score or its logarithm depending on the code path.
+The CEX Armijo path uses the score value directly.
+
+
+Current greedy objective
+------------------------
+
+Let S(v) be the scalar entropy-forget score of a unit vector v in the current
+right-vector space.
+
+In the restricted optimizer, vectors are represented in a reduced basis Vbasis:
+
+  v = Vbasis z.
+
+The reduced coordinate z is constrained to have unit norm. For the kth vector,
+the already selected vectors define an orthogonality constraint:
+
+  Qz = Vbasis^T [v_1, ..., v_{k-1}].
+
+The scalar optimizer solves approximately:
+
+  maximize    S(Vbasis z)
+  subject to  ||z||_2 = 1,
+              Qz^T z = 0.
+
+After solving, it stores:
+
+  v_k = Vbasis z_k.
+
+Therefore the full rank-r selection is:
+
+  z_1 = argmax S(Vbasis z)
+
+  z_2 = argmax S(Vbasis z)
+        subject to z orthogonal to z_1
+
+  ...
+
+  z_r = argmax S(Vbasis z)
+        subject to z orthogonal to z_1, ..., z_{r-1}.
+
+This is a greedy sequence. It is not equivalent to maximizing the total score
+of all r vectors at once.
+
+
+Joint score-sum objective
+-------------------------
+
+The direct rank-r replacement is a Stiefel-manifold problem.
+
+Let:
+
+  Z = [z_1, ..., z_r] in R^{q x r}
+
+where q is the current reduced-basis dimension. The orthonormality constraint
+is:
+
+  Z^T Z = I_r.
+
+If there is an additional fixed forbidden subspace Qz, the constraint is:
+
+  Qz^T Z = 0.
+
+The joint score-sum objective is:
+
+  maximize    F(Z) = sum_{j=1}^r S(Vbasis z_j)
+  subject to  Z^T Z = I_r,
+              Qz^T Z = 0.
+
+For the initial block, S(v) is the entropy-forget score computed from the
+current row block A_block.
+
+For later streaming blocks, S(v) is the streaming entropy-forget score computed
+from:
+
+  - the gain matrix M_gain, formed by stacking the old compressed rows
+    diag(s_prev) V_prev^T above the new row block A_block,
+  - the current row block A_block,
+  - the previous compressed right basis V_prev,
+  - the previous squared singular values s_prev^2.
+
+When Z is optimized, the selected full right frame is:
+
+  V_selected = Vbasis Z.
+
+This frame is then passed to the same compression step as the greedy output.
+In the current script's default CEX replicate setting, the carry mode is
+"left", so the script forms a projected operator in this selected right span
+and recomputes the carried right vectors by SVD.
+
+
+Gradient structure
+------------------
+
+The existing scalar score routines already compute:
+
+  S(z_j), grad S(z_j)
+
+for each reduced vector z_j.
+
+For the joint objective:
+
+  F(Z) = sum_j S(z_j),
+
+the Euclidean gradient is columnwise:
+
+  G[:, j] = grad S(z_j).
+
+The feasible set is the Stiefel manifold, optionally intersected with the
+orthogonal complement of Qz.
+
+First remove the fixed forbidden-space component:
+
+  Gp = G - Qz (Qz^T G).
+
+Then project onto the tangent space of Z^T Z = I:
+
+  Grad_F(Z) = Gp - Z sym(Z^T Gp),
+
+where:
+
+  sym(A) = (A + A^T) / 2.
+
+This is the standard tangent projection for the Stiefel manifold.
+
+
+Retraction
+----------
+
+A step along the tangent direction does not automatically preserve
+orthonormality. After taking a trial step:
+
+  Y = Z + alpha Grad_F(Z),
+
+we retract back to the feasible set by projecting out Qz and QR
+orthonormalizing:
+
+  Yp = Y - Qz (Qz^T Y)
+  Yp = QR
+  Z_new = Q.
+
+This gives:
+
+  Z_new^T Z_new = I.
+
+Line search accepts a step when it improves the joint score-sum enough:
+
+  F(Z_new) >= F(Z) + c alpha ||Grad_F(Z)||_F^2.
+
+
+Why this differs from greedy selection
+--------------------------------------
+
+The greedy optimizer makes an irreversible first-vector choice. If the best
+single vector is slightly tilted away from the desired rank-r span, every later
+vector must be orthogonal to that tilted vector. The resulting rank-r subspace
+can miss part of the desired projected span even when every individual greedy
+choice has a strong score.
+
+The joint objective removes that ordering artifact. It chooses the whole
+orthonormal r-frame at once, so it can trade a small loss in one column's score
+for a larger gain in another column's score.
+
+Mathematically, the greedy value is:
+
+  S(z_1^greedy) + ... + S(z_r^greedy),
+
+where each z_k^greedy depends on previous choices.
+
+The joint value is:
+
+  max_{Z^T Z = I} sum_j S(z_j).
+
+Since the greedy frame is feasible for the joint problem, a global joint
+optimizer can never have a smaller score-sum than the greedy frame. If a
+numerical joint optimizer returns a smaller score-sum, that indicates local
+optimization, insufficient seeding, or an implementation issue.
+
+
+Relation to projected target vectors
+------------------------------------
+
+For synthetic/debug runs, the exact top-r right singular vectors V_true are
+known. The current reduced row space can project them:
+
+  p_j = Proj_{span(Vbasis)} v_j^true.
+
+After normalization, the raw projected-vector score sum is:
+
+  sum_j S(p_j / ||p_j||).
+
+This quantity does not enforce orthogonality between projected vectors.
+Projection can make originally orthogonal true vectors non-orthogonal:
+
+  <Proj v_i, Proj v_j> may be nonzero.
+
+Therefore this raw score sum is not directly comparable to an optimizer whose
+output must be orthonormal.
+
+A fairer orthonormal comparison is:
+
+  Q_proj = orthonormalize([p_1, ..., p_r])
+  sum_j S(Q_proj[:, j]).
+
+This is the "QR projected span" score. It uses an orthonormal basis for the
+same projected target span, so it is feasible for an orthonormal rank-r
+optimizer.
+
+
+Important limitation
+--------------------
+
+Maximizing:
+
+  sum_j S(z_j)
+
+is still a basis objective, not a pure span objective.
+
+If R is any r x r orthogonal rotation, then Z and ZR represent the same
+subspace:
+
+  span(Z) = span(ZR).
+
+But in general:
+
+  sum_j S(z_j) != sum_j S((ZR)_j).
+
+So the joint score-sum objective can prefer one orthonormal basis of a subspace
+over another. It is not invariant under rotations inside the selected span.
+
+This matters because the streaming invariant is about preserving a rank-r
+projected target span, not necessarily preserving the particular basis that
+maximizes entropy-forget score.
+
+
+What the observed CEX diagnostic implies
+----------------------------------------
+
+For the static CEX synthetic matrix with:
+
+  n = 128,
+  block size = 32,
+  rank r = 2,
+  seed = 0,
+  cex-replicate parameters,
+
+the relevant score sums are:
+
+  block  raw projected sum   QR projected span sum   greedy found sum
+  1      1.805422044328      1.781308786610          1.802032135741
+  2      1.852955711330      1.851895334204          1.854252792009
+  3      1.904944667470      1.903832202831          1.903758385447
+  4      1.955616908484      1.955614921237          1.955674459365
+
+Here:
+
+  raw projected sum
+    = S(normalized projection of true v_1)
+      + S(normalized projection of true v_2).
+
+  QR projected span sum
+    = score sum after QR-orthonormalizing those two projected vectors.
+
+  greedy found sum
+    = score sum of the two vectors selected by the current greedy restricted
+      CEX optimizer.
+
+The table shows:
+
+  - raw projected true vectors can have a larger score-sum than the greedy
+    optimizer, as in blocks 1 and 3;
+
+  - after QR orthonormalization, the projected true span often has a lower
+    basis score-sum than the greedy optimizer, as in blocks 1, 2, and 4;
+
+  - forcing the projected true span as a control preserves the desired final
+    singular subspace in the synthetic case.
+
+Therefore there are two separate issues:
+
+  1. Greedy single-vector optimization is not the same as joint score-sum
+     optimization.
+
+  2. Joint score-sum optimization is still not the same as projected-span
+     preservation.
+
+The first issue can be addressed by the Stiefel score-sum optimizer described
+above.
+
+The second issue requires a span-level objective or candidate-selection rule.
+
+
+Expected test outcomes
+----------------------
+
+If the joint score-sum optimizer is implemented and globally solved well:
+
+  sum_j S(z_j^joint) >= sum_j S(z_j^greedy).
+
+If the projected true span is not the score-sum maximizer:
+
+  sum_j S(z_j^joint) may still be worse than the projected-span oracle for
+  final subspace recovery.
+
+Thus the score-sum test answers one specific question:
+
+  "Is the current failure caused by greedy ordering under an orthonormal
+   score-sum objective?"
+
+It does not fully answer:
+
+  "Which rank-r span should be retained to preserve the true top-r projected
+   subspace?"
+
+
+Next theoretical step
+---------------------
+
+To target span preservation directly, the objective should be rotation
+invariant:
+
+  objective(span(Z)) = objective(span(ZR)) for every orthogonal R.
+
+Possible directions:
+
+  1. Compare candidate subspaces after the compression/SVD step rather than
+     before it.
+
+  2. Optimize a projector objective depending on P = Z Z^T rather than on the
+     individual columns of Z.
+
+  3. For synthetic diagnostics, include the projected-true-span oracle:
+
+       Q_proj = orthonormalize(Proj_{span(Vbasis)} V_true[:, :r])
+
+     and report:
+
+       - raw projected-vector score sum,
+       - QR projected-span score sum,
+       - greedy optimizer score sum,
+       - joint score-sum optimizer value,
+       - final principal angles to the true top-r span.

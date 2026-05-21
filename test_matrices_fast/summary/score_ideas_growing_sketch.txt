@@ -1,0 +1,246 @@
+Score ideas: small sketch evidence early, grows with block / matrix hardness
+============================================================================
+
+Date: 2026-04-27
+Goal: design new HM-style slot-2 scores that have **block-dependent sketch
+influence** — sketch term ~ r/half_win at block 1, growing to "much larger"
+by block 10+, with the growth rate modulated by how hard the matrix is
+(faster on static-cex / mixed-tail-sharp, slower on diffuse-diffuse).
+
+PRIORITY UPDATE (2026-04-28, supersedes §9 below): see
+summary/overview/score_design_overview.txt §7. The dominant failure mode is
+the rank-1 score's wide level set on counterexample matrices, not the lack
+of carry-confidence growth. The rank-r Stiefel lift goes FIRST; the F1/F2
+combinations in §7 of this file are now Q3/Q5 (not Q1) and should be
+implemented after the rank-r lift is in place. Families B and E generalise
+naturally to rank-r and may be more meaningful as frame-level multipliers
+than as scalar.
+
+
+0. Motivation
+-------------
+Existing scores keep the sketch term at fixed scale across blocks:
+  - S5: r_sk_excess = c_sk · raw_sk − 1, hard-gated to 0 below T = 1/c_sk.
+        c_sk ≈ N_sk/sk_F2_full ≈ const (≈1.21) → no growth.
+  - F-weighted HM3: u_sk = raw_sk / sk_F2_low ∈ [0,1], with
+        sk_F2_low ≈ const (rank-r truncation of unit-row-energy data).
+        → sketch term magnitude ≈ stationary across blocks.
+
+Both forms ignore that early-block sketches are unreliable (rank-r approx
+of <100 rows is noisy) while late-block sketches are well-resolved.
+
+The diagnostic (`frob_norm_diagnostic.py`) confirms the relevant block-
+dependent quantities are:
+  - s_top (top sketch SV) on counterexamples: 0.91 (b2) → 0.99 (b31)
+  - sk_F2_low (rank-r): 1.66 → 1.93 (mild growth, dominated by s_top)
+  - sk_F2_full = N_sk · per-row-energy → grows linearly
+  - N_sk = (block_id − 1) · half_win → 32, 160, 352, 960 at b2/6/12/31
+
+Use these to build sketch-confidence multipliers.
+
+
+1. Notation
+-----------
+For a unit candidate v at block t (block_id):
+  raw_sk = ‖A_sketch v‖²       A_sketch = state.s · state.V^T (rank-r carry)
+  raw_g1 = ‖A_cur   v‖²        A_cur = block t (half_win rows)
+  raw_g2 = ‖A_fut   v‖²        A_fut = block t+1
+  sk_F2_low = ‖A_sketch‖²_F = Σ s_i²       (rank-r Frobenius²)
+  sk_F2_full = ‖A[:sk_end]‖²_F             (full Frobenius² seen so far)
+  N_sk      = (t − 1) · half_win           (rows in the sketch)
+  c_sk      = N_sk / sk_F2_full ≈ 1.21 (typical row energy reciprocal)
+  T         = 1 / c_sk         (typical-row-energy threshold from S5)
+  s_top     = state.s[0]       (top carried singular value)
+  r         = rank of carry (default 2)
+
+The g-side will use F-weighted ratios throughout (matches the previous
+F-HM3 diagnostic, since cur_F2 ≈ fut_F2 ≈ const):
+  u_g1 = raw_g1 / cur_F2 ∈ [0, 1]
+  u_g2 = raw_g2 / fut_F2 ∈ [0, 1]
+
+The new ideas all change the SKETCH term (u_sk). HM-style aggregation:
+  HM3(u_sk, u_g1, u_g2) = 3 / (1/u_sk + 1/u_g1 + 1/u_g2)
+  HM3_w with weights w_sk, w_g1, w_g2 = (Σw) / Σ(w_k/u_k)
+
+Block-1 fall-through (no sketch): score = HM2(u_g1, u_g2) for all variants.
+
+
+2. Family A — Explicit row-count amplification
+----------------------------------------------
+Make the sketch term magnitude grow with N_sk.
+
+  A1. Row-count S5:
+       u_sk = N_sk · max(c_sk · raw_sk − 1, 0)
+      Hard gate (S5-style); excess gets amplified by N_sk.
+      Pros: Drop-in S5 + scaling. Easy FD check (analytic grad).
+      Cons: Still binary in/out of gate; explicit block growth.
+      Acceptance probe: at b2 with sketch_v1, expect ~32·O(0.01) ≈ 0.3;
+                        at b31, ~960·O(0.18) ≈ 170. Range spans 3 OoM.
+
+  A2. √N_sk z-score:
+       u_sk = √N_sk · max(c_sk · raw_sk − 1, 0)
+      Same shape as A1 but slower growth, matches CLT confidence.
+      At b2: √32 ≈ 5.7; at b31: √960 ≈ 31.
+
+  A3. Bayesian log-evidence:
+       u_sk = N_sk · log(c_sk · raw_sk)         if c_sk·raw_sk > 1, else 0
+      Per-row log-likelihood; logarithmic in alignment, linear in rows.
+      Pros: smooth above the gate; rewards "many rows somewhat-aligned"
+            same as "few rows highly aligned".
+      Cons: log() blows up near gate; regularize as log(c_sk·raw_sk + ε).
+
+
+3. Family B — Carry-quality multipliers (matrix-hardness adaptive)
+------------------------------------------------------------------
+Use carry statistics as a confidence multiplier. No explicit block_id.
+
+  B1. Top-singular-value confidence:
+       u_sk = (s_top)² · (raw_sk / sk_F2_low)
+      Hard matrices keep s_top small longer → sketch contribution stays
+      small longer. Counterexample data: s_top² = 0.83 → 0.97 from b2 to
+      b31; diffuse-diffuse stays lower longer.
+      Tunable: u_sk = s_top^p with p ∈ {2, 4, 8} for sharper hardness gating.
+
+  B2. Spectral concentration:
+       κ = s_1² / (s_1² + s_2² + ... + s_r²)            ∈ [1/r, 1]
+       u_sk = κ · (raw_sk / sk_F2_low)
+      κ = 1 for a true rank-1 process; ≈ 1/r for diffuse. Naturally
+      separates static-cex (high κ) from diffuse-diffuse (low κ).
+
+  B3. Carry-drift confidence:
+       drift_t = ‖V_t V_t^T − V_{t−1} V_{t−1}^T‖_F      (subspace change)
+       conf_t = exp(−drift_t / τ)    (or 1 − drift_t/2)
+       u_sk = conf_t · (raw_sk / sk_F2_low)
+      Mature carry (small drift) → high sketch weight; settling carry
+      (large drift) → low. Requires storing V_{t−1}; minor wiring change.
+
+
+4. Family C — Block-dependent HM3 weights (compose with anything)
+-----------------------------------------------------------------
+Keep u_sk shape the same; let HM3 weights dial sketch influence.
+
+  C1. Linear weight schedule:
+       w_sk(t) = t,   w_g1 = w_g2 = 1
+       score = HM3_w(u_sk, u_g1, u_g2)
+      As t grows, weighted HM3 → u_sk (sketch dominates). Early on,
+      ≈ standard HM3.
+
+  C2. Saturating schedule:
+       w_sk(t) = 1 − exp(−t / τ)         (τ ≈ 5–10)
+      Bounded (avoids late-block runaway).
+
+  C3. √-row schedule (matches A2 structure):
+       w_sk(t) = √N_sk
+      Compose with B1: w_sk = √N_sk, u_sk = s_top² · raw_sk / sk_F2_low.
+
+
+5. Family D — Soft gates with block-dependent slope
+---------------------------------------------------
+Replace S5's hard clip with a sigmoid that sharpens over time.
+
+  D1. Logistic gate:
+       gate(raw_sk) = σ(β(t) · (raw_sk − T))     β(t) = √N_sk · k₀
+       u_sk = gate · (raw_sk / sk_F2_low)
+      At b1: β=0, gate ≡ 0.5 (no info from sketch).
+      At b31: β large, gate ≈ binary threshold.
+      Smooth gradient throughout — FD-checkable everywhere.
+      Tunable k₀ (gate sharpness scale).
+
+  D2. tanh gate:
+       gate = (1 + tanh(β(t)·(raw_sk − T))) / 2
+      Equivalent to D1, different gradient profile.
+
+
+6. Family E — Adaptive thresholds (rank-aware, no block_id)
+-----------------------------------------------------------
+Replace per-row threshold T with per-rank-r-direction threshold.
+
+  E1. Rank-r excess:
+       T_r = sk_F2_low / r           (= average rank-r SV² magnitude)
+       u_sk = max(raw_sk / T_r − 1, 0) = max(r·raw_sk/sk_F2_low − 1, 0)
+      A candidate is "sketch-aligned" iff it captures more than the
+      average rank-r direction. Hardness shows up because matrices with
+      large gap (s_1² ≫ s_2²) make the gate selective; flat-spectrum
+      matrices (s_1² ≈ s_2²) only let directions ≈ s_top through.
+
+  E2. r/half_win-anchored excess (matches user's "small early" intuition):
+       w_init = r / half_win                       (= 2/32 ≈ 0.0625)
+       u_sk = max(raw_sk · r/sk_F2_low − w_init, 0)
+      Gate threshold scales with rank-to-window ratio; "small evidence"
+      at b1 = w_init = 0.0625 by construction.
+
+
+7. Family F — Recommended first combinations
+---------------------------------------------
+Start with these two (orthogonal mechanisms; both should FD-check).
+
+  F1.  B1 ×  C3:  carry-quality + √-row schedule
+       u_sk = s_top² · (raw_sk / sk_F2_low)
+       u_g1 = raw_g1 / cur_F2
+       u_g2 = raw_g2 / fut_F2
+       w_sk = √N_sk;  w_g1 = w_g2 = 1
+       score = HM3_w(u_sk, u_g1, u_g2) · relH1
+      Why first: B1 gives matrix-hardness adaptation cheaply (s_top is
+      already in state). √N_sk weight gives row-count growth without
+      changing u_sk's shape — easy to ablate one factor at a time.
+
+  F2.  D1 ×  A1-shape:  soft gate + amplified excess
+       gate = σ(√N_sk · (c_sk·raw_sk − 1))
+       u_sk = gate · (raw_sk / sk_F2_low)
+       score = HM3(u_sk, u_g1, u_g2) · relH1
+      Why next: continuous gradient, no hard clip → optimizer has signal
+      everywhere. Sigmoid sharpens automatically as N_sk grows.
+
+
+8. What the test gauntlet reveals
+---------------------------------
+For each variant, expected behaviour:
+
+  Block 1 — score = HM2(u_g1, u_g2) for all variants. Should match the
+            current F-HM3 score's block-1 ranking (c_evi_v1 wins).
+  Block 2 — sketch term should be small. Oracle should rank near top but
+            no large gap to c_evi.
+  Block 6 — sketch starts to matter. On counterexamples, oracle should
+            be top-2; on diffuse-diffuse, oracle should be near c_evi.
+  Block 12 — sketch term should be significant. Variants that
+             over-amplify (A1 with large N_sk_factor) may over-reward
+             sketch-aligned non-oracle directions.
+  Block 31 — sketch term dominates (high u_sk weight). Variants F1/F2
+             should still place oracle_v1_proj at top, but with margin
+             over c_evi reflecting the row-count amplification.
+
+Hardness signal:
+  - static-cex / mixed-tail-sharp: u_sk multiplier should grow steeply
+    (s_top → 0.99, drift → 0).
+  - diffuse-diffuse: multiplier should grow slowly or saturate lower
+    (s_top stays smaller, drift stays larger).
+
+
+9. Implementation order
+-----------------------
+1. Add F1 and F2 as new variants in `r_sk_g_score.py` (next to S4/S5).
+   Re-use entropy_relH1_value_grad for the relH1 factor.
+2. FD-check both at carry-aligned probe (state.V[:, 0]).
+3. Per-block diagnostic: extend `analyze_block` candidate list to add
+   `F1_v1_full / v2_deflate`, `F2_v1_full / v2_deflate`.
+4. Run T2 (per-block oracle alignment) on
+   static-cex, mixed-tail-sharp, diffuse-diffuse, blocks 1, 2, 6, 12, 31.
+5. If T2 looks good, run T3 (streaming bench) on the same 3 matrices.
+
+If F1 wins on T2 but F2 wins on T3 (smooth gradient helps streaming
+optimisation), the right answer is likely F1's u_sk shape with F2's gate.
+
+If neither lifts T3 above S5, the next directions are:
+  - Family E (rank-r-aware threshold) — different gate logic.
+  - Drop slot-1 deflation in streaming (D2 in
+    `summary/hm_score_new_variant_test_context.txt`) so the new
+    variant's preferred carry-aligned basin is reachable.
+
+
+10. Files
+---------
+  Spec (this file):     summary/score_ideas_growing_sketch.txt
+  Diagnostic baseline:  frob_norm_diagnostic.py            (norm/raw table)
+  F-HM3 baseline:       frob_hm3_score_diagnostic.py       (current ranking)
+  Output to compare:    summary/frob_hm3_score_mixed.txt
+  Test gauntlet spec:   summary/hm_score_new_variant_test_context.txt

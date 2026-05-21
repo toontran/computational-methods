@@ -1,0 +1,41 @@
+Per-block leave-one-half-out solution drift probe
+============================================================
+half_win=32  n_blocks=8  n=1024
+seeds=[0, 1, 2]  matrices=['diffuse-diffuse', 'mixed-tail-sharp', 'mixed-tail-soft', 'static-cex']
+
+Per (matrix, seed, solver) — aggregate disagreement and oracle alignment.
+
+  (matrix, seed)               solver mean_disc_h1_h median_disc_h1 max_disc_h1_h2 mean_cos_both_ min_cos_both_o
+  --------------------------------------------------------------------------------------------------------------
+  diffuse-diffuse, s=0       combined         0.1833         0.0662         0.9955         0.3062         0.1049
+  diffuse-diffuse, s=0          topSV         0.9978         0.9977         0.9996         0.0998         0.0045
+  diffuse-diffuse, s=1       combined         0.1791         0.0625         0.9286         0.1431         0.0048
+  diffuse-diffuse, s=1          topSV         0.9976         0.9984         0.9996         0.1180         0.0695
+  diffuse-diffuse, s=2       combined         0.1813         0.0537         0.9720         0.2966         0.0451
+  diffuse-diffuse, s=2          topSV         0.9987         0.9987         0.9993         0.0910         0.0068
+  mixed-tail-sharp, s=0      combined         0.1229         0.0078         0.9284         0.0266         0.0062
+  mixed-tail-sharp, s=0         topSV         0.9975         0.9974         0.9990         0.1076         0.0129
+  mixed-tail-sharp, s=1      combined         0.1308         0.0089         0.9866         0.0304         0.0168
+  mixed-tail-sharp, s=1         topSV         0.9964         0.9968         0.9986         0.0760         0.0121
+  mixed-tail-sharp, s=2      combined         0.1313         0.0086         0.9920         0.0366         0.0220
+  mixed-tail-sharp, s=2         topSV         0.9965         0.9957         0.9993         0.0926         0.0070
+  mixed-tail-soft, s=0       combined         0.1514         0.0319         0.9650         0.0627         0.0031
+  mixed-tail-soft, s=0          topSV         0.9980         0.9983         1.0000         0.1235         0.0002
+  mixed-tail-soft, s=1       combined         0.1562         0.0384         0.9955         0.0379         0.0005
+  mixed-tail-soft, s=1          topSV         0.9973         0.9974         0.9990         0.1221         0.0542
+  mixed-tail-soft, s=2       combined         0.1505         0.0359         0.9755         0.0764         0.0011
+  mixed-tail-soft, s=2          topSV         0.9987         0.9988         1.0000         0.1326         0.0296
+  static-cex, s=0            combined         0.6024         0.8874         0.9488         0.0446         0.0265
+  static-cex, s=0               topSV         0.9999         0.9999         0.9999         0.0341         0.0314
+  static-cex, s=1            combined         0.8349         0.9476         0.9733         0.0295         0.0039
+  static-cex, s=1               topSV         0.9999         0.9999         1.0000         0.0331         0.0307
+  static-cex, s=2            combined         0.5566         0.4323         0.9776         0.0515         0.0181
+  static-cex, s=2               topSV         0.9999         0.9999         1.0000         0.0338         0.0307
+
+Reading guide:
+  - mean_disc_h1_h2 = mean over blocks of 1 - |cos(v_h1, v_h2)|.
+                       0 = h1 and h2 solutions agree (high confidence)
+                       1 = orthogonal (max uncertainty)
+  - mean_cos_both_oracle = mean per-block |cos(v_both, V_exact[:,0])|.
+                            Used to check whether high disagreement correlates with
+                            the solver actually being wrong on this block.

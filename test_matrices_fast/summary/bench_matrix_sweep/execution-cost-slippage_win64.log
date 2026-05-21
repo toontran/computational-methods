@@ -1,0 +1,11 @@
+/home/ttran02/pj/computational-methods/test_matrices_fast/half_window_sliding_hmean_experiment.py:601: RuntimeWarning: Mean of empty slice
+  "mean_winner_oracle_mass": float(np.nanmean([r.get("winner_oracle_mass", np.nan) for r in rows])),
+half_window_run mode=split_probe policy=combined half_win=32 mean_align=0.999643 mean_relerr_sval=0.30326816
+half_window_run mode=sliding policy=combined half_win=32 mean_align=0.999976 mean_relerr_sval=0.01487036
+half_window_run mode=split_probe policy=hybrid half_win=32 mean_align=0.999623 mean_relerr_sval=0.30327383
+half_window_run mode=sliding policy=hybrid half_win=32 mean_align=0.999976 mean_relerr_sval=0.01487451
+half_window_run mode=split_probe policy=isvd half_win=32 mean_align=0.999684 mean_relerr_sval=0.30312979
+half_window_run mode=sliding policy=isvd half_win=32 mean_align=0.999988 mean_relerr_sval=0.01475396
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999713 mean_relerr_sval=0.30327532
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999976 mean_relerr_sval=0.01486587
+wrote_json=summary/bench_matrix_sweep/execution-cost-slippage_win64.json wrote_csv=summary/bench_matrix_sweep/execution-cost-slippage_win64.csv wrote_text=summary/bench_matrix_sweep/execution-cost-slippage_win64.txt elapsed=13.066

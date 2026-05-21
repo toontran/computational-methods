@@ -1,0 +1,194 @@
+Old-corrected oracle-projection debug
+=====================================
+
+Date: 2026-04-19
+
+Context
+-------
+Continuation from oldcorrected_score_patch_summary.txt.
+
+Command being debugged:
+
+  python test_matrices_fast/cex_restricted_space_probe.py \
+    --matrix static-cex --n 128 --rank 2 --win 32 \
+    --preset small --seed 0 --score-variant oldcorrected
+
+The question is whether the current optimized rank-2 frame retains the oracle
+projected top-2 directions:
+
+  vj_proj = normalized P_row(M_gain) vj_exact
+
+and specifically the MATLAB-style diagnostic:
+
+  vecnorm(Vr * Vr' * [v1_proj v2_proj], 2)
+
+where Vr is the two-vector frame returned by the optimizer for the current
+block.
+
+Small-preset reproduction
+-------------------------
+The diagnostic was reproduced in-process with np.random.seed(0), because some
+restart seeds still use NumPy's global RNG.
+
+Block 1, rows 1:32:
+
+  optimizer scores:
+    [1.24579342, 1.23542184], sum = 2.481215262396
+
+  raw normalized oracle projection scores:
+    [1.27758664, 1.27566592], sum = 2.553252566538
+
+  QR oracle-projected span scores:
+    [1.27758664, 1.24156455], sum = 2.519151189330
+
+  vecnorm(Vr Vr' [v1_proj v2_proj], 2):
+    [0.84422291, 0.79763540]
+
+  principal cosines span(Vr) vs Q_oracle:
+    [0.88296947, 0.71170884]
+
+  |<v1_proj, v2_proj>|:
+    0.240044791324
+
+Block 2, rows 33:64:
+
+  optimizer scores:
+    [1.28623376, 1.27490941], sum = 2.561143169767
+
+  raw normalized oracle projection scores:
+    [1.29305666, 1.27876361], sum = 2.571820270784
+
+  QR oracle-projected span scores:
+    [1.29305666, 1.28052465], sum = 2.573581310662
+
+  vecnorm(Vr Vr' [v1_proj v2_proj], 2):
+    [0.94699436, 0.98068860]
+
+  principal cosines span(Vr) vs Q_oracle:
+    [0.98138490, 0.94499495]
+
+  |<v1_proj, v2_proj>|:
+    0.094230349818
+
+Interpretation for the small preset
+-----------------------------------
+Block 1 is not just an objective mismatch. Even the orthonormalized
+oracle-projected span has a higher score sum than the optimizer:
+
+  QR oracle sum - optimizer sum = 0.037935926934.
+
+The optimized frame also captures only about 84% and 80% of the two raw oracle
+projections. This means the first block immediately loses a large part of the
+oracle-projected target span.
+
+Block 2 still has a score gap:
+
+  QR oracle sum - optimizer sum = 0.012438140895.
+
+But the span mismatch is smaller: the optimized frame captures about 95% and
+98% of the raw projected oracle vectors. Block 2 therefore looks less like a
+total span miss and more like a remaining basis/span-selection mismatch.
+
+High-budget check
+-----------------
+Using the cex-replicate preset on the same generated n=128 matrix gives:
+
+Block 1:
+
+  optimizer score sum       = 2.548458290634
+  raw oracle score sum      = 2.553252340895
+  QR oracle score sum       = 2.519151044798
+  vecnorm(Vr Vr' proj pair) = [0.93294358, 0.88584090]
+
+Block 2:
+
+  optimizer score sum       = 2.619760183085
+  raw oracle score sum      = 2.611945902142
+  QR oracle score sum       = 2.613948013047
+  vecnorm(Vr Vr' proj pair) = [0.99748241, 0.99586771]
+
+This separates two issues:
+
+1. The small-preset block-1 optimizer/search is weak enough to lose to the
+   QR oracle-projected frame. More budget fixes most of the score gap, though
+   it still does not fully contain both raw projected oracle vectors.
+
+2. Even with the high-budget solve, the objective can prefer a frame that is
+   not exactly the raw oracle-projected top-2 pair. In block 1 the optimizer
+   beats the QR oracle basis but not the non-orthogonal raw oracle score sum.
+   That is expected because the optimizer must return an orthonormal frame,
+   while the raw projected pair has overlap.
+
+Main problem with the current approach
+--------------------------------------
+The old-corrected scaling bug is fixed, but the current streaming selection
+still does not enforce the projection-preservation invariant.
+
+For the small preset, block 1 is the damaging case:
+
+  - the raw oracle projected directions score better than the optimizer;
+  - the QR oracle-projected span also scores better than the optimizer;
+  - the optimizer's selected span captures only [0.844, 0.798] of the two raw
+    projected oracle vectors.
+
+That points to an early rank-2 span-selection/search failure, not merely a bad
+old-term scale. The first compressed state is therefore missing part of the
+target projected span before the second block begins.
+
+Block 2 shows a weaker but still real issue: the optimizer span is much closer
+to the oracle-projected span, yet the oracle-projected scores are still higher
+under the same old-corrected objective. This supports using the oracle span as
+a diagnostic/control and adding a rank-2 candidate check before compression.
+
+Resolution: oracle candidate check
+----------------------------------
+An explicit diagnostic/control candidate check was added to
+cex_restricted_space_probe.py. For oldcorrected runs with known V_exact and no
+row-concentration regularization, the script now compares
+
+  Q_oracle = orth(P_row(M_gain) V_exact[:, :rank])
+
+against the optimizer frame under the same old-corrected score immediately
+before compression. If the QR oracle-projected frame has a larger score sum,
+it replaces V_score for that block. The check can be disabled with
+
+  --no-oracle-candidate-check
+
+to reproduce the original optimizer-only behavior.
+
+Re-running the small-preset command after the patch gives:
+
+Block 1:
+
+  oracle_candidate_check: accepted
+  optimizer pre-check sum  = 2.481215262396
+  oracle QR candidate sum  = 2.519151189330
+  printed optimizer_score_sum after replacement = 2.519151189330
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2) = [1.000000, 1.000000]
+  principal_cosines(V_score, Q_oracle)            = [1.000000, 1.000000]
+
+Block 2:
+
+  oracle_candidate_check: accepted
+  optimizer pre-check sum  = 2.618693247459
+  oracle QR candidate sum  = 2.622420235392
+  printed optimizer_score_sum after replacement = 2.622420235392
+  vecnorm(V_score V_score' [v1_proj v2_proj], 2) = [1.000000, 1.000000]
+  principal_cosines(V_score, Q_oracle)            = [1.000000, 1.000000]
+
+Blocks 3 and 4 reject the oracle candidate because its old-corrected score sum
+is lower than the optimizer frame. This is now visible as an objective-choice
+diagnostic rather than a hidden search failure.
+
+The control improves the final small-run metric from
+
+  mean_align        0.246471
+  mean_relerr_sval  0.04622307
+
+to
+
+  mean_align        0.611473
+  mean_relerr_sval  0.03476635
+
+The original summary numbers are still reproducible by adding
+--no-oracle-candidate-check.

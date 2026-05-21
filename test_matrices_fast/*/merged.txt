@@ -1,0 +1,2040 @@
+# mean_align converted to projection-norm convention; higher is better.
+===== baseline__rep00.stderr.txt =====
+
+
+===== baseline__rep00.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.03434872627258301}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 33, 'grad_norm': 7.953349149886982e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9506877769190865, 'H': 3.4551678486204764, 'time': 0.14621925354003906, 'grad_perp_ratio': 0.0010812640733482497, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6725863237811861, 'best_gain': 0.2302662815297285, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 30, 'grad_norm': 6.994863903026641e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9500635014515956, 'H': 3.4393043158113676, 'time': 0.14795160293579102, 'grad_perp_ratio': 0.0007057940091888782, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6662936950983165, 'best_gain': 0.2339443422591836, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9509  0.9503
+H:  3.4552  3.4393
+scores:  0.9029  0.9002
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6726  0.6663
+best_score_gain:  0.2303  0.2339
+best_restart_was_warm: [False, False]
+sum_scores: 1.803091
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.338880
+sum_best_score_gain: 0.464211
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.001081  0.000706
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0015532970428466797}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 6.809616031884111e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9638775218289697, 'H': 3.463195647643847, 'time': 0.3672969341278076, 'grad_perp_ratio': 0.0024865449454316516, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7811342397235392, 'best_gain': 0.14780906241096692, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 99, 'grad_norm': 9.650665818662408e-07, 'subspace_dim': 28, 'expansions': 4, 's': 0.9632923707674538, 'H': 3.460341700606646, 'time': 0.2490859031677246, 'grad_perp_ratio': 3.2750357170690386e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7123001165608348, 'best_gain': 0.21540741243739092, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9643  0.9629
+H:  3.4632  3.4603
+scores:  0.9289  0.9277
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7811  0.7123
+best_score_gain:  0.1478  0.2154
+best_restart_was_warm: [False, False]
+sum_scores: 1.856651
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.493434
+sum_best_score_gain: 0.363216
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.002487  0.000033
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 7.154204070580838e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9771856109162785, 'H': 3.4602951596917566, 'time': 0.3902883529663086, 'grad_perp_ratio': 8.506221541496792e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7228532094871114, 'best_gain': 0.2318516388726921, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 82, 'grad_norm': 9.3460902627005e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9745920585038613, 'H': 3.4557183531807465, 'time': 0.2594485282897949, 'grad_perp_ratio': 4.577397697650847e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6922644247447738, 'best_gain': 0.2572463089516105, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9781  0.9738
+H:  3.4603  3.4557
+scores:  0.9547  0.9495
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7229  0.6923
+best_score_gain:  0.2319  0.2572
+best_restart_was_warm: [False, False]
+sum_scores: 1.904216
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.415118
+sum_best_score_gain: 0.489098
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000009  0.000046
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 4.330084540959308e-06, 'subspace_dim': 14, 'expansions': 5, 's': 0.9901309352608967, 'H': 3.465718960487782, 'time': 0.2305610179901123, 'grad_perp_ratio': 1.9764400445274778e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9795059079380097, 'best_gain': 0.000852944308801229, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 35, 'grad_norm': 8.595294158665752e-07, 'subspace_dim': 20, 'expansions': 3, 's': 0.9884084991909439, 'H': 3.4657280429311594, 'time': 0.11501598358154297, 'grad_perp_ratio': 3.5080079315831433e-07, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9769186769170976, 'best_gain': 3.2492448889143155e-05, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9901  0.9884
+H:  3.4657  3.4657
+scores:  0.9804  0.9770
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9795  0.9769
+best_score_gain:  0.0009  0.0000
+best_restart_was_warm: [False, False]
+sum_scores: 1.957310
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.956425
+sum_best_score_gain: 0.000885
+subspace_dims: [14, 20]
+grad_perp_ratio:  0.000020  0.000000
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.979325      0.00087163      1.954
+
+===== baseline__rep01.stderr.txt =====
+
+
+===== baseline__rep01.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.024372577667236328}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 37, 'grad_norm': 4.539107721620702e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.951275089415962, 'H': 3.4540600525254446, 'time': 0.13126921653747559, 'grad_perp_ratio': 0.9999948684133809, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6977212963094979, 'best_gain': 0.20614703995638206, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 28, 'grad_norm': 1.084808157574432e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9515736631043376, 'H': 3.4374105517653675, 'time': 0.17022109031677246, 'grad_perp_ratio': 0.00034521233909642126, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6666988030677145, 'best_gain': 0.23623242320544857, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9529  0.9505
+H:  3.4541  3.4374
+scores:  0.9039  0.9029
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6977  0.6667
+best_score_gain:  0.2061  0.2362
+best_restart_was_warm: [False, False]
+sum_scores: 1.806800
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.364420
+sum_best_score_gain: 0.442379
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.999995  0.000345
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.003226757049560547}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 0.00012037525489335302, 'subspace_dim': 20, 'expansions': 8, 's': 0.9647273452017333, 'H': 3.4601922721144893, 'time': 0.3707094192504883, 'grad_perp_ratio': 0.019223237938360952, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9055216655980378, 'best_gain': 0.02493710581067643, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 9.393058829706619e-07, 'subspace_dim': 32, 'expansions': 7, 's': 0.963087008720217, 'H': 3.4569087954912305, 'time': 0.38567447662353516, 'grad_perp_ratio': 0.00010042175342811506, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6821977104802954, 'best_gain': 0.24495579280251023, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9658  0.9621
+H:  3.4602  3.4569
+scores:  0.9305  0.9272
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9055  0.6822
+best_score_gain:  0.0249  0.2450
+best_restart_was_warm: [False, False]
+sum_scores: 1.857612
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.587719
+sum_best_score_gain: 0.269893
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.019223  0.000100
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.6874134020226027e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9781438605636027, 'H': 3.4619827192314556, 'time': 0.3548753261566162, 'grad_perp_ratio': 2.1611650409438906e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9468573678836565, 'best_gain': 0.00979479406170003, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 65, 'grad_norm': 9.547207171508735e-07, 'subspace_dim': 28, 'expansions': 5, 's': 0.9753502857674705, 'H': 3.457936864908096, 'time': 0.23531866073608398, 'grad_perp_ratio': 6.462835817589688e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9437374404299923, 'best_gain': 0.007337286287662836, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9790  0.9745
+H:  3.4620  3.4579
+scores:  0.9567  0.9511
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9469  0.9437
+best_score_gain:  0.0098  0.0073
+best_restart_was_warm: [False, False]
+sum_scores: 1.907727
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.890595
+sum_best_score_gain: 0.017132
+subspace_dims: [18, 28]
+grad_perp_ratio:  0.000022  0.000065
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0020394325256347656}}
+{'basis': 1, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.4749531495666655e-06, 'subspace_dim': 16, 'expansions': 6, 's': 0.9907427014127372, 'H': 3.465689471484433, 'time': 0.263751745223999, 'grad_perp_ratio': 2.270105711511108e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9807682776018017, 'best_gain': 0.0008016915855982854, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 27, 'grad_norm': 9.33580673864063e-07, 'subspace_dim': 22, 'expansions': 3, 's': 0.988332057545437, 'H': 3.4654119997848873, 'time': 0.09190201759338379, 'grad_perp_ratio': 3.563980952848134e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9766485488265257, 'best_gain': 0.00014382155357017812, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9907  0.9883
+H:  3.4657  3.4654
+scores:  0.9816  0.9768
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9808  0.9766
+best_score_gain:  0.0008  0.0001
+best_restart_was_warm: [False, False]
+sum_scores: 1.958362
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.957417
+sum_best_score_gain: 0.000946
+subspace_dims: [16, 22]
+grad_perp_ratio:  0.000023  0.000036
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.997168      0.00025831      2.047
+
+===== baseline__rep02.stderr.txt =====
+
+
+===== baseline__rep02.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.02157449722290039}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 31, 'grad_norm': 6.822414456697709e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9525886853803923, 'H': 3.450157811445407, 'time': 0.14254283905029297, 'grad_perp_ratio': 0.9999999994802705, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6861250828022596, 'best_gain': 0.21988762592501976, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 38, 'grad_norm': 8.710816672572893e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9484803122097343, 'H': 3.43726609230851, 'time': 0.15580987930297852, 'grad_perp_ratio': 0.001054420499657256, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6884361359385186, 'best_gain': 0.2086212224990297, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9529  0.9487
+H:  3.4502  3.4373
+scores:  0.9060  0.8971
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6861  0.6884
+best_score_gain:  0.2199  0.2086
+best_restart_was_warm: [False, False]
+sum_scores: 1.803070
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.374561
+sum_best_score_gain: 0.428509
+subspace_dims: [20, 32]
+grad_perp_ratio:  1.000000  0.001054
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.9164294293011222e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9648845105054795, 'H': 3.4622377472786265, 'time': 0.37833714485168457, 'grad_perp_ratio': 0.0008236703180157573, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9048101914750266, 'best_gain': 0.026049655320226406, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 51, 'grad_norm': 9.336459663562125e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9602341526284471, 'H': 3.462269868952158, 'time': 0.29181861877441406, 'grad_perp_ratio': 2.7396168419114125e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7773303655545891, 'best_gain': 0.14455923135662274, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9656  0.9596
+H:  3.4622  3.4623
+scores:  0.9309  0.9219
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9048  0.7773
+best_score_gain:  0.0260  0.1446
+best_restart_was_warm: [False, False]
+sum_scores: 1.852749
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.682141
+sum_best_score_gain: 0.170609
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000824  0.000003
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.75218720011702e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9776212384847477, 'H': 3.4639733009285223, 'time': 0.3431248664855957, 'grad_perp_ratio': 1.542386106811432e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9056548826946699, 'best_gain': 0.05003409750130794, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 83, 'grad_norm': 9.632886835745762e-07, 'subspace_dim': 28, 'expansions': 4, 's': 0.9730764329030251, 'H': 3.463523514551393, 'time': 0.17740607261657715, 'grad_perp_ratio': 1.8260840840507147e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6766869737211273, 'best_gain': 0.2701139886730013, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9778  0.9729
+H:  3.4640  3.4635
+scores:  0.9557  0.9468
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9057  0.6767
+best_score_gain:  0.0500  0.2701
+best_restart_was_warm: [False, False]
+sum_scores: 1.902490
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.582342
+sum_best_score_gain: 0.320148
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.000002  0.000018
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 120, 'grad_norm': 9.820652281206939e-07, 'subspace_dim': 16, 'expansions': 6, 's': 0.9908299303210073, 'H': 3.465635198771882, 'time': 0.2730882167816162, 'grad_perp_ratio': 1.6837587283902554e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9807334027133177, 'best_gain': 0.001008102531739441, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 55, 'grad_norm': 8.826344703897515e-07, 'subspace_dim': 24, 'expansions': 4, 's': 0.9862149043082591, 'H': 3.4656045597181024, 'time': 0.18163037300109863, 'grad_perp_ratio': 7.339069315942218e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7462406371988431, 'best_gain': 0.22637583996209698, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9908  0.9862
+H:  3.4656  3.4656
+scores:  0.9817  0.9726
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9807  0.7462
+best_score_gain:  0.0010  0.2264
+best_restart_was_warm: [False, False]
+sum_scores: 1.954358
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.726974
+sum_best_score_gain: 0.227384
+subspace_dims: [16, 24]
+grad_perp_ratio:  0.000017  0.000073
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.998118      0.00016271      1.973
+
+===== baseline__rep03.stderr.txt =====
+
+
+===== baseline__rep03.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0136566162109375}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 26, 'grad_norm': 5.702428464686536e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.949831747383694, 'H': 3.459603233797764, 'time': 0.13726449012756348, 'grad_perp_ratio': 0.8597326690252538, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6681030936458066, 'best_gain': 0.23352414696517754, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 28, 'grad_norm': 5.851428900495542e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9489830602377575, 'H': 3.442522675737271, 'time': 0.16107678413391113, 'grad_perp_ratio': 0.0016274300046765953, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6552908289617507, 'best_gain': 0.2431899332384856, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9512  0.9479
+H:  3.4596  3.4425
+scores:  0.9016  0.8985
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6681  0.6553
+best_score_gain:  0.2335  0.2432
+best_restart_was_warm: [False, False]
+sum_scores: 1.800108
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.323394
+sum_best_score_gain: 0.476714
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.859733  0.001627
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 0.00011010168482441275, 'subspace_dim': 20, 'expansions': 8, 's': 0.9633969244387239, 'H': 3.4628000725653787, 'time': 0.39105749130249023, 'grad_perp_ratio': 0.005697323242036411, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7991273167325288, 'best_gain': 0.128866213030427, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 114, 'grad_norm': 9.467683458204762e-07, 'subspace_dim': 28, 'expansions': 4, 's': 0.9625551731503598, 'H': 3.4596787750542046, 'time': 0.21651649475097656, 'grad_perp_ratio': 3.275327437862566e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6772416803231497, 'best_gain': 0.2490034591655429, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9644  0.9616
+H:  3.4628  3.4597
+scores:  0.9280  0.9262
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7991  0.6772
+best_score_gain:  0.1289  0.2490
+best_restart_was_warm: [False, False]
+sum_scores: 1.854239
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.476369
+sum_best_score_gain: 0.377870
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.005697  0.000033
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0017404556274414062}}
+{'basis': 1, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.3810877316040458e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9762104007316104, 'H': 3.4646062852204444, 'time': 0.3721787929534912, 'grad_perp_ratio': 1.8212437878386435e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9467544810242867, 'best_gain': 0.0061943419569510105, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 84, 'grad_norm': 9.296183975662166e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9757278651416298, 'H': 3.4634530985668976, 'time': 0.2073519229888916, 'grad_perp_ratio': 3.2532046927055388e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6949004957066927, 'best_gain': 0.25707062569029304, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9762  0.9757
+H:  3.4646  3.4635
+scores:  0.9529  0.9520
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9468  0.6949
+best_score_gain:  0.0062  0.2571
+best_restart_was_warm: [False, False]
+sum_scores: 1.904920
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.641655
+sum_best_score_gain: 0.263265
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000002  0.000003
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0025360584259033203}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 8.428700785495298e-06, 'subspace_dim': 14, 'expansions': 5, 's': 0.9896714973409376, 'H': 3.4657066939219865, 'time': 0.23398518562316895, 'grad_perp_ratio': 4.554460864856842e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9787385911423625, 'best_gain': 0.000710354633764787, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 28, 'grad_norm': 8.844672542711316e-07, 'subspace_dim': 22, 'expansions': 4, 's': 0.9882925936454853, 'H': 3.4648421281590687, 'time': 0.16930532455444336, 'grad_perp_ratio': 6.437286880860182e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9764650832433596, 'best_gain': 0.00023584548134880645, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9897  0.9883
+H:  3.4657  3.4648
+scores:  0.9794  0.9767
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9787  0.9765
+best_score_gain:  0.0007  0.0002
+best_restart_was_warm: [False, False]
+sum_scores: 1.956150
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.955204
+sum_best_score_gain: 0.000946
+subspace_dims: [14, 22]
+grad_perp_ratio:  0.000046  0.000064
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.984895      0.00133147      1.914
+
+===== baseline__rep04.stderr.txt =====
+
+
+===== baseline__rep04.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.015662670135498047}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 49, 'grad_norm': 7.269763679424951e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9514048356252556, 'H': 3.4563359310649617, 'time': 0.14149045944213867, 'grad_perp_ratio': 0.006970125678945969, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6663585406145105, 'best_gain': 0.23796216208046173, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 34, 'grad_norm': 5.697380207087819e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9461865502744835, 'H': 3.442600174714517, 'time': 0.13379883766174316, 'grad_perp_ratio': 0.0017327504190118553, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6689325459098512, 'best_gain': 0.22426756619395394, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9516  0.9463
+H:  3.4563  3.4426
+scores:  0.9043  0.8932
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6664  0.6689
+best_score_gain:  0.2380  0.2243
+best_restart_was_warm: [False, False]
+sum_scores: 1.797521
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.335291
+sum_best_score_gain: 0.462230
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.006970  0.001733
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.004240274429321289}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 7.182916060649391e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.963345706368804, 'H': 3.462829781992207, 'time': 0.35462188720703125, 'grad_perp_ratio': 0.00034020740481651297, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9030225797262283, 'best_gain': 0.024883203105191765, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 101, 'grad_norm': 9.595432706451892e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9596918435328406, 'H': 3.4622768312203878, 'time': 0.32996296882629395, 'grad_perp_ratio': 2.8115945380203176e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8509855995376292, 'best_gain': 0.06983388150009229, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9634  0.9597
+H:  3.4628  3.4623
+scores:  0.9279  0.9208
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9030  0.8510
+best_score_gain:  0.0249  0.0698
+best_restart_was_warm: [False, False]
+sum_scores: 1.848725
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.754008
+sum_best_score_gain: 0.094717
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000340  0.000028
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 4, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 9.000788327828858e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9777071097486867, 'H': 3.455452871185142, 'time': 0.34763622283935547, 'grad_perp_ratio': 0.0015469026565308106, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9162683378866885, 'best_gain': 0.039297442243121594, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 76, 'grad_norm': 9.066223335854268e-07, 'subspace_dim': 29, 'expansions': 5, 's': 0.9704512630426742, 'H': 3.4444623433220003, 'time': 0.2324075698852539, 'grad_perp_ratio': 5.538915595478135e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8237496271431695, 'best_gain': 0.11747160734181916, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9787  0.9696
+H:  3.4555  3.4445
+scores:  0.9556  0.9412
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9163  0.8237
+best_score_gain:  0.0393  0.1175
+best_restart_was_warm: [False, False]
+sum_scores: 1.896787
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.740018
+sum_best_score_gain: 0.156769
+subspace_dims: [20, 29]
+grad_perp_ratio:  0.001547  0.000006
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0020117759704589844}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 4.420560441537553e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.988587097356592, 'H': 3.4656481888160235, 'time': 0.3630976676940918, 'grad_perp_ratio': 0.0006979911385344119, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9766042702528006, 'best_gain': 0.000698011409485666, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 42, 'grad_norm': 1.0107528432655796e-06, 'subspace_dim': 30, 'expansions': 5, 's': 0.9853186955139097, 'H': 3.464454513383027, 'time': 0.1892566680908203, 'grad_perp_ratio': 5.866516348023963e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9636587725920078, 'best_gain': 0.007160563236977557, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9886  0.9853
+H:  3.4656  3.4645
+scores:  0.9773  0.9708
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9766  0.9637
+best_score_gain:  0.0007  0.0072
+best_restart_was_warm: [False, False]
+sum_scores: 1.948122
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.940263
+sum_best_score_gain: 0.007859
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000698  0.000006
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.916054      0.00242038      2.131
+
+===== continuation_only__rep00.stderr.txt =====
+
+
+===== continuation_only__rep00.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.014230489730834961}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 9, 'grad_norm': 1.2134172772159366e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9509885440819335, 'H': 3.4545621032800886, 'time': 0.7992722988128662, 'grad_perp_ratio': 0.9999992130147042, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7717854652510345, 'best_gain': 0.13158377489038764, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 11, 'grad_norm': 5.585132256430862e-07, 'subspace_dim': 31, 'expansions': 6, 's': 0.9496353255020097, 'H': 3.440221969842604, 'time': 0.7752878665924072, 'grad_perp_ratio': 1.493975548826359e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6669468488929855, 'best_gain': 0.2325624702840099, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9512  0.9498
+H:  3.4546  3.4402
+scores:  0.9034  0.8995
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7718  0.6669
+best_score_gain:  0.1316  0.2326
+best_restart_was_warm: [False, False]
+sum_scores: 1.802879
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.438732
+sum_best_score_gain: 0.364146
+subspace_dims: [20, 31]
+grad_perp_ratio:  0.999999  0.000015
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 2.1271163485771762e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.964530179636113, 'H': 3.4635668841581784, 'time': 1.8666324615478516, 'grad_perp_ratio': 0.003537398592920764, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8513813782487447, 'best_gain': 0.07884066320052785, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 102, 'grad_norm': 1.0204003663039485e-06, 'subspace_dim': 28, 'expansions': 4, 's': 0.9626527214600439, 'H': 3.4614194948673127, 'time': 0.5645115375518799, 'grad_perp_ratio': 5.431144526976603e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6844206284103012, 'best_gain': 0.24209182780092786, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9647  0.9626
+H:  3.4636  3.4614
+scores:  0.9302  0.9265
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.8514  0.6844
+best_score_gain:  0.0788  0.2421
+best_restart_was_warm: [False, False]
+sum_scores: 1.856734
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.535802
+sum_best_score_gain: 0.320932
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.003537  0.000054
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0015411376953125}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 6.308417218581056e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9777539256410787, 'H': 3.4607629418723462, 'time': 2.036552667617798, 'grad_perp_ratio': 0.12854210149021916, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6935138983202092, 'best_gain': 0.2623207600567121, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 80, 'grad_norm': 1.0319422746200127e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9742790073000951, 'H': 3.45752940109087, 'time': 0.7009844779968262, 'grad_perp_ratio': 3.573826397633676e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6917758780244193, 'best_gain': 0.2571749457424636, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9784  0.9737
+H:  3.4608  3.4575
+scores:  0.9558  0.9490
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6935  0.6918
+best_score_gain:  0.2623  0.2572
+best_restart_was_warm: [False, False]
+sum_scores: 1.904785
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.385290
+sum_best_score_gain: 0.519496
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.128542  0.000036
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0046231746673583984}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 8.929653828986788e-06, 'subspace_dim': 14, 'expansions': 5, 's': 0.990721915592119, 'H': 3.4657285832112454, 'time': 1.271261215209961, 'grad_perp_ratio': 9.715490623845975e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7438302207410364, 'best_gain': 0.23769951550790536, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 48, 'grad_norm': 9.922327476859051e-07, 'subspace_dim': 19, 'expansions': 3, 's': 0.9880252324797588, 'H': 3.465710918866134, 'time': 0.26712608337402344, 'grad_perp_ratio': 3.381312393670627e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8774518871307999, 'best_gain': 0.09874135840019793, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9907  0.9880
+H:  3.4657  3.4657
+scores:  0.9815  0.9762
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7438  0.8775
+best_score_gain:  0.2377  0.0987
+best_restart_was_warm: [False, False]
+sum_scores: 1.957723
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.621282
+sum_best_score_gain: 0.336441
+subspace_dims: [14, 19]
+grad_perp_ratio:  0.000097  0.000003
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.997202      0.00027911      8.313
+
+===== continuation_only__rep01.stderr.txt =====
+
+
+===== continuation_only__rep01.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0229341983795166}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 9, 'grad_norm': 5.228838572071551e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9516475309284224, 'H': 3.453870615767229, 'time': 0.9222877025604248, 'grad_perp_ratio': 0.15578212918524048, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6804983664546514, 'best_gain': 0.22406073433679452, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 12, 'grad_norm': 6.696197763396501e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.951240015464694, 'H': 3.436832869778677, 'time': 0.8722054958343506, 'grad_perp_ratio': 0.01690504487120431, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7011313167107327, 'best_gain': 0.20111471338157982, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9529  0.9506
+H:  3.4539  3.4368
+scores:  0.9046  0.9022
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6805  0.7011
+best_score_gain:  0.2241  0.2011
+best_restart_was_warm: [False, False]
+sum_scores: 1.806805
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.381630
+sum_best_score_gain: 0.425175
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.155782  0.016905
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 4.094257227107836e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9647018937901888, 'H': 3.46016646550252, 'time': 1.6086657047271729, 'grad_perp_ratio': 0.9995570771269513, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7760355420543722, 'best_gain': 0.1543725215868953, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 109, 'grad_norm': 1.0183338238226253e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9631287501479923, 'H': 3.4568657996688836, 'time': 0.7334051132202148, 'grad_perp_ratio': 5.001515256285811e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6821985971709489, 'best_gain': 0.2450353243965725, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9658  0.9621
+H:  3.4602  3.4569
+scores:  0.9304  0.9272
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7760  0.6822
+best_score_gain:  0.1544  0.2450
+best_restart_was_warm: [False, False]
+sum_scores: 1.857642
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.458234
+sum_best_score_gain: 0.399408
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.999557  0.000050
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0039098262786865234}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.564036140334113e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9781366860073469, 'H': 3.461986815632917, 'time': 1.7857179641723633, 'grad_perp_ratio': 9.132754518730202e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9467871834925213, 'best_gain': 0.009850953853249078, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 67, 'grad_norm': 1.013761487340833e-06, 'subspace_dim': 28, 'expansions': 5, 's': 0.9753640523907072, 'H': 3.457877645036856, 'time': 0.43671345710754395, 'grad_perp_ratio': 7.463019812315823e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7771829601101067, 'best_gain': 0.17391727688256597, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9790  0.9745
+H:  3.4620  3.4579
+scores:  0.9566  0.9511
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9468  0.7772
+best_score_gain:  0.0099  0.1739
+best_restart_was_warm: [False, False]
+sum_scores: 1.907738
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.723970
+sum_best_score_gain: 0.183768
+subspace_dims: [18, 28]
+grad_perp_ratio:  0.000091  0.000075
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0010118484497070312}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.522348255601386e-05, 'subspace_dim': 16, 'expansions': 6, 's': 0.9907439689426054, 'H': 3.46569149580613, 'time': 1.5367841720581055, 'grad_perp_ratio': 3.243864150536972e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9788097648800462, 'best_gain': 0.0027627647429382396, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 51, 'grad_norm': 8.944685988391342e-07, 'subspace_dim': 24, 'expansions': 4, 's': 0.988327890270037, 'H': 3.4653977568651726, 'time': 0.37221312522888184, 'grad_perp_ratio': 5.997439353462986e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9414412780119916, 'best_gain': 0.035342516879301566, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9907  0.9883
+H:  3.4657  3.4654
+scores:  0.9816  0.9768
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9788  0.9414
+best_score_gain:  0.0028  0.0353
+best_restart_was_warm: [False, False]
+sum_scores: 1.958356
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.920251
+sum_best_score_gain: 0.038105
+subspace_dims: [16, 24]
+grad_perp_ratio:  0.000003  0.000060
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.997292      0.00025719      8.304
+
+===== continuation_only__rep02.stderr.txt =====
+
+
+===== continuation_only__rep02.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.021790742874145508}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 1.0860178018877267e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9525720701797118, 'H': 3.451933918783692, 'time': 0.7468645572662354, 'grad_perp_ratio': 0.9999998612261564, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6861250828022596, 'best_gain': 0.22001694682951445, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 17, 'grad_norm': 1.1292365620706184e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9456773422028847, 'H': 3.4180710427357646, 'time': 1.0583224296569824, 'grad_perp_ratio': 0.9999999982597829, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6713794616068225, 'best_gain': 0.2186736215687567, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9550  0.9439
+H:  3.4519  3.4181
+scores:  0.9061  0.8901
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6861  0.6714
+best_score_gain:  0.2200  0.2187
+best_restart_was_warm: [False, False]
+sum_scores: 1.796195
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.357505
+sum_best_score_gain: 0.438691
+subspace_dims: [20, 32]
+grad_perp_ratio:  1.000000  1.000000
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 6.990155840532578e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9651666742862857, 'H': 3.4609986865158655, 'time': 1.4784653186798096, 'grad_perp_ratio': 6.10033845258456e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7442447397123036, 'best_gain': 0.18711976634684668, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 8.757690972343928e-06, 'subspace_dim': 30, 'expansions': 5, 's': 0.9564118040760636, 'H': 3.4547852428514307, 'time': 0.7928931713104248, 'grad_perp_ratio': 2.270148091955836e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8326433288960513, 'best_gain': 0.08147916461564586, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9659  0.9558
+H:  3.4610  3.4548
+scores:  0.9314  0.9141
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7442  0.8326
+best_score_gain:  0.1871  0.0815
+best_restart_was_warm: [False, False]
+sum_scores: 1.845487
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.576888
+sum_best_score_gain: 0.268599
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000061  0.000023
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0016558170318603516}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.7246739991421997e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9774130383606745, 'H': 3.4638687759515396, 'time': 1.8775320053100586, 'grad_perp_ratio': 7.0588617651313684e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.93309518186317, 'best_gain': 0.022184319679897535, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 6, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 83, 'grad_norm': 9.879662318800278e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9701130378588717, 'H': 3.4605735774513127, 'time': 0.58363938331604, 'grad_perp_ratio': 5.960835969132423e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.8969954009314952, 'best_gain': 0.04392413993532118, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9776  0.9700
+H:  3.4639  3.4606
+scores:  0.9553  0.9409
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9331  0.8970
+best_score_gain:  0.0222  0.0439
+best_restart_was_warm: [False, False]
+sum_scores: 1.896199
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.830091
+sum_best_score_gain: 0.066108
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000007  0.000006
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0015423297882080078}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 115, 'grad_norm': 9.7115685022443e-07, 'subspace_dim': 16, 'expansions': 6, 's': 0.9905057019038762, 'H': 3.465627625537453, 'time': 1.606231451034546, 'grad_perp_ratio': 1.4453152448487583e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7632663359094993, 'best_gain': 0.2178325757426527, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 56, 'grad_norm': 8.712615205089082e-07, 'subspace_dim': 24, 'expansions': 4, 's': 0.983161331652479, 'H': 3.465068771932167, 'time': 0.48966550827026367, 'grad_perp_ratio': 1.671438692973454e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6952457443148479, 'best_gain': 0.2713425826015703, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9905  0.9832
+H:  3.4656  3.4651
+scores:  0.9811  0.9666
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7633  0.6952
+best_score_gain:  0.2178  0.2713
+best_restart_was_warm: [False, False]
+sum_scores: 1.947687
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.458512
+sum_best_score_gain: 0.489175
+subspace_dims: [16, 24]
+grad_perp_ratio:  0.000001  0.000017
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.995024      0.00049653      8.663
+
+===== continuation_only__rep03.stderr.txt =====
+
+
+===== continuation_only__rep03.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.023655414581298828}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 9, 'grad_norm': 4.575270405437036e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9504881330872912, 'H': 3.460307890624195, 'time': 0.6454150676727295, 'grad_perp_ratio': 0.9997802745126899, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7007904365102453, 'best_gain': 0.20214700604459834, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 11, 'grad_norm': 1.1071417603645497e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9483005362831513, 'H': 3.4421091998909663, 'time': 0.9055659770965576, 'grad_perp_ratio': 0.0416907415399167, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6284780868582956, 'best_gain': 0.26867364050564546, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9514  0.9475
+H:  3.4603  3.4421
+scores:  0.9029  0.8972
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7008  0.6285
+best_score_gain:  0.2021  0.2687
+best_restart_was_warm: [False, False]
+sum_scores: 1.800089
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.329269
+sum_best_score_gain: 0.470821
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.999780  0.041691
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 2.2378846657134655e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9644641668827653, 'H': 3.461585493533136, 'time': 1.830047369003296, 'grad_perp_ratio': 0.001429535275243071, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6751235354031979, 'best_gain': 0.25487195752032277, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 107, 'grad_norm': 9.545680740934415e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9616637577700561, 'H': 3.460782377391994, 'time': 0.7016012668609619, 'grad_perp_ratio': 2.1420007399324742e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7129387985438054, 'best_gain': 0.2116437379328715, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9654  0.9608
+H:  3.4616  3.4608
+scores:  0.9300  0.9246
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6751  0.7129
+best_score_gain:  0.2549  0.2116
+best_restart_was_warm: [False, False]
+sum_scores: 1.854578
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.388062
+sum_best_score_gain: 0.466516
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.001430  0.000002
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.378520813784746e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9774912232561574, 'H': 3.4643653117804223, 'time': 1.6261825561523438, 'grad_perp_ratio': 5.331042465244721e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.7915013834787732, 'best_gain': 0.16394306802620784, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 74, 'grad_norm': 9.101381358724607e-07, 'subspace_dim': 28, 'expansions': 5, 's': 0.9747863982987309, 'H': 3.463261890094765, 'time': 0.5763227939605713, 'grad_perp_ratio': 1.7262906192849246e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6946972984836405, 'best_gain': 0.25542747295603807, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9776  0.9747
+H:  3.4644  3.4633
+scores:  0.9554  0.9501
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.7915  0.6947
+best_score_gain:  0.1639  0.2554
+best_restart_was_warm: [False, False]
+sum_scores: 1.905569
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.486199
+sum_best_score_gain: 0.419371
+subspace_dims: [18, 28]
+grad_perp_ratio:  0.000053  0.000017
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 2.3873378139152604e-06, 'subspace_dim': 16, 'expansions': 6, 's': 0.9908704420785226, 'H': 3.4655969637794173, 'time': 1.6162755489349365, 'grad_perp_ratio': 7.925523800481484e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9773434419068813, 'best_gain': 0.004477410188561959, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 50, 'grad_norm': 9.679355986369438e-07, 'subspace_dim': 20, 'expansions': 2, 's': 0.9875825718682055, 'H': 3.465617425176503, 'time': 0.2855813503265381, 'grad_perp_ratio': 6.706929739292507e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9481846921510938, 'best_gain': 0.0271317460915379, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9909  0.9876
+H:  3.4656  3.4656
+scores:  0.9818  0.9753
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9773  0.9482
+best_score_gain:  0.0045  0.0271
+best_restart_was_warm: [False, False]
+sum_scores: 1.957137
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.925528
+sum_best_score_gain: 0.031609
+subspace_dims: [16, 20]
+grad_perp_ratio:  0.000079  0.000007
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.982994      0.00012838      8.218
+
+===== continuation_only__rep04.stderr.txt =====
+
+
+===== continuation_only__rep04.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=False, warm_start_perturbations=0, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.025461912155151367}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 8.435392003219076e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9514048372075324, 'H': 3.4563358978028527, 'time': 0.75732421875, 'grad_perp_ratio': 0.0034177404377265016, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6666448246230874, 'best_gain': 0.2376758780718664, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 8.821279929730778e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9483939189281536, 'H': 3.4424811786381486, 'time': 0.7873251438140869, 'grad_perp_ratio': 7.359982092080006e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6731872427965127, 'best_gain': 0.22417456426538473, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9516  0.9485
+H:  3.4563  3.4425
+scores:  0.9043  0.8974
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6666  0.6732
+best_score_gain:  0.2377  0.2242
+best_restart_was_warm: [False, False]
+sum_scores: 1.801683
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.339832
+sum_best_score_gain: 0.461850
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.003418  0.000007
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0020432472229003906}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 6.256118257937349e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9633768240831463, 'H': 3.4628664308543686, 'time': 1.922935962677002, 'grad_perp_ratio': 1.3134925548897432e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.67447535970721, 'best_gain': 0.25349210104988695, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 120, 'grad_norm': 9.536441982375978e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9614778164070835, 'H': 3.4624137118233866, 'time': 1.428828239440918, 'grad_perp_ratio': 5.750665421233336e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6718893344863628, 'best_gain': 0.2523852186752418, 'best_restart_was_warm': False}
+rows 33:64
+s:  0.9634  0.9615
+H:  3.4629  3.4624
+scores:  0.9280  0.9243
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6745  0.6719
+best_score_gain:  0.2535  0.2524
+best_restart_was_warm: [False, False]
+sum_scores: 1.852242
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.346365
+sum_best_score_gain: 0.505877
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000001  0.000006
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.004059314727783203}}
+{'basis': 1, 'best_restart': 6, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 65, 'grad_norm': 1.0246215959608225e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9779646769903199, 'H': 3.452157511491226, 'time': 3.7733843326568604, 'grad_perp_ratio': 0.002398102215201429, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9170141209699683, 'best_gain': 0.03894714266650434, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 74, 'grad_norm': 1.0348650632360813e-06, 'subspace_dim': 29, 'expansions': 5, 's': 0.9715981134233519, 'H': 3.436763049836881, 'time': 0.9907572269439697, 'grad_perp_ratio': 1.880259777037597e-05, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9220977934929351, 'best_gain': 0.02121083078959396, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9792  0.9705
+H:  3.4522  3.4368
+scores:  0.9560  0.9433
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.9170  0.9221
+best_score_gain:  0.0389  0.0212
+best_restart_was_warm: [False, False]
+sum_scores: 1.899270
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.839112
+sum_best_score_gain: 0.060158
+subspace_dims: [20, 29]
+grad_perp_ratio:  0.002398  0.000019
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': False, 'warm_start_perturbations': 0, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0016884803771972656}}
+{'basis': 1, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 5.8989677609940496e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9884382741570321, 'H': 3.465648958938191, 'time': 3.3947014808654785, 'grad_perp_ratio': 3.7923972916880977e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.6986188875344542, 'best_gain': 0.2783891851271575, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 52, 'grad_norm': 1.0171541913749888e-06, 'subspace_dim': 24, 'expansions': 3, 's': 0.986970826780169, 'H': 3.4649984810075125, 'time': 0.6827616691589355, 'grad_perp_ratio': 3.474129993367888e-06, 'warm_restart_count': 0, 'warm_init_score': None, 'warm_final_score': None, 'warm_gain': None, 'best_init_score': 0.9643604270696946, 'best_gain': 0.00973212828002723, 'best_restart_was_warm': False}
+rows 97:128
+s:  0.9885  0.9869
+H:  3.4656  3.4650
+scores:  0.9770  0.9741
+warm_init_scores:  nan  nan
+warm_final_scores:  nan  nan
+warm_score_gain:  nan  nan
+best_init_scores:  0.6986  0.9644
+best_score_gain:  0.2784  0.0097
+best_restart_was_warm: [False, False]
+sum_scores: 1.951101
+sum_warm_init_scores: 0.000000
+sum_warm_final_scores: 0.000000
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.662979
+sum_best_score_gain: 0.288121
+subspace_dims: [18, 24]
+grad_perp_ratio:  0.000004  0.000003
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.939162      0.00255098      13.777
+
+===== warm_start_only__rep00.stderr.txt =====
+
+
+===== warm_start_only__rep00.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.026880264282226562}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 33, 'grad_norm': 1.0950949625970638e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9506765830547216, 'H': 3.4531816853393518, 'time': 0.14014506340026855, 'grad_perp_ratio': 0.9999999997473107, 'warm_restart_count': 2, 'warm_init_score': 0.8999727317238505, 'warm_final_score': 0.9026520449369018, 'warm_gain': 0.00267931321305126, 'best_init_score': 0.6725863237811859, 'best_gain': 0.23006572115571589, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 2.460034946328498e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9500641945205746, 'H': 3.4390496836063393, 'time': 0.12900733947753906, 'grad_perp_ratio': 0.00545224822090712, 'warm_restart_count': 2, 'warm_init_score': 0.900216428099566, 'warm_final_score': 0.9002164280995802, 'warm_gain': 1.4210854715202004e-14, 'best_init_score': 0.900216428099566, 'best_gain': 1.4210854715202004e-14, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9509  0.9503
+H:  3.4532  3.4390
+scores:  0.9027  0.9002
+warm_init_scores:  0.9000  0.9002
+warm_final_scores:  0.9027  0.9002
+warm_score_gain:  0.0027  0.0000
+best_init_scores:  0.6726  0.9002
+best_score_gain:  0.2301  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.802868
+sum_warm_init_scores: 1.800189
+sum_warm_final_scores: 1.802868
+sum_warm_score_gain: 0.002679
+sum_best_init_scores: 1.572803
+sum_best_score_gain: 0.230066
+subspace_dims: [20, 32]
+grad_perp_ratio:  1.000000  0.005452
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 3, 'grad_norm': 7.401349348603e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.963877872839292, 'H': 3.4631877557520916, 'time': 0.31606578826904297, 'grad_perp_ratio': 0.270676788729113, 'warm_restart_count': 7, 'warm_init_score': 0.9289436205273037, 'warm_final_score': 0.9289436205624362, 'warm_gain': 3.5132452502750766e-11, 'best_init_score': 0.9289436205273037, 'best_gain': 3.5132452502750766e-11, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 8.764598752352817e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9632780532075285, 'H': 3.460283563881756, 'time': 0.27860045433044434, 'grad_perp_ratio': 1.2782572969186032e-05, 'warm_restart_count': 7, 'warm_init_score': 0.927677502151545, 'warm_final_score': 0.9276775021517092, 'warm_gain': 1.6420198534206065e-13, 'best_init_score': 0.927677502151545, 'best_gain': 1.6420198534206065e-13, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9643  0.9629
+H:  3.4632  3.4603
+scores:  0.9289  0.9277
+warm_init_scores:  0.9289  0.9277
+warm_final_scores:  0.9289  0.9277
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9289  0.9277
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.856621
+sum_warm_init_scores: 1.856621
+sum_warm_final_scores: 1.856621
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.856621
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.270677  0.000013
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0020132064819335938}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 8.358503223946512e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9771816644845737, 'H': 3.460350091784107, 'time': 0.35016536712646484, 'grad_perp_ratio': 8.668514624878026e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9546989890980628, 'warm_final_score': 0.954698989098743, 'warm_gain': 6.801226248853709e-13, 'best_init_score': 0.9546989890980628, 'best_gain': 6.801226248853709e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 5.069644494980146e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9745924381411551, 'H': 3.4558365132658, 'time': 0.2252812385559082, 'grad_perp_ratio': 2.3871622419769766e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9495149453481389, 'warm_final_score': 0.9495149453483495, 'warm_gain': 2.106093077713922e-13, 'best_init_score': 0.9495149453481389, 'best_gain': 2.106093077713922e-13, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9781  0.9738
+H:  3.4604  3.4558
+scores:  0.9547  0.9495
+warm_init_scores:  0.9547  0.9495
+warm_final_scores:  0.9547  0.9495
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9547  0.9495
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.904214
+sum_warm_init_scores: 1.904214
+sum_warm_final_scores: 1.904214
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.904214
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.000087  0.000024
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0010097026824951172}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 6.704594958738019e-07, 'subspace_dim': 14, 'expansions': 5, 's': 0.9901311264230762, 'H': 3.4657189448169157, 'time': 0.3035268783569336, 'grad_perp_ratio': 3.299022600680118e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9803592304384403, 'warm_final_score': 0.9803592304388662, 'warm_gain': 4.2588155224621005e-13, 'best_init_score': 0.9803592304384403, 'best_gain': 4.2588155224621005e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 4.3031549086088125e-07, 'subspace_dim': 18, 'expansions': 2, 's': 0.9884036861557737, 'H': 3.465728053017785, 'time': 0.11448884010314941, 'grad_perp_ratio': 7.238044382914459e-05, 'warm_restart_count': 7, 'warm_init_score': 0.976941655125991, 'warm_final_score': 0.9769416551261553, 'warm_gain': 1.6431300764452317e-13, 'best_init_score': 0.976941655125991, 'best_gain': 1.6431300764452317e-13, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9901  0.9884
+H:  3.4657  3.4657
+scores:  0.9804  0.9769
+warm_init_scores:  0.9804  0.9769
+warm_final_scores:  0.9804  0.9769
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9804  0.9769
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.957301
+sum_warm_init_scores: 1.957301
+sum_warm_final_scores: 1.957301
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.957301
+sum_best_score_gain: 0.000000
+subspace_dims: [14, 18]
+grad_perp_ratio:  0.000033  0.000072
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.979329      0.00087133      1.903
+
+===== warm_start_only__rep01.stderr.txt =====
+
+
+===== warm_start_only__rep01.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.020298480987548828}}
+{'basis': 1, 'best_restart': 3, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 37, 'grad_norm': 4.2683558677856754e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.951273127723883, 'H': 3.454065271382288, 'time': 0.17757058143615723, 'grad_perp_ratio': 0.9999999974175303, 'warm_restart_count': 2, 'warm_init_score': 0.9025529706109287, 'warm_final_score': 0.9038650801211665, 'warm_gain': 0.0013121095102378577, 'best_init_score': 0.697721296309498, 'best_gain': 0.20614378381187126, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 1.9256348784039647e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9515736577550534, 'H': 3.4374201124521524, 'time': 0.18884992599487305, 'grad_perp_ratio': 0.003972582890776338, 'warm_restart_count': 2, 'warm_init_score': 0.9029320793861337, 'warm_final_score': 0.9029320793861502, 'warm_gain': 1.6431300764452317e-14, 'best_init_score': 0.9029320793861337, 'best_gain': 1.6431300764452317e-14, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9529  0.9505
+H:  3.4541  3.4374
+scores:  0.9039  0.9029
+warm_init_scores:  0.9026  0.9029
+warm_final_scores:  0.9039  0.9029
+warm_score_gain:  0.0013  0.0000
+best_init_scores:  0.6977  0.9029
+best_score_gain:  0.2061  0.0000
+best_restart_was_warm: [False, True]
+sum_scores: 1.806797
+sum_warm_init_scores: 1.805485
+sum_warm_final_scores: 1.806797
+sum_warm_score_gain: 0.001312
+sum_best_init_scores: 1.600653
+sum_best_score_gain: 0.206144
+subspace_dims: [20, 32]
+grad_perp_ratio:  1.000000  0.003973
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 99, 'grad_norm': 9.837686953063911e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9647266687991661, 'H': 3.46022969218099, 'time': 0.39653849601745605, 'grad_perp_ratio': 0.999898657554673, 'warm_restart_count': 7, 'warm_init_score': 0.9304570020913597, 'warm_final_score': 0.9304589415790196, 'warm_gain': 1.9394876599188038e-06, 'best_init_score': 0.9304570020913597, 'best_gain': 1.9394876599188038e-06, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 1.055799851103654e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9630993577260029, 'H': 3.4570070209217514, 'time': 0.2926805019378662, 'grad_perp_ratio': 2.5802781910992967e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9271814963033156, 'warm_final_score': 0.9271814963034024, 'warm_gain': 8.681944052568724e-14, 'best_init_score': 0.9271814963033156, 'best_gain': 8.681944052568724e-14, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9658  0.9621
+H:  3.4602  3.4570
+scores:  0.9305  0.9272
+warm_init_scores:  0.9305  0.9272
+warm_final_scores:  0.9305  0.9272
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9305  0.9272
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.857640
+sum_warm_init_scores: 1.857638
+sum_warm_final_scores: 1.857640
+sum_warm_score_gain: 0.000002
+sum_best_init_scores: 1.857638
+sum_best_score_gain: 0.000002
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.999899  0.000003
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.004742860794067383}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 6.636186710502014e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9781486308374463, 'H': 3.4619980910738835, 'time': 0.4040086269378662, 'grad_perp_ratio': 0.0001315262385242985, 'warm_restart_count': 7, 'warm_init_score': 0.9566619577055355, 'warm_final_score': 0.9566619577059636, 'warm_gain': 4.2810199829546036e-13, 'best_init_score': 0.9566619577055355, 'best_gain': 4.2810199829546036e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 4.322798350847318e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9753598046891293, 'H': 3.457961893780233, 'time': 0.16266179084777832, 'grad_perp_ratio': 5.9934202904322134e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9510940607993363, 'warm_final_score': 0.9510940607994677, 'warm_gain': 1.3133938381315602e-13, 'best_init_score': 0.9510940607993363, 'best_gain': 1.3133938381315602e-13, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9790  0.9745
+H:  3.4620  3.4580
+scores:  0.9567  0.9511
+warm_init_scores:  0.9567  0.9511
+warm_final_scores:  0.9567  0.9511
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9567  0.9511
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.907756
+sum_warm_init_scores: 1.907756
+sum_warm_final_scores: 1.907756
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.907756
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000132  0.000060
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.436661309540643e-07, 'subspace_dim': 16, 'expansions': 6, 's': 0.9907482347660379, 'H': 3.465689976863649, 'time': 0.23415112495422363, 'grad_perp_ratio': 5.124305142665024e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9815809458906787, 'warm_final_score': 0.9815809458912019, 'warm_gain': 5.232481115058363e-13, 'best_init_score': 0.9815809458906787, 'best_gain': 5.232481115058363e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 1.0936247175982136e-06, 'subspace_dim': 24, 'expansions': 4, 's': 0.9883402844336671, 'H': 3.4654130762906203, 'time': 0.16882848739624023, 'grad_perp_ratio': 6.121689555629727e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9768086599035186, 'warm_final_score': 0.9768086599036003, 'warm_gain': 8.171241461241152e-14, 'best_init_score': 0.9768086599035186, 'best_gain': 8.171241461241152e-14, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9907  0.9883
+H:  3.4657  3.4654
+scores:  0.9816  0.9768
+warm_init_scores:  0.9816  0.9768
+warm_final_scores:  0.9816  0.9768
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9816  0.9768
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.958390
+sum_warm_init_scores: 1.958390
+sum_warm_final_scores: 1.958390
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.958390
+sum_best_score_gain: 0.000000
+subspace_dims: [16, 24]
+grad_perp_ratio:  0.000051  0.000061
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.997221      0.00025276      2.063
+
+===== warm_start_only__rep02.stderr.txt =====
+
+
+===== warm_start_only__rep02.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.018392086029052734}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 2.052119043121026e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9523586000991372, 'H': 3.4520452668188333, 'time': 0.12589430809020996, 'grad_perp_ratio': 0.005075460298525006, 'warm_restart_count': 2, 'warm_init_score': 0.9057460300402201, 'warm_final_score': 0.9057460300406391, 'warm_gain': 4.189981694935341e-13, 'best_init_score': 0.9057460300402201, 'best_gain': 4.189981694935341e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 6, 'grad_norm': 6.036511401220397e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9484379211341427, 'H': 3.433108344443873, 'time': 0.16694355010986328, 'grad_perp_ratio': 0.9936250575603545, 'warm_restart_count': 2, 'warm_init_score': 0.8966043105547882, 'warm_final_score': 0.8966043116659783, 'warm_gain': 1.1111901399019075e-09, 'best_init_score': 0.8966043105547882, 'best_gain': 1.1111901399019075e-09, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9531  0.9483
+H:  3.4520  3.4331
+scores:  0.9057  0.8966
+warm_init_scores:  0.9057  0.8966
+warm_final_scores:  0.9057  0.8966
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9057  0.8966
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.802350
+sum_warm_init_scores: 1.802350
+sum_warm_final_scores: 1.802350
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.802350
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.005075  0.993625
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.599366143617679e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9642362107781449, 'H': 3.461768560191035, 'time': 0.3334779739379883, 'grad_perp_ratio': 0.0037483143245148004, 'warm_restart_count': 7, 'warm_init_score': 0.9295959498274924, 'warm_final_score': 0.9295959498280373, 'warm_gain': 5.448974604860268e-13, 'best_init_score': 0.9295959498274924, 'best_gain': 5.448974604860268e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 8.654146067778306e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.960363102014152, 'H': 3.4604368719014005, 'time': 0.2866373062133789, 'grad_perp_ratio': 8.70495493192007e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9220427367317319, 'warm_final_score': 0.9220427367319597, 'warm_gain': 2.278177646530821e-13, 'best_init_score': 0.9220427367317319, 'best_gain': 2.278177646530821e-13, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9652  0.9594
+H:  3.4618  3.4604
+scores:  0.9296  0.9220
+warm_init_scores:  0.9296  0.9220
+warm_final_scores:  0.9296  0.9220
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9296  0.9220
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.851639
+sum_warm_init_scores: 1.851639
+sum_warm_final_scores: 1.851639
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.851639
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.003748  0.000087
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.877232153867604e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9762350881704369, 'H': 3.4636082412118996, 'time': 0.3105454444885254, 'grad_perp_ratio': 6.528019775751639e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9529705595873025, 'warm_final_score': 0.952970559587905, 'warm_gain': 6.025180354640725e-13, 'best_init_score': 0.9529705595873025, 'best_gain': 6.025180354640725e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 3.7170995792080876e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9740644700687656, 'H': 3.46284109528294, 'time': 0.15855836868286133, 'grad_perp_ratio': 2.1723934988583222e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9486984788227122, 'warm_final_score': 0.9486984788228385, 'warm_gain': 1.2634338020234281e-13, 'best_init_score': 0.9486984788227122, 'best_gain': 1.2634338020234281e-13, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9767  0.9736
+H:  3.4636  3.4628
+scores:  0.9530  0.9487
+warm_init_scores:  0.9530  0.9487
+warm_final_scores:  0.9530  0.9487
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9530  0.9487
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.901669
+sum_warm_init_scores: 1.901669
+sum_warm_final_scores: 1.901669
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.901669
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000065  0.000022
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.001512289047241211}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 5.498272452771076e-07, 'subspace_dim': 18, 'expansions': 7, 's': 0.9886896356661549, 'H': 3.4652581651265266, 'time': 0.3199172019958496, 'grad_perp_ratio': 9.734443645556591e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9774958085445296, 'warm_final_score': 0.9774958085448013, 'warm_gain': 2.717825964282383e-13, 'best_init_score': 0.9774958085445296, 'best_gain': 2.717825964282383e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 6.99159036642274e-07, 'subspace_dim': 26, 'expansions': 4, 's': 0.987537640567795, 'H': 3.4654488395036624, 'time': 0.2005634307861328, 'grad_perp_ratio': 1.8906069305259395e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9752231986624522, 'warm_final_score': 0.9752231986625143, 'warm_gain': 6.206146707654625e-14, 'best_init_score': 0.9752231986624522, 'best_gain': 6.206146707654625e-14, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9888  0.9874
+H:  3.4653  3.4654
+scores:  0.9775  0.9752
+warm_init_scores:  0.9775  0.9752
+warm_final_scores:  0.9775  0.9752
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9775  0.9752
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.952719
+sum_warm_init_scores: 1.952719
+sum_warm_final_scores: 1.952719
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.952719
+sum_best_score_gain: 0.000000
+subspace_dims: [18, 26]
+grad_perp_ratio:  0.000097  0.000019
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.955313      0.00223934      1.940
+
+===== warm_start_only__rep03.stderr.txt =====
+
+
+===== warm_start_only__rep03.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.017286300659179688}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 9.608429266034447e-08, 'subspace_dim': 20, 'expansions': 8, 's': 0.9504881317746676, 'H': 3.460307918643785, 'time': 0.10489964485168457, 'grad_perp_ratio': 0.009158250693019501, 'warm_restart_count': 2, 'warm_init_score': 0.9029374425909196, 'warm_final_score': 0.9029374425909251, 'warm_gain': 5.551115123125783e-15, 'best_init_score': 0.9029374425909196, 'best_gain': 5.551115123125783e-15, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 2.0151708675131742e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9486387535445099, 'H': 3.443256904882997, 'time': 0.09979391098022461, 'grad_perp_ratio': 0.0011319397938249324, 'warm_restart_count': 2, 'warm_init_score': 0.8978948368536485, 'warm_final_score': 0.8978948368536778, 'warm_gain': 2.930988785010413e-14, 'best_init_score': 0.8978948368536485, 'best_gain': 2.930988785010413e-14, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9511  0.9482
+H:  3.4603  3.4433
+scores:  0.9029  0.8979
+warm_init_scores:  0.9029  0.8979
+warm_final_scores:  0.9029  0.8979
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9029  0.8979
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.800832
+sum_warm_init_scores: 1.800832
+sum_warm_final_scores: 1.800832
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.800832
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.009158  0.001132
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.001547098159790039}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 8.539351649296063e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.964522736577484, 'H': 3.4613274133453857, 'time': 0.2860877513885498, 'grad_perp_ratio': 0.023251189966201225, 'warm_restart_count': 7, 'warm_init_score': 0.9300967152614785, 'warm_final_score': 0.9300967152621255, 'warm_gain': 6.469269564490787e-13, 'best_init_score': 0.9300967152614785, 'best_gain': 6.469269564490787e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 5.70286277773766e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9615739561640223, 'H': 3.4606695592336605, 'time': 0.24872899055480957, 'grad_perp_ratio': 3.302437017644523e-05, 'warm_restart_count': 7, 'warm_init_score': 0.924399702250944, 'warm_final_score': 0.924399702251052, 'warm_gain': 1.0791367799356522e-13, 'best_init_score': 0.924399702250944, 'best_gain': 1.0791367799356522e-13, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9651  0.9611
+H:  3.4613  3.4607
+scores:  0.9301  0.9244
+warm_init_scores:  0.9301  0.9244
+warm_final_scores:  0.9301  0.9244
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9301  0.9244
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.854496
+sum_warm_init_scores: 1.854496
+sum_warm_final_scores: 1.854496
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.854496
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.023251  0.000033
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0017545223236083984}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 8.293069353649621e-07, 'subspace_dim': 19, 'expansions': 8, 's': 0.9774773964457484, 'H': 3.464421804595069, 'time': 0.2748148441314697, 'grad_perp_ratio': 5.461348728738476e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9554193106845925, 'warm_final_score': 0.9554193106852615, 'warm_gain': 6.690203946391193e-13, 'best_init_score': 0.9554193106845925, 'best_gain': 6.690203946391193e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 3.899356752481303e-07, 'subspace_dim': 29, 'expansions': 5, 's': 0.9746984406842072, 'H': 3.4635142709925217, 'time': 0.18963289260864258, 'grad_perp_ratio': 8.519693509297758e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9499618020239353, 'warm_final_score': 0.9499618020240698, 'warm_gain': 1.3444800828210646e-13, 'best_init_score': 0.9499618020239353, 'best_gain': 1.3444800828210646e-13, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9776  0.9746
+H:  3.4644  3.4635
+scores:  0.9554  0.9500
+warm_init_scores:  0.9554  0.9500
+warm_final_scores:  0.9554  0.9500
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9554  0.9500
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.905381
+sum_warm_init_scores: 1.905381
+sum_warm_final_scores: 1.905381
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.905381
+sum_best_score_gain: 0.000000
+subspace_dims: [19, 29]
+grad_perp_ratio:  0.000005  0.000009
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.002023458480834961}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.545307953488036e-07, 'subspace_dim': 16, 'expansions': 6, 's': 0.9908316335181133, 'H': 3.465625055868751, 'time': 0.21245145797729492, 'grad_perp_ratio': 1.3832000108116531e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9817446331091813, 'warm_final_score': 0.9817446331097232, 'warm_gain': 5.418998583195389e-13, 'best_init_score': 0.9817446331091813, 'best_gain': 5.418998583195389e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 4.881408872115506e-07, 'subspace_dim': 24, 'expansions': 4, 's': 0.9874485142579779, 'H': 3.4654547433647354, 'time': 0.17274093627929688, 'grad_perp_ratio': 6.599165093252079e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9750476871374625, 'warm_final_score': 0.9750476871376773, 'warm_gain': 2.148281552649678e-13, 'best_init_score': 0.9750476871374625, 'best_gain': 2.148281552649678e-13, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9908  0.9874
+H:  3.4656  3.4655
+scores:  0.9817  0.9750
+warm_init_scores:  0.9817  0.9750
+warm_final_scores:  0.9817  0.9750
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9817  0.9750
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.956792
+sum_warm_init_scores: 1.956792
+sum_warm_final_scores: 1.956792
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.956792
+sum_best_score_gain: 0.000000
+subspace_dims: [16, 24]
+grad_perp_ratio:  0.000014  0.000066
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.982389      0.00016877      1.618
+
+===== warm_start_only__rep04.stderr.txt =====
+
+
+===== warm_start_only__rep04.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=False, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.025252342224121094}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 2.070933796829615e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.951404833959155, 'H': 3.4563359660896174, 'time': 0.1434004306793213, 'grad_perp_ratio': 0.025066127087950595, 'warm_restart_count': 2, 'warm_init_score': 0.9043207026950015, 'warm_final_score': 0.9043207026950308, 'warm_gain': 2.930988785010413e-14, 'best_init_score': 0.9043207026950015, 'best_gain': 2.930988785010413e-14, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 6.71911415407739e-07, 'subspace_dim': 31, 'expansions': 6, 's': 0.947152190504655, 'H': 3.4586122531418773, 'time': 0.11082959175109863, 'grad_perp_ratio': 5.522697766686337e-06, 'warm_restart_count': 2, 'warm_init_score': 0.8964584388784359, 'warm_final_score': 0.896458438878483, 'warm_gain': 4.707345624410664e-14, 'best_init_score': 0.8964584388784359, 'best_gain': 4.707345624410664e-14, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9517  0.9472
+H:  3.4563  3.4586
+scores:  0.9043  0.8965
+warm_init_scores:  0.9043  0.8965
+warm_final_scores:  0.9043  0.8965
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9043  0.8965
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.800779
+sum_warm_init_scores: 1.800779
+sum_warm_final_scores: 1.800779
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.800779
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 31]
+grad_perp_ratio:  0.025066  0.000006
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.458942074915811e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.963405643841094, 'H': 3.462855452703467, 'time': 0.27538275718688965, 'grad_perp_ratio': 8.566980924668844e-05, 'warm_restart_count': 7, 'warm_init_score': 0.928023063627601, 'warm_final_score': 0.928023063628134, 'warm_gain': 5.330180741225377e-13, 'best_init_score': 0.928023063627601, 'best_gain': 5.330180741225377e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 1.0290724243566826e-06, 'subspace_dim': 32, 'expansions': 6, 's': 0.9604199454060308, 'H': 3.461813531779449, 'time': 0.35717320442199707, 'grad_perp_ratio': 4.375724773880988e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9222011546619666, 'warm_final_score': 0.9222011546621905, 'warm_gain': 2.2393198406689407e-13, 'best_init_score': 0.9222011546619666, 'best_gain': 2.2393198406689407e-13, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9634  0.9605
+H:  3.4629  3.4618
+scores:  0.9280  0.9222
+warm_init_scores:  0.9280  0.9222
+warm_final_scores:  0.9280  0.9222
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9280  0.9222
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.850224
+sum_warm_init_scores: 1.850224
+sum_warm_final_scores: 1.850224
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.850224
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.000086  0.000004
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.002033710479736328}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 7.127306847327444e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9778346932865314, 'H': 3.453643675506186, 'time': 0.4013707637786865, 'grad_perp_ratio': 0.004570456148922268, 'warm_restart_count': 7, 'warm_init_score': 0.9557578561985669, 'warm_final_score': 0.9557578561990492, 'warm_gain': 4.82280881897168e-13, 'best_init_score': 0.9557578561985669, 'best_gain': 4.82280881897168e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 1.7125953743547698e-07, 'subspace_dim': 31, 'expansions': 6, 's': 0.9708724292783877, 'H': 3.4402547307517595, 'time': 0.28865528106689453, 'grad_perp_ratio': 5.275633205987556e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9419496365574016, 'warm_final_score': 0.9419496365574225, 'warm_gain': 2.0872192862952943e-14, 'best_init_score': 0.9419496365574016, 'best_gain': 2.0872192862952943e-14, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9789  0.9699
+H:  3.4536  3.4403
+scores:  0.9558  0.9419
+warm_init_scores:  0.9558  0.9419
+warm_final_scores:  0.9558  0.9419
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9558  0.9419
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.897707
+sum_warm_init_scores: 1.897707
+sum_warm_final_scores: 1.897707
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.897707
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 31]
+grad_perp_ratio:  0.004570  0.000053
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': False, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 5.938155371086554e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9884748123438868, 'H': 3.4653860301164543, 'time': 0.3192269802093506, 'grad_perp_ratio': 0.00024022994692308365, 'warm_restart_count': 7, 'warm_init_score': 0.9770737041829343, 'warm_final_score': 0.9770737041832682, 'warm_gain': 3.339550858072471e-13, 'best_init_score': 0.9770737041829343, 'best_gain': 3.339550858072471e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 1, 'grad_norm': 4.875406061259966e-07, 'subspace_dim': 28, 'expansions': 4, 's': 0.9862117965429522, 'H': 3.4650180218042723, 'time': 0.23899626731872559, 'grad_perp_ratio': 3.9065052378571206e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9725947631187417, 'warm_final_score': 0.9725947631189567, 'warm_gain': 2.149391775674303e-13, 'best_init_score': 0.9725947631187417, 'best_gain': 2.149391775674303e-13, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9885  0.9862
+H:  3.4654  3.4650
+scores:  0.9771  0.9726
+warm_init_scores:  0.9771  0.9726
+warm_final_scores:  0.9771  0.9726
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9771  0.9726
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.949668
+sum_warm_init_scores: 1.949668
+sum_warm_final_scores: 1.949668
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.949668
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.000240  0.000039
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.932877      0.00251849      2.178
+
+===== warm_start_plus_continuation__rep00.stderr.txt =====
+
+
+===== warm_start_plus_continuation__rep00.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0330355167388916}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 9, 'grad_norm': 5.266784391606656e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9506877771525591, 'H': 3.455167843709176, 'time': 0.9923877716064453, 'grad_perp_ratio': 0.006639983065941827, 'warm_restart_count': 2, 'warm_init_score': 0.902852605310863, 'warm_final_score': 0.9028526053109471, 'warm_gain': 8.415490526658687e-14, 'best_init_score': 0.902852605310863, 'best_gain': 8.415490526658687e-14, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 6, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 11, 'grad_norm': 7.37988047014469e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9495329537911845, 'H': 3.437571189839258, 'time': 1.1114146709442139, 'grad_perp_ratio': 0.31816949507843884, 'warm_restart_count': 2, 'warm_init_score': 0.898930566151127, 'warm_final_score': 0.8989305661511267, 'warm_gain': -3.3306690738754696e-16, 'best_init_score': 0.664622670111348, 'best_gain': 0.2344543662390297, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9518  0.9488
+H:  3.4552  3.4376
+scores:  0.9029  0.8991
+warm_init_scores:  0.9029  0.8989
+warm_final_scores:  0.9029  0.8989
+warm_score_gain:  0.0000 -0.0000
+best_init_scores:  0.9029  0.6646
+best_score_gain:  0.0000  0.2345
+best_restart_was_warm: [True, False]
+sum_scores: 1.801930
+sum_warm_init_scores: 1.801783
+sum_warm_final_scores: 1.801783
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.567475
+sum_best_score_gain: 0.234454
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.006640  0.318169
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0031235218048095703}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 4.244897318350093e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9636858488501883, 'H': 3.4638735486577565, 'time': 2.41314959526062, 'grad_perp_ratio': 5.7193442994117584e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9286096235551249, 'warm_final_score': 0.928609623555412, 'warm_gain': 2.871036741680655e-13, 'best_init_score': 0.9286096235551249, 'best_gain': 2.871036741680655e-13, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 102, 'grad_norm': 9.681896992840162e-07, 'subspace_dim': 24, 'expansions': 3, 's': 0.963268391550242, 'H': 3.4628770469520784, 'time': 0.7219321727752686, 'grad_perp_ratio': 6.025702378027657e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9277559642342643, 'warm_final_score': 0.9277559642342645, 'warm_gain': 2.220446049250313e-16, 'best_init_score': 0.8944328571918445, 'best_gain': 0.03332310704242003, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9637  0.9633
+H:  3.4639  3.4629
+scores:  0.9286  0.9278
+warm_init_scores:  0.9286  0.9278
+warm_final_scores:  0.9286  0.9278
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9286  0.8944
+best_score_gain:  0.0000  0.0333
+best_restart_was_warm: [True, True]
+sum_scores: 1.856366
+sum_warm_init_scores: 1.856366
+sum_warm_final_scores: 1.856366
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.823042
+sum_best_score_gain: 0.033323
+subspace_dims: [18, 24]
+grad_perp_ratio:  0.000057  0.000060
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.1467165019029822e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9768208716750707, 'H': 3.460262283154038, 'time': 3.4953982830047607, 'grad_perp_ratio': 0.04822325889514256, 'warm_restart_count': 7, 'warm_init_score': 0.9539865474016473, 'warm_final_score': 0.9539865477145786, 'warm_gain': 3.1293123647913035e-10, 'best_init_score': 0.6935439652208317, 'best_gain': 0.26044258249374685, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 79, 'grad_norm': 1.0142083703606404e-06, 'subspace_dim': 30, 'expansions': 5, 's': 0.9749446333715467, 'H': 3.4570856556018854, 'time': 1.084909439086914, 'grad_perp_ratio': 6.566549230406156e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9502453802098387, 'warm_final_score': 0.9502453802098392, 'warm_gain': 4.440892098500626e-16, 'best_init_score': 0.6929984740196191, 'best_gain': 0.25724690619022006, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9778  0.9740
+H:  3.4603  3.4571
+scores:  0.9540  0.9502
+warm_init_scores:  0.9540  0.9502
+warm_final_scores:  0.9540  0.9502
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.6935  0.6930
+best_score_gain:  0.2604  0.2572
+best_restart_was_warm: [True, True]
+sum_scores: 1.904232
+sum_warm_init_scores: 1.904232
+sum_warm_final_scores: 1.904232
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.386542
+sum_best_score_gain: 0.517689
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.048223  0.000066
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.002067089080810547}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 2.1070157898613977e-05, 'subspace_dim': 14, 'expansions': 5, 's': 0.9898092123018833, 'H': 3.4657215613783032, 'time': 2.3767037391662598, 'grad_perp_ratio': 1.9399920227287974e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9797219224384242, 'warm_final_score': 0.9797219224402052, 'warm_gain': 1.7810197761036761e-12, 'best_init_score': 0.9791899551554046, 'best_gain': 0.0005319672848005386, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 48, 'grad_norm': 8.846928502002448e-07, 'subspace_dim': 19, 'expansions': 3, 's': 0.9885901296707438, 'H': 3.465731890853926, 'time': 0.5363161563873291, 'grad_perp_ratio': 7.70827440749912e-07, 'warm_restart_count': 7, 'warm_init_score': 0.9773103473940179, 'warm_final_score': 0.9773103473940179, 'warm_gain': 0.0, 'best_init_score': 0.9379509076985642, 'best_gain': 0.039359439695453746, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9898  0.9886
+H:  3.4657  3.4657
+scores:  0.9797  0.9773
+warm_init_scores:  0.9797  0.9773
+warm_final_scores:  0.9797  0.9773
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9792  0.9380
+best_score_gain:  0.0005  0.0394
+best_restart_was_warm: [True, True]
+sum_scores: 1.957032
+sum_warm_init_scores: 1.957032
+sum_warm_final_scores: 1.957032
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.917141
+sum_best_score_gain: 0.039891
+subspace_dims: [14, 19]
+grad_perp_ratio:  0.000019  0.000001
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.984042      0.00119524      12.783
+
+===== warm_start_plus_continuation__rep01.stderr.txt =====
+
+
+===== warm_start_plus_continuation__rep01.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.024624347686767578}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 8, 'grad_norm': 1.1705653067931587e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9512751088254306, 'H': 3.454059664721937, 'time': 1.3027634620666504, 'grad_perp_ratio': 0.5110529886984556, 'warm_restart_count': 2, 'warm_init_score': 0.9038683353398914, 'warm_final_score': 0.9038683380979454, 'warm_gain': 2.758054007401256e-09, 'best_init_score': 0.782851113106303, 'best_gain': 0.12101722499164291, 'best_restart_was_warm': False}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 8, 'grad_norm': 1.2283773651367976e-06, 'subspace_dim': 32, 'expansions': 7, 's': 0.9504431055600365, 'H': 3.4537579207096205, 'time': 1.0588839054107666, 'grad_perp_ratio': 7.78365526364297e-05, 'warm_restart_count': 2, 'warm_init_score': 0.9022607231238867, 'warm_final_score': 0.9022607231238873, 'warm_gain': 5.551115123125783e-16, 'best_init_score': 0.6996116600392386, 'best_gain': 0.2026490630846488, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9516  0.9507
+H:  3.4541  3.4538
+scores:  0.9039  0.9023
+warm_init_scores:  0.9039  0.9023
+warm_final_scores:  0.9039  0.9023
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.7829  0.6996
+best_score_gain:  0.1210  0.2026
+best_restart_was_warm: [False, False]
+sum_scores: 1.806129
+sum_warm_init_scores: 1.806129
+sum_warm_final_scores: 1.806129
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.482463
+sum_best_score_gain: 0.323666
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.511053  0.000078
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0035724639892578125}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.1198291810718364e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.963884195802726, 'H': 3.4603191187756863, 'time': 1.7046587467193604, 'grad_perp_ratio': 0.8742377204363101, 'warm_restart_count': 7, 'warm_init_score': 0.9288362111839761, 'warm_final_score': 0.9288365147948965, 'warm_gain': 3.036109204046511e-07, 'best_init_score': 0.9288362111839761, 'best_gain': 3.036109204046511e-07, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 109, 'grad_norm': 9.891977376443847e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9631310143241864, 'H': 3.4597457967876935, 'time': 0.8229680061340332, 'grad_perp_ratio': 4.332084514751418e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9273506850759206, 'warm_final_score': 0.9273506850759209, 'warm_gain': 3.3306690738754696e-16, 'best_init_score': 0.9037951421085317, 'best_gain': 0.023555542967389154, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9650  0.9621
+H:  3.4603  3.4597
+scores:  0.9288  0.9274
+warm_init_scores:  0.9288  0.9274
+warm_final_scores:  0.9288  0.9274
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9288  0.9038
+best_score_gain:  0.0000  0.0236
+best_restart_was_warm: [True, True]
+sum_scores: 1.856187
+sum_warm_init_scores: 1.856187
+sum_warm_final_scores: 1.856187
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.832631
+sum_best_score_gain: 0.023556
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.874238  0.000004
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.003552675247192383}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 3.312208189318331e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9769090518048859, 'H': 3.46151262375449, 'time': 1.9538922309875488, 'grad_perp_ratio': 3.270178681428224e-05, 'warm_restart_count': 7, 'warm_init_score': 0.954225888631708, 'warm_final_score': 0.9542258887787376, 'warm_gain': 1.4702961070867104e-10, 'best_init_score': 0.954225888631708, 'best_gain': 1.4702961070867104e-10, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 67, 'grad_norm': 9.618899497371073e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9757841172296294, 'H': 3.458929913094721, 'time': 0.5481717586517334, 'grad_perp_ratio': 3.338502239303789e-05, 'warm_restart_count': 7, 'warm_init_score': 0.951943790612386, 'warm_final_score': 0.951943790612386, 'warm_gain': 0.0, 'best_init_score': 0.951943790612386, 'best_gain': 0.0, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9784  0.9744
+H:  3.4615  3.4589
+scores:  0.9542  0.9519
+warm_init_scores:  0.9542  0.9519
+warm_final_scores:  0.9542  0.9519
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9542  0.9519
+best_score_gain:  0.0000  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.906170
+sum_warm_init_scores: 1.906170
+sum_warm_final_scores: 1.906170
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.906170
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000033  0.000033
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.002561330795288086}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 5.107327080983582e-05, 'subspace_dim': 16, 'expansions': 6, 's': 0.9894196748290508, 'H': 3.4656870420371977, 'time': 2.7342188358306885, 'grad_perp_ratio': 1.021628018754476e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9789500833618412, 'warm_final_score': 0.9789500833951776, 'warm_gain': 3.333644471581465e-11, 'best_init_score': 0.9789500833618412, 'best_gain': 3.333644471581465e-11, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 50, 'grad_norm': 1.0264405149183875e-06, 'subspace_dim': 22, 'expansions': 3, 's': 0.988710280178762, 'H': 3.465253080361003, 'time': 0.31769561767578125, 'grad_perp_ratio': 1.573603247775899e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9775363569104187, 'warm_final_score': 0.9775363569104185, 'warm_gain': -2.220446049250313e-16, 'best_init_score': 0.9775363569104187, 'best_gain': -2.220446049250313e-16, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9894  0.9887
+H:  3.4657  3.4653
+scores:  0.9790  0.9775
+warm_init_scores:  0.9790  0.9775
+warm_final_scores:  0.9790  0.9775
+warm_score_gain:  0.0000 -0.0000
+best_init_scores:  0.9790  0.9775
+best_score_gain:  0.0000 -0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.956486
+sum_warm_init_scores: 1.956486
+sum_warm_final_scores: 1.956486
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.956486
+sum_best_score_gain: 0.000000
+subspace_dims: [16, 22]
+grad_perp_ratio:  0.000010  0.000016
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.980616      0.00156773      10.492
+
+===== warm_start_plus_continuation__rep02.stderr.txt =====
+
+
+===== warm_start_plus_continuation__rep02.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.028815746307373047}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 7.1576474454863e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9523586034628707, 'H': 3.452045196186544, 'time': 0.8320965766906738, 'grad_perp_ratio': 0.008688470484677564, 'warm_restart_count': 2, 'warm_init_score': 0.9057460300413147, 'warm_final_score': 0.905746030041343, 'warm_gain': 2.8310687127941492e-14, 'best_init_score': 0.9057460300413147, 'best_gain': 2.8310687127941492e-14, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 19, 'grad_norm': 8.092121678481799e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9501078671949541, 'H': 3.3862098401352703, 'time': 0.9803943634033203, 'grad_perp_ratio': 0.007006622854501152, 'warm_restart_count': 2, 'warm_init_score': 0.8955545719808262, 'warm_final_score': 0.8955545719819902, 'warm_gain': 1.1639578190170141e-12, 'best_init_score': 0.6827680749399349, 'best_gain': 0.21278649704205543, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9530  0.9500
+H:  3.4520  3.3862
+scores:  0.9057  0.8956
+warm_init_scores:  0.9057  0.8956
+warm_final_scores:  0.9057  0.8956
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9057  0.6828
+best_score_gain:  0.0000  0.2128
+best_restart_was_warm: [True, False]
+sum_scores: 1.801301
+sum_warm_init_scores: 1.801301
+sum_warm_final_scores: 1.801301
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.588514
+sum_best_score_gain: 0.212786
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.008688  0.007007
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.848868609950912e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9642175964682592, 'H': 3.4617105909361072, 'time': 3.245396375656128, 'grad_perp_ratio': 0.005623669128013379, 'warm_restart_count': 7, 'warm_init_score': 0.9295572913699808, 'warm_final_score': 0.9295572913742913, 'warm_gain': 4.310551915409633e-12, 'best_init_score': 0.9295572913699808, 'best_gain': 4.310551915409633e-12, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 114, 'grad_norm': 9.326866272915278e-07, 'subspace_dim': 28, 'expansions': 4, 's': 0.9619841249536014, 'H': 3.4609057507996335, 'time': 1.1831951141357422, 'grad_perp_ratio': 6.945746462999673e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9251968633738439, 'warm_final_score': 0.9251968633738439, 'warm_gain': 0.0, 'best_init_score': 0.9011519948191553, 'best_gain': 0.02404486855468857, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9655  0.9607
+H:  3.4617  3.4609
+scores:  0.9296  0.9252
+warm_init_scores:  0.9296  0.9252
+warm_final_scores:  0.9296  0.9252
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9296  0.9012
+best_score_gain:  0.0000  0.0240
+best_restart_was_warm: [True, True]
+sum_scores: 1.854754
+sum_warm_init_scores: 1.854754
+sum_warm_final_scores: 1.854754
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.830709
+sum_best_score_gain: 0.024045
+subspace_dims: [20, 28]
+grad_perp_ratio:  0.005624  0.000069
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0014240741729736328}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 3.760998596154656e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9759617502813719, 'H': 3.4626137490541087, 'time': 4.510880470275879, 'grad_perp_ratio': 3.338017975395944e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9524097358047192, 'warm_final_score': 0.9524097358077677, 'warm_gain': 3.048450381015755e-12, 'best_init_score': 0.9524097358047192, 'best_gain': 3.048450381015755e-12, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 8, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 71, 'grad_norm': 9.984781219309898e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9752968975307317, 'H': 3.4618866699217428, 'time': 1.1487743854522705, 'grad_perp_ratio': 7.96917891259152e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9510728224569905, 'warm_final_score': 0.9510728224569907, 'warm_gain': 1.1102230246251565e-16, 'best_init_score': 0.9179378664837269, 'best_gain': 0.0331349559732641, 'best_restart_was_warm': False}
+rows 65:96
+s:  0.9770  0.9743
+H:  3.4626  3.4619
+scores:  0.9524  0.9511
+warm_init_scores:  0.9524  0.9511
+warm_final_scores:  0.9524  0.9511
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9524  0.9179
+best_score_gain:  0.0000  0.0331
+best_restart_was_warm: [True, False]
+sum_scores: 1.903483
+sum_warm_init_scores: 1.903483
+sum_warm_final_scores: 1.903483
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.870348
+sum_best_score_gain: 0.033135
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000033  0.000008
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 3.67712171280101e-05, 'subspace_dim': 16, 'expansions': 6, 's': 0.9888025824714679, 'H': 3.465391851811928, 'time': 3.6240100860595703, 'grad_perp_ratio': 4.00291895216054e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9777220108319603, 'warm_final_score': 0.9777220108330492, 'warm_gain': 1.0889067425523535e-12, 'best_init_score': 0.9777220108319603, 'best_gain': 1.0889067425523535e-12, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 50, 'grad_norm': 8.827607210016505e-07, 'subspace_dim': 23, 'expansions': 4, 's': 0.9882330070324734, 'H': 3.4648257462579988, 'time': 1.0215892791748047, 'grad_perp_ratio': 5.009956954079581e-06, 'warm_restart_count': 7, 'warm_init_score': 0.976582472332887, 'warm_final_score': 0.9765824723328871, 'warm_gain': 1.1102230246251565e-16, 'best_init_score': 0.9362152402140245, 'best_gain': 0.04036723211886262, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9890  0.9881
+H:  3.4654  3.4648
+scores:  0.9777  0.9766
+warm_init_scores:  0.9777  0.9766
+warm_final_scores:  0.9777  0.9766
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9777  0.9362
+best_score_gain:  0.0000  0.0404
+best_restart_was_warm: [True, True]
+sum_scores: 1.954304
+sum_warm_init_scores: 1.954304
+sum_warm_final_scores: 1.954304
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.913937
+sum_best_score_gain: 0.040367
+subspace_dims: [16, 23]
+grad_perp_ratio:  0.000004  0.000005
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.961776      0.00206604      16.600
+
+===== warm_start_plus_continuation__rep03.stderr.txt =====
+
+
+===== warm_start_plus_continuation__rep03.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.02765822410583496}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 9, 'grad_norm': 4.6575988234735085e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9504881332024677, 'H': 3.4603078886000898, 'time': 0.7387287616729736, 'grad_perp_ratio': 0.0036092290648059144, 'warm_restart_count': 2, 'warm_init_score': 0.9029374425908845, 'warm_final_score': 0.9029374425909087, 'warm_gain': 2.4202861936828413e-14, 'best_init_score': 0.9029374425908845, 'best_gain': 2.4202861936828413e-14, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 11, 'grad_norm': 8.967818626798281e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9486387568457917, 'H': 3.443256760780741, 'time': 0.8348917961120605, 'grad_perp_ratio': 0.0007092997714311459, 'warm_restart_count': 2, 'warm_init_score': 0.8978948301641948, 'warm_final_score': 0.8978948301641946, 'warm_gain': -2.220446049250313e-16, 'best_init_score': 0.8978948301641948, 'best_gain': -2.220446049250313e-16, 'best_restart_was_warm': True}
+rows 1:32
+s:  0.9511  0.9482
+H:  3.4603  3.4433
+scores:  0.9029  0.8979
+warm_init_scores:  0.9029  0.8979
+warm_final_scores:  0.9029  0.8979
+warm_score_gain:  0.0000 -0.0000
+best_init_scores:  0.9029  0.8979
+best_score_gain:  0.0000 -0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.800832
+sum_warm_init_scores: 1.800832
+sum_warm_final_scores: 1.800832
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.800832
+sum_best_score_gain: 0.000000
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.003609  0.000709
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.679979155858257e-05, 'subspace_dim': 20, 'expansions': 8, 's': 0.9645226098483178, 'H': 3.461332200498793, 'time': 3.058800458908081, 'grad_perp_ratio': 0.002585440077840985, 'warm_restart_count': 7, 'warm_init_score': 0.930096713084013, 'warm_final_score': 0.9300967130858463, 'warm_gain': 1.833311280563521e-12, 'best_init_score': 0.6751976737585619, 'best_gain': 0.2548990393272844, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 108, 'grad_norm': 1.015811883912331e-06, 'subspace_dim': 29, 'expansions': 5, 's': 0.9615455116824746, 'H': 3.459481090974759, 'time': 1.5657849311828613, 'grad_perp_ratio': 3.2338197970044825e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9243031371130275, 'warm_final_score': 0.9243031371130273, 'warm_gain': -2.220446049250313e-16, 'best_init_score': 0.8937293905362984, 'best_gain': 0.030573746576728844, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9655  0.9606
+H:  3.4613  3.4595
+scores:  0.9301  0.9243
+warm_init_scores:  0.9301  0.9243
+warm_final_scores:  0.9301  0.9243
+warm_score_gain:  0.0000 -0.0000
+best_init_scores:  0.6752  0.8937
+best_score_gain:  0.2549  0.0306
+best_restart_was_warm: [True, True]
+sum_scores: 1.854400
+sum_warm_init_scores: 1.854400
+sum_warm_final_scores: 1.854400
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.568927
+sum_best_score_gain: 0.285473
+subspace_dims: [20, 29]
+grad_perp_ratio:  0.002585  0.000032
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0}}
+{'basis': 1, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 1.535544396603458e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9774609421022031, 'H': 3.464328030212098, 'time': 3.579533100128174, 'grad_perp_ratio': 7.041315587309945e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9553840994116132, 'warm_final_score': 0.9553840994013254, 'warm_gain': -1.028777063538655e-11, 'best_init_score': 0.9553840994116132, 'best_gain': -1.028777063538655e-11, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 3, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 73, 'grad_norm': 1.006979513468398e-06, 'subspace_dim': 26, 'expansions': 4, 's': 0.9748469026758225, 'H': 3.463119094856471, 'time': 1.0904462337493896, 'grad_perp_ratio': 5.024849337385083e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9502375144118385, 'warm_final_score': 0.9502375144118389, 'warm_gain': 4.440892098500626e-16, 'best_init_score': 0.916876237094273, 'best_gain': 0.033361277317565885, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9776  0.9747
+H:  3.4643  3.4631
+scores:  0.9554  0.9502
+warm_init_scores:  0.9554  0.9502
+warm_final_scores:  0.9554  0.9502
+warm_score_gain: -0.0000  0.0000
+best_init_scores:  0.9554  0.9169
+best_score_gain: -0.0000  0.0334
+best_restart_was_warm: [True, True]
+sum_scores: 1.905622
+sum_warm_init_scores: 1.905622
+sum_warm_final_scores: 1.905622
+sum_warm_score_gain: -0.000000
+sum_best_init_scores: 1.872260
+sum_best_score_gain: 0.033361
+subspace_dims: [18, 26]
+grad_perp_ratio:  0.000070  0.000050
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0025544166564941406}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 2.742252414885648e-06, 'subspace_dim': 16, 'expansions': 6, 's': 0.990832029180875, 'H': 3.465602412112312, 'time': 3.407008647918701, 'grad_perp_ratio': 1.3830717434977266e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9817448599395173, 'warm_final_score': 0.9817448599395172, 'warm_gain': -1.1102230246251565e-16, 'best_init_score': 0.9816272508539151, 'best_gain': 0.00011760908560209948, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 2, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 50, 'grad_norm': 9.241827864931236e-07, 'subspace_dim': 20, 'expansions': 2, 's': 0.987716214997975, 'H': 3.4656464642251072, 'time': 0.5063419342041016, 'grad_perp_ratio': 4.909208747815488e-05, 'warm_restart_count': 7, 'warm_init_score': 0.9755811303263269, 'warm_final_score': 0.9755811303263275, 'warm_gain': 6.661338147750939e-16, 'best_init_score': 0.9501629059295882, 'best_gain': 0.025418224396739353, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9908  0.9877
+H:  3.4656  3.4656
+scores:  0.9817  0.9756
+warm_init_scores:  0.9817  0.9756
+warm_final_scores:  0.9817  0.9756
+warm_score_gain: -0.0000  0.0000
+best_init_scores:  0.9816  0.9502
+best_score_gain:  0.0001  0.0254
+best_restart_was_warm: [True, True]
+sum_scores: 1.957326
+sum_warm_init_scores: 1.957326
+sum_warm_final_scores: 1.957326
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.931790
+sum_best_score_gain: 0.025536
+subspace_dims: [16, 20]
+grad_perp_ratio:  0.000014  0.000049
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.982737      0.00016702      14.816
+
+===== warm_start_plus_continuation__rep04.stderr.txt =====
+
+
+===== warm_start_plus_continuation__rep04.stdout.txt =====
+Input: generated structured cex (n=128, r_sig=2, sigma1=0.991, alpha_sig=0.003, alpha_tail=0.0145, tail_scale=0.99, v_type=rand): A=(128, 128), sigma1=0.991, normalize_by_sigma=False
+Mode: restricted
+Restricted optimizer params: preset=cex-replicate, q0=4, qmax=32, krylov_depth=2, residual_tol=0.0001, expansion_maxit=8, num_restarts=8, maxit=250, carry=left, reduced_optimizer=cex, dtype=float64, expansion_direction=residual, reuse_line_search_grad=True, expansion_warm_start=True, post_expansion_maxit=120, warm_start_greedy=True, warm_start_perturbations=4, warm_start_perturb_scale=0.01, continuation=True, continuation_schedule=(0.0, 0.25, 0.5, 0.75, 1.0)
+
+===== block rows 1:32 (initial restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (32, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.026322126388549805}}
+{'basis': 1, 'best_restart': 2, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 8.43554540337177e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9514048372074779, 'H': 3.456335897804, 'time': 0.7041950225830078, 'grad_perp_ratio': 0.003534546870116223, 'warm_restart_count': 2, 'warm_init_score': 0.9043207026949535, 'warm_final_score': 0.9043207026949541, 'warm_gain': 6.661338147750939e-16, 'best_init_score': 0.6663585406145107, 'best_gain': 0.2379621620804434, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_rank_cap', 'solver_stop_reason': 'f_change_tol', 'iters': 10, 'grad_norm': 8.821308135812576e-07, 'subspace_dim': 32, 'expansions': 6, 's': 0.9483939189281476, 'H': 3.4424811786382215, 'time': 0.7910501956939697, 'grad_perp_ratio': 0.0004761584711530749, 'warm_restart_count': 2, 'warm_init_score': 0.8973618070618927, 'warm_final_score': 0.8973618070618923, 'warm_gain': -4.440892098500626e-16, 'best_init_score': 0.6689277171883663, 'best_gain': 0.2284340898735262, 'best_restart_was_warm': False}
+rows 1:32
+s:  0.9516  0.9485
+H:  3.4563  3.4425
+scores:  0.9043  0.8974
+warm_init_scores:  0.9043  0.8974
+warm_final_scores:  0.9043  0.8974
+warm_score_gain:  0.0000 -0.0000
+best_init_scores:  0.6664  0.6689
+best_score_gain:  0.2380  0.2284
+best_restart_was_warm: [True, False]
+sum_scores: 1.801683
+sum_warm_init_scores: 1.801683
+sum_warm_final_scores: 1.801683
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.335286
+sum_best_score_gain: 0.466396
+subspace_dims: [20, 32]
+grad_perp_ratio:  0.003535  0.000476
+
+===== block rows 33:64 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0020339488983154297}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 6.364557493342348e-06, 'subspace_dim': 20, 'expansions': 8, 's': 0.9633768240512108, 'H': 3.4628664312735653, 'time': 2.1681177616119385, 'grad_perp_ratio': 1.2315208336780775e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9279674607445029, 'warm_final_score': 0.9279674607444885, 'warm_gain': -1.432187701766452e-14, 'best_init_score': 0.6848219621490098, 'best_gain': 0.24314549859547874, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 5, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 120, 'grad_norm': 9.536456402108242e-07, 'subspace_dim': 30, 'expansions': 5, 's': 0.9614778191516331, 'H': 3.4624137387616356, 'time': 1.5788052082061768, 'grad_perp_ratio': 4.555490529621886e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9242745596911559, 'warm_final_score': 0.9242745596911559, 'warm_gain': 0.0, 'best_init_score': 0.8987767671045296, 'best_gain': 0.025497792586626322, 'best_restart_was_warm': True}
+rows 33:64
+s:  0.9634  0.9615
+H:  3.4629  3.4624
+scores:  0.9280  0.9243
+warm_init_scores:  0.9280  0.9243
+warm_final_scores:  0.9280  0.9243
+warm_score_gain: -0.0000  0.0000
+best_init_scores:  0.6848  0.8988
+best_score_gain:  0.2431  0.0255
+best_restart_was_warm: [True, True]
+sum_scores: 1.852242
+sum_warm_init_scores: 1.852242
+sum_warm_final_scores: 1.852242
+sum_warm_score_gain: -0.000000
+sum_best_init_scores: 1.583599
+sum_best_score_gain: 0.268643
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.000001  0.000005
+
+===== block rows 65:96 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0035016536712646484}}
+{'basis': 1, 'best_restart': 5, 'stop_reason': 'expansion_maxit', 'solver_stop_reason': 'f_change_tol', 'iters': 66, 'grad_norm': 9.66100357763737e-07, 'subspace_dim': 20, 'expansions': 8, 's': 0.9779646807290538, 'H': 3.4521574647547904, 'time': 4.350782632827759, 'grad_perp_ratio': 0.002499574536073492, 'warm_restart_count': 7, 'warm_init_score': 0.9559612685623133, 'warm_final_score': 0.9559612685625254, 'warm_gain': 2.120525977034049e-13, 'best_init_score': 0.9293936110239093, 'best_gain': 0.02656765753861612, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 4, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 74, 'grad_norm': 1.0348689683852512e-06, 'subspace_dim': 30, 'expansions': 5, 's': 0.971598103086512, 'H': 3.4367628469749114, 'time': 1.34464430809021, 'grad_perp_ratio': 2.8646899900342872e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9433086003499092, 'warm_final_score': 0.9433086003499096, 'warm_gain': 4.440892098500626e-16, 'best_init_score': 0.9232952460712384, 'best_gain': 0.020013354278671236, 'best_restart_was_warm': True}
+rows 65:96
+s:  0.9792  0.9705
+H:  3.4522  3.4368
+scores:  0.9560  0.9433
+warm_init_scores:  0.9560  0.9433
+warm_final_scores:  0.9560  0.9433
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.9294  0.9233
+best_score_gain:  0.0266  0.0200
+best_restart_was_warm: [True, True]
+sum_scores: 1.899270
+sum_warm_init_scores: 1.899270
+sum_warm_final_scores: 1.899270
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.852689
+sum_best_score_gain: 0.046581
+subspace_dims: [20, 30]
+grad_perp_ratio:  0.002500  0.000003
+
+===== block rows 97:128 (streaming restricted score) =====
+{'EntropyScoreForget_setup': {'M_gain_shape': (34, 128), 'A_block_shape': (32, 128), 'active_rank': 2, 'seed_rank': 4, 'max_rank': 32, 'krylov_depth': 2, 'residual_tol': 0.0001, 'reduced_optimizer': 'cex', 'work_dtype': 'float64', 'expansion_direction': 'residual', 'reuse_line_search_grad': True, 'expansion_warm_start': True, 'post_expansion_maxit': 120, 'warm_start_greedy': True, 'warm_start_perturbations': 4, 'warm_start_perturb_scale': 0.01, 'continuation': True, 'continuation_schedule': (0.0, 0.25, 0.5, 0.75, 1.0), 'subspace_build_time': 0.0033254623413085938}}
+{'basis': 1, 'best_restart': 7, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'maxit', 'iters': 120, 'grad_norm': 5.909629747959063e-05, 'subspace_dim': 18, 'expansions': 7, 's': 0.9884382767236176, 'H': 3.4656489730631237, 'time': 3.9461863040924072, 'grad_perp_ratio': 1.8739078704674084e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9770080780857731, 'warm_final_score': 0.9770080780879402, 'warm_gain': 2.1671553440683056e-12, 'best_init_score': 0.6976552316307209, 'best_gain': 0.27935284645721936, 'best_restart_was_warm': True}
+{'basis': 2, 'best_restart': 1, 'stop_reason': 'subspace_grad_tol', 'solver_stop_reason': 'f_change_tol', 'iters': 52, 'grad_norm': 1.0171568484636935e-06, 'subspace_dim': 24, 'expansions': 3, 's': 0.9869708204807163, 'H': 3.464998505166017, 'time': 0.8922803401947021, 'grad_perp_ratio': 3.724401531887736e-06, 'warm_restart_count': 7, 'warm_init_score': 0.9740925435013057, 'warm_final_score': 0.9740925435013058, 'warm_gain': 1.1102230246251565e-16, 'best_init_score': 0.9740925435013057, 'best_gain': 1.1102230246251565e-16, 'best_restart_was_warm': True}
+rows 97:128
+s:  0.9885  0.9869
+H:  3.4656  3.4650
+scores:  0.9770  0.9741
+warm_init_scores:  0.9770  0.9741
+warm_final_scores:  0.9770  0.9741
+warm_score_gain:  0.0000  0.0000
+best_init_scores:  0.6977  0.9741
+best_score_gain:  0.2794  0.0000
+best_restart_was_warm: [True, True]
+sum_scores: 1.951101
+sum_warm_init_scores: 1.951101
+sum_warm_final_scores: 1.951101
+sum_warm_score_gain: 0.000000
+sum_best_init_scores: 1.671748
+sum_best_score_gain: 0.279353
+subspace_dims: [18, 24]
+grad_perp_ratio:  0.000002  0.000004
+sigma1    mean_align    mean_relerr_sval    elapsed
+0.991      0.939162      0.00255097      15.825

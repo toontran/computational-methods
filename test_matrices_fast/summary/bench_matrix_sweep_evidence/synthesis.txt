@@ -1,0 +1,246 @@
+Multi-matrix benchmark — combined / hybrid / iSVD / future_hmean_online / future_hmean_evidence
+================================================================================================
+
+Date: 2026-04-27
+
+
+Scope
+-----
+Same harness, matrix list, parameters, and metrics as
+`summary/bench_matrix_sweep/synthesis.txt`. The four existing policies
+were NOT re-run — their JSON outputs in `summary/bench_matrix_sweep/`
+are reused verbatim. Only the new `future_hmean_evidence` policy was
+streamed across the same 17 matrices, with outputs in this directory.
+
+  - same M_gain construction (state = diag(s)·V_prev.T stacked on A_half1)
+  - rank=2, float32, --shuffle-rows, seed=0, row_shuffle_seed=0
+  - half_win=32 (pair=64 sliding), sliding-mode metrics only
+  - 4-way parallel batches with OPENBLAS_NUM_THREADS=2
+  - mixed-tail-sharp run solo, mirroring the existing layout
+
+Driver: `run_bench_sweep_evidence.sh`. Aggregator:
+`summary/bench_matrix_sweep_evidence/aggregate.py`. Full per-metric
+table at `summary/bench_matrix_sweep_evidence/aggregated_table.txt`.
+
+
+Policies
+--------
+  - `isvd`                  pure streaming SVD of M_gain
+  - `hybrid`                combined-greedy v1 + deflated-SVD v2
+  - `combined`              combined-greedy v1 + opt2 (both from greedy)
+  - `future_hmean_online`   greedy v1 + HM-online scored v2 from a
+                            5-candidate pool, with rank-2 SVD reframe.
+  - `future_hmean_evidence` (new) greedy v1 + slot-2 chosen by
+                            sphere-projected gradient ascent on the
+                            HM-evidence score
+                            (HM_evi(v) · relH1(v) — see
+                            `summary/hmean_evidence_score_instructions.txt`).
+                            Search basis = rowspan(A_sketch ∪ A_cur ∪
+                            A_fut) ⊥ V_default[:,0]; warm starts =
+                            V_default[:,1] ∪ online pool ∪ Vbasis_final
+                            (≤8) ∪ 24 random unit vectors. Same rank-2
+                            SVD reframe as `future_hmean_online`.
+
+The HM-evidence score replaces pool-normalized denominators with
+per-block mean-row energies (c_k = N_k / ||A_k||_F^2) and weights the
+carried sketch by its rank rather than the cumulative row count
+(w_sk = r = 2, w_g1 = w_g2 = N_block = 32). Per the per-block
+diagnostic (`summary/hmean_evidence_score_synthesis.txt`) it dominates
+the static HM-triplet baselines on the score itself; the question this
+sweep answers is whether that translates into streaming subspace
+quality.
+
+
+Win counts across 17 matrices (sliding, within ~1e-4 margin)
+-----------------------------------------------------------
+  metric                 combined  hybrid    isvd      online    evidence
+  mean_exact_cos1        1         1         8         4         3
+  mean_exact_cos2        3         2         7         4         1
+  mean_relerr_sval       1         1         8         3         4
+  final_exact_cos1       2         4         5         4         2
+  final_exact_cos2       3         2         5         7         0
+  final_tail_mass        3         1         5         8         0
+
+evidence wins zero cells on the final-step subspace metrics. Its mean
+metrics are competitive with online and combined but it consistently
+loses the rank-2 carry of the dominant signal direction (final_exact_cos2)
+to online's pool-based slot-2 selection.
+
+
+Head-to-head W/T/L of future_hmean_evidence vs each baseline
+------------------------------------------------------------
+  vs combined   mean_exact_cos1        10/0/7
+  vs combined   mean_exact_cos2         6/0/11
+  vs combined   mean_relerr_sval       10/2/5
+  vs combined   final_exact_cos2        5/0/12
+  vs combined   final_tail_mass         5/0/12
+
+  vs hybrid     mean_exact_cos1        11/1/5
+  vs hybrid     mean_exact_cos2         6/0/11
+  vs hybrid     final_exact_cos2        5/0/12
+  vs hybrid     final_tail_mass         5/0/12
+
+  vs isvd       mean_exact_cos1         8/0/9
+  vs isvd       mean_exact_cos2         5/0/12
+  vs isvd       final_exact_cos2        5/0/12
+  vs isvd       final_tail_mass         5/0/12
+
+  vs online     mean_exact_cos1        11/0/6
+  vs online     mean_exact_cos2         3/0/14
+  vs online     mean_relerr_sval        9/1/7
+  vs online     final_exact_cos2        5/0/12
+  vs online     final_tail_mass         3/0/14
+  vs online     elapsed                 0/0/17  (online is 13× faster)
+
+evi loses to online on the second-slot metrics by 11–14 of 17 matrices
+across mean_exact_cos2, final_exact_cos2, and final_tail_mass. It edges
+ahead on mean_exact_cos1 (11/0/6) and mean_relerr_sval (9/1/7) — the
+slot-1 column carry is slightly better-conditioned, but slot-2 ends up
+in a mass-balanced direction that costs subspace recovery of V_exact[:,1].
+
+
+Per-matrix snapshot (sliding, half_win=32)
+------------------------------------------
+Tail-dominant / counterexample matrices (where the policies most diverge):
+
+  matrix             policy        mEx1    mEx2    fEx1    fEx2    tail   relerr
+  mixed-tail-sharp   isvd          0.074   0.026   0.078   0.013   0.997  0.0135
+                     hybrid        0.359   0.019   0.064   0.030   0.997  0.0138
+                     combined      0.508   0.054   0.874   0.027   0.618  0.0206
+                     online        0.691   0.490   0.983   0.850   0.156  0.0048
+                     evidence      0.494   0.219   0.853   0.276   0.598  0.0235
+  mixed-tail-balanced isvd         0.123   0.037   0.182   0.060   0.982  0.0180
+                     combined      0.453   0.038   0.810   0.044   0.671  0.0295
+                     online        0.689   0.437   0.981   0.827   0.177  0.0052
+                     evidence      0.453   0.166   0.784   0.275   0.655  0.0318
+  mixed-tail-soft    isvd          0.209   0.005   0.359   0.003   0.936  0.0192
+                     hybrid        0.490   0.075   0.839   0.123   0.641  0.0201
+                     online        0.690   0.443   0.983   0.019   0.516  0.0050
+                     evidence      0.617   0.231   0.937   0.082   0.558  0.0128
+  etf-basket-basis   isvd          0.999   0.191   1.000   0.205   0.479  0.0147
+                     online        0.999   0.814   1.000   0.962   0.037  0.0145
+                     evidence      0.999   0.826   1.000   0.889   0.105  0.0145
+  diffuse-diffuse    isvd          0.617   0.299   0.911   0.489   0.465  0.0090
+                     online        0.621   0.317   0.943   0.528   0.416  0.0116
+                     evidence      0.417   0.264   0.701   0.339   0.696  0.0379
+  static-cex         isvd          0.064   0.011   0.045   0.044   0.998  0.0010
+                     combined      0.682   0.573   0.976   0.913   0.108  0.0039
+                     online        0.691   0.472   0.982   0.819   0.183  0.0048
+                     evidence      0.693   0.278   0.985   0.526   0.478  0.0025
+
+Spiky / residual-dominated matrices (online's known underperformance regime):
+
+  matrix                  policy        mEx1    mEx2    fEx1    fEx2    tail   relerr
+  residual-spiky-shocks   isvd          0.652   0.379   0.930   0.637   0.365  0.0369
+                          hybrid        0.632   0.221   0.895   0.570   0.437  0.0565
+                          online        0.275   0.115   0.447   0.246   0.870  0.1570
+                          evidence      0.310   0.116   0.544   0.225   0.792  0.1530
+  risk-residual-panel     isvd          0.455   0.324   0.611   0.471   0.702  0.0494
+                          hybrid        0.384   0.084   0.624   0.085   0.802  0.0755
+                          online        0.351   0.087   0.519   0.064   0.863   0.1062
+                          evidence      0.188   0.068   0.301   0.146   0.952  0.1123
+
+evi sits between online and the combined/hybrid/isvd cluster on the
+tail-dominant matrices: it captures slot-1 nearly as well as online but
+extracts only ~half the slot-2 mass (fEx2 0.27–0.28 vs online's
+0.83–0.85 on `mixed-tail-sharp/balanced`). On `mixed-tail-soft` evi
+recovers some of the slot-2 mass that online misses (0.082 vs 0.019),
+but neither method is in the regime of the other tail matrices.
+
+On the strong-signal `etf-basket-basis` evi marginally beats online on
+mean_exact_cos2 (0.826 vs 0.814) but loses on final-step metrics
+(fEx2 0.889 vs 0.962). The score's sketch-rank-only weighting protects
+the slot-1 column at the cost of some slot-2 carry.
+
+On the spiky-residual matrices both online and evi underperform
+iSVD/hybrid; evi is slightly worse than online on these — same regime
+note as the bench_matrix_sweep synthesis.
+
+
+Wall-clock time (sliding, per-policy, 17 matrices)
+--------------------------------------------------
+4-way parallel batches with OPENBLAS_NUM_THREADS=2 / OMP_NUM_THREADS=2.
+
+  policy                 min(s)   median(s)  mean(s)  max(s)   total(s)
+  combined                 2.71    3.15       3.83     5.57      65.2
+  hybrid                   1.34    1.64       1.90     2.79      32.4
+  isvd                     0.34    0.35       0.35     0.36       5.9
+  future_hmean_online      2.70    3.11       3.54     5.08      60.1
+  future_hmean_evidence   32.75   46.27      43.18    55.32     734.1
+
+  Median ratios (isvd baseline):
+    isvd is   9.0x faster than combined
+    isvd is   4.7x faster than hybrid
+    isvd is   8.9x faster than future_hmean_online
+    isvd is 132.6x faster than future_hmean_evidence
+
+The evidence policy is ~15× slower than `future_hmean_online` and
+~130× slower than iSVD. Two compounding factors:
+
+  1) per-block float64 sphere-projected ascent with 24 random restarts
+     plus the entire online candidate pool plus up to 8 Vbasis_final
+     columns as warm starts (≈30+ starts per block × ~1s each on the
+     1024-dim search space);
+  2) the rowspace_basis(A_sketch ∪ A_cur ∪ A_fut) precomputation runs
+     a thin SVD per block.
+
+The optimizer cost is independent of the matrix family (median ≈46s
+across all matrices), and the wall-clock difference is essentially
+constant across the suite — see `aggregated_table.txt` `elapsed` column.
+
+
+Summary
+-------
+- Quality: future_hmean_evidence matches future_hmean_online on the
+  mean slot-1 metrics and on a handful of edge cases (etf-basket-basis
+  cos2, mixed-tail-soft fEx2) but loses decisively on every final-step
+  subspace metric. It wins zero cells on final_exact_cos2 or
+  final_tail_mass across 17 matrices.
+
+- Mechanism: the HM-evidence score deliberately rewards balanced
+  evidence across (sketch, current, future) windows, and the per-block
+  diagnostic (`summary/hmean_evidence_score_synthesis.txt`) confirms it
+  dominates HM-triplet variants on the score itself. But "balanced
+  evidence on the next-window pair" ≠ "rank-2 carry that survives the
+  full sliding stream." The slot-2 vector evi picks at each block
+  trades final-step V_exact[:,1] mass for u_sk balance, and the SVD
+  reframe inside the next state cannot fully recover that.
+
+- Speed: ~130× slower than iSVD, ~15× slower than online. The cost is
+  dominated by the optimizer (24+ starts × per-start sphere ascent in
+  R^n with float64). Acceptable for diagnostic / research use; not
+  competitive in any production budget.
+
+- Take-away: HM-evidence is the right framing for the static
+  per-block question (does this candidate balance evidence across
+  three windows?), and confirms its design wins on that question.
+  As a streaming policy on the 17-matrix suite, future_hmean_online's
+  candidate-pool ranking remains the better choice for the second-slot
+  carry, by 7–14 / 17 wins on every final-step metric and by an order
+  of magnitude on wall-clock. The two are not interchangeable: evi
+  optimises a per-block harmonic-mean target that does not encode
+  the across-block carry that the discrete pool plus rank-2 SVD
+  reframe in `future_hmean_online` happens to express.
+
+- Open question: the score was designed and tuned to make
+  oracle_v2_proj reachable in the per-block diagnostic. The
+  streaming carry rule (`make_state` + rank-2 SVD reframe) was
+  applied unchanged. Whether a multi-block evidence target (e.g.
+  HM over 3+ future blocks, or LOO-style validation) would close
+  the slot-2 gap to online without changing the across-block
+  carry mechanism is the natural next experiment.
+
+
+Notes on fairness
+-----------------
+- The 4 baseline policies were not re-run; their results are taken
+  verbatim from `summary/bench_matrix_sweep/*_win64.json` and
+  `summary/benchmark_online_vs_baselines_win64.json`. Same matrix
+  parameters, same harness binary, same shuffle/seed.
+- The evidence policy reuses the existing harness paths for slot-0
+  selection, candidate pool construction, rank-2 SVD reframe, and
+  state advance. The only new code path is the slot-2 optimizer,
+  added to `half_window_sliding_hmean_experiment.py` as
+  `future_hmean_evidence` ∈ ONLINE_HMEAN_POLICIES.
+- The evidence policy uses no oracle warm starts (those exist only in
+  the per-block diagnostic in `hmean_evidence_score.py`).

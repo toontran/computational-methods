@@ -1,0 +1,54 @@
+== matrix=residual-spiky-shocks block=31
+
+# Probe A — score under S6 vs S6_E2 at named candidates
+  label                  score_S6  score_S6_E2   cos2_o1  cos2_o2  cos2_sV1 k_sk k_g1 k_g2
+  oracle_v1_proj           0.0112       0.2881     1.000    0.000     0.034    1    1    0
+  oracle_v2_proj           0.0124       0.3066     0.000    1.000     0.510    0    0    0
+  sketch_v1                0.0001       0.0035     0.034    0.510     1.000    0    0    0
+  sketch_v2                0.0002       0.0062     0.525    0.001     0.000    1    1    0
+  S6_v1_winner             0.0212       0.2588     0.763    0.010     0.007    1    1    0
+  S6_v2_winner             0.0198       0.2423     0.000    0.303     0.127    0    0    0
+  S6_E2_v1_winner          0.0177       0.3712     0.902    0.000     0.028    1    1    0
+  S6_E2_v2_winner          0.0166       0.3539     0.004    0.447     0.350    0    0    1
+  Δ_S6_E2(slot2_winner − oracle_v2_proj) = +4.7299e-02
+  Δ_S6   (slot2_winner − oracle_v2_proj) = +7.3855e-03
+  cos²(S6_v1, sketch_v1) = 0.007   cos²(S6_E2_v1, sketch_v1) = 0.028
+
+# Probe B/C — geodesic from oracle_v1_proj → oracle_v2_proj
+# t in [0, π/2]; logging score, argmax of each source, cos² to oracle vectors
+     t/π   score_S6   score_E2 k_sk k_g1 k_g2  cos2_o1  cos2_o2  cos2_sV1
+   0.000     0.0112     0.2881    1    1    0    1.000    0.000     0.034  
+   0.042     0.0117     0.2936    1    1    0    0.983    0.013     0.008  
+   0.083     0.0122     0.2994    1    1    0    0.933    0.060     0.000  
+   0.125     0.0127     0.3052    1    1    0    0.854    0.136     0.010  
+   0.158     0.0131     0.3092    1    0    0    0.772    0.216     0.032 *
+   0.167     0.0132     0.3103    1    0    0    0.750    0.238     0.038  
+   0.208     0.0138     0.3156    1    0    0    0.629    0.357     0.082  
+   0.250     0.0142     0.3205    1    0    0    0.500    0.486     0.139  
+   0.283     0.0144     0.3220    0    0    0    0.396    0.590     0.191 *
+   0.292     0.0145     0.3228    0    0    0    0.371    0.615     0.205  
+   0.333     0.0146     0.3264    0    0    0    0.250    0.737     0.275  
+   0.375     0.0144     0.3280    0    0    0    0.146    0.843     0.344  
+   0.417     0.0140     0.3262    0    0    0    0.067    0.926     0.409  
+   0.458     0.0134     0.3197    0    0    0    0.017    0.979     0.464  
+   0.500     0.0126     0.3082    0    0    0    0.000    1.000     0.506  
+  max-Δscore at any argmax transition: S6=5.4822e-05  S6_E2=1.7850e-03
+  argmax(S6) at t/π=0.329 score=0.0146  cos²(o1,o2)=(0.261,0.726)
+  argmax(S6_E2) at t/π=0.375 score=0.3280  cos²(o1,o2)=(0.146,0.843)
+
+# Probe D — slot-1 attractor near sketch_v1 (V_state[:,0])
+     theta   score_S6   score_E2  |grad_S6|  |grad_E2|     pullS6     pullE2
+    0.0010     0.0001     0.0035  3.715e-03  1.125e-01  2.348e-04  7.068e-03
+    0.0100     0.0001     0.0036  3.663e-03  1.109e-01  2.330e-04  7.016e-03
+    0.0500     0.0002     0.0049  3.978e-03  1.202e-01  2.293e-04  6.911e-03
+    0.1000     0.0003     0.0095  5.457e-03  1.671e-01  2.216e-04  6.845e-03
+  (positive 'pull' = gradient leans toward sketch_v1, i.e., score increases when v moves back to sketch_v1)
+
+# E2 per-direction weight diagnostics
+  oracle_v2_proj       W_sk_E2=8.052e-01  W_c_E2=6.643e-01  W_f_E2=6.896e-01  k_sk=0 k_g1=0 k_g2=0
+  oracle_v1_proj       W_sk_E2=7.859e-01  W_c_E2=6.626e-01  W_f_E2=6.896e-01  k_sk=1 k_g1=1 k_g2=0
+  sketch_v1            W_sk_E2=8.052e-01  W_c_E2=6.643e-01  W_f_E2=6.896e-01  k_sk=0 k_g1=0 k_g2=0
+  F-norm weights: cur_F2=2.046e+01  fut_F2=2.053e+01  sk_F2_low=1.591e+00
+  s2_sk_top: [8.052e-01  7.859e-01]
+  s2_cur_top: [6.643e-01  6.626e-01]
+  s2_fut_top: [6.896e-01  6.663e-01]

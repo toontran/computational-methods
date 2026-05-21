@@ -1,0 +1,11 @@
+half_window_run mode=split_probe policy=future_hmean_online half_win=32 mean_align=0.999746 mean_relerr_sval=0.29870316
+half_window_run mode=sliding policy=future_hmean_online half_win=32 mean_align=0.999993 mean_relerr_sval=0.01480629
+half_window_run mode=split_probe policy=future_hmean_triplet_online half_win=32 mean_align=0.999746 mean_relerr_sval=0.29870480
+half_window_run mode=sliding policy=future_hmean_triplet_online half_win=32 mean_align=0.999993 mean_relerr_sval=0.01492761
+half_window_run mode=split_probe policy=future_hmean_nested_online half_win=32 mean_align=0.999746 mean_relerr_sval=0.29870632
+half_window_run mode=sliding policy=future_hmean_nested_online half_win=32 mean_align=0.999993 mean_relerr_sval=0.01492772
+half_window_run mode=split_probe policy=future_hmean_pairwise_online half_win=32 mean_align=0.999742 mean_relerr_sval=0.29883185
+half_window_run mode=sliding policy=future_hmean_pairwise_online half_win=32 mean_align=0.999992 mean_relerr_sval=0.01497300
+half_window_run mode=split_probe policy=future_hmean_weighted_online half_win=32 mean_align=0.999742 mean_relerr_sval=0.29879248
+half_window_run mode=sliding policy=future_hmean_weighted_online half_win=32 mean_align=0.999993 mean_relerr_sval=0.01492768
+wrote_json=summary/hmean_combinations_sweep/futures-term-structure_win64.json wrote_csv=summary/hmean_combinations_sweep/futures-term-structure_win64.csv wrote_text=summary/hmean_combinations_sweep/futures-term-structure_win64.txt elapsed=59.038

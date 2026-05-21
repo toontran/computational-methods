@@ -1,0 +1,7 @@
+Half-window HM experiment
+=========================
+
+mode=split_probe policy=future_hmean_online half_win=64 steps=8 mean_align=0.155919 mean_relerr_sval=0.04203698 mean_cos2=0.252735 final_cos=[1.000000 0.449743] final_exact_cos=[0.736888 0.117698] final_car_exact_cos=[0.735869 0.155680] final_oracle_proj_norm=[0.311879 0.735828] final_tail_mass=0.721572 labels={"q2_raw_projected": 5, "q2_vs_q1oracle": 3}
+mode=sliding policy=future_hmean_online half_win=64 steps=15 mean_align=0.492170 mean_relerr_sval=0.00740078 mean_cos2=0.615987 final_cos=[1.000000 0.853562] final_exact_cos=[0.968629 0.482652] final_car_exact_cos=[0.968628 0.492170] final_oracle_proj_norm=[0.567221 0.968629] final_tail_mass=0.414402 labels={"opt2": 3, "q2_raw_projected": 6, "q2_vs_q1oracle": 6}
+mode=split_probe policy=future_hmean_online_joint half_win=64 steps=8 mean_align=0.038592 mean_relerr_sval=0.07539194 mean_cos2=0.139526 final_cos=[0.306471 0.064855] final_exact_cos=[0.352854 0.045654] final_car_exact_cos=[0.295154 0.021555] final_oracle_proj_norm=[0.275652 0.399418] final_tail_mass=0.936705 labels={"q2_raw_projected": 5, "q2_vs_q1oracle": 3}
+mode=sliding policy=future_hmean_online_joint half_win=64 steps=15 mean_align=0.051809 mean_relerr_sval=0.04317120 mean_cos2=0.148326 final_cos=[0.599598 0.079023] final_exact_cos=[0.369096 0.007400] final_car_exact_cos=[0.287024 0.046879] final_oracle_proj_norm=[0.274984 0.427816] final_tail_mass=0.931857 labels={"q2_raw_projected": 9, "q2_vs_q1oracle": 6}

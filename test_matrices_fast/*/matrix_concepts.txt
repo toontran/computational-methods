@@ -1,0 +1,2129 @@
+You:
+brainstorm a few more matrices that tests streaming low-rank methods, assuming the rows will always be randomly shuffled. Also, note that what V is never matters. Theory says so
+
+Input matrix catalog
+====================
+
+1. Generated structured CEX matrix
+----------------------------------
+
+Source
+  cex_restricted_space_probe.py, generate_structured_cex_input(...)
+
+Default parameters
+  n = 1024
+  r_sig = 2
+  alpha_sig = 0.003
+  alpha_tail = 0.0145
+  tail_scale = 0.99
+  sigma1 = 0.991
+  v_type = rand
+
+Shape
+  A is dense and square:
+
+    A.shape = (n, n)
+
+  With defaults:
+
+    A.shape = (1024, 1024)
+
+Construction
+  The generated matrix is SVD-structured:
+
+    A_unpermuted = U * diag(svec) * V'
+    A = P * A_unpermuted
+
+  where P is a random row permutation. In code this is written as:
+
+    A_unpermuted = (U * svec[None, :]) @ V.T
+    A = A_unpermuted[p, :]
+
+Singular values
+  The singular-value vector has a shallow signal block followed by a
+  slowly decaying tail:
+
+    sig_block[j]  = sigma1 * j^(-alpha_sig),       j = 1:r_sig
+    tail_block[j] = tail_scale * j^(-alpha_tail),  j = 1:(n-r_sig)
+    svec = [sig_block, tail_block]
+    svec[0] = sigma1
+
+  With the defaults, the leading signal values are very close together and
+  the tail starts just below them. This makes the dominant subspace hard to
+  separate by singular value magnitude alone.
+
+What is special about U
+  U is not sampled as a generic random orthogonal matrix. It is built from a
+  deliberately structured prototype U0, then orthonormalized by QR.
+
+  The first r_sig columns of U0 are normalized Hadamard columns:
+
+    U0[:, 0:r_sig] = hadamard(n)[:, 0:r_sig] / sqrt(n)
+
+  These signal directions are dense, flat, and incoherent across rows: every
+  row has equal-magnitude participation in the signal columns.
+
+  The remaining columns are tail directions with a near-coordinate structure.
+  For each tail column j >= r_sig:
+
+    U0[j-r_sig, j] = sqrt(1 - r_sig / n)
+    U0[n-r_sig:n, j] = 1 / sqrt(n)
+
+  So each tail column has one large coordinate plus small shared mass in the
+  final r_sig rows. This creates many localized tail directions while coupling
+  them through a small common row support.
+
+  Finally:
+
+    U, _ = qr(U0)
+
+  The first r_sig signs are flipped if needed so they remain aligned with the
+  original Hadamard signal columns. The result is an orthonormal left singular
+  basis whose leading directions are dense Hadamard-like signals and whose
+  trailing directions come from a structured sparse/localized tail.
+
+Right singular vectors V
+  V depends on v_type:
+
+    id    -> V = identity
+    U     -> V = U
+    rand  -> V = qr(randn(n, n))
+
+  The default run uses v_type = rand, so the right singular vectors are a
+  random orthonormal basis.
+
+Streaming layout used by the script
+  Rows of A are processed in windows:
+
+    A_block = A[start0:end0, :]
+
+  The default window size is:
+
+    win = 100
+
+  In restricted mode, the working gain matrix is:
+
+    first block:
+      M_gain = A_block
+
+    later blocks:
+      M_gain = vstack([S_previous * V_previous', A_block])
+
+  With default rank = 2 and win = 100, most later restricted updates use:
+
+    M_gain.shape = (102, 1024)
+
+  The first update uses:
+
+    M_gain.shape = (100, 1024)
+
+Notes
+  This matrix is designed to stress streaming low-rank methods: the leading
+  left singular directions are globally spread over all rows, the tail is
+  structured and close in magnitude, and a row permutation prevents the stream
+  from presenting the construction in a convenient order.
+
+
+ChatGPT:
+A few good additions, under your assumptions:
+
+- rows are always randomly shuffled
+- only the left-side row geometry / spectrum matters
+  - $V$ is irrelevant, so every construction can be specified at the level of $A A^\top$ or equivalently the left singular side
+
+That means the useful stress tests are about:
+
+- spectral gap shape
+- leverage distribution across rows
+- whether signal is diffuse vs localized
+- whether there are many near-top competitors
+- whether the low-rank part is contaminated by structured, not iid, tail energy
+
+Here are several matrix families worth adding.
+
+---
+
+## 2. Spiked low-rank plus isotropic noise
+
+Construction
+\[
+A = L + \sigma W, \qquad L = U\_r \Sigma\_r R^\top,
+]
+where $U_r \in \mathbb{R}^{n \times r}$ has orthonormal columns, $\Sigma\_r = \mathrm{diag}(\sigma\_1,\dots,\sigma\_r)$, and $W\_{ij} \sim N(0,1/n)$.
+
+After generating, randomly permute rows.
+
+Why it is useful
+
+- This is the clean baseline.
+- It tests whether the method behaves sensibly in the standard “signal plus noise” model.
+- Since rows are shuffled, no method can rely on temporal ordering tricks.
+
+Variants
+
+- easy: clear gap, e.g. $\sigma_r \gg \sigma$
+- hard: BBP-edge style, with $\sigma_r$ barely above noise bulk
+- flat spike: $\sigma\_1 \approx \cdots \approx \sigma\_r$, so subspace is identifiable but individual directions are not
+
+What it stresses
+
+- sensitivity to noise floor
+- dependence on spectral gap
+- stability when top singular values are clustered
+
+---
+
+## 3. Low-rank plus anisotropic full-rank tail
+
+Construction
+\[
+A = U\_r \Sigma\_r R^\top + U\_\perp \Lambda\_\perp Z^\top,
+]
+where the tail singular values decay slowly, for example
+\[
+(\Lambda\_\perp)\_{jj} = c j^{-\alpha}, \qquad \alpha \in \[0,0.2].
+]
+
+Randomly permute rows.
+
+Why it is useful
+
+- Harder than isotropic noise.
+- Tail directions are structured and persistent, not just random perturbations.
+- This is closer to many real failure modes: the tail itself contains coherent energy.
+
+Good settings
+
+- very small gap between $\sigma_r$ and first tail values
+- polynomial tail decay
+- flat signal block on top of slow tail
+
+What it stresses
+
+- whether the method can separate true low-rank structure from a coherent near-low-rank tail
+- robustness to non-Marchenko–Pastur-type noise
+
+This is a natural cousin of your current CEX matrix, but less hand-crafted.
+
+---
+
+## 4. Two-population row covariance model
+
+Construction
+Rows are iid from a mixture of two zero-mean Gaussians:
+\[
+a\_i \sim
+\begin{cases}
+N(0,\Sigma^{(1)}) & \text{with prob. } p,\\
+N(0,\Sigma^{(2)}) & \text{with prob. } 1-p.
+\end{cases}
+]
+Choose both covariances to share a top subspace, but with different strengths:
+\[
+\Sigma^{(k)} = U\_r D^{(k)} U\_r^\top + \tau\_k^2 I.
+]
+
+Then stack the rows and randomly shuffle.
+
+Why it is useful
+
+- The overall covariance is still low-rank perturbed, but row norms and effective SNR vary across rows.
+- Shuffling removes block-order information, so this becomes a pure test of heterogeneity.
+
+Variants
+
+- same subspace, different signal strengths
+- slightly rotated subspaces between populations
+- one population heavy-noise, one low-noise
+
+What it stresses
+
+- robustness to heteroskedastic rows
+- ability to recover a global subspace when not all rows are equally informative
+
+---
+
+## 5. Rare informative rows / leverage-spike model
+
+Construction
+Take
+\[
+A = \begin{bmatrix}
+A\_{\text{weak}} \\
+A\_{\text{strong}}
+\end{bmatrix}
+]
+before shuffling, where most rows have weak projection on the signal subspace, and a small fraction have much stronger projection.
+
+For example, generate rows from
+\[
+a\_i = g\_i^\top \Sigma\_r U\_r^\top + \epsilon\_i,
+]
+but scale the latent coefficients:
+
+- for most rows, $g_i \sim N(0,\eta^2 I_r)$ with small $\eta$
+- for rare rows, $g_i \sim N(0,I_r)$
+
+  Then shuffle all rows.
+
+Why it is useful
+
+- Even after shuffling, signal evidence is concentrated in a minority of rows.
+- This tests whether a method needs signal to be evenly spread across the stream.
+
+What it stresses
+
+- sensitivity to row leverage concentration
+- sample efficiency when only a few rows are highly informative
+
+This is especially good if your theory says order should not matter but says nothing about leverage uniformity.
+
+---
+
+## 6. Clustered-left-singular-vector model
+
+Construction
+Build $U_r$ so each column is piecewise constant on random row clusters instead of diffuse. For instance, partition rows into $m$ groups and let each signal vector be constant within groups, then orthonormalize.
+
+Set
+\[
+A = U\_r \Sigma\_r R^\top + \text{tail}.
+]
+Then randomly shuffle rows.
+
+Why it is useful
+
+- Contrasts with your Hadamard-like diffuse signal case.
+- Same rank and spectrum can behave very differently depending on row localization structure.
+
+Variants
+
+- balanced clusters
+- highly unbalanced clusters
+- overlapping soft clusters instead of hard ones
+
+What it stresses
+
+- recovery under localized but still coherent row structure
+- whether performance depends on signal incoherence across rows
+
+Since $V$ does not matter, this is really a left-geometry test.
+
+---
+
+## 7. Heavy-tailed row model
+
+Construction
+Generate rows from a low-rank covariance model, but with heavy-tailed radial scaling:
+\[
+a\_i = \xi\_i , \Sigma^{1/2} z\_i,
+]
+where $z_i \sim N(0,I)$ and $\xi_i$ is heavy-tailed, such as lognormal or Student-$t$ scaling.
+
+Then shuffle rows.
+
+Why it is useful
+
+- Same covariance structure, but occasional very large rows.
+- Many streaming methods degrade badly under heavy tails even when the population low-rank structure is simple.
+
+Variants
+
+- mild heavy tails
+- rare extreme outliers
+- low-rank signal plus heavy-tailed isotropic noise
+
+What it stresses
+
+- robustness to outlier rows
+- dependence on norm concentration assumptions
+
+---
+
+## 8. Near-multiplicity top eigenspace with rotating competitors
+
+Construction
+Create a covariance with many nearly equal top eigenvalues:
+\[
+\lambda\_1 \approx \lambda\_2 \approx \cdots \approx \lambda\_k
+]
+followed by a very shallow decay.
+
+Equivalently,
+\[
+A = U \Sigma R^\top
+]
+with a flat top block and slow tail.
+
+Why it is useful
+
+- The top subspace may be recoverable while individual vectors are unstable.
+- This is a clean stress test for methods that implicitly overcommit to one direction.
+
+What it stresses
+
+- subspace recovery versus vector recovery
+- behavior when the objective landscape has many near-equivalent optima
+
+Your current CEX already has some of this flavor; this would isolate that ingredient more directly.
+
+---
+
+## 9. Low-rank plus sparse row outlier contamination
+
+Construction
+\[
+A = L + S + N,
+]
+where $L$ is low-rank, $N$ is modest noise, and only a small fraction of rows of $S$ are nonzero, but those rows can have large norm.
+
+Then shuffle rows.
+
+Why it is useful
+
+- Tests whether a method is robust to a few corrupted rows.
+- Since rows are shuffled, the outliers appear unpredictably but without any exploitable ordering.
+
+Variants
+
+- adversarial outlier rows aligned with a fake top direction
+- random sparse outliers
+- moderate outliers that are numerous enough to bias covariance
+
+What it stresses
+
+- robustness to corruption
+- whether the method can ignore sparse but high-energy distractions
+
+---
+
+## 10. Kronecker-style separable covariance model
+
+Construction
+Generate rows from
+\[
+a\_i \sim N(0,\Sigma),
+\qquad
+\Sigma = B + uu^\top
+]
+where $B$ itself has structured decay or block correlations.
+
+Or, in rectangular form, generate latent features with grouped correlations, then project to ambient space.
+
+Why it is useful
+
+- Produces realistic structured covariance without needing a hand-built singular basis.
+- Lets you control whether the “background” covariance already has meaningful geometry.
+
+What it stresses
+
+- distinguishing a true spike from a structured correlated background
+- robustness to nontrivial ambient covariance
+
+---
+
+## 11. Sign-balanced diffuse signal with cancellation-prone rows
+
+Construction
+Take left singular vectors that are dense and incoherent, but force rowwise sign patterns so many rows have small projection on individual signal directions and only aggregate evidence reveals the subspace.
+
+For example, use random Rademacher-type orthonormal columns for $U\_r$, then add a shallow structured tail.
+
+Why it is useful
+
+- Similar spirit to Hadamard signals, but less tied to exact Hadamard structure.
+- Good when you want a generic “diffuse signal hidden everywhere” model.
+
+What it stresses
+
+- whether the method can accumulate weak globally distributed evidence
+- sensitivity to diffuse versus localized signal structure
+
+---
+
+## 12. Deterministic covariance benchmark via prescribed $A A^\top$
+
+
+Since your point is that $V$ never matters, one very clean cataloging principle is:
+
+Define test families by the row Gram matrix
+\[
+G := A A^\top = U \Sigma^2 U^\top,
+]
+then realize any convenient factorization of $A$ afterward.
+
+That lets you organize benchmarks by:
+
+- eigenvalue profile of $G$
+- coherence / localization of eigenvectors of $G$
+- row norm heterogeneity
+- contamination model
+
+This is probably the most theory-aligned way to write the catalog.
+
+---
+
+## Best additions if you only want a few
+
+I would add these first:
+
+1. spiked low-rank + isotropic noise\
+   clean baseline
+
+2. low-rank + slow anisotropic tail\
+   closest generic hard case beyond baseline
+
+3. rare informative rows / leverage spike\
+   tests row heterogeneity directly
+
+4. heavy-tailed row model\
+   tests robustness beyond Gaussian assumptions
+
+5. near-multiplicity flat-top spectrum\
+   tests clustered top subspace without relying on your current special construction
+
+---
+
+## Suggested catalog wording
+
+You may want to state the design principle explicitly:
+
+> Because the theory predicts that the right singular basis $V$ is irrelevant, benchmark families should be specified through the left singular structure and singular-value profile only. Row permutation removes any favorable streaming order, so the main stress dimensions are spectral separation, row leverage distribution, localization of left singular vectors, and structure of the full-rank tail.
+
+If you want, I can rewrite your catalog in the same format as item 1 and add 4 to 6 new entries with matching “Source / Shape / Construction / What is special / Streaming layout / Notes” sections.
+
+
+You:
+Matrices related to quant outside of the above
+
+ChatGPT:
+Focus on matrices that arise naturally in quant workflows, but still stress streaming low-rank recovery under row shuffling. Since $V$ is irrelevant, each is defined by row covariance / left geometry.
+
+---
+
+## 13. Return panel (factor model + idiosyncratic noise)
+
+Construction\
+\[
+A\_{t,i} = f\_t^\top \beta\_i + \epsilon\_{t,i},
+]
+where:
+- $f_t \in \mathbb{R}^r$ are latent factors (time index = rows),
+- $\beta_i$ are asset loadings,
+
+- $\epsilon\_{t,i} \sim N(0,\sigma\_i^2)$.
+
+Matrix:
+\[
+A \in \mathbb{R}^{T \times N}
+]
+
+Then shuffle rows (time order destroyed).
+
+Why it is useful
+
+- Canonical equity factor model.
+- True structure is low-rank + heteroskedastic diagonal noise.
+
+Variants
+
+- time-varying factor volatility (clustered volatility)
+- correlated idiosyncratic noise
+- weak factors (small signal-to-noise)
+
+What it stresses
+
+- recovery under heteroskedastic noise
+- realistic spectrum: few dominant modes + long tail
+
+---
+
+## 14. Rolling covariance / regime-switching returns
+
+Construction\
+Same as above, but with regimes:
+\[
+f\_t \sim N(0, \Sigma^{(k)}), \quad k \in {1,\dots,K}
+]
+
+Each regime has different factor covariance or loadings.
+
+Rows are then shuffled.
+
+Why it is useful
+
+- Destroys temporal structure but keeps mixture of covariances.
+- Equivalent to a mixture of low-rank covariances.
+
+Variants
+
+- same subspace, different eigenvalues
+- rotated subspaces across regimes
+- rare regimes (low-probability states)
+
+What it stresses
+
+- robustness to nonstationarity without relying on time order
+- whether method recovers a “global” subspace vs averaging incompatible ones
+
+---
+
+## 15. Order book / microstructure feature matrix
+
+Construction\
+Rows = snapshots of LOB features (spread, imbalance, depth, etc.). Synthetic version:
+
+\[
+a\_t = g\_t^\top U\_r^\top + \eta\_t
+]
+
+but with:
+
+- strong feature correlations
+- heavy-tailed innovations
+- sparse bursts (e.g. imbalance spikes)
+
+Then shuffle rows.
+
+Why it is useful
+
+- Real microstructure data is highly correlated and heavy-tailed.
+- Often low intrinsic dimension but noisy.
+
+Variants
+
+- add sparse shocks aligned with certain directions
+- nonlinear transforms (log, ratios)
+
+What it stresses
+
+- robustness to heavy tails + correlation
+- non-Gaussian structure in rows
+
+---
+
+## 16. Lead–lag cross-correlation matrix (lagged returns)
+
+Construction\
+Form rows as concatenated lagged returns:
+\[
+a\_t = \[r\_t, r\_{t-1}, \dots, r\_{t-L}]
+]
+
+Underlying:
+\[
+r\_t = \sum\_{\ell=1}^L B\_\ell r\_{t-\ell} + \epsilon\_t
+]
+
+Then shuffle rows.
+
+Why it is useful
+
+- Embeds temporal dependence into row covariance.
+- Produces structured Toeplitz-like covariance.
+
+Variants
+
+- strong vs weak lead–lag
+- sparse vs dense $B_\ell$
+- multiple latent factors driving dynamics
+
+What it stresses
+
+- recovery when signal is spread across correlated blocks
+- structured (not iid) row covariance
+
+---
+
+## 17. Cross-sectional signal matrix (alphas)
+
+Construction\
+Each row is a vector of signals across assets:
+
+\[
+A\_{t,i} = \sum\_{k=1}^r s\_{t,k} \phi\_{k,i} + \epsilon\_{t,i}
+]
+
+where:
+- $\phi_k$ are persistent alpha directions (e.g., value, momentum),
+- $s_{t,k}$ are time-varying strengths.
+
+Then shuffle rows.
+
+Why it is useful
+
+- Direct analogue of multi-signal models in stat arb.
+- Signals often weak, correlated, and noisy.
+
+Variants
+
+- highly correlated $\phi_k$
+- time-varying sparsity in $s_{t,k}$
+- overlapping factors (non-orthogonal)
+
+What it stresses
+
+- separation of weak, correlated factors
+- near-collinearity in signal space
+
+---
+
+## 18. Correlation matrix with sector/block structure
+
+Construction\
+Rows drawn from:
+\[
+a\_i \sim N(0,\Sigma),
+]
+where $\Sigma$ has block structure:
+
+- strong within-sector correlations
+- weak cross-sector correlations
+
+Equivalent to:
+\[
+\Sigma = U\_r \Sigma\_r U\_r^\top + \text{block residual}
+]
+
+Then shuffle rows.
+
+Why it is useful
+
+- Mimics sector structure in equities.
+- Produces localized eigenvectors (sector modes).
+
+Variants
+
+- unequal sector sizes
+- hierarchical blocks (sector → industry)
+
+What it stresses
+
+- recovery when eigenvectors are localized (not diffuse)
+- multiple comparable eigenvalues
+
+---
+
+## 19. Volatility-scaled returns (heteroskedastic rows)
+
+Construction\
+Start with factor model, then scale rows:
+
+\[
+a\_t = \sigma\_t (f\_t^\top \beta + \epsilon\_t)
+]
+
+where $\sigma_t$ follows a volatility process (e.g., lognormal or GARCH-like).
+
+Then shuffle rows.
+
+Why it is useful
+
+- Real returns have volatility clustering.
+- After shuffling, becomes heteroskedastic mixture.
+
+Variants
+
+- heavy-tailed $\sigma_t$
+- rare extreme volatility spikes
+
+What it stresses
+
+- sensitivity to row norm variability
+- whether large-norm rows dominate subspace estimation
+
+---
+
+## 20. Sparse alpha + dense noise
+
+Construction\
+\[
+A = L + N
+]
+where:
+- $L$ is low-rank but sparse in rows or entries
+- $N$ is dense noise
+
+Example:
+
+- only a subset of assets load on each factor
+- factors affect disjoint subsets
+
+Then shuffle rows.
+
+Why it is useful
+
+- Many alphas are sparse across assets.
+- Signal is not uniformly distributed.
+
+Variants
+
+- overlapping sparse supports
+- varying sparsity levels
+
+What it stresses
+
+- recovery when signal is localized in columns (but still affects row covariance)
+- imbalance in contribution across coordinates
+
+---
+
+## 21. Realized covariance feature matrix
+
+Construction\
+Rows = vectorized realized covariance matrices (or features derived from them):
+
+\[
+a\_t = \text{vec}(\widehat{\Sigma}\_t)
+]
+
+Underlying:
+- $\widehat{\Sigma}_t$ estimated from high-frequency returns
+
+- noisy but low-rank-ish over time
+
+Then shuffle rows.
+
+Why it is useful
+
+- Appears in volatility modeling, risk forecasting.
+- High-dimensional, strongly structured, noisy.
+
+Variants
+
+- different estimation windows
+- shrinkage vs raw covariance
+
+What it stresses
+
+- very high ambient dimension with low intrinsic rank
+- structured noise from estimation error
+
+---
+
+## 22. PnL / strategy return matrix
+
+Construction\
+Rows = daily returns of many strategies:
+
+\[
+A\_{t,i} = \text{PnL of strategy } i \text{ on day } t
+]
+
+Empirically:
+
+- strong common modes (risk-on/off, carry, etc.)
+- weak idiosyncratic components
+
+Then shuffle rows.
+
+Why it is useful
+
+- Directly relevant for portfolio construction / risk.
+- Often very low effective rank.
+
+Variants
+
+- correlated strategies
+- regime-dependent correlations
+
+What it stresses
+
+- extremely low-rank structure with weak noise
+- near-collinearity among columns
+
+---
+
+## Summary: key quant-specific stress axes
+
+Across these, the important dimensions are:
+
+- heteroskedasticity (volatility scaling, varying row norms)
+- mixture of covariances (regimes, sectors)
+- heavy tails / outliers (microstructure, returns)
+- localized vs diffuse eigenvectors (sectors vs factors)
+- weak, correlated factors (alphas, signals)
+- structured tail (not iid noise)
+
+These are the quant analogues of your CEX design goals:
+
+- small spectral gaps
+- structured tail
+- difficult separation of signal vs noise
+- non-uniform row contributions
+
+---
+
+If needed, these can be rewritten into your exact catalog format (with explicit SVD construction + parameter defaults) so they plug directly into your benchmarking pipeline.
+
+
+You:
+But wouldn't temporal structures be destroyed when we shuffle
+
+ChatGPT:
+Yes. Random row shuffling removes all temporal dependence (ordering, autocorrelation, lead–lag, regime persistence). After shuffling, what remains is only the distribution of rows, i.e. the second-order (and higher) structure of
+\[
+\mathbb{E}\[a a^\top].
+]
+
+So any benchmark that relies on time ordering (lead–lag, transitions, momentum as a dynamic effect) is no longer testing what you think—it collapses into a mixture-of-distributions covariance problem.
+
+---
+
+## What survives vs what is destroyed
+
+### Destroyed by shuffling
+
+- autocorrelation: $\mathbb{E}[a_t a_{t-\ell}^\top]$
+- regime transitions / persistence
+- path-dependent effects (momentum, mean reversion in time)
+- causality / lead–lag structure
+
+### Preserved after shuffling
+
+- marginal row distribution
+- covariance (and higher moments) of rows
+- mixture structure (if regimes existed)
+- heteroskedasticity (row norm variability)
+- tail behavior (heavy tails, outliers)
+
+---
+
+## Implication for matrix design
+
+For streaming low-rank methods under shuffled rows, the only meaningful stress tests are those that affect:
+
+1. Eigenvalue structure of $\mathbb{E}\[a a^\top]$
+2. Geometry of eigenvectors (diffuse vs localized)
+3. Row-wise variability (leverage, norms)
+4. Tail / non-Gaussian behavior
+
+Anything purely temporal must be re-encoded into row distribution.
+
+---
+
+## How to “convert” quant structures into valid tests
+
+Instead of discarding those ideas, reinterpret them correctly:
+
+---
+
+### 1. Regimes → mixture of covariances
+
+Original (temporal):
+\[
+a\_t \sim N(0, \Sigma^{(k\_t)})
+]
+
+After shuffling:
+\[
+a \sim \sum\_k p\_k N(0, \Sigma^{(k)})
+]
+
+This is still meaningful:
+
+- produces multi-modal covariance
+- can create competing subspaces
+
+✔ Valid test
+
+---
+
+### 2. Volatility clustering → heteroskedastic rows
+
+Original:
+\[
+a\_t = \sigma\_t x\_t
+]
+
+After shuffling:
+- $\sigma_t$ becomes a random scale
+
+- rows have heavy-tailed norms
+
+✔ Valid test\
+→ stresses robustness to row scaling
+
+---
+
+### 3. Lead–lag → block covariance structure
+
+Instead of temporal lag:
+\[
+a\_t = \[r\_t, r\_{t-1}, \dots]
+]
+
+Interpret as:
+
+- a single row drawn from a joint correlated vector
+- covariance becomes block Toeplitz
+
+✔ Still valid\
+→ now purely a structured covariance problem
+
+---
+
+### 4. Momentum / mean reversion → spectral shape
+
+Temporal effect:
+
+- persistent direction over time
+
+After shuffling:
+
+- manifests as strong low-frequency eigenmodes
+- i.e., a few dominant eigenvalues
+
+✔ Equivalent to factor strength
+
+---
+
+### 5. Microstructure bursts → heavy-tailed mixture
+
+Original:
+
+- occasional extreme events in time
+
+After shuffling:
+
+- becomes rare large-norm rows
+
+✔ Valid\
+→ leverage spike / heavy-tail model
+
+---
+
+## What NOT to use after shuffling
+
+These lose meaning:
+
+- ordering-dependent algorithms (online regret, drift tracking)
+- change-point detection benchmarks
+- anything measuring adaptation speed to new regimes
+- sequential prediction structure
+
+These are no longer encoded in the matrix.
+
+---
+
+## Key takeaway
+
+After shuffling, your problem reduces to:
+
+> Recovering top eigenspaces of a random matrix drawn from a possibly complex row distribution.
+
+So the correct quant-inspired matrix families are those where:
+
+- the covariance is a mixture / deformation / perturbation of low-rank structure
+- not those where the signal is in time ordering
+
+---
+
+## Best quant-relevant families under shuffling
+
+These remain meaningful and strong:
+
+- factor model + heteroskedastic noise
+- mixture of factor models (regimes)
+- heavy-tailed scaled rows
+- sector/block covariance
+- sparse or localized factor loadings
+- slow spectral decay (crowded trades analogy)
+- rare high-leverage rows (event-driven signals)
+
+---
+
+## Connection to your theory (“V doesn’t matter”)
+
+This aligns cleanly:
+
+- $V$ encodes column basis → irrelevant
+
+- shuffling removes temporal structure
+- everything reduces to properties of
+  \[
+  G = A A^\top
+  ]
+
+So the full design space is:
+
+- eigenvalues of $G$
+- eigenvectors of $G$
+- distribution of row norms
+- higher moments of rows
+
+That is the complete set of degrees of freedom that matter.
+
+---
+
+If useful, next step would be:
+
+- define 3–5 canonical “quant-style” covariance models explicitly in SVD form (like your CEX entry), with parameter defaults tuned to be maximally adversarial.
+
+
+You:
+What if time is a different dimension in which we don't shuffle
+
+ChatGPT:
+Yes—this fundamentally changes the problem.
+
+You now have two axes:
+
+- rows = cross-sectional observations (e.g., assets, features)
+- time = sequence (not shuffled)
+
+So instead of a single matrix, you effectively have a time-indexed sequence of matrices:
+\[
+A\_t \in \mathbb{R}^{m \times n}, \quad t = 1,\dots,T
+]
+or equivalently a tensor or stacked matrix with structure.
+
+---
+
+## Two distinct regimes
+
+### 1. Fully shuffled (your original setting)
+
+\[
+A \in \mathbb{R}^{N \times d}, \quad \text{rows iid up to distribution}
+]
+
+- Only $A A^\top$ matters
+- Pure covariance / geometry problem
+- No notion of time
+
+---
+
+### 2. Time preserved (this new setting)
+
+You now have structure like:
+\[
+A =
+\begin{bmatrix}
+A\_1 \\
+A\_2 \\
+\vdots \\
+A\_T
+\end{bmatrix}
+]
+but ordering matters
+
+This introduces:
+
+- temporal dependence
+- drift / regime changes
+- sequential information flow
+
+Now the problem is no longer just:
+
+> recover top eigenspace of $\mathbb{E}[a a^\top]$
+
+> It becomes:
+> track / adapt / aggregate evolving low-rank structure
+
+---
+
+## What becomes meaningful again
+
+All previously “destroyed” structures now return:
+
+### 1. Regime switching
+
+\[
+A\_t \sim \Sigma^{(k\_t)}
+]
+
+Now:
+
+- persistence matters
+- transition structure matters
+- streaming algorithm must adapt
+
+---
+
+### 2. Drift / slow rotation of subspace
+
+\[
+U\_t = U\_{t-1} + \text{small perturbation}
+]
+
+This is critical:
+
+- tests tracking ability
+- separates batch vs streaming methods
+
+---
+
+### 3. Lead–lag / dynamics
+
+\[
+a\_t = B a\_{t-1} + \epsilon\_t
+]
+
+Now:
+
+- covariance alone is insufficient
+- temporal correlation carries signal
+
+---
+
+### 4. Volatility clustering
+
+\[
+a\_t = \sigma\_t x\_t
+]
+
+Now:
+- $\sigma_t$ is predictable over time
+
+- not just random scaling
+
+---
+
+## Key modeling shift
+
+You are no longer working with a single matrix. Instead:
+
+### Option A: sliding window matrices
+
+\[
+M\_t =
+\begin{bmatrix}
+a\_{t-w+1} \\
+\vdots \\
+a\_t
+\end{bmatrix}
+]
+
+### Option B: recursive updates
+
+\[
+G\_t = \lambda G\_{t-1} + a\_t a\_t^\top
+]
+
+### Option C: tensor / 3D structure
+
+\[
+\mathcal{A} \in \mathbb{R}^{T \times m \times n}
+]
+
+---
+
+## What this tests (new dimensions)
+
+Now you can stress:
+
+### 1. Adaptation speed
+
+- how fast method reacts to changes in subspace
+
+### 2. Memory vs forgetting
+
+- old data vs new data weighting
+
+### 3. Stability under drift
+
+- does estimate oscillate or track smoothly?
+
+### 4. Detection vs averaging
+
+- does method average across regimes or separate them?
+
+---
+
+## New quant-relevant matrix families (time-aware)
+
+These are now valid and important:
+
+---
+
+### A. Rotating factor model
+
+\[
+A\_t = U\_t \Sigma V^\top, \quad U\_t = U\_{t-1} R\_t
+]
+
+- $R_t$ small rotation
+
+Stress: subspace tracking
+
+---
+
+### B. Regime-switching factor model
+
+\[
+A\_t \sim U^{(k\_t)} \Sigma^{(k\_t)} V^\top
+]
+
+- discrete jumps in structure
+
+Stress: adaptation vs inertia
+
+---
+
+### C. Gradual signal decay / emergence
+
+\[
+\Sigma\_t = \mathrm{diag}(\sigma\_1(t), \dots)
+]
+
+- factors appear/disappear
+
+Stress: detect weak emerging signals
+
+---
+
+### D. Lead–lag embedded structure
+
+\[
+a\_t = \[r\_t, r\_{t-1}, \dots]
+]
+
+but now:
+
+- ordering preserved → predictive structure exists
+
+Stress: dynamic correlation exploitation
+
+---
+
+### E. Volatility regimes
+
+\[
+a\_t = \sigma\_t (f\_t^\top \beta + \epsilon\_t)
+]
+
+- $\sigma_t$ persistent
+
+Stress: robustness vs adaptivity
+
+---
+
+## Important conceptual distinction
+
+### Shuffled case:
+
+> geometry problem
+
+### Time-preserved case:
+
+> dynamical system + geometry
+
+---
+
+## Connection to your current framework
+
+Your current streaming setup:
+\[
+M\_{\text{gain}} =
+\begin{bmatrix}
+S\_{\text{prev}} V\_{\text{prev}}^\top \\
+A\_{\text{block}}
+\end{bmatrix}
+]
+
+implicitly assumes:
+
+- past summarized into low-rank state
+- new data appended
+
+This already sits between the two regimes:
+
+- it has memory
+- but does not fully model time dynamics
+
+---
+
+## Key insight
+
+If time is preserved, then:
+
+> “$V$ doesn’t matter” still holds instantaneously,\
+> but temporal evolution of the left subspace becomes the main object.
+
+So the problem becomes:
+
+\[
+\text{track } U\_t \quad \text{over time}
+]
+
+not just recover a single $U$.
+
+---
+
+## Practical takeaway
+
+You now have two orthogonal benchmark axes:
+
+### Axis 1: row geometry (your current focus)
+
+- spectral gap
+- tail structure
+- leverage distribution
+
+### Axis 2: temporal structure (new)
+
+- drift speed
+- regime switching frequency
+- persistence vs randomness
+
+---
+
+## Minimal clean extension
+
+If you want a clean addition without blowing up complexity:
+
+Use:
+
+### “Piecewise-stationary CEX”
+
+- generate multiple CEX matrices:
+  \[
+  A^{(1)}, A^{(2)}, \dots
+  ]
+- stream blocks from each in sequence
+- do NOT shuffle across blocks
+
+This preserves your adversarial geometry but adds:
+
+- regime switching
+- subspace changes
+
+---
+
+If you want, I can formalize a time-aware version of your CEX generator with:
+
+- controllable rotation speed
+- regime switching probability
+- tail persistence vs reset\
+  so it directly plugs into your current pipeline.
+
+
+You:
+So this will be a matrix you're generating right? If that's the case, go ahead
+
+ChatGPT:
+I’ll turn the time-preserved idea into a concrete generated matrix family that keeps your adversarial left-geometry but adds controlled temporal structure. Then I’ll give a few variants that stress different failure modes.
+
+
+ChatGPT:
+Use a time-indexed generated matrix family built from a sequence of blocks. Each block is internally a CEX-style matrix, but blocks are ordered in time and not shuffled across time. Inside each block, rows can still be shuffled.
+
+The clean object is:
+
+\[
+A\_{\mathrm{stream}} =
+\begin{bmatrix}
+A^{(1)} \\
+A^{(2)} \\
+\vdots \\
+A^{(T)}
+\end{bmatrix},
+\qquad
+A^{(t)} \in \mathbb{R}^{w \times n}.
+]
+
+Here:
+- $n$ = ambient dimension
+- $w$ = rows per time block
+- $T$ = number of time blocks
+
+- total matrix shape is $(Tw) \times n$
+
+  The point is:
+- within-block row order does not matter
+- across-block order is the time dimension
+
+So the stream is a matrix, but generated from a time process.
+
+---
+
+# 1. Base time-aware CEX generator
+
+For each time block $t$, generate
+
+\[
+A^{(t)} = P\_t , U\_t , \Sigma\_t , V\_t^\top.
+]
+
+Since your theory says $V$ never matters, you can take:
+
+- $V\_t = I$, or
+- fixed random orthogonal $V$, or
+- independently random $V_t$
+
+  It should not matter theoretically, so simplest is just
+  \[
+  V\_t = I.
+  ]
+
+The meaningful parts are:
+
+- $U\_t$: left singular geometry
+- $\Sigma\_t$: singular values
+- $P\_t$: row shuffle inside block
+
+So really the effective generator is
+\[
+A^{(t)} = P\_t U\_t \Sigma\_t.
+]
+
+If you want square blocks, take $w=n$ and use the full matrix. If you want true streaming blocks, take $w \ll n$ by sampling rows from a larger latent CEX construction.
+
+---
+
+# 2. Static-in-time baseline
+
+First benchmark: no temporal change.
+
+Generate one CEX matrix
+\[
+A\_\star = P U\_\star \Sigma\_\star V^\top
+]
+and partition it into time blocks:
+\[
+A^{(t)} = A\_\star\[I\_t, :]
+]
+with rows shuffled within each block if desired.
+
+This is the control case:
+
+- same left subspace over time
+- same spectrum over time
+- only finite-sample block noise changes
+
+This tells you whether the method behaves well before adding any time variation.
+
+---
+
+# 3. Piecewise-stationary CEX
+
+This is the simplest useful time-aware extension.
+
+Choose regime breakpoints
+\[
+1 = \tau\_1 < \tau\_2 < \cdots < \tau\_{K+1} = T+1.
+]
+
+For each regime $k$, generate its own CEX parameters:
+\[
+(U^{(k)}, \Sigma^{(k)}).
+]
+
+Then for
+\[
+t \in \[\tau\_k, \tau\_{k+1}-1],
+\qquad
+A^{(t)} = P\_t U^{(k)} \Sigma^{(k)}.
+]
+
+This gives:
+
+- stationary periods
+- abrupt changes at regime boundaries
+
+Good variants:
+
+### 3a. Spectrum-only regime switch
+
+Keep
+\[
+U^{(k)} = U\_\star
+]
+fixed, but vary
+\[
+\Sigma^{(k)}.
+]
+
+This tests whether the method responds to changing factor strength without subspace rotation.
+
+### 3b. Subspace-only regime switch
+
+Keep
+\[
+\Sigma^{(k)} = \Sigma\_\star
+]
+fixed, but change
+\[
+U^{(k)}.
+]
+
+This is the clean test for subspace adaptation.
+
+### 3c. Full regime switch
+
+Change both.
+
+This is the strongest version.
+
+---
+
+# 4. Slowly rotating CEX signal subspace
+
+Instead of abrupt switches, let the signal subspace rotate gradually.
+
+Write the signal block of $U_t$ as
+\[
+U\_{t,\mathrm{sig}} \in \mathbb{R}^{n \times r\_{\mathrm{sig}}}.
+]
+
+Let the tail part stay fixed, and evolve only the signal subspace:
+\[
+U\_t = \[, U\_{t,\mathrm{sig}} ;; U\_{\mathrm{tail}} ,].
+]
+
+A clean update is:
+\[
+U\_{t+1,\mathrm{sig}} = \operatorname{qf}!\left(U\_{t,\mathrm{sig}} + \eta G\_t\right),
+]
+where:
+- $G_t$ is a small Gaussian perturbation projected orthogonally to the current subspace
+- $\operatorname{qf}(\cdot)$ means take the orthonormal factor
+
+More explicitly:
+\[
+\widetilde U\_{t+1,\mathrm{sig}}
+================================
+
+U\_{t,\mathrm{sig}} + \eta (I - U\_{t,\mathrm{sig}}U\_{t,\mathrm{sig}}^\top) Z\_t,
+]
+\[
+U\_{t+1,\mathrm{sig}} = \operatorname{qf}(\widetilde U\_{t+1,\mathrm{sig}}),
+]
+with $Z\_t \sim N(0,1)^{n \times r\_{\mathrm{sig}}}$.
+
+Then set
+\[
+A^{(t)} = P\_t U\_t \Sigma\_\star.
+]
+
+Parameter:
+- $\eta$ = drift speed
+
+Interpretation:
+- $\eta = 0$ gives static
+
+- small $\eta$ gives trackable drift
+- larger $\eta$ makes the stream effectively nonstationary
+
+This is probably the best continuous-time stress test.
+
+---
+
+# 5. Rare jump model
+
+Most blocks are stable, but occasionally the subspace jumps.
+
+Let
+\[
+U\_{t+1} =
+\begin{cases}
+U\_t, & \text{with prob. } 1-p\_{\mathrm{jump}},\\
+\widetilde U\_t, & \text{with prob. } p\_{\mathrm{jump}},
+\end{cases}
+]
+where $\widetilde U_t$ is a newly generated CEX-style left basis or a rotated version of $U\_t$.
+
+And similarly optionally for $\Sigma\_t$:
+\[
+\Sigma\_{t+1} =
+\begin{cases}
+\Sigma\_t, & \text{with prob. } 1-p\_{\mathrm{jump}},\\
+\widetilde \Sigma\_t, & \text{with prob. } p\_{\mathrm{jump}}.
+\end{cases}
+]
+
+This tests:
+
+- inertia versus responsiveness
+- whether the method can recover after sudden structural changes
+
+---
+
+# 6. Time-varying signal strength with fixed geometry
+
+Keep $U_t = U_\star$ fixed, but let the signal singular values evolve:
+
+\[
+\Sigma\_t = \operatorname{diag}(\sigma\_1(t), \dots, \sigma\_n(t)).
+]
+
+A useful version is:
+\[
+\sigma\_j(t) =
+\begin{cases}
+\sigma\_{1,\mathrm{base}} , a\_t, & j=1,\\
+\sigma\_{j,\mathrm{base}}, & j \ge 2,
+\end{cases}
+]
+where $a_t$ varies over time.
+
+For example:
+
+- sinusoidal:
+  \[
+  a\_t = 1 + \delta \sin(2\pi t / T\_0)
+  ]
+- piecewise:
+  \[
+  a\_t \in {1, 1+\delta}
+  ]
+- decaying:
+  \[
+  a\_t = e^{-\gamma t}
+  ]
+
+This tests whether the method loses the top direction when the gap temporarily shrinks.
+
+---
+
+# 7. Time-varying tail pressure
+
+This is quant-relevant and adversarial.
+
+Keep the top signal block fixed, but vary the tail strength:
+\[
+\Sigma\_t =
+\operatorname{diag}\bigl(
+\sigma\_{1,\mathrm{sig}},
+\dots,
+\sigma\_{r\_{\mathrm{sig}},\mathrm{sig}},
+b\_t \lambda\_1,
+\dots,
+b\_t \lambda\_{n-r\_{\mathrm{sig}}}
+\bigr),
+]
+where $b_t$ changes over time.
+
+Interpretation:
+
+- the true signal subspace stays the same
+- but the structured tail becomes more or less competitive
+
+This is a good analogue of “crowded/noisy periods” in quant language.
+
+---
+
+# 8. Recommended concrete family
+
+If you want one canonical generated family, use this:
+
+## Time-aware structured CEX
+
+Choose:
+- $n = 1024$
+- $r_{\mathrm{sig}} = 2$
+- $w = 100$
+- $T = 200$
+- $\sigma_1 = 0.991$
+- $\alpha_{\mathrm{sig}} = 0.003$
+- $\alpha_{\mathrm{tail}} = 0.0145$
+- $\text{tail\_scale} = 0.99$
+
+Construct initial $(U_1,\Sigma_1)$ exactly as in your current CEX generator.
+
+Then evolve by:
+
+### Geometry
+
+Signal subspace drifts slowly:
+\[
+U\_{t+1,\mathrm{sig}} = \operatorname{qf}!\left(
+U\_{t,\mathrm{sig}} + \eta (I-U\_{t,\mathrm{sig}}U\_{t,\mathrm{sig}}^\top)Z\_t
+\right),
+]
+with
+\[
+\eta = 0.01.
+]
+
+Tail basis fixed.
+
+### Spectrum
+
+Signal singular values fixed, but tail scale varies:
+\[
+\text{tail\_scale}\_t = 0.99 \bigl(1 + 0.05 \sin(2\pi t / 40)\bigr).
+]
+
+Then
+\[
+\Sigma\_t
+=========
+
+\operatorname{diag}\bigl(
+\text{sig\_block},
+\text{tail\_scale}t \cdot j^{-\alpha{\mathrm{tail}}}
+\bigr).
+]
+
+### Block generation
+
+For each time block:
+\[
+A^{(t)} = P\_t U\_t \Sigma\_t,
+]
+and take the first $w$ shuffled rows, or equivalently use a block-sized realization with the same left geometry.
+
+This gives:
+
+- persistent difficult signal geometry
+- slow subspace drift
+- time-varying tail competition
+- row shuffling inside each time block only
+
+That is a strong streaming benchmark.
+
+---
+
+# 9. Clean benchmark suite
+
+I would use four variants of the same generator.
+
+## Variant A: static
+
+\[
+U\_t = U\_1,\qquad \Sigma\_t = \Sigma\_1.
+]
+
+Purpose:
+
+- sanity check
+- no temporal adaptation needed
+
+## Variant B: drift only
+
+\[
+U\_t \text{ drifts slowly},\qquad \Sigma\_t = \Sigma\_1.
+]
+
+Purpose:
+
+- pure tracking problem
+
+## Variant C: tail-pressure only
+
+\[
+U\_t = U\_1,\qquad \Sigma\_t \text{ varies through tail scale}.
+]
+
+Purpose:
+
+- fixed target subspace, varying difficulty
+
+## Variant D: rare jumps
+
+Every 50 blocks, replace $U_t$ by a rotated or fresh CEX signal basis.
+
+Purpose:
+
+- abrupt adaptation test
+
+Together these cover most meaningful time-aware failure modes.
+
+---
+
+# 10. Why this is still aligned with your “\(V\) does not matter” point
+
+Yes, this is still fine.
+
+At each time $t$, the meaningful object is the left-side geometry and singular values:
+\[
+A^{(t)} (A^{(t)})^\top = P\_t U\_t \Sigma\_t^2 U\_t^\top P\_t^\top.
+]
+
+So even in the time-aware case:
+- $V_t$ should not matter
+
+- the benchmark should be designed through $(U_t,\Sigma_t)$
+- time dependence enters through the evolution of $(U_t,\Sigma_t)$
+
+  So your theory is consistent with this construction.
+
+---
+
+# 11. Minimal pseudocode
+
+```python
+def generate_time_cex_stream(
+    n=1024,
+    r_sig=2,
+    w=100,
+    T=200,
+    sigma1=0.991,
+    alpha_sig=0.003,
+    alpha_tail=0.0145,
+    tail_scale=0.99,
+    drift_eta=0.01,
+    tail_period=40,
+    tail_amp=0.05,
+    jump_every=None,
+    seed=0,
+):
+    rng = np.random.default_rng(seed)
+
+    U_sig, U_tail = make_initial_cex_left_basis(n, r_sig, rng)
+    sig_block = sigma1 * np.arange(1, r_sig + 1) ** (-alpha_sig)
+    sig_block[0] = sigma1
+    tail_base = np.arange(1, n - r_sig + 1) ** (-alpha_tail)
+
+    blocks = []
+
+    for t in range(T):
+        if jump_every is not None and t > 0 and t % jump_every == 0:
+            U_sig = fresh_or_rotated_signal_basis(U_sig, rng)
+
+        Z = rng.standard_normal((n, r_sig))
+        Z = Z - U_sig @ (U_sig.T @ Z)
+        U_sig = qr(U_sig + drift_eta * Z)[0][:, :r_sig]
+
+        U_t = orthonormal_combine(U_sig, U_tail)
+
+        tail_scale_t = tail_scale * (1 + tail_amp * np.sin(2 * np.pi * t / tail_period))
+        svec_t = np.concatenate([sig_block, tail_scale_t * tail_base])
+
+        A_t_full = U_t * svec_t[None, :]
+        p = rng.permutation(n)
+        A_t_full = A_t_full[p, :]
+        A_t = A_t_full[:w, :]
+        blocks.append(A_t)
+
+    return np.vstack(blocks)
+```
+
+---
+
+# 12. One important implementation note
+
+If you literally build
+\[
+A^{(t)} = U\_t \Sigma\_t
+]
+with $V=I$, then columns are in the canonical basis. That is fine if your claim is that $V$ does not matter.
+
+If you want to avoid any accidental implementation artifact from using $V=I$, use one fixed random orthogonal $V$ for all $t$:
+\[
+A^{(t)} = P\_t U\_t \Sigma\_t V^\top.
+]
+
+That keeps the benchmark generic while still making $V$ irrelevant in principle.
+
+---
+
+# 13. Recommendation
+
+Start with:
+
+- static
+- drift only
+- rare jumps
+
+and hold everything else fixed from your current CEX construction.
+
+That gives the cleanest extension of your existing benchmark family without changing too many things at once.
+
+If you want, I can next write this as a catalog entry in the same style as your existing “Generated structured CEX matrix” section.
+
+
+You:
+Now rank all matrices mentioned above by its difficulty
+
+ChatGPT:
+Rank difficulty under your setting:
+
+- objective: recover/track top left subspace
+- rows shuffled within block
+- time preserved across blocks (when applicable)
+  - $V$ irrelevant
+- difficulty driven by: spectral gap, tail structure, row leverage, non-Gaussianity, and temporal dynamics
+
+---
+
+# Tiering principle (what makes something harder)
+
+Increasing difficulty corresponds to:
+
+1. smaller / vanishing spectral gap
+2. structured (not iid) tail close to signal
+3. localized or uneven row leverage
+4. heavy-tailed / outlier rows
+5. competing subspaces (mixtures)
+6. time variation (drift / jumps)
+
+---
+
+# Final ranking (easiest → hardest)
+
+## Tier 1 — baseline / easy
+
+(1) Spiked low-rank + isotropic noise
+
+- clean separation, iid noise
+- classical PCA setting
+
+(2) Static factor model (quant returns panel)
+
+- same as above but heteroskedastic noise
+- still well-conditioned
+
+---
+
+## Tier 2 — mild structure
+
+(3) Block / sector covariance matrix
+
+- localized eigenvectors
+- moderate eigenvalue clustering
+
+(4) Cross-sectional alpha matrix (correlated factors)
+
+- weak correlation between factors
+- near-collinearity starts to appear
+
+(5) Static CEX (your current matrix)
+
+- flat signal + shallow tail
+- diffuse signal vs structured tail
+
+---
+
+## Tier 3 — structured tail + heterogeneity
+
+(6) Low-rank + anisotropic tail (slow decay)
+
+- tail competes with signal
+- no clean spectral separation
+
+(7) Sparse / localized signal (clustered U)
+
+- uneven row participation
+- leverage imbalance
+
+(8) Rare informative rows (leverage spikes)
+
+- signal concentrated in few rows
+- sampling inefficiency
+
+---
+
+## Tier 4 — non-Gaussian / adversarial rows
+
+(9) Heavy-tailed row model
+
+- occasional large-norm rows dominate updates
+
+(10) Sparse outlier contamination
+
+- adversarial rows aligned with wrong directions
+
+(11) Microstructure-style matrix
+
+- heavy tails + correlation + bursts
+- combines multiple failure modes
+
+---
+
+## Tier 5 — competing subspaces
+
+(12) Mixture of covariances (regimes, shuffled)
+
+- no single true subspace
+- estimator converges to compromise
+
+(13) Near-multiplicity flat-top spectrum
+
+- many almost-equal singular values
+- unstable top directions
+
+---
+
+## Tier 6 — time-aware (stationary target)
+
+(14) Static blocks (time preserved but no change)
+
+- essentially same as batch but with finite-sample noise
+
+(15) Time-varying signal strength (fixed U, varying Σ)
+
+- gap fluctuates
+- temporary identifiability loss
+
+(16) Tail-pressure over time
+
+- signal fixed but difficulty varies
+- near-adversarial periods
+
+---
+
+## Tier 7 — time-aware (changing subspace)
+
+(17) Piecewise-stationary regimes (subspace switches)
+
+- abrupt changes
+- requires reset/adaptation
+
+(18) Rare jump model
+
+- unpredictable structural breaks
+- strong failure mode for inertia-based methods
+
+---
+
+## Tier 8 — hardest
+
+(19) Slowly rotating subspace (drift)
+
+- no stationary target
+- continuous tracking required
+
+(20) Time-aware CEX (drift + tail pressure)
+
+- combines:
+  - weak spectral gap
+  - structured tail
+  - subspace drift
+  - time-varying difficulty
+
+→ this is the hardest overall
+
+---
+
+# Condensed ranking (top-level)
+
+From easiest to hardest:
+
+1. Spiked low-rank + isotropic noise
+2. Factor model
+3. Block/sector covariance
+4. Correlated alphas
+5. Static CEX
+6. Anisotropic tail
+7. Localized / sparse signal
+8. Leverage spikes
+9. Heavy-tailed rows
+10. Outliers / microstructure
+11. Mixture of covariances
+12. Flat-top spectrum
+13. Time-varying spectrum
+14. Tail pressure (time)
+15. Regime switching
+16. Rare jumps
+17. Subspace drift
+18. Time-aware CEX (drift + tail + weak gap)
+
+---
+
+# Key insight
+
+The hardest matrices are not just “noisy”—they combine:
+
+- no clear spectral separation
+- structured (not random) tail
+- uneven row contribution
+- nonstationarity in time
+
+Your time-aware CEX sits at the intersection of all four, which is why it dominates difficulty.
+
+---
+
+If you want a sharper ordering tailored specifically to your EntropyScore / streaming optimizer behavior, I can rank them by expected failure modes (e.g., line-search instability, gradient noise, or subspace misalignment).

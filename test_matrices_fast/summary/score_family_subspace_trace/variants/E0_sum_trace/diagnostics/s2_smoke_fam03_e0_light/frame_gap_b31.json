@@ -1,0 +1,19 @@
+[
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "fam03_e0_sum_trace",
+    "anchor": "free",
+    "score_oracle": 0.4245550938793565,
+    "score_winner": 1.0000333203441738,
+    "delta": 0.5754782264648173,
+    "pa_cos2": [
+      0.7742561652821591,
+      0.003386274225663435
+    ],
+    "n_starts": 3,
+    "max_iter": 20,
+    "optimizer": "analytic_stiefel_frame",
+    "status": "evidence_insufficient"
+  }
+]

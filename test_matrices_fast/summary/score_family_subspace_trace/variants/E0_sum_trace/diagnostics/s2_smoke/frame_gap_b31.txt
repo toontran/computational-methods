@@ -1,0 +1,26 @@
+# FAM-01-DIAG: frame-level oracle-vs-winner gap (S-2 screen)
+# block=31
+# Δ > 0 (winner > oracle) on a regression matrix → evidence model insufficient at rank-2
+
+matrix                   ablation         anchor       oracle     winner          Δ   pa²[0]   pa²[1]
+diffuse-diffuse          fam03_e0_sum_trace free         0.4246     1.0000    +0.5755    0.774    0.003
+diffuse-diffuse          fam03_e0_sum_trace oracle1      0.4246     0.8928    +0.4682    1.000    0.003
+diffuse-diffuse          fam03_e0_sum_trace oracle2      0.4246     0.6259    +0.2013    1.000    0.076
+residual-spiky-shocks    fam03_e0_sum_trace free         0.3034     1.0003    +0.6969    0.493    0.000
+residual-spiky-shocks    fam03_e0_sum_trace oracle1      0.3034     0.5646    +0.2612    1.000    0.333
+residual-spiky-shocks    fam03_e0_sum_trace oracle2      0.3034     0.7575    +0.4541    1.000    0.000
+mixed-tail-soft          fam03_e0_sum_trace free         0.5845     1.0001    +0.4155    0.932    0.136
+mixed-tail-soft          fam03_e0_sum_trace oracle1      0.5845     0.9655    +0.3809    1.000    0.137
+mixed-tail-soft          fam03_e0_sum_trace oracle2      0.5845     0.6196    +0.0351    1.000    0.923
+mixed-tail-sharp         fam03_e0_sum_trace free         0.5058     1.0001    +0.4943    0.930    0.011
+mixed-tail-sharp         fam03_e0_sum_trace oracle1      0.5058     0.5541    +0.0483    1.000    0.101
+mixed-tail-sharp         fam03_e0_sum_trace oracle2      0.5058     0.9658    +0.4600    1.000    0.011
+static-cex               fam03_e0_sum_trace free         0.9444     1.0001    +0.0558    0.946    0.935
+static-cex               fam03_e0_sum_trace oracle1      0.9444     0.9743    +0.0299    1.000    0.935
+static-cex               fam03_e0_sum_trace oracle2      0.9444     0.9702    +0.0258    1.000    0.946
+mixed-tail-balanced      fam03_e0_sum_trace free         0.4949     1.0001    +0.5051    0.904    0.002
+mixed-tail-balanced      fam03_e0_sum_trace oracle1      0.4949     0.9538    +0.4588    1.000    0.002
+mixed-tail-balanced      fam03_e0_sum_trace oracle2      0.4949     0.5409    +0.0459    1.000    0.904
+etf-basket-basis         fam03_e0_sum_trace free         2.0397     2.2079    +0.1682    0.996    0.003
+etf-basket-basis         fam03_e0_sum_trace oracle1      2.0397     2.2027    +0.1630    1.000    0.008
+etf-basket-basis         fam03_e0_sum_trace oracle2      2.0397     2.0488    +0.0091    1.000    0.994

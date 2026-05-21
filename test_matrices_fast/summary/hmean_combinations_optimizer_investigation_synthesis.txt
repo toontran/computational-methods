@@ -1,0 +1,114 @@
+HM-combination optimizer investigation synthesis
+================================================
+
+Date: 2026-04-25
+
+Question
+--------
+Repeat the future-HM optimizer test for the harmonic-mean combination
+policies:
+
+- `future_hmean_triplet_online`
+- `future_hmean_nested_online`
+- `future_hmean_pairwise_online`
+- `future_hmean_weighted_online`
+
+The test asks whether there are better points inside rowspan([A_w; A_{w+1}])
+than the streaming optimizer's v2, and whether those points are actually
+preferred by the optimizer's combined forgetting objective.
+
+New diagnostic
+--------------
+Added `hmean_combinations_optimizer_diagnostic.py`.
+
+For each block and policy it:
+1. Replays the normal streaming combined-score optimizer on M_gain =
+   [sketch; A_w].
+2. Fixes optimizer v1.
+3. Builds B = rowspan([A_w; A_{w+1}]) orthogonalized against v1.
+4. Optimizes the policy's smooth HM-combination objective inside B.
+5. Compares that in-union point against optimizer v2 under:
+   - the HM-combination policy objective, and
+   - the optimizer's actual combined forgetting score.
+
+Policy normalizers are fixed from the online candidate pool, matching
+`reports/approximation/new_approx_hmean_combinations_online.txt`.
+
+Artifacts
+---------
+- `hmean_combinations_optimizer_diagnostic.py`
+- `summary/hmean_combinations_optimizer_diagnostic.csv`
+- `summary/hmean_combinations_optimizer_diagnostic.json`
+- `summary/hmean_combinations_optimizer_diagnostic.txt`
+
+Run
+---
+Eight matrix families, n=1024, half_win=32, rank=2, first 4 overlapping
+half-window pairs. The local in-union polish used `--union-maxit 25` and
+`--union-random-starts 2` to keep the 4-policy diagnostic tractable.
+
+Aggregate result
+----------------
+Across the 24 post-first-block checks per policy:
+
+  policy                           better in-union policy score   lower combined score
+  future_hmean_nested_online       24/24                          24/24
+  future_hmean_triplet_online      24/24                          24/24
+  future_hmean_weighted_online     18/24                          24/24
+  future_hmean_pairwise_online      3/24                          24/24
+
+Interpretation by policy
+------------------------
+`nested`:
+Strongest and cleanest analogue of the future-HM result. Every tested block
+has a better in-union point under the nested HM objective, but that point is
+worse under combined forgetting score. Mean policy ratios are typically 1.2x
+to 4.7x, with static-cex inflated by a few very large early ratios.
+
+`triplet`:
+Same qualitative result as nested. Every tested block has a better in-union
+triplet-HM point, and every one loses under combined score. The best in-union
+point usually has very high M_gain rowspace mass (~0.99), so this is mostly
+objective mismatch rather than search-space invisibility.
+
+`weighted`:
+Mixed on policy improvement: 18/24 post-first blocks improve inside the
+two-half union. All 24 still lose under combined score. This is expected:
+once prior rows receive large weight, the weighted objective moves closer to
+the sketch-heavy combined objective, so the optimizer v2 is often already
+near a weighted-HM optimum.
+
+`pairwise`:
+This is different. Only 3/24 post-first blocks found a better in-union point
+than optimizer v2 under the pairwise objective. The reason is structural:
+pairwise uses
+
+    HM(||[sketch; A_w]v||^2, ||[sketch; A_{w+1}]v||^2) * H1
+
+so it rewards the carried sketch in both HM arguments. The optimizer v2 often
+has substantial mass outside rowspan([A_w; A_{w+1}]) but inside the sketch
+space, and that can be genuinely good for pairwise. In other words, pairwise
+is not mainly failing to find better two-half union points; it is designed to
+prefer retained sketch directions.
+
+Main conclusion
+---------------
+For triplet and nested, the story matches the future-HM investigation:
+better two-half union points exist, but the streaming optimizer is not
+optimizing that objective. It optimizes combined forgetting score, and those
+HM-combination-optimal points are consistently lower under that score.
+
+For weighted, the prior-sketch weighting partly collapses the distinction
+between the HM-combination objective and combined score.
+
+For pairwise, the objective itself is sketch-retentive. The default optimizer
+v2 can be better than any in-union point because pairwise puts the sketch in
+both harmonic-mean arguments.
+
+Implication
+-----------
+If the goal is to move toward the more optimal directions inside the
+`A_w/A_{w+1}` union, pairwise is the wrong combination. Nested or triplet are
+better targets for a post-v1 second-slot polish, but such a polish must be
+accepted with an explicit combined-score floor if we want to avoid breaking
+the retained-state update.

@@ -1,0 +1,146 @@
+Objective-design matrix suite
+=============================
+
+Scope
+-----
+This note covers matrix/dataset coverage for the next objective-design pass.
+The current controls remain:
+
+  - static-cex
+  - diffuse-diffuse
+
+Use `--shuffle-rows` for every matrix except `static-cex`, and treat the
+row-shuffled variants as the canonical diagnostics whenever the row order is
+not inherently random.
+
+
+1. Existing generators to run beyond the current two
+----------------------------------------------------
+Priority is based on whether the generator isolates a distinct failure signal.
+
+  mixed-tail-soft / mixed-tail-balanced / mixed-tail-sharp
+    Isolate tail localization, not just spectral gap. The failure signal is a
+    method that chases a spiky tail competitor instead of the diffuse oracle
+    span. Compare the three tail-spikiness settings to see whether the gap
+    widens as the tail becomes more localized.
+
+  residual-spiky-shocks
+    Counterfactual for `risk-residual-panel`. Isolates whether the failure is
+    driven by sparse row-local shocks rather than dense heavy-tailed residual
+    noise. This is the cleanest way to separate "shock geometry" from
+    "residualization geometry".
+
+  risk-residual-panel-shuffled
+    Mandatory shuffle. This is the strongest real-world-style test for whether
+    the fake-vs-oracle gap survives randomized rows in a crowded residual
+    panel. If the gap disappears after shuffling, the earlier failure was an
+    ordered-event artifact.
+
+  etf-basket-basis-shuffled and intraday-liquidity-shape-shuffled
+    Secondary randomized-row tests for local dislocation and scale-vs-
+    alignment tradeoffs. Keep these after the above unless you need a second
+    finance-flavored transient-rows case.
+
+  Lower priority for objective changes
+    alternative-data-signals, futures-term-structure, crowded-strategy,
+    rates-cross-currency, options-vol-surface, macro-factor-panel,
+    realized-vol-corr, execution-cost-slippage, stat-arb-spreads.
+    Benchmarks already show these are mostly near-solved, so they add little
+    signal for an objective-design pass.
+
+
+2. New matrix structures to test fake-vs-oracle separation under randomized rows
+---------------------------------------------------------------------------------
+Design these as row-shuffled matrices so the stream cannot rely on order.
+
+  A. Diffuse oracle + localized decoy row spike
+     - Top-2 right singular space is diffuse and globally supported.
+     - Add one or two high-leverage rows whose response energy aligns with a
+       near-orthogonal decoy direction.
+     - Goal: check whether the objective leaves Q_oracle to chase a few rows.
+
+  B. Near-tied oracle pair + third fake row-local competitor
+     - Two leading signal directions are nearly equal.
+     - A third direction is slightly weaker in singular value but much more
+       concentrated on a few randomized rows.
+     - Goal: separate "best oracle subspace" from "best score basin".
+
+  C. Mixed-tail oracle with localized tail block
+     - Keep a dense top signal pair, but make the tail interpolate from diffuse
+       to spiky with a small number of row-localized tail columns.
+     - Goal: see when the optimizer prefers tail-local geometry over the
+       carried oracle span.
+
+  D. Oracle-consistent bulk plus one adversarial block
+     - Most rows follow the oracle span, but a small randomized block is built
+       to maximize the block-local score in a different direction.
+     - Goal: force fake-vs-oracle separation even when the global signal is
+       clear.
+
+
+3. Exact diagnostics to log for each proposed matrix
+-----------------------------------------------------
+Log both first-block and final-stream values.
+
+  Core outcome metrics
+    - `final_align`
+    - `final_relerr`
+    - `score_sum`
+    - `regularized_score` if a row penalty is active
+
+  Oracle separation metrics
+    - principal cosines of `V_found` vs `Q_oracle`
+    - principal cosines of `V_found` vs `top-r(M_gain)`
+    - `||P_perp(Q_oracle) V_found||_F` and per-column outside norms
+    - `oracle_raw_projection_scores`
+    - `oracle_qr_projection_scores`
+    - unrestricted minus oracle score gap in the first block
+
+  Gradient-direction metrics
+    - `||g_total_tan||`
+    - `||g_old_tan||`
+    - `||g_new_tan||`
+    - `||g_entropy_tan||`
+    - `cos(g_total_tan, dir_to_oracle)`
+    - `cos(g_old_tan, dir_to_oracle)`
+    - `cos(g_new_tan, dir_to_oracle)`
+    - `cos(g_entropy_tan, dir_to_oracle)`
+
+  Row-geometry metrics
+    - top response rows and their response energies
+    - row-energy fraction on the top 1 to 5 rows
+    - row concentration of the selected outside component
+    - leverage weights if `--row-leverage-lambda` is tested
+
+
+4. Minimal suite for the next objective-design pass
+---------------------------------------------------
+Keep it small and maximally informative:
+
+  1. static-cex
+     Canonical randomized-row control with dense signal vs localized tail.
+
+  2. mixed-tail-soft
+     Tests whether the objective overreacts to a mildly spiky tail.
+
+  3. mixed-tail-sharp
+     Tests the strongest tail-local competitor in the same family.
+
+  4. residual-spiky-shocks
+     Tests whether sparse row-local shocks, not dense tail structure, are
+     driving the failure.
+
+  5. risk-residual-panel-shuffled
+     Tests whether the real-world residual-panel mismatch survives randomized
+     rows.
+
+Optional 6th if you want one more transient-row stress case:
+
+  - intraday-liquidity-shape-shuffled
+
+This suite covers the main axes:
+
+  - diffuse vs localized tail
+  - sparse shocks vs dense residual structure
+  - oracle span vs block-local fake basin
+  - randomized-row robustness

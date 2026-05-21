@@ -1,0 +1,185 @@
+Combined-objective slot-2 failure on mixed-tail-sharp — synthesis
+=================================================================
+
+Date: 2026-04-27
+Theory: ../reports/approximation/new_approx_combined.txt
+Probe: combined_objective_sketch_bias_probe.py
+Data:
+  combined_obj_sketch_bias_mixed-tail-sharp.{csv,txt}     per-block table
+  combined_obj_sketch_bias_mixed-tail-sharp_landscape.txt slot-2 landscape (b1)
+
+Setting: mixed-tail-sharp, n=1024, half_win=32, rank=2, seed=0,
+streaming combined-score optimizer (`score_variant="combined"`),
+blocks 1, 2, 6, 12, 31. Combined score (theory):
+  score_w(v) = (||Bv||^2 + ||A_w v||^2) * phi_w(v)
+with B = state["s"] · state["V"]^T (sketch carry, rank r=2),
+phi_w(v) the pooled-entropy correction on C_w v
+(C_w = [R; A_w], R = old-row reservoir).
+
+
+1. Solid claims with direct evidence
+------------------------------------
+
+C1. Combined-score is a sketch-vs-block trade, monotone with stream depth.
+    sketch_frac(combined) > sketch_frac(oracle_proj) at every block >= 2,
+    for both slots. Δgain_sk and Δgain_blk are opposite-signed and
+    comparable. The gap scales with sk_F2 / cur_F2:
+        b2: 1.0×, b6: 5.0×, b12: 11×, b31: 30×.
+    [data: combined_obj_sketch_bias_mixed-tail-sharp.txt]
+
+C2. Slot 1 of combined hits oracle_v1_proj for late blocks.
+    (combined_v1, oracle_v1_proj)^2 = 0.14 (b1) → 0.78 (b6) →
+    0.85 (b12) → 0.9995 (b31). Score gap closes to 1e-4 at b31.
+    Caveat: oracle_v1_proj is itself sketch-heavy at b31 (sk_frac=0.95),
+    so this is mostly "the dominant retained direction."
+
+C3. Slot 2 of combined never aligns with either oracle projection.
+    max((combined_v2, o_j)^2 for j∈{1,2}) across blocks:
+        b1=0.001  b2=0.31  b6=0.04  b12=0.04  b31=0.03.
+    Block 1 has no sketch, yet combined_v2 is essentially orthogonal
+    to both oracle projections. ⇒ failure is *not* purely sketch reliance.
+
+C4. Oracle projections become non-orthogonal in the union span.
+    (oracle_v1_proj, oracle_v2_proj)^2 = 0.06, 0.02, 0.20, 0.28, 0.30
+    over b1/b2/b6/b12/b31. By b31 the two projected oracles share
+    ~30% of their mass.
+
+C5. combined_v2 is geometrically a recycled retained direction.
+    state_align(combined_v2) = ||state["V"]^T combined_v2||^2 grows
+    to 0.989 at b31. oracle_v2_proj's state_align is 0.103 at b31.
+    state_align ≈ sketch_frac row-wise (retained singular values are
+    roughly balanced).
+    [data: same .txt, st_algn column]
+
+C6. The score-gap regime flips between mid- and late-stream.
+    Symmetric decomposition Δscore = Δgain2 · mean(phi)
+                                     + Δphi · mean(gain2)
+    for (oracle_v_j_proj − combined_v_j):
+        b2 v1:  via_gain=-0.005,  via_phi=-0.461  ← phi-dominant
+        b2 v2:  via_gain=+0.020,  via_phi=-0.319  ← phi-dominant
+        b6 v2:  via_gain=+0.018,  via_phi=-0.170  ← phi-dominant
+        b12 v2: via_gain=+0.046,  via_phi=-0.036  ← still phi
+        b31 v2: via_gain=+0.006,  via_phi=+0.014  ← combined wins via gain
+        b31 v1: both ≈ 0
+    Combined wins via *higher phi* mid-stream, via *higher gain*
+    (sketch-dominant) at b31.
+
+
+2. What the evidence does NOT establish
+---------------------------------------
+
+N1. "Sketch reliance is the problem" — too narrow.
+    Block 1 has no sketch and slot 2 still misses both oracles
+    (algn_o1 = algn_o2 ≈ 0.001).
+N2. "Combined objective is biased toward sketch" — too global.
+    Slot 1 is fine; the failure is slot-2-specific.
+N3. "phi is biased" — needs qualification.
+    At b1 phi is nearly flat across union-span candidates *with the
+    same gain*; the bias only appears when comparing high-entropy
+    block directions to oracle-concentrated directions (E2, below).
+
+
+3. Refuted hypotheses
+---------------------
+
+R1. (E4) Joint Stiefel-2 fixes the slot-2 failure: REFUTED.
+    Replacing greedy deflation with `basis_selection="joint"` in
+    `entropy_iter_basis_forget` produces essentially the same V as
+    greedy combined at b6/b12/b31. At b31 joint and combined are
+    identical to within 5e-3 in score and 0.005 in state_align.
+    At b1 joint nudges slot-2 alignment up (algn_o2 = 0.247 vs
+    combined's 0.016) but at LOWER score (4.6749 vs 4.6781) — i.e.
+    joint found a stationary point closer to the oracle that is not
+    the score's global maximum.
+    Conclusion: the failure is intrinsic to the SCORE FUNCTION on
+    Stiefel(r), not to the optimization paradigm.
+    [data: rows joint_v1/joint_v2 in same .txt]
+
+
+4. Confirmed mechanisms
+-----------------------
+
+M1 (mid-stream, also at b1): phi explicitly de-rewards oracle-aligned
+    slot-2 directions.
+    Block-1 landscape in the deflation complement of combined_v_1:
+        direction              phi        score      algn_o2
+        combined_v_2          5.655      4.678       0.016
+        oracle_v_1_proj_⊥     4.397      3.644       0.004
+        oracle_v_2_proj_⊥     3.699      3.081       0.749
+        random_0..4         2.99–3.91   2.45–3.24    < 0.04
+    gain_tot is essentially flat (0.819–0.833) across all directions,
+    so the entire score gap is phi. oracle_v_2_proj_⊥ is the right
+    direction (algn_o2 = 0.749) but has the *lowest* phi of all
+    candidates. The optimizer correctly avoids it because the score
+    punishes low phi. Phi rewards entropic energy distribution across
+    rows; V_exact[:,1] produces a CONCENTRATED response on the rows
+    that carry its signal, so phi pushes away from it.
+    [data: combined_obj_sketch_bias_mixed-tail-sharp_landscape.txt]
+
+M2 (late-stream): rank-r carry forces slot 2 into span(V_state).
+    state_align(combined_v_2) = 0.989 at b31. ||Bv||^2 only sees
+    span(V_state); since gain2 is dominated by ||Bv||^2 by b31
+    (sk_F2/cur_F2 ≈ 30), the score's slot-2 max is the second
+    retained singular vector.
+    oracle_v_2_proj has state_align = 0.103, so 90% of its mass
+    lives outside span(V_state) and contributes ZERO to gain_sketch.
+    Even with joint Stiefel-2 the same maximum is found (R1).
+
+
+5. Final claim
+--------------
+
+On mixed-tail-sharp, the combined-score's slot-2 failure to recover
+V_exact[:,1] is intrinsic to the score function, not the deflation
+paradigm. Two mechanisms compound:
+
+  (M1) phi rewards entropic responses and explicitly avoids the
+       concentrated response of V_exact[:,1] (verified at b1: phi
+       gap of 1.96 between combined_v_2 and oracle_v_2_proj_⊥).
+
+  (M2) the rank-r carry pins gain_sketch onto span(V_state); slot 2,
+       after taking slot 1, lands on the other retained singular
+       vector (state_align(combined_v_2) → 0.989 by b31), where
+       oracle_v_2_proj is mostly absent (state_align 0.103).
+
+Slot 1 is unaffected: by b31 combined_v_1 ≈ oracle_v_1_proj to 5
+decimal places. The deflation paradigm is NOT the bottleneck —
+joint Stiefel-2 with the same score lands on essentially the same V.
+
+
+6. Implications for fixes
+-------------------------
+
+- Reformulating to Stiefel-r with the same score is not a fix
+  (R1 refutes it).
+- Targeting M1: redesign phi (or replace with a concentration-
+  rewarding term) so it does not penalize V_exact-style responses.
+- Targeting M2: increase carried rank, so V_state contains more
+  of V_exact, OR re-weight ||Bv||^2 vs ||A_w v||^2 inside gain2 so
+  the small block-content advantage of oracle_v_2_proj is not
+  drowned by sketch dominance.
+- Reweighting alone (the parked k_eff/entropy ideas in
+  project_combined_objective_tightening.md) addresses M2 but
+  does not address M1 at b1.
+
+
+7. Outstanding gaps
+-------------------
+
+G1. Is M1 specific to mixed-tail-sharp, or does it appear on
+    static-cex and residual-spiky-shocks too? — extend the probe
+    to those matrices (cheap; one CLI flag).
+G2. Block-1 phi-bias quantification: at b1 the phi maximum on the
+    deflation complement of combined_v_1 is some specific direction
+    in the union span. Compute its decomposition into V_exact
+    components — is it a noise direction, or a third right singular
+    vector?
+G3. Counterfactual M1-only fix: replace phi by a concentration-
+    rewarding alternative (e.g. negative entropy of the same y) and
+    re-run the probe. Predicted: oracle_v_2_proj_⊥ becomes the b1
+    slot-2 winner. (Implementing this means defining a new
+    `score_variant` in cex_restricted_space_probe.py.)
+G4. Counterfactual M2-only fix: increase carry rank to 4 and re-run.
+    Predicted: state_align(combined_v_2) drops, slot-2 algn_o2
+    increases. The carry-rank knob already exists in the streaming
+    framework.

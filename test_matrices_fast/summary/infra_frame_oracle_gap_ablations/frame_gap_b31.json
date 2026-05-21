@@ -1,0 +1,240 @@
+[
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.04871982039968726,
+    "score_winner": 0.06273145866623966,
+    "delta": 0.014011638266552405,
+    "pa_cos2": [
+      0.9861210202588038,
+      0.09775810489997497
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "diffuse-diffuse",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.026903338550480493,
+    "score_winner": 0.03720060091513411,
+    "delta": 0.010297262364653614,
+    "pa_cos2": [
+      0.17791799689364327,
+      0.0010175595346181387
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.05201248570076359,
+    "score_winner": 0.05870906522023904,
+    "delta": 0.00669657951947545,
+    "pa_cos2": [
+      0.9596873456478232,
+      0.868419123301534
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "residual-spiky-shocks",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.030432159672805423,
+    "score_winner": 0.04028098004601977,
+    "delta": 0.00984882037321435,
+    "pa_cos2": [
+      0.9520250963635556,
+      0.9055049315049973
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.04019800190123593,
+    "score_winner": 0.06360917642745197,
+    "delta": 0.023411174526216036,
+    "pa_cos2": [
+      0.27850753604489303,
+      0.00106621479706423
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-soft",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.02189377464775242,
+    "score_winner": 0.03740553501246151,
+    "delta": 0.015511760364709089,
+    "pa_cos2": [
+      0.24219987999868464,
+      0.003996985971710606
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-sharp",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.04469412223307421,
+    "score_winner": 0.06491647827558797,
+    "delta": 0.02022235604251376,
+    "pa_cos2": [
+      0.2961297823026715,
+      0.007372211125314616
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-sharp",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.024593720904797566,
+    "score_winner": 0.03733264158849672,
+    "delta": 0.012738920683699157,
+    "pa_cos2": [
+      0.21578707233921565,
+      0.004137389548631494
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "static-cex",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.007427741827633857,
+    "score_winner": 0.06672198598791271,
+    "delta": 0.05929424416027885,
+    "pa_cos2": [
+      0.29840528654240944,
+      0.03813251112219069
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "static-cex",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.0037805453397095094,
+    "score_winner": 0.0375075867944147,
+    "delta": 0.033727041454705196,
+    "pa_cos2": [
+      0.226588408548473,
+      0.029366129641258776
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-balanced",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 0.0456946463842932,
+    "score_winner": 0.06414531358124065,
+    "delta": 0.01845066719694745,
+    "pa_cos2": [
+      0.9789345563963568,
+      0.34713591367230656
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "mixed-tail-balanced",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.025241999986708754,
+    "score_winner": 0.03725519977818113,
+    "delta": 0.01201319979147238,
+    "pa_cos2": [
+      0.17654522556289537,
+      0.03082064133833537
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "etf-basket-basis",
+    "block": 31,
+    "ablation": "hm_x_energy",
+    "anchor": "free",
+    "score_oracle": 551.7961563629766,
+    "score_winner": 693.1385327500228,
+    "delta": 141.34237638704622,
+    "pa_cos2": [
+      0.9999704235164812,
+      0.0013278149030423742
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  },
+  {
+    "matrix": "etf-basket-basis",
+    "block": 31,
+    "ablation": "hm_x_crosscorr",
+    "anchor": "free",
+    "score_oracle": 0.6475899752036276,
+    "score_winner": 0.6839077424125405,
+    "delta": 0.03631776720891289,
+    "pa_cos2": [
+      0.9954360395690596,
+      0.006408504326852915
+    ],
+    "n_starts": 8,
+    "max_iter": 200,
+    "optimizer": "alternating_fd",
+    "status": "evidence_insufficient"
+  }
+]

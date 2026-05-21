@@ -1,0 +1,59 @@
+# Combined-objective sketch-vs-block gain decomposition.
+# score(v) = (||A_sketch v||^2 + ||A_cur v||^2) * phi(v)
+# sketch_frac = gain_sketch / (gain_sketch + gain_block).
+
+== block 1  matrix=mixed-tail-sharp  sketch_rows=0  block_rows=32  sk_F2=0.0000e+00  cur_F2=2.6441e+01  union_dim=32 ==
+  label                 gain_sk   gain_blk   gain_tot  sk_frac  st_algn      phi       score   algn_o1   algn_o2
+  combined_v1            0.0000     0.8303     0.8303   0.0000   0.0000   5.6549      4.6950    0.1404    0.2511
+  combined_v2            0.0000     0.8273     0.8273   0.0000   0.0000   5.6546      4.6781    0.0160    0.0162
+  joint_v1               0.0000     0.8298     0.8298   0.0000   0.0000   5.6421      4.6820    0.0390    0.0021
+  joint_v2               0.0000     0.8284     0.8284   0.0000   0.0000   5.6432      4.6749    0.0648    0.2472
+  oracle_v1_proj         0.0000     0.8288     0.8288   0.0000   0.0000   5.6569      4.6881    1.0000    0.0610
+  oracle_v2_proj         0.0000     0.8307     0.8307   0.0000   0.0000   5.6569      4.6989    0.0610    1.0000
+  Δ(oracle_v1_proj − combined_v1): gain_sk=+0.0000  gain_blk=-0.0015  score=-0.0069  (via_gain=-0.0085, via_phi=+0.0016)  algn_o1=+0.8596  algn_o2=-0.1901
+  Δ(oracle_v2_proj − combined_v2): gain_sk=+0.0000  gain_blk=+0.0033  score=+0.0208  (via_gain=+0.0189, via_phi=+0.0018)  algn_o1=+0.0450  algn_o2=+0.9838
+
+== block 2  matrix=mixed-tail-sharp  sketch_rows=2  block_rows=32  sk_F2=2.6441e+01  cur_F2=2.6349e+01  union_dim=34 ==
+  label                 gain_sk   gain_blk   gain_tot  sk_frac  st_algn      phi       score   algn_o1   algn_o2
+  combined_v1            0.4170     0.4136     0.8306   0.5020   0.5018   3.9987      3.3211    0.1694    0.3952
+  combined_v2            0.4139     0.4112     0.8251   0.5016   0.4999   3.9985      3.2992    0.1092    0.0254
+  joint_v1               0.4173     0.4094     0.8267   0.5048   0.5025   3.9937      3.3017    0.1159    0.1076
+  joint_v2               0.4151     0.4110     0.8261   0.5025   0.5015   3.9935      3.2990    0.1163    0.1633
+  oracle_v1_proj         0.1121     0.7171     0.8292   0.1352   0.1354   3.4598      2.8690    1.0000    0.0280
+  oracle_v2_proj         0.1739     0.6565     0.8304   0.2094   0.2099   3.6128      3.0001    0.0280    1.0000
+  Δ(oracle_v1_proj − combined_v1): gain_sk=-0.3048  gain_blk=+0.3035  score=-0.4522  (via_gain=-0.0049, via_phi=-0.4472)  algn_o1=+0.8306  algn_o2=-0.3673
+  Δ(oracle_v2_proj − combined_v2): gain_sk=-0.2400  gain_blk=+0.2453  score=-0.2991  (via_gain=+0.0202, via_phi=-0.3193)  algn_o1=-0.0813  algn_o2=+0.9746
+
+== block 6  matrix=mixed-tail-sharp  sketch_rows=2  block_rows=32  sk_F2=1.3201e+02  cur_F2=2.6371e+01  union_dim=34 ==
+  label                 gain_sk   gain_blk   gain_tot  sk_frac  st_algn      phi       score   algn_o1   algn_o2
+  combined_v1            0.6905     0.1429     0.8334   0.8285   0.8290   2.3090      1.9242    0.3680    0.5235
+  combined_v2            0.6870     0.1379     0.8249   0.8328   0.8325   2.3087      1.9045    0.0000    0.0065
+  joint_v1               0.6796     0.1533     0.8329   0.8160   0.8159   2.3082      1.9224    0.3342    0.5012
+  joint_v2               0.6731     0.1515     0.8246   0.8162   0.8156   2.3062      1.9018    0.0601    0.0030
+  oracle_v1_proj         0.2627     0.5699     0.8325   0.3155   0.3156   2.0678      1.7215    1.0000    0.0990
+  oracle_v2_proj         0.2955     0.5377     0.8332   0.3547   0.3548   2.1043      1.7533    0.0990    1.0000
+  Δ(oracle_v1_proj − combined_v1): gain_sk=-0.4278  gain_blk=+0.4270  score=-0.2027  (via_gain=-0.0018, via_phi=-0.2009)  algn_o1=+0.6320  algn_o2=-0.4245
+  Δ(oracle_v2_proj − combined_v2): gain_sk=-0.3915  gain_blk=+0.3998  score=-0.1512  (via_gain=+0.0183, via_phi=-0.1695)  algn_o1=+0.0990  algn_o2=+0.9935
+
+== block 12  matrix=mixed-tail-sharp  sketch_rows=2  block_rows=32  sk_F2=2.9068e+02  cur_F2=2.6399e+01  union_dim=34 ==
+  label                 gain_sk   gain_blk   gain_tot  sk_frac  st_algn      phi       score   algn_o1   algn_o2
+  combined_v1            0.7794     0.0683     0.8477   0.9195   0.9213   1.6324      1.3837    0.0922    0.9115
+  combined_v2            0.7273     0.0928     0.8201   0.8869   0.8811   1.6269      1.3342    0.0408    0.0028
+  joint_v1               0.7736     0.0717     0.8453   0.9152   0.9157   1.6319      1.3795    0.0873    0.8276
+  joint_v2               0.7417     0.0840     0.8257   0.8983   0.8968   1.6287      1.3447    0.0147    0.0279
+  oracle_v1_proj         0.1112     0.7203     0.8314   0.1337   0.1328   1.5118      1.2570    1.0000    0.0679
+  oracle_v2_proj         0.6641     0.1849     0.8490   0.7822   0.7849   1.5844      1.3452    0.0679    1.0000
+  Δ(oracle_v1_proj − combined_v1): gain_sk=-0.6683  gain_blk=+0.6520  score=-0.1268  (via_gain=-0.0255, via_phi=-0.1012)  algn_o1=+0.9078  algn_o2=-0.8435
+  Δ(oracle_v2_proj − combined_v2): gain_sk=-0.0632  gain_blk=+0.0921  score=+0.0110  (via_gain=+0.0465, via_phi=-0.0355)  algn_o1=+0.0271  algn_o2=+0.9972
+
+== block 31  matrix=mixed-tail-sharp  sketch_rows=2  block_rows=32  sk_F2=7.9296e+02  cur_F2=2.6192e+01  union_dim=34 ==
+  label                 gain_sk   gain_blk   gain_tot  sk_frac  st_algn      phi       score   algn_o1   algn_o2
+  combined_v1            0.8971     0.0377     0.9348   0.9596   0.9644   1.0159      0.9497    0.0630    0.9989
+  combined_v2            0.9173     0.0115     0.9288   0.9877   0.9890   1.0011      0.9298    0.0206    0.0008
+  joint_v1               0.8973     0.0375     0.9348   0.9599   0.9646   1.0159      0.9497    0.0634    0.9991
+  joint_v2               0.9172     0.0116     0.9288   0.9876   0.9889   1.0011      0.9299    0.0202    0.0006
+  oracle_v1_proj         0.0636     0.7690     0.8327   0.0764   0.0685   1.0134      0.8439    1.0000    0.0626
+  oracle_v2_proj         0.8926     0.0421     0.9347   0.9549   0.9596   1.0158      0.9495    0.0626    1.0000
+  Δ(oracle_v1_proj − combined_v1): gain_sk=-0.8335  gain_blk=+0.7313  score=-0.1058  (via_gain=-0.1037, via_phi=-0.0021)  algn_o1=+0.9370  algn_o2=-0.9363
+  Δ(oracle_v2_proj − combined_v2): gain_sk=-0.0247  gain_blk=+0.0307  score=+0.0197  (via_gain=+0.0060, via_phi=+0.0137)  algn_o1=+0.0420  algn_o2=+0.9992
+

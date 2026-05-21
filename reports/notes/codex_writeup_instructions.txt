@@ -1,0 +1,64 @@
+Writeup instructions from the approximation-note cleanup session:
+
+1. Both `old_approx.txt` and `new_approx_simple.txt` must be self-contained mathematical notes. Do not rely on code references, implementation names, or "returned by the code" language inside the text.
+
+2. Every variable must be defined before first use. If a symbol is only motivated in prose but not mathematically defined, that counts as undefined and must be patched.
+
+3. Avoid notation collisions and overloaded symbols.
+   - Do not use `r_w` for a row count, because `r` already denotes sketch rank / number of stored directions.
+   - In `old_approx.txt`, cumulative rows seen was renamed to `t_w`.
+   - Be careful with case drift such as `Q_w` vs `q_w`, `E_w` vs `e_w`, `H` vs `h`, `\Psi_w` vs `\psi_w`, etc.
+
+4. Avoid redefining variables after first definition. Later sections should refer back to earlier definitions unless a genuinely new object is being introduced.
+
+5. If a definition is incomplete, do not leave it vague. Earlier in the session we temporarily used literal tags of the form
+   `[incomplete definition: ...]`,
+   but where the mathematical construction can be written explicitly, replace the tag with the full definition.
+
+6. For `old_approx.txt` / expansion-style note:
+   - The carried right directions are the optimized directions themselves:
+     `V_w = [v_1^{(w)}, ..., v_r^{(w)}]`.
+   - The carried gains and entropies are defined mathematically by
+     `s_j^{(w)} := ||M_w v_j^{(w)}||_2`
+     and
+     `h_j^{(w)} := \widehat h_{2,w}(v_j^{(w)})`.
+   - Then
+     `S_w = diag(s_1^{(w)}, ..., s_r^{(w)})`,
+     `h^{(w)} = (h_1^{(w)}, ..., h_r^{(w)})`,
+     and
+     `B^{(w)} = S_w V_w^T`.
+   - The same pattern applies to the first window and previous-window carry:
+     `s_j^{(1)} := ||M_1 v_j||_2`, `h_j^{(1)} := \widehat h_{2,1}(v_j)`,
+     and similarly for `(w-1)`.
+
+7. For `new_approx_simple.txt` / forget-style note:
+   - Distinguish the optimizer output basis from the stored carried right singular vectors.
+   - Use a notation such as `\widehat V_w` for the orthonormal right basis assembled from optimized directions before compression.
+   - Define the carry by the left-projected extraction step:
+     `Y_w := M_w \widehat V_w`,
+     `U_{\hat{},w} := orth(Y_w)`,
+     and
+     `U_{\hat{},w}^T M_w = U_{small,w} \Sigma_w V_w^T`.
+   - Then the carried sketch is
+     `B^{(w)} = \Sigma_w V_w^T`.
+   - Likewise for the previous window:
+     `B^{(w-1)} = \Sigma_{w-1} V_{w-1}^T`
+     with the analogous definitions from `M_{w-1}` and `\widehat V_{w-1}`.
+   - Do not identify `V_w` directly with `[v_1^{(w)}, ..., v_r^{(w)}]` after the left-projected SVD step; that compression can rotate the basis.
+
+8. Keep the notes mathematically explicit about what is exact and what is approximate.
+   - In `old_approx.txt`, `\widehat h_{2,w}` is the streamed entropy surrogate, with exact first-window specialization.
+   - In `new_approx_simple.txt`, the forget score uses the current block exactly plus the old quadratic sketch term.
+
+9. Long display equations should be split across lines instead of forcing everything onto one line.
+   In particular, we already split:
+   - the opening `A_w \in R^{k x d}` setup line in both notes,
+   - the `V_1 = [...]` line in `old_approx.txt`,
+   - the `V_{w-1} = [...]` line in `old_approx.txt`.
+   Apply the same style to similarly long displays elsewhere.
+
+10. The `.tex` files act as wrappers around the `.txt` note bodies, so recompilation should be done through the wrapper files, not by treating the `.txt` bodies as standalone LaTeX documents.
+
+11. Current status after the session:
+   - Both notes compile successfully.
+   - Remaining issues are non-fatal overfull `\hbox` warnings.

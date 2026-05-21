@@ -1,0 +1,306 @@
+Consecutive tail-conspiracy diagnostic
+=====================================
+
+Date: 2026-04-21
+
+Question
+--------
+Test whether the combined-score failures are caused by:
+
+  A. the same wrong tail direction/subspace persisting consecutively;
+  B. fresh tail mixtures being re-fit to each sampled pooled row set; or
+  C. the row-memory sampling mechanism already preventing the effect.
+
+The key objection tested here is that combined entropy is computed on raw old
+row memory plus the new window, not on sketch rows. Therefore, if the failure
+were only a sketch-entropy artifact, an independent old-row holdout should knock
+down the selected optimizer directions.
+
+
+Implementation
+--------------
+Added a diagnostic flag to `cex_restricted_space_probe.py`:
+
+  --dump-consecutive-tail-diagnostics
+
+It prints, per block:
+
+  - principal cosines between current selected frame and previous selected frame;
+  - principal cosines between current selected frame and the projected QR oracle;
+  - signal mass and tail mass relative to V_exact[:, :rank];
+  - current optimizer score/entropy on the training old row memory used by the
+    objective;
+  - projected QR oracle score/entropy on the same training memory;
+  - previous selected frame scored under the current objective;
+  - current optimizer and QR oracle score/entropy on an independent old-row
+    holdout sampled from old raw rows excluding the training memory indices.
+
+The holdout is unavailable in block 2 for win=32, old_memory_size=32 because all
+previous raw rows are already in the training memory. Blocks 3 onward have an
+excluded-row holdout.
+
+Raw outputs:
+
+  summary/mixed_tail_sharp_consecutive_diag_raw.txt
+  summary/diffuse_diffuse_consecutive_diag_raw.txt
+  summary/static_cex_consecutive_diag_raw.txt
+
+
+Command Template
+----------------
+All three runs used:
+
+  python cex_restricted_space_probe.py \
+    --matrix MATRIX --n 1024 --win 32 --rank 2 \
+    --preset fast --seed 0 \
+    --shuffle-rows --row-shuffle-seed 0 \
+    --mode restricted --score-variant combined \
+    --basis-selection greedy --reduced-optimizer cex \
+    --rownorm-seed-first-block --rownorm-seed-all-blocks \
+    --q0 8 --qmax 48 --num-restarts 8 --maxit 120 \
+    --expansion-maxit 8 --post-expansion-maxit 80 \
+    --expansion-direction residual \
+    --reuse-line-search-grad --expansion-warm-start \
+    --dtype float32 --old-memory-size 32 \
+    --oracle-candidate-check \
+    --dump-consecutive-tail-diagnostics
+
+Matrices:
+
+  mixed-tail-sharp
+  diffuse-diffuse
+  static-cex
+
+
+Aggregate Readout: Blocks 3-32
+------------------------------
+These aggregates use only blocks with a nonempty excluded-row holdout.
+
+  matrix             prev_cos_min  tail_prev_min  oracle_cos_min  tail_mass  train_relH  hold_relH  hold_score_gap
+  mixed-tail-sharp   0.843769      0.825613       0.380551        0.799394   0.890713    0.913714   +0.138593
+  diffuse-diffuse    0.937506      0.926046       0.424262        0.834800   0.988974    0.968146   +0.211455
+  static-cex         0.944139      0.899931       0.964606        0.526308   0.998801    0.993476   +0.026465
+
+Definitions:
+
+  prev_cos_min:
+    min principal cosine between selected frames in consecutive blocks.
+
+  tail_prev_min:
+    min principal cosine between the tail components of consecutive selected
+    frames after removing V_exact[:, :rank].
+
+  oracle_cos_min:
+    min principal cosine between current selected frame and projected QR oracle.
+
+  tail_mass:
+    ||(I - P_exact) V_opt||_F^2 / rank.
+
+  train_relH and hold_relH:
+    average pooled relative entropy across the two selected directions on the
+    training row memory and excluded-row holdout, respectively.
+
+  hold_score_gap:
+    holdout score_sum(V_opt) - holdout score_sum(Q_oracle).
+
+
+Early Blocks 1-2
+----------------
+Block 1 has no previous selected frame. Block 2 has no excluded holdout because
+all previous rows are already used as old row memory. The early fields still
+show the main separation:
+
+  matrix             block  opt_vs_oracle_cos   tail_mass  train_opt  train_oracle
+  mixed-tail-sharp   1      0.635624, 0.257128  0.990438   9.368977   8.868317
+  diffuse-diffuse    1      0.632433, 0.203908  0.990222   9.378141   8.877187
+  static-cex         1      0.999932, 0.703855  0.972025   9.369605   9.072055
+
+  mixed-tail-sharp   2      0.850178, 0.250898  0.979383   6.621745   5.843107
+  diffuse-diffuse    2      0.771323, 0.069150  0.983603   6.655638   5.807737
+  static-cex         2      0.971893, 0.571902  0.955890   6.625452   6.460066
+
+Readout:
+
+  Static-cex is also tail-heavy in blocks 1-2, so early tail_mass does not
+  separate the cases. The clearer early separator is opt_vs_oracle_cos:
+  static-cex already has one nearly oracle-aligned direction in block 1 and a
+  much stronger second cosine than the two failing cases. By block 2, it still
+  has substantially better oracle overlap.
+
+
+Mixed-Tail-Sharp
+----------------
+Final metric:
+
+  mean_align = 0.029637
+
+Representative block 3:
+
+  opt_vs_prev_cos       = 0.828678, 0.798603
+  tail_vs_prev_cos      = 0.828737, 0.794759
+  opt_vs_oracle_cos     = 0.552599, 0.404528
+  sig_mass              = 0.014488
+  tail_mass             = 0.985512
+  train opt score_sum   = 5.392017
+  train oracle score    = 4.596384
+  holdout opt score     = 5.377188
+  holdout oracle score  = 4.596502
+  train opt relH        = 0.996084, 0.998706
+  holdout opt relH      = 0.995956, 0.994181
+
+Representative block 12:
+
+  opt_vs_prev_cos       = 0.993469, 0.898244
+  tail_vs_prev_cos      = 0.992912, 0.883371
+  opt_vs_oracle_cos     = 0.988019, 0.376450
+  tail_mass             = 0.888147
+  train opt score_sum   = 2.736232
+  train oracle score    = 2.632507
+  holdout opt score     = 2.701802
+  holdout oracle score  = 2.625862
+  holdout opt relH      = 0.976110, 0.965180
+
+Final block:
+
+  opt_vs_prev_cos       = 0.994005, 0.983036
+  tail_vs_prev_cos      = 0.993981, 0.916640
+  opt_vs_oracle_cos     = 0.999893, 0.147133
+  tail_mass             = 0.589914
+  train opt score_sum   = 1.880040
+  train oracle score    = 1.782704
+  train previous-frame score under current objective = 1.874986
+
+Interpretation:
+
+  Mixed-tail-sharp is not primarily a row-sample overfit. The optimizer frame
+  remains high entropy and higher score on excluded old-row holdout. The
+  selected frame is also strongly consecutive: by block 12 one principal
+  direction is almost unchanged from the previous block and the other is still
+  substantially aligned. The tail components are similarly persistent.
+
+  The best description is persistent wrong tail-region/subspace behavior, not
+  a single one-off tail vector and not a pure sketch-entropy artifact.
+
+
+Diffuse-Diffuse
+---------------
+Final metric:
+
+  mean_align = 0.228795
+
+Representative block 3:
+
+  opt_vs_prev_cos       = 0.870232, 0.777232
+  tail_vs_prev_cos      = 0.867841, 0.773571
+  opt_vs_oracle_cos     = 0.779912, 0.201042
+  tail_mass             = 0.976333
+  train opt score_sum   = 5.451436
+  train oracle score    = 4.471666
+  holdout opt score     = 5.429670
+  holdout oracle score  = 4.512140
+  holdout opt relH      = 0.999855, 0.992577
+
+Representative block 12:
+
+  opt_vs_prev_cos       = 0.960582, 0.949748
+  tail_vs_prev_cos      = 0.959761, 0.941173
+  opt_vs_oracle_cos     = 0.952726, 0.590650
+  tail_mass             = 0.904312
+  train opt score_sum   = 2.765676
+  train oracle score    = 2.525248
+  holdout opt score     = 2.746799
+  holdout oracle score  = 2.511173
+
+Interpretation:
+
+  Diffuse-diffuse is even clearer than mixed-tail-sharp as a persistent
+  tail-subspace effect. The selected frame is mostly tail mass, consecutive
+  overlap is high, and holdout entropy remains high. The excluded-row holdout
+  does not rescue the oracle; it confirms that the tail directions selected by
+  the combined objective are broad enough to pass a second row sample.
+
+
+Static-CEX Control
+------------------
+Final metric:
+
+  mean_align = 0.977801
+
+Representative block 3:
+
+  opt_vs_prev_cos       = 0.835282, 0.789880
+  tail_vs_prev_cos      = 0.826194, 0.779984
+  opt_vs_oracle_cos     = 0.918889, 0.675623
+  tail_mass             = 0.942897
+  holdout opt score     = 5.418909
+  holdout oracle score  = 5.216387
+
+Representative block 12:
+
+  opt_vs_prev_cos       = 0.957704, 0.950683
+  tail_vs_prev_cos      = 0.937867, 0.935807
+  opt_vs_oracle_cos     = 0.999740, 0.995884
+  tail_mass             = 0.697517
+
+Final block:
+
+  opt_vs_prev_cos       = 0.986340, 0.982601
+  tail_vs_prev_cos      = 0.899721, 0.778473
+  opt_vs_oracle_cos     = 0.999997, 0.999890
+  tail_mass             = 0.096207
+  train opt score_sum   = 1.929421
+  train oracle score    = 1.929408
+  holdout opt score     = 1.929421
+  holdout oracle score  = 1.929408
+
+Interpretation:
+
+  The diagnostic does not simply flag every run as bad. Static-cex also has
+  large consecutive selected-frame and tail-residual cosines, and it is
+  tail-heavy early: block 3 has tail_mass = 0.942897 and block 12 still has
+  tail_mass = 0.697517. Those quantities alone are therefore not diagnostic.
+  The difference is temporal resolution. Static-cex moves from a transient
+  tail-heavy state into the oracle span: by the final block, the selected frame
+  and QR oracle are essentially the same rank-2 subspace, and the remaining tail
+  mass is small. The small final score gap is negligible and both train and
+  holdout agree.
+
+
+Conclusion
+----------
+The row sampling mechanism fixes the earlier sketch-row entropy issue, but it
+does not prevent consecutive tail conspiracy in the tested failures.
+
+What the new diagnostic supports:
+
+  1. The failure is not just overfitting to the particular old-row memory.
+     On mixed-tail-sharp and diffuse-diffuse, optimizer directions retain high
+     entropy and higher score on excluded old-row holdout.
+
+  2. The same tail region can persist consecutively.
+     Consecutive selected-frame overlap and tail-component overlap are high,
+     especially after the first few blocks. This is stronger than "fresh,
+     unrelated tail mixtures every block." However, static-cex shows that early
+     high tail mass and high tail-residual persistence are not sufficient by
+     themselves; the failure signature is persistence without later convergence
+     to the oracle span.
+
+  3. It is not necessarily the same exact tail vector forever.
+     Some blocks still show drift or one direction swapping/rotating, especially
+     in mixed-tail-sharp. The robust statement is persistence of a wrong tail
+     subspace/family, with enough continuity for the carried sketch to reinforce
+     it.
+
+  4. The static-cex control behaves differently.
+     The same diagnostic shows convergence to the oracle span, so the test is
+     distinguishing real bad cases from the known success case.
+
+Practical implication:
+
+  A single raw-row reservoir is not enough as a guardrail. If the tail subspace
+  is broad enough, selected tail mixtures can pass both the training row memory
+  and an excluded-row holdout. The next fix should not only add row-sample
+  validation; it should add a second discriminator such as stronger SVD/FD
+  gating, larger candidate retention with SVD compression, or persistence
+  checks against independent row partitions and not only against the carried
+  sketch.

@@ -1,0 +1,48 @@
+Streaming projection-preservation invariant
+==========================================
+
+This result is independent of the input matrix family.
+
+Let v be a fixed target right vector, A_t the new row window, and B_t the
+compressed sketch after processing window t. Suppose the pre-compression gain
+matrix is
+
+  M_t = [B_{t-1}; A_t].
+
+Let
+
+  p_t = P_row(M_t) v / ||P_row(M_t) v||
+
+be the normalized projection of v onto the current gain row space. If the
+selected rank-r right subspace contains p_t, then exact SVD compression inside
+that selected subspace preserves the action of M_t on v.
+
+Proof:
+
+  v - P_row(M_t) v is in null(M_t), so
+
+    M_t v = M_t P_row(M_t) v
+          = ||P_row(M_t) v|| M_t p_t.
+
+  Since p_t is retained by the selected subspace, the compressed sketch B_t
+  preserves this norm:
+
+    ||B_t v||_2^2 = ||M_t v||_2^2
+                  = ||B_{t-1} v||_2^2 + ||A_t v||_2^2.
+
+Therefore, by induction, if every window retains this projected vector,
+
+  ||B_T v||_2^2 = sum_t ||A_t v||_2^2 = ||A v||_2^2.
+
+Diagnostic consequence
+----------------------
+
+If restricted+cex misses v even though this invariant should apply, the issue
+is not a lack of evidence in principle. One implementation assumption must be
+failing:
+
+1. The optimizer did not actually retain p_t.
+2. The score being checked is not the same objective being optimized.
+3. The projected vector was computed in a different current space than the one
+   used by the optimizer/compressor.
+4. The post-selection compression failed to preserve the retained direction.

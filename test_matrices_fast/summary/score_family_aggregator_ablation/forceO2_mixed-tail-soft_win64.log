@@ -1,0 +1,3 @@
+half_window_run mode=split_probe policy=future_hmean_r_sk_g half_win=32 mean_align=0.051016 mean_relerr_sval=0.04116690
+half_window_run mode=sliding policy=future_hmean_r_sk_g half_win=32 mean_align=0.023794 mean_relerr_sval=0.00447110
+wrote_json=summary/score_family_aggregator_ablation/forceO2_mixed-tail-soft_win64.json wrote_csv=summary/score_family_aggregator_ablation/forceO2_mixed-tail-soft_win64.csv wrote_text=summary/score_family_aggregator_ablation/forceO2_mixed-tail-soft_win64.txt elapsed=85.095

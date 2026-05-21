@@ -1,0 +1,33 @@
+== block 2  matrix=risk-residual-panel  N_sk=32  union_dim=66 ==
+  c_sk=1.5928e+00  c_g1=1.3539e+00  c_g2=1.6291e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.5610   0.5987   0.0052  1.0696e-02  0.9334  9.9836e-03 2.8631e+00     0.0023    0.0037
+  hm_triplet_norm_best           0.4482   0.7751   0.0540  1.0341e-01  0.9102  9.4132e-02 2.4846e+00     0.0004    0.0577
+  hm_triplet_raw_best            0.4384   0.3883   0.5288  4.4752e-01  0.9692  4.3373e-01 1.5489e+00     0.0000    0.0437
+  hm_triplet_evidence_best       0.1534   0.5689   0.6979  5.7317e-01  0.9428  5.4038e-01 1.6399e+00     0.0017    0.0180
+  oracle_v1_proj_S+G1+G2         0.1677   0.7888   0.3273  4.3925e-01  0.5564  2.4440e-01 1.1612e+00     0.0912    0.0055
+  oracle_v2_proj_S+G1+G2         0.2097   1.0176   0.1988  3.2686e-01  0.4856  1.5874e-01 1.3828e+00     0.0038    0.1298
+
+== block 6  matrix=risk-residual-panel  N_sk=160  union_dim=66 ==
+  c_sk=1.5379e+00  c_g1=1.3974e+00  c_g2=1.6316e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          0.7665   0.5285   0.0062  1.2562e-02  0.8757  1.1001e-02 1.8015e+00     0.0027    0.0026
+  hm_triplet_norm_best           0.5044   0.7308   0.0590  1.1188e-01  0.9317  1.0424e-01 1.7080e+00     0.0033    0.0019
+  hm_triplet_raw_best            0.4707   0.4073   0.5975  4.8400e-01  0.9731  4.7098e-01 1.2478e+00     0.0046    0.0008
+  hm_triplet_evidence_best       0.1625   0.5915   0.7804  6.1448e-01  0.9478  5.8241e-01 1.0428e+00     0.0052    0.0000
+  oracle_v1_proj_S+G1+G2         0.1820   0.7847   0.4486  5.3615e-01  0.5592  2.9981e-01 9.4337e-01     0.1170    0.0001
+  oracle_v2_proj_S+G1+G2         0.0542   0.9105   0.5891  5.2222e-01  0.4620  2.4126e-01 8.5904e-01     0.0002    0.1013
+
+== block 12  matrix=risk-residual-panel  N_sk=352  union_dim=66 ==
+  c_sk=1.5375e+00  c_g1=1.4301e+00  c_g2=1.4405e+00
+  w_sk=2  w_g1=32  w_g2=32
+  label                            u_sk     u_g1     u_g2     HM_evi   relH1       score   combined   align_v1  align_v2
+  combined_optimizer_v2          1.3150   0.2779   0.0052  1.0474e-02  0.7833  8.2049e-03 1.5686e+00     0.0016    0.0067
+  hm_triplet_norm_best           0.6928   0.6707   0.0486  9.3008e-02  0.9405  8.7477e-02 1.3867e+00     0.0063    0.0125
+  hm_triplet_raw_best            0.5414   0.4276   0.5318  4.7580e-01  0.9698  4.6144e-01 9.9965e-01     0.0089    0.0202
+  hm_triplet_evidence_best       0.1784   0.5852   0.7065  5.9357e-01  0.9457  5.6137e-01 7.7724e-01     0.0100    0.0129
+  oracle_v1_proj_S+G1+G2         0.2081   0.4961   0.6891  5.4750e-01  0.8294  4.5408e-01 6.7400e-01     0.1176    0.0002
+  oracle_v2_proj_S+G1+G2         0.2613   0.7161   0.5332  5.8745e-01  0.4035  2.3705e-01 7.5816e-01     0.0002    0.1158
+

@@ -1,0 +1,447 @@
+Let $\mathrm{row}(X)$ denote the number of rows of a matrix $X$. Let
+\begin{align}
+A \in \mathbb R^{m\times d}
+\end{align}
+be the full data matrix, let $A_w$ denote the current row-window, and let $B \in \mathbb R^{r\times d}$ denote the sketch carried from the previous windows. Write
+\begin{align}
+A_w &\in \mathbb R^{k\times d},
+\qquad
+k = \mathrm{row}(A_w),
+\qquad
+k>1,
+\\
+n_w &:= \text{(\# rows in current window)} + \text{(\# rows not yet seen after this window)},
+\qquad
+v \in \mathbb S^{d-1},
+\end{align}
+and write
+\begin{align}
+h_2\left(\frac{A_wv}{\|A_wv\|_2}\right)
+=
+-\log\left(\frac{\|A_wv\|_4^4}{\|A_wv\|_2^4}\right).
+\end{align}
+We use the score
+\begin{align}
+\operatorname{score}_w(v)
+:=
+\|Bv\|_2^2
++
+\left(\frac{k}{n_w}\right)^{1/4}
+\|A_wv\|_2^2
+\left(\frac{k}{n_w}\right)^{-\frac{h_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+
+\paragraph{Algorithm overview.}
+The forget method processes the matrix one row-window at a time.
+
+For the first window, there is no previous sketch, so we take
+\begin{align}
+B=0,
+\qquad
+\operatorname{score}_1(v)
+:=
+\left(\frac{k}{n_1}\right)^{1/4}
+\|A_1v\|_2^2
+\left(\frac{k}{n_1}\right)^{-\frac{h_2\left(\frac{A_1v}{\|A_1v\|_2}\right)}{4\log k}},
+\end{align}
+and compute retained directions $v_1,\dots,v_r$ sequentially by solving
+\begin{align}
+v_j
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ v_i^\top v = 0\ \forall i<j}
+\operatorname{score}_1(v).
+\end{align}
+Collecting them gives a retained right basis
+\begin{align}
+V_{\mathrm{hat}} = [v_1,\dots,v_r].
+\end{align}
+This right basis is not carried forward by itself. Instead, with the current carried operator $M=A_1$, the method forms
+\begin{align}
+Y = MV_{\mathrm{hat}},
+\qquad
+U_{\hat{}} = \operatorname{orth}(Y),
+\end{align}
+computes the SVD of
+\begin{align}
+U_{\hat{}}^\top M = U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+and carries the sketch
+\begin{align}
+B_{\mathrm{next}} = \Sigma V_{\mathrm{new}}^\top.
+\end{align}
+
+For a later window $w$, the input sketch is the carried factor from the previous step,
+\begin{align}
+\widehat V_{w-1}=[\widehat v_1^{(w-1)},\dots,\widehat v_r^{(w-1)}],
+\qquad
+\Sigma_{w-1}=\operatorname{diag}(\sigma_1^{(w-1)},\dots,\sigma_r^{(w-1)}),
+\end{align}
+Here $(\Sigma_{w-1},V_{w-1})$ are defined from the previous window by the left-projected extraction step: if $\widehat V_{w-1}$ is the orthonormal right basis retained before compression, then
+\begin{align}
+Y_{w-1} := M_{w-1}\widehat V_{w-1},
+\qquad
+U_{\hat{},w-1} := \operatorname{orth}(Y_{w-1}),
+\end{align}
+\begin{align}
+U_{\hat{},w-1}^\top M_{w-1} = U_{\mathrm{small},w-1}\Sigma_{w-1}V_{w-1}^\top,
+\end{align}
+and the carried sketch is $B^{(w-1)}=\Sigma_{w-1}V_{w-1}^\top$.
+It then uses the objective $\operatorname{score}_w(v)$ defined above and again computes orthonormal retained directions sequentially by solving
+\begin{align}
+v_j^{(w)}
+\in
+\operatorname*{arg\,max}_{v\in\mathbb S^{d-1},\ (v_i^{(w)})^\top v = 0\ \forall i<j}
+\operatorname{score}_w(v).
+\end{align}
+After selecting the new right space, it converts that space into the left-projected carry sketch
+\begin{align}
+\widehat V_w=[v_1^{(w)},\dots,v_r^{(w)}],
+\end{align}
+where $\Sigma_w$ and $V_w$ are defined by the post-optimization extraction step
+\begin{align}
+Y_w := M_w\widehat V_w,
+\qquad
+U_{\hat{},w} := \operatorname{orth}(Y_w),
+\end{align}
+\begin{align}
+U_{\hat{},w}^\top M_w = U_{\mathrm{small},w}\Sigma_w V_w^\top.
+\end{align}
+This sketch is then passed to the next window, so the old information seen by window $w+1$ is always the compressed sketch produced at the end of window $w$, not the raw basis vectors before the projection/SVD postprocessing.
+
+\paragraph{Derivation of the score.}
+Let
+\begin{align}
+z = A_wv
+\end{align}
+be the response of the current window, and let
+\begin{align}
+x = Av
+\end{align}
+be the response of the full matrix. Since $A_w$ contains only $k=\mathrm{row}(A_w)$ rows, $z$ is a restriction of $x$. We use the normalized-entropy heuristic
+\begin{align}
+\frac{h_2\left(\frac{x}{\|x\|_2}\right)}{\log n_w}
+\approx
+\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{\log k},
+\end{align}
+that is,
+\begin{align}
+h_2\left(\frac{x}{\|x\|_2}\right)
+\approx
+h_2\left(\frac{z}{\|z\|_2}\right)\frac{\log n_w}{\log k}.
+\end{align}
+Using
+\begin{align}
+h_2\left(\frac{y}{\|y\|_2}\right)
+=
+4\log\|y\|_2 - 4\log\|y\|_4,
+\end{align}
+and $\|z\|_4 \le \|x\|_4$, we obtain
+\begin{align}
+4\log\frac{\|z\|_2}{\|x\|_2}
+\le
+h_2\left(\frac{z}{\|z\|_2}\right)
+-
+h_2\left(\frac{x}{\|x\|_2}\right).
+\end{align}
+Substituting the heuristic entropy scaling gives
+\begin{align}
+\log\frac{\|z\|_2}{\|x\|_2}
+\lesssim
+-\frac{h_2\left(\frac{z}{\|z\|_2}\right)}{4}\frac{\log(n_w/k)}{\log k},
+\end{align}
+hence
+\begin{align}
+\frac{\|A_wv\|_2}{\|Av\|_2}
+\lesssim
+\left(\frac{k}{n_w}\right)^{\frac{h_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+This motivates the reciprocal entropy factor
+\begin{align}
+\left(\frac{k}{n_w}\right)^{-\frac{h_2\left(\frac{A_wv}{\|A_wv\|_2}\right)}{4\log k}}.
+\end{align}
+In the maximal-entropy case $h_2(A_wv/\|A_wv\|_2)=\log k$, this predicts shrinkage of order $(k/n_w)^{1/4}$, while the true flat-vector shrinkage is $(k/n_w)^{1/2}$. Therefore we include the flat-case correction factor $(k/n_w)^{1/4}$ and attach the corrected entropy weight only to the fresh window contribution, while keeping the old information as the quadratic sketch energy $\|Bv\|_2^2$.
+
+\paragraph{Simplified form.}
+Let
+\begin{align}
+c_k = \frac{\log(k/n_w)}{\log k}.
+\end{align}
+Using
+\begin{align}
+h_2\left(\frac{A_wv}{\|A_wv\|_2}\right)
+=
+4\log\|A_wv\|_2 - 4\log\|A_wv\|_4,
+\end{align}
+the score becomes
+\begin{align}
+\operatorname{score}_w(v)
+=
+\|Bv\|_2^2 + \left(\frac{k}{n_w}\right)^{1/4}\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k}.
+\end{align}
+If we isolate the new-window term as
+\begin{align}
+\psi_w(v) := \left(\frac{k}{n_w}\right)^{1/4}\|A_wv\|_2^{2-c_k}\|A_wv\|_4^{c_k},
+\end{align}
+then
+\begin{align}
+\operatorname{score}_w(v)=\|Bv\|_2^2+\psi_w(v).
+\end{align}
+
+\paragraph{Exact gradient.}
+The old term is quadratic:
+\begin{align}
+\nabla \|Bv\|_2^2 = 2B^\top Bv.
+\end{align}
+For the new-window term, differentiating
+\begin{align}
+\log \psi_w(v)
+=
+\frac14\log\left(\frac{k}{n_w}\right)
++
+(2-c_k)\log\|A_wv\|_2
++
+c_k\log\|A_wv\|_4
+\end{align}
+gives
+\begin{align}
+\nabla \log \psi_w(v)
+=
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right).
+\end{align}
+Hence
+\begin{align}
+\nabla \psi_w(v)
+=
+\psi_w(v)\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}
+Therefore the full gradient is
+\begin{align}
+\nabla \operatorname{score}_w(v)
+=
+2B^\top Bv
++
+\psi_w(v)\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}
+
+\paragraph{Stored-basis form.}
+If
+\begin{align}
+B = SV^\top,
+\qquad
+V=[v_1,\dots,v_r],
+\qquad
+S=\operatorname{diag}(s_1,\dots,s_r),
+\end{align}
+then
+\begin{align}
+\|Bv\|_2^2
+=
+\sum_{j=1}^r s_j^2(v_j^\top v)^2,
+\qquad
+2B^\top Bv
+=
+2\sum_{j=1}^r s_j^2(v_j^\top v)v_j.
+\end{align}
+So the gradient may be written as
+\begin{align}
+\nabla \operatorname{score}_w(v)
+=
+2\sum_{j=1}^r s_j^2(v_j^\top v)v_j
++
+\psi_w(v)\left[
+(2-c_k)\frac{A_w^\top A_wv}{\|A_wv\|_2^2}
++
+c_k A_w^\top\left(\frac{(A_wv)^{\odot 3}}{\|A_wv\|_4^4}\right)
+\right].
+\end{align}
+
+\paragraph{Optimization problem.}
+To extract a direction, solve
+\begin{align}
+\max_{v \in \mathbb S^{d-1},\ Q^\top v = 0}\operatorname{score}_w(v),
+\end{align}
+where the columns of $Q$ are the previously accepted directions.
+
+\paragraph{Projected full-gradient ascent.}
+Use the exact gradient of the score, not a surrogate. Project it onto the feasible tangent space:
+\begin{align}
+g_{\mathrm{tan}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla \operatorname{score}_w(v).
+\end{align}
+Then take
+\begin{align}
+\widetilde v^{+} = v + \eta\, g_{\mathrm{tan}}(v),
+\qquad
+v^{+} = \frac{(I-QQ^\top)\widetilde v^{+}}{\|(I-QQ^\top)\widetilde v^{+}\|_2},
+\end{align}
+with $\eta>0$ chosen by backtracking line search on the true score.
+
+\paragraph{Basis-expansion interpretation.}
+If one is building a local search subspace rather than taking a pure steepest-ascent step, the new direction added to the basis is simply the projected full gradient
+\begin{align}
+g_{\mathrm{basis}}(v)
+:=
+\left(I-QQ^\top-vv^\top\right)\nabla \operatorname{score}_w(v).
+\end{align}
+Thus the basis is enlarged by the actual gradient direction of the score, not by separate $p$- and $q$-directions. The roles of the $\ell_2$ and $\ell_4$ contributions are already combined inside the single full-gradient vector above.
+
+In a reduced-subspace version, suppose the current local right search basis is
+\begin{align}
+Z \in \mathbb R^{d\times q},
+\qquad
+Z^\top Z=I.
+\end{align}
+After solving the score problem inside $\operatorname{span}(Z)$, the relevant expansion residual is the part of the feasible tangent gradient that is not already represented by this local basis:
+\begin{align}
+r_Z(v)
+:=
+\left(I-ZZ^\top\right)
+\left(I-QQ^\top-vv^\top\right)
+\nabla \operatorname{score}_w(v).
+\end{align}
+The local basis should be expanded only when this residual is non-negligible. A natural stopping rule is
+\begin{align}
+\frac{\|r_Z(v)\|_2}
+{\left\|\left(I-QQ^\top-vv^\top\right)\nabla \operatorname{score}_w(v)\right\|_2}
+\le \tau,
+\end{align}
+where $\tau$ is a prescribed tolerance. If the ratio is larger than $\tau$, the new basis direction should be the normalized residual $r_Z(v)/\|r_Z(v)\|_2$, optionally followed by Krylov refinements generated from this residual direction.
+
+This distinction matters. Expanding from the current optimizer $v$ itself, or from powers generated by $v$, can fail to enlarge the reduced search space because $v$ already lies in $\operatorname{span}(Z)$. In that case the nominal expansion budget may be large, but the actual basis dimension can remain unchanged. Expanding from the out-of-basis residual instead makes the initial basis size much less decisive: a small initial basis can grow toward the useful row-space when the current subspace is inadequate.
+
+In the counterexample experiment, starting from a five-dimensional local basis and allowing expansion did not help when expansion was based on the current optimized direction; the final basis remained five-dimensional. With residual-based expansion, the same five-dimensional start grew to roughly thirteen to twenty-one final basis vectors and matched the quality of runs that started from a much larger basis. The full final row-space in that experiment had dimension twenty-six, so a maximum basis allowance larger than twenty-six was only an upper permission, not an attainable final dimension.
+
+\paragraph{Operator extraction from the retained right subspace.}
+The implementation does not stop after constructing a right search space. After the scored directions and any auxiliary directions are assembled into an orthonormal right basis
+\begin{align}
+V \in \mathbb R^{d\times r},
+\end{align}
+with row-wise representation $V^\top = V_t$, it forms
+\begin{align}
+M_w :=
+\begin{pmatrix}
+B\\
+A_w
+\end{pmatrix},
+\qquad
+Y := M_wV,
+\end{align}
+where $M_w$ is the carried operator for the current step. It then orthonormalizes the image:
+\begin{align}
+U_{\hat{}} := \operatorname{orth}(Y) = \operatorname{orth}(M_wV).
+\end{align}
+Equivalently, this defines the orthogonal projector onto the left image of the retained right space,
+\begin{align}
+P_U := U_{\hat{}}U_{\hat{}}^\top.
+\end{align}
+The algorithm then compresses $M_w$ to this left subspace:
+\begin{align}
+\widetilde M := U_{\hat{}}^\top M_w,
+\end{align}
+which is the coordinate representation of $P_U M_w$. Finally it computes
+\begin{align}
+\widetilde M = U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+and stores
+\begin{align}
+U_{\mathrm{proj}} = U_{\hat{}}U_{\mathrm{small}},
+\qquad
+S=\Sigma,
+\qquad
+V^\top = V_{\mathrm{new}}^\top.
+\end{align}
+So the carried singular values and right singular vectors are not merely the raw scored-plus-auxiliary basis; they are the singular factors of the left-projected operator $P_U M_w$ restricted to the retained right span.
+
+\paragraph{Consequence for interpretation.}
+Because of this postprocessing step, the final retained object is best viewed as an operator approximation obtained from the chosen right space, not just as the right space itself. Therefore diagnostics based on $(S,V)$ are operator-weighted quantities for $P_U M_w$, whereas projector-based subspace diagnostics depend only on the span of $V$.
+
+\paragraph{Why this is the sketch carried into the next window.}
+The next window does not receive the raw optimized right basis $V_{\hat{}}$ by itself. Instead it receives the sketch
+\begin{align}
+B_{\mathrm{next}} := \Sigma V_{\mathrm{new}}^\top,
+\end{align}
+where
+\begin{align}
+	U_{\hat{}}^\top M_w = U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top
+\end{align}
+is the SVD of the compressed left-projected operator. Equivalently, $B_{\mathrm{next}}$ is the norm-preserving right-action representation of
+\begin{align}
+P_U M_w = U_{\hat{}}U_{\hat{}}^\top M_w.
+\end{align}
+
+This choice is made for several reasons.
+
+First, the score for the next window needs a compact object $B$ that summarizes the old contribution through
+\begin{align}
+\|Bv\|_2^2.
+\end{align}
+If we use $B_{\mathrm{next}}=\Sigma V_{\mathrm{new}}^\top$, then
+\begin{align}
+\|B_{\mathrm{next}}v\|_2
+=
+\|\Sigma V_{\mathrm{new}}^\top v\|_2
+=
+\|U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top v\|_2
+=
+\|U_{\hat{}}U_{\mathrm{small}}\Sigma V_{\mathrm{new}}^\top v\|_2
+=
+\|P_U M_w v\|_2,
+\end{align}
+because the left factors are orthonormal. So the quadratic old-term in the next window is exactly the energy of the left-projected carried operator.
+
+Second, carrying only the raw right basis would be insufficient. The basis $V_{\hat{}}$ determines a subspace but not the operator weighting within that subspace. The next-window score requires not merely a projector onto a right space, but a sketch whose norm action reflects how much of the previous operator is retained along each direction. The singular values in $\Sigma$ provide precisely this weighting.
+
+Third, this left-projected carry has the correct monotonicity property for leftout diagnostics. For any exact right singular vector $v_i$,
+\begin{align}
+\|P_U M_w v_i\|_2 \le \|M_w v_i\|_2,
+\end{align}
+since $P_U$ is an orthogonal projector on the output side. This is the property that can fail for a right-projected carry $M_wP_V$ with $P_V$ the projector onto a retained right subspace. Thus the carried sketch corresponds to a genuine operator compression with a componentwise nonnegative notion of discarded energy.
+
+Fourth, this carry is consistent with the way the forget score separates old and new information:
+\begin{align}
+\operatorname{score}_w(v)=\|Bv\|_2^2+\psi_w(v).
+\end{align}
+The old term should summarize what has already been retained from earlier windows, while the new term should respond to the current block. Using $B_{\mathrm{next}}=\Sigma V_{\mathrm{new}}^\top$ means the old term in the next window is the exact quadratic energy of the retained compressed operator, rather than an unweighted or ad hoc surrogate.
+
+Therefore the justified object to pass forward is not the raw optimized right basis, but the carried sketch
+\begin{align}
+B_{\mathrm{next}}=\Sigma V_{\mathrm{new}}^\top,
+\end{align}
+which is the right-side factor of the left-projected operator selected at the current step.
+
+\paragraph{First-window special case.}
+If $B=0$, then the earlier first-window objective can be rewritten with
+\begin{align}
+c_1 := \frac{\log(k/n_1)}{\log k},
+\end{align}
+so that
+\begin{align}
+\operatorname{score}_1(v)
+=
+\left(\frac{k}{n_1}\right)^{1/4}\|A_1v\|_2^{2-c_1}\|A_1v\|_4^{c_1}.
+\end{align}
+The full gradient then reduces to
+\begin{align}
+\nabla \operatorname{score}_1(v)
+=
+\left(\frac{k}{n_1}\right)^{1/4}\|A_1v\|_2^{2-c_1}\|A_1v\|_4^{c_1}
+\left[
+(2-c_1)\frac{A_1^\top A_1v}{\|A_1v\|_2^2}
++
+c_1 A_1^\top\left(\frac{(A_1v)^{\odot 3}}{\|A_1v\|_4^4}\right)
+\right].
+\end{align}
+
+\paragraph{Practical remarks.}
+The objective is nonconvex, so multiple restarts are useful. One should reject steps when $\|A_wv\|_2$ or $\|A_wv\|_4$ is numerically tiny. This simplified formulation uses only the true projected full gradient, so there is no separate surrogate optimization stage.

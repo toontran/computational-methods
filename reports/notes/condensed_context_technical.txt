@@ -1,0 +1,648 @@
+Computational Methods Current Context
+
+High-level status
+- Current main thread: explain why `main.py cex1_mat entropyscore_forget 100 2 2` does not match the literal Python port of `cex_structured_new.m`, even when both use the same `matlab/cex1_input.mat` matrix.
+- Secondary older thread: `entropyscore_forget_svd_aux` left-projected carry theory/numerics. Keep this only as background unless explicitly resumed.
+
+
+Older leftout / SVD-aux summary
+- `entropyscore_forget` and aux variants now use a left-projected carry:
+  - optimize right basis `V_new`
+  - form `Y = M_gain V_new`
+  - QR-orthonormalize to `U_hat`
+  - carry SVD of `U_hat.T @ M_gain`
+- The old right-projected claim `||(M P_V) v_i|| <= ||M v_i||` was wrong.
+- Safe diagnostic is left-projected:
+  - `P_U = U_hat U_hat.T`
+  - `||P_U M v_i|| <= ||M v_i||`
+- `left_projected_operator_svd_factors` in `utils.py` was patched to use stable reduced QR instead of float32 Gram-Schmidt because bad `U_hat` orthogonality caused catastrophic `sr=8` failures.
+- Dispatcher bug threading reserved state for `entropyscore_forget_svd_aux` was fixed.
+- Remaining old follow-up, if resumed: finish/recheck patched `sr=8`, `ssize=10`, `k=256` run versus matching `isvd`.
+
+
+cex / MATLAB replication goal
+- Goal: reproduce MATLAB `cex_structured_new.m` output in Python.
+- MATLAB reference final block rows `1001:1024`:
+  - `s ~= [0.9892, 0.9882]`
+  - `H ~= [3.1779, 3.1779]`
+  - `scores ~= [0.9785, 0.9765]`
+  - `mean_align ~= 0.17815`
+  - `mean_relerr_sval ~= 0.0018138`
+- Main intended command:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+- `main.py` matrix branch `cex1_mat` loads:
+  - `matlab/cex1_input.mat`
+  - variables `A`, `svec`, `V`, `U_perm`
+- `export_cex1_input.m` exists for real MATLAB export, but local MATLAB is not activated.
+- Octave is unreliable here for 1024 dense QR/SVD; do not use Octave for exact replication.
+
+
+Literal Python cex port
+- File: `cex_structured_new_py.py`
+- This is the best current literal Python reproduction of `cex_structured_new.m`.
+- It now supports:
+  - generated NumPy input by default
+  - MATLAB input via `--mat-input matlab/cex1_input.mat`
+- Command:
+  - `python3 -u cex_structured_new_py.py --mat-input matlab/cex1_input.mat`
+- Recent local result on existing `.mat`:
+  - final `s ~= [0.9888, 0.9877]`
+  - final `H ~= [3.1779, 3.1779]`
+  - final `scores ~= [0.9776, 0.9755]`
+  - `mean_align ~= 0.17073`
+  - `mean_relerr_sval ~= 0.0022610`
+- This is close to MATLAB and should be treated as the reference Python reproduction, not `main.py`.
+
+
+`main.py` same-matrix comparison
+- Same matrix test:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+- Original before recent fixes:
+  - final `S ~= [0.9790426, 0.9676043]`
+  - `score_history ~= [0.9585242, 0.9362578]`
+- Found two concrete `main.py`/`utils.py` issues:
+  1. `entropy_iter_basis_forget` reduced basis assumed `Vbasis` orthonormal, but `append_basis_columns` used single-pass float32 Gram-Schmidt.
+     - Symptom: first block had impossible reduced `s ~= 3.889` while carried `S ~= 0.963`.
+     - Fix: `orthonormalize_columns` and `append_basis_columns` now use reduced QR.
+  2. `entropyscore_forget_step` used `rows_ref = A_csr.shape[0] - start_idx`.
+     - This made final 24-row block use `rows_ref=24`, changing the objective.
+     - Fix: use fixed `rows_ref = A_csr.shape[0]`.
+- After both fixes:
+  - final `main.py` `S ~= [0.9646028, 0.9598476]`
+  - `score_history ~= [0.9304262, 0.9213032]`
+- Conclusion: same matrix is not enough; `main.py` is algorithmically different from literal cex.
+
+
+Normalization note
+- `main.py:isvd` normalizes each incoming `next_window` by `S_exact[0]`.
+- The literal cex script does not do this.
+- Saved `S` from `main.py` cex runs are in normalized units unless this is changed/accounted for.
+- The probe script below has `--normalize-by-sigma` to test this explicitly.
+
+
+Restricted-space probe script
+- File: `cex_restricted_space_probe.py`
+- Purpose: run cex streaming setup and same `matlab/cex1_input.mat`, but call `utils.entropy_iter_basis_forget` directly.
+- Useful options:
+  - `--normalize-by-sigma`
+  - `--carry left|right`
+  - `--q0`, `--qmax`, `--num-restarts`, `--maxit`, `--expansion-maxit`
+- Default run:
+  - `python3 -u cex_restricted_space_probe.py`
+  - final `s ~= [0.9689, 0.9585]`
+  - `mean_relerr_sval ~= 0.0223291`
+- With `--normalize-by-sigma`:
+  - final `s ~= [0.9666, 0.9625]`
+  - `mean_relerr_sval ~= 0.0246386`
+- Larger restricted budget:
+  - `python3 -u cex_restricted_space_probe.py --q0 20 --qmax 128 --num-restarts 8 --maxit 200 --expansion-maxit 16`
+  - final `s ~= [0.9784, 0.9608]`
+  - `mean_relerr_sval ~= 0.0126823`
+- Full row-space-ish basis:
+  - `python3 -u cex_restricted_space_probe.py --q0 200 --qmax 200 --num-restarts 8 --maxit 200 --expansion-maxit 0`
+  - final `s ~= [0.9853, 0.9812]`
+  - `mean_relerr_sval ~= 0.0057479`
+- Same with cex-style right carry:
+  - add `--carry right`
+  - final still `s ~= [0.9853, 0.9812]`
+- Conclusion from probe:
+  - subspace truncation explains much of `main.py` gap.
+  - carry choice is not the main remaining issue in this cex case.
+  - full row-space still does not exactly match literal cex, so optimizer mechanics also differ.
+
+
+Optimizer difference check
+- File: `cex_optimizer_first_block_compare.py`
+- Purpose: compare first block only, same full row-space basis, same cex restart seeds projected to reduced coordinates.
+- Command:
+  - `python3 -u cex_optimizer_first_block_compare.py`
+- Result:
+  - component 1:
+    - cex full score `0.8417016216`, `s=0.9179605592`, `H=4.5962382639`
+    - utils reduced score `0.8414852919`, `s=0.9178259556`, `H=4.5965258273`
+    - alignment `|v_full.T v_red| ~= 0.9751`
+  - component 2:
+    - cex full score `0.8346551501`, `s=0.9165590028`, `H=4.5538669062`
+    - utils reduced score `0.8325121095`, `s=0.9139828117`, `H=4.5780860768`
+    - alignment `|v_full.T v_red| ~= 0.7992`
+- Core optimizer differences:
+  1. cex optimizer steps with raw tangent gradient:
+     - `v + alpha * g`
+  2. utils reduced optimizer normalizes the gradient direction:
+     - `step = gtan / ||gtan||`
+     - `z + alpha * step`
+  3. cex uses Armijo on score:
+     - `score_trial >= score_old + 1e-4 * alpha * g.T @ g`
+  4. utils accepts strict log-objective improvement only:
+     - `logf_t > logf`
+  5. cex optimizes score directly in float64.
+  6. utils optimizes log(score) in float32 reduced coordinates.
+  7. restart generation differs in normal `main.py`/utils path:
+     - cex uses SVD-based structured restarts from `M_gain`
+     - utils uses prior vector, coordinate vector, and random reduced vectors.
+- Conclusion:
+  - `utils.entropy_iter_basis_forget` is not a literal reduced-coordinate version of the cex optimizer.
+  - The next best fix is to add a cex-style reduced optimizer using raw reduced gradients, Armijo score condition, progress stopping, cex restart seeds, and preferably float64 for cex tests.
+
+
+Current files added/changed in this investigation
+- `cex_structured_new_py.py`
+  - added optional `--mat-input` loading path.
+- `cex_restricted_space_probe.py`
+  - new script for cex streaming setup using restricted-space optimizer.
+- `cex_optimizer_first_block_compare.py`
+  - new script for first-block optimizer mechanics comparison.
+- `utils.py`
+  - QR-based `orthonormalize_columns` / `append_basis_columns`.
+  - fixed `rows_ref` in `entropyscore_forget_step` to use full row count.
+
+
+Quick commands
+- Literal reference:
+  - `python3 -u cex_structured_new_py.py --mat-input matlab/cex1_input.mat`
+- Main path:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+- Restricted probe:
+  - `python3 -u cex_restricted_space_probe.py`
+  - `python3 -u cex_restricted_space_probe.py --q0 200 --qmax 200 --num-restarts 8 --maxit 200 --expansion-maxit 0`
+- First-block optimizer comparison:
+  - `python3 -u cex_optimizer_first_block_compare.py`
+- Syntax check:
+  - `python3 -m py_compile main.py utils.py cex_structured_new_py.py cex_restricted_space_probe.py cex_optimizer_first_block_compare.py`
+
+
+Recommended next step
+- DONE: cex-style reduced optimizer implemented and wired into `entropy_iter_basis_forget`.
+- Current best next step is to expose cex replication knobs in `main.py`:
+  - `q0`, `qmax`, `num_restarts`, `maxit`, `expansion_maxit`, `reduced_optimizer`, `work_dtype`
+  - or add a cex-specific preset that uses the full reduced row-space-ish settings below.
+
+
+Latest cex-style reduced optimizer update
+- `utils.py` now has cex-style reduced optimizer helpers:
+  - `entropyscore_forget_score_grad_reduced`
+  - `entropyscore_forget_streaming_score_grad_reduced`
+  - `basic_projected_ascent_single_reduced_forget_cex`
+  - `basic_projected_ascent_single_reduced_streaming_forget_cex`
+- Mechanics match literal cex optimizer:
+  - raw tangent-gradient step, not normalized direction
+  - Armijo condition on score
+  - cex progress stopping with `f_change` and `step_norm`
+  - direct score optimization with float64 available
+- `entropy_iter_basis_forget` now accepts:
+  - `reduced_optimizer="legacy"|"cex"`
+  - `work_dtype`
+  - cex SVD/mixed/noisy restart seeds projected into the current reduced basis when `reduced_optimizer="cex"`
+- `entropyscore_forget_step` defaults to:
+  - `reduced_optimizer="cex"`
+  - `work_dtype=np.float64`
+- `cex_restricted_space_probe.py` now accepts:
+  - `--reduced-optimizer legacy|cex`
+  - `--dtype float32|float64`
+
+
+Latest reruns
+- Syntax check:
+  - `python3 -m py_compile utils.py cex_restricted_space_probe.py cex_optimizer_first_block_compare.py`
+  - passed.
+- First-block optimizer comparison:
+  - command: `python3 -u cex_optimizer_first_block_compare.py`
+  - component 1:
+    - cex full score `0.8417016216`, `s=0.9179605592`, `H=4.5962382639`
+    - cex reduced score `0.8417016216`, `s=0.9179605592`, `H=4.5962382639`
+    - alignment `|v_full.T v_cex_red| = 1.0000000000`
+  - component 2:
+    - cex full score `0.8346551501`, `s=0.9165590028`, `H=4.5538669062`
+    - cex reduced score `0.8346551501`, `s=0.9165590028`, `H=4.5538669062`
+    - alignment `|v_full.T v_cex_red| = 1.0000000000`
+- Full row-space restricted probe:
+  - command:
+    - `python3 -u cex_restricted_space_probe.py --q0 200 --qmax 200 --num-restarts 8 --maxit 200 --expansion-maxit 0 --reduced-optimizer cex --dtype float64`
+  - final block:
+    - `s ~= [0.9888, 0.9876]`
+    - `H ~= [3.1780, 3.1780]`
+    - `scores ~= [0.9777, 0.9753]`
+    - `mean_align ~= 0.17721`
+    - `mean_relerr_sval ~= 0.0022103`
+  - This is close to literal Python cex reproduction:
+    - `s ~= [0.9888, 0.9877]`
+    - `mean_align ~= 0.17073`
+    - `mean_relerr_sval ~= 0.0022610`
+- Main path rerun:
+  - command: `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+  - final block:
+    - `S ~= [0.9691267, 0.9658363]`
+    - `H ~= [3.1078415, 2.6396165]`
+    - `scores ~= [0.93919337, 0.93268836]`
+  - Main path now uses cex optimizer mechanics, but the small default reduced basis remains the dominant gap.
+
+
+Historical gap explanation before residual expansion
+- Optimizer mechanics are no longer the main issue:
+  - first-block full-row-space reduced optimizer matches literal cex full optimizer exactly to printed precision.
+- Main remaining confirmed gap at that point:
+  - `main.py` uses default forget settings with `seed_rank=5`, `max_rank=32`, `num_restarts=3`, `maxit=40`.
+  - The full-row-space probe uses effective row-space basis sizes:
+    - first block `100`
+    - middle streaming blocks `102`
+    - final block `26`
+  - Main diagnostics often show `subspace_dim=5`, `expansion_iters=0`; expansion is not rescuing the tiny initial basis.
+- Later updates below fix the main expansion-direction issue and the dtype/reporting issues.
+- Remaining caveats:
+  - `main.py:isvd` normalization by `S_exact[0]` still needs careful accounting for saved `S`.
+  - RNG is split between global `np.random` and `default_rng`.
+
+
+Latest main-path cex preset and expansion update
+- DONE: `main.py` now exposes the cex replication knobs:
+  - `--cex-replicate`
+  - `--q0`
+  - `--qmax`
+  - `--num-restarts`
+  - `--maxit`
+  - `--expansion-maxit`
+  - `--reduced-optimizer`
+  - `--work-dtype`
+  - `--residual-tol`
+  - `--expansion-direction krylov_v|residual`
+- DONE: `left_projected_operator_svd_factors` is dtype-preserving for cex tests.
+- DONE: `entropyscore_forget_step` prints/stores both optimized score-basis metrics and carried SVD metrics:
+  - `s_score`, `H_score`, `score_score`
+  - `S_carry`
+- `--cex-replicate` settings:
+  - `reduced_optimizer=cex`
+  - `work_dtype=float64`
+  - `q0=200`
+  - `qmax=200`
+  - `num_restarts=8`
+  - `maxit=200`
+  - `expansion_maxit=0`
+- Latest `--cex-replicate` main-path result:
+  - command: `python3 -u main.py cex1_mat entropyscore_forget 100 2 2 --cex-replicate`
+  - final `s_score ~= [0.99761568, 0.99634357]`
+  - final `score_score ~= [0.99523685, 0.99270029]`
+  - final `S_carry ~= [0.99761641, 0.99634306]`
+  - final `subspace_dims ~= [26, 26]`
+  - final `expansion_iters ~= [0, 0]`
+- Important interpretation:
+  - `qmax=200` is only an upper permission.
+  - In the final cex block, `M_gain` has `26` rows: `2` carried rows plus `24` new rows.
+  - Therefore the effective final right row-space basis cannot exceed `26`, even with `qmax=200`.
+
+
+Expansion-direction diagnosis and ablation
+- Prior issue:
+  - The residual diagnostic measured whether the full-space gradient had energy outside the current reduced basis.
+  - But the old expansion action appended the current best vector and its Krylov chain, i.e. `[v_best, A^T A v_best, ...]`.
+  - Since `v_best` already lies in the reduced basis, the append often added no new information.
+  - This explains why `q0=5, qmax=200, expansion_maxit=64` still stayed at `subspace_dim=5`.
+- New expansion mode:
+  - `--expansion-direction residual` appends the feasible out-of-basis gradient residual, then its Krylov chain.
+  - The residual is tangent-projected against the current vector and previously selected score vectors, then projected outside the current reduced basis.
+  - `--expansion-direction krylov_v` preserves the old behavior for reproduction/comparison.
+- Ablation base command:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+  - expansion tests used `q0=5`, `qmax=200`, `expansion_maxit=64`.
+- Results:
+  - baseline current:
+    - `s_score ~= [0.96912663, 0.96583618]`
+    - `score_score ~= [0.93919339, 0.93268852]`
+    - `S_carry ~= [0.96912676, 0.96583638]`
+    - `subspace_dims ~= [5, 5]`, `expansion_iters ~= [0, 0]`
+  - old direction, default tolerance:
+    - same as baseline, `subspace_dims ~= [5, 5]`, `expansion_iters ~= [0, 0]`
+  - old direction, strict `residual_tol=1e-4`:
+    - same as baseline, `subspace_dims ~= [5, 5]`, `expansion_iters ~= [0, 0]`
+  - residual direction, default `residual_tol=1e-2`, low budget:
+    - `s_score ~= [0.99578021, 0.99243641]`
+    - `score_score ~= [0.99156673, 0.98492097]`
+    - `S_carry ~= [0.99579074, 0.99243599]`
+    - `subspace_dims ~= [13, 17]`, `expansion_iters ~= [4, 2]`
+  - residual direction, strict `residual_tol=1e-4`, low budget:
+    - `s_score ~= [0.99590420, 0.99151477]`
+    - `score_score ~= [0.99181546, 0.98309407]`
+    - `S_carry ~= [0.99591363, 0.99151383]`
+    - `subspace_dims ~= [15, 27]`, `expansion_iters ~= [5, 6]`
+  - old direction, high budget (`num_restarts=8`, `maxit=200`):
+    - `s_score ~= [0.96913679, 0.96583789]`
+    - `score_score ~= [0.93921302, 0.93269180]`
+    - `S_carry ~= [0.96913705, 0.96583800]`
+    - `subspace_dims ~= [5, 5]`, `expansion_iters ~= [0, 0]`
+  - residual direction, default tolerance, high budget:
+    - `s_score ~= [0.99774205, 0.99680098]`
+    - `score_score ~= [0.99548911, 0.99361216]`
+    - `S_carry ~= [0.99774234, 0.99680076]`
+    - `subspace_dims ~= [13, 15]`, `expansion_iters ~= [4, 1]`
+  - residual direction, strict tolerance, high budget:
+    - `s_score ~= [0.99776987, 0.99671685]`
+    - `score_score ~= [0.99554466, 0.99344445]`
+    - `S_carry ~= [0.99777000, 0.99671676]`
+    - `subspace_dims ~= [15, 21]`, `expansion_iters ~= [5, 3]`
+  - `q0=100`, high-budget reference:
+    - `s_score ~= [0.99773954, 0.99683378]`
+    - `score_score ~= [0.99548417, 0.99367756]`
+    - `S_carry ~= [0.99773960, 0.99683375]`
+    - `subspace_dims ~= [26, 26]`, `expansion_iters ~= [0, 0]`
+- Main conclusion:
+  - The important fix is the expansion direction, not just stricter tolerance.
+  - Stricter tolerance alone with the old direction did not expand.
+  - With residual expansion, small `q0=5` grows to about `13-21` final basis vectors and matches or slightly beats the large-basis references on this normalized main path.
+  - A good current small-initial-basis setting is:
+    - `q0=5`
+    - `qmax=200`
+    - `expansion_maxit=64`
+    - `expansion_direction=residual`
+    - `num_restarts=8`
+    - `maxit=200`
+
+
+Current recommended next actions
+- Run broader regression tests before making `expansion_direction=residual` the default.
+- Tune `residual_tol` around `1e-3`, `3e-3`, and `1e-2` with residual expansion.
+- Add explicit forget parameters to output directory names to prevent ablation result collisions.
+- Keep careful accounting for `main.py:isvd` normalization by `S_exact[0]` when comparing to literal cex units.
+
+
+Latest maxit and restart sweeps with residual expansion
+- Base setting for these sweeps:
+  - command base: `python3 -u main.py cex1_mat entropyscore_forget 100 2 2`
+  - `q0=5`
+  - `qmax=200`
+  - `expansion_maxit=64`
+  - `expansion_direction=residual`
+  - `reduced_optimizer=cex`
+  - `work_dtype=float64`
+- Timing bottleneck:
+  - Representative setting: `num_restarts=8`, `maxit=120`.
+  - Final-window timings:
+    - `reduced_opt ~= 0.632s`
+    - `reduced_setup ~= 0.027s`
+    - `full_gradient ~= 0.0014s`
+    - `expansion_matvec ~= 0.0001s`
+    - `expansion_append ~= 0.0016s`
+    - total reduced solve `~= 0.663s`
+  - Conclusion: residual expansion and residual checks are cheap; the reduced optimizer dominates, about 95% of final-window solve time.
+  - Final-window work count for `num_restarts=8`, `maxit=120`:
+    - `basis_solves=2`
+    - `expansion_steps=6`
+    - `restart_solves=64`
+  - Explanation:
+    - component 1 had initial solve plus 4 expansions = 5 restart batches
+    - component 2 had initial solve plus 2 expansions = 3 restart batches
+    - 8 total batches times 8 restarts = 64 reduced optimizer solves.
+- `maxit` sweep with `num_restarts=8`:
+  - `maxit=20`:
+    - `S_carry ~= [0.97727225, 0.95396353]`
+    - final iters `[20, 20]`, stop `[maxit, maxit]`
+    - too low
+  - `maxit=40`:
+    - `S_carry ~= [0.99635767, 0.99353389]`
+    - final iters `[40, 25]`, stop `[maxit, f_change_tol]`
+    - strong but first component hits cap
+  - `maxit=80`:
+    - `S_carry ~= [0.99748217, 0.99609498]`
+    - final iters `[80, 37]`, stop `[maxit, f_change_tol]`
+    - good practical setting
+  - `maxit=120`:
+    - `S_carry ~= [0.99777154, 0.99650258]`
+    - final iters `[120, 39]`, stop `[maxit, f_change_tol]`
+    - best time/quality balance in this sweep
+  - `maxit=200`:
+    - `S_carry ~= [0.99774234, 0.99680076]`
+    - final iters `[200, 39]`, stop `[maxit, f_change_tol]`
+    - only modest improvement on second component, not clearly better overall than `120`
+  - Conclusion:
+    - `maxit=20` is too small.
+    - `maxit=80` is a good routine choice.
+    - `maxit=120` is the current recommended quality/budget compromise.
+    - `maxit=200` is conservative cex-replication style, not obviously necessary for routine residual-expansion runs.
+- `num_restarts` sweep with `maxit=120`:
+  - `num_restarts=1`:
+    - `S_carry ~= [0.99667146, 0.99394542]`
+    - reduced solve `~= 0.121s`
+  - `num_restarts=2`:
+    - `S_carry ~= [0.99681964, 0.99420035]`
+    - reduced solve `~= 0.202s`
+  - `num_restarts=3`:
+    - `S_carry ~= [0.99679017, 0.99420351]`
+    - reduced solve `~= 0.278s`
+  - `num_restarts=4`:
+    - `S_carry ~= [0.99672846, 0.99373959]`
+    - reduced solve `~= 0.364s`
+  - `num_restarts=6`:
+    - `S_carry ~= [0.99672643, 0.99409916]`
+    - reduced solve `~= 0.552s`
+  - `num_restarts=8`:
+    - `S_carry ~= [0.99777154, 0.99650258]`
+    - reduced solve `~= 0.666s`
+  - Conclusion:
+    - 1-3 restarts are decent and much faster.
+    - 8 restarts found a substantially better basin in this deterministic run.
+    - 4-6 did not monotonically improve, so this is a basin-finding issue rather than smooth scaling.
+    - Recommended practical settings:
+      - fast exploratory: `num_restarts=2` or `3`, `maxit=80`
+      - higher quality: `num_restarts=8`, `maxit=120`
+      - cex-conservative: `num_restarts=8`, `maxit=200`
+- Optimization ideas:
+  - adaptive restarts: start with 2-3 restarts, add more only if score spread/residual indicates uncertainty.
+  - fewer restarts after expansion, because each expansion stage currently reruns the full restart set.
+  - improve progress stopping for component 1, which often hits `maxit` even when quality is already high.
+
+
+Reduced optimizer profiling and fast-path ablation
+- User concern:
+  - Even with `num_restarts=1`, iterations still took too much time despite the small reduced basis.
+- Important distinction:
+  - Reported reduced times below are internal `diag["reduced_solve_time"]` sums from a minimal in-process harness.
+  - They are not full `main.py` wall time.
+  - Full `main.py` additionally includes imports, matrix loading, stream setup, `M_gain` construction, carry SVD, saving plots/data, residual/canonical-angle/leftout diagnostics, printing, etc.
+
+Hot-path operation profile
+- Reduced optimizer matrices:
+  - `B_gain = M_gain @ Vbasis`, shape roughly `rows_gain x q`
+  - `B_block = A_block @ Vbasis`, shape roughly `rows_block x q`
+  - `C_prev = prev_basis.T @ Vbasis`, shape roughly `old_rank x q`
+  - reduced variable `z in R^q`
+- Typical cex middle window with small expansion:
+  - `B_gain ~= 102 x q`
+  - `B_block ~= 100 x q`
+  - `C_prev ~= 2 x q`
+  - `q ~= 15-43`
+- Final window:
+  - `B_gain ~= 26 x q`
+  - `B_block ~= 24 x q`
+  - `C_prev ~= 2 x q`
+- Timed operation profile with `num_restarts=1`, `maxit=120`, residual expansion:
+  - total reduced evaluator calls:
+    - initial calls `4205`
+    - streaming calls `23874`
+    - total `28079`
+  - representative average times:
+    - `B_gain @ z`: `~2.1us`
+    - `B_block @ z`: `~2.0us`
+    - `B_block.T @ y`: `~2.2us`
+    - `B_block.T @ y3`: `~2.1us`
+    - `C_prev @ z`: `~1.7us`
+    - `C_prev.T @ (...)`: `~2.5us`
+    - `sum(y^4)`: `~5.9us`
+    - `grad_score_combine`: `~8.7us`
+    - `project_reduced`: `~2.2us`
+    - `retract_reduced`: `~7.6us`
+- Conclusion:
+  - Line search really is on small matrices.
+  - Individual reduced matrix operations are cheap.
+  - Cost comes from many small NumPy calls/temporaries and repeated optimizer iterations/solve batches.
+
+Line-search counter profile
+- Armijo was not backtracking heavily:
+  - stream iterations `12345`
+  - stream line-search trials `12465`
+  - average trials per stream iteration `1.0097`
+  - initial iterations `1827`
+  - initial line-search trials `1827`
+  - average trials per initial iteration `1.0`
+  - streaming accept at step 1: `12225`
+  - streaming accept at step 2: `120`
+- Previous implementation issue:
+  - line search computed `score_t` by calling full score+gradient evaluator
+  - after accepting, code recomputed full score+gradient at the same accepted `z`
+  - because most accepts were at first trial, this duplicated almost every per-iteration evaluator call
+- Measured eval timing:
+  - stream line-search eval time `~0.656s` for `12465` calls
+  - stream accepted-gradient eval time `~0.626s` for `12345` calls
+  - initial line-search eval time `~0.068s` for `1827` calls
+  - initial accepted-gradient eval time `~0.064s` for `1827` calls
+
+Implemented optimizer changes
+- In `utils.py`:
+  - `basic_projected_ascent_single_reduced_forget_cex(..., reuse_line_search_grad=True)`
+  - `basic_projected_ascent_single_reduced_streaming_forget_cex(..., reuse_line_search_grad=True)`
+  - accepted Armijo trial now stores `(score_t, grad_t, s_t, H_t)` and reuses it instead of recomputing.
+- In `entropy_iter_basis_forget`:
+  - new options:
+    - `reuse_line_search_grad=True`
+    - `expansion_warm_start=False`
+    - `post_expansion_maxit=None`
+  - when `expansion_warm_start=True` and `z_warm` exists, the lifted previous reduced optimum is used as the first seed after expansion.
+  - this avoids regenerating cex SVD seed when `num_restarts=1` and warm start already fills the requested one seed.
+  - if `post_expansion_maxit` is set, solve batches after expansion use `min(maxit, post_expansion_maxit)`.
+- Exposed in:
+  - `main.py`
+    - `--reuse-line-search-grad` / `--no-reuse-line-search-grad`
+    - `--expansion-warm-start` / `--no-expansion-warm-start`
+    - `--post-expansion-maxit`
+  - `cex_restricted_space_probe.py`
+    - same relevant controls plus `--expansion-direction`
+- Defaults after latest change:
+  - routine `entropyscore_forget_step` uses `work_dtype=np.float32`
+  - `cex_restricted_space_probe.py --dtype` defaults to `float32`
+  - `main.py --cex-replicate` still forces `float64`
+
+Line-search reuse / warm-start ablation, float64 normalized main-path units
+- Base:
+  - `cex1_mat`, rank `2`, win `100`
+  - `q0=5`, `qmax=200`
+  - `expansion_direction=residual`
+  - `expansion_maxit=64`
+  - `num_restarts=1`
+  - `maxit=120`
+  - `float64`, cex optimizer
+- Results from minimal harness:
+  - baseline:
+    - `diag_sum ~= 4.966s`
+    - `opt_sum ~= 1.821s`
+    - `restart_solves=174`
+    - `expansion_steps=152`
+    - final `S_carry ~= [0.98780305, 0.98495223]`
+    - final `score ~= [0.97575441, 0.97013057]`
+  - `reuse_only`:
+    - `diag_speed ~= 1.248x`
+    - `opt_speed ~= 1.753x`
+    - identical final `S_carry` and score to baseline
+  - `warm_only`:
+    - `diag_speed ~= 3.122x`
+    - `opt_speed ~= 1.922x`
+    - final `S_carry ~= [0.98778247, 0.98469080]`
+    - final `score ~= [0.97569231, 0.96962344]`
+  - `warm_cap30_only`:
+    - `diag_speed ~= 3.826x`
+    - `opt_speed ~= 3.460x`
+    - final `S_carry ~= [0.98768732, 0.98612943]`
+    - final `score ~= [0.97551612, 0.97245063]`
+  - `both_cap30`:
+    - `diag_speed ~= 5.204x`
+    - `opt_speed ~= 5.769x`
+    - same final values as `warm_cap30_only`
+- Conclusion:
+  - accepted-gradient reuse is exact and gives a modest total speedup.
+  - expansion warm-start is the larger speed win.
+  - aggressive cap can change the basin/trajectory; quality must be checked.
+
+Float32 vs float64 and best-reference comparison
+- Context reminder:
+  - `float64` was required to match literal cex first-block optimizer exactly.
+  - This is a replication constraint, not necessarily a routine-performance constraint.
+- Best/high-budget context references in normalized main-path units:
+  - high-budget residual float64:
+    - `S_carry ~= [0.99774234, 0.99680076]`
+    - `score ~= [0.99548911, 0.99361216]`
+  - `q0=100` float64 reference:
+    - `S_carry ~= [0.99773960, 0.99683375]`
+    - `score ~= [0.99548417, 0.99367756]`
+- Rerun high-budget references in float32:
+  - `high_budget_ref_f32`:
+    - `solve_sum ~= 13.261s`
+    - `S_carry ~= [0.99768925, 0.99663603]`
+    - `score ~= [0.99538455, 0.99328324]`
+    - differs from high-budget float64 by roughly `5e-5` to `2e-4` in `S_carry`, `1e-4` to `4e-4` in score
+  - `q0_100_ref_f32`:
+    - `solve_sum ~= 8.586s`
+    - `S_carry ~= [0.99766976, 0.99660220]`
+    - `score ~= [0.99534559, 0.99321579]`
+- Conclusion:
+  - `float32` is acceptable for routine fast/balanced runs.
+  - Keep `float64` for `--cex-replicate` and exact optimizer diagnostics.
+
+Fast float32 setting quality
+- Very aggressive setting:
+  - `num_restarts=1`
+  - `post_expansion_maxit=30`
+  - `reuse_line_search_grad=True`
+  - `expansion_warm_start=True`
+  - `work_dtype=float32`
+  - result:
+    - `solve_sum ~= 0.913s`
+    - `S_carry ~= [0.99527540, 0.99323535]`
+    - `score ~= [0.99026443, 0.98646454]`
+  - too much quality loss compared to best reference.
+- Better practical setting:
+  - `num_restarts=2`
+  - `post_expansion_maxit=60`
+  - `reuse_line_search_grad=True`
+  - `expansion_warm_start=True`
+  - `work_dtype=float32`
+  - result:
+    - `solve_sum ~= 2.853s` in minimal harness
+    - `elapsed ~= 2.878s` in minimal harness
+    - `S_carry ~= [0.99815613, 0.99652540]`
+    - `score ~= [0.99630057, 0.99307622]`
+    - compared to `high_budget_ref_f32`:
+      - `dS ~= [+0.00046688, -0.00011062]`
+      - `dscore ~= [+0.00091602, -0.00020702]`
+    - compared to high-budget float64 context:
+      - `dS ~= [+0.00041379, -0.00027536]`
+      - `dscore ~= [+0.00081146, -0.00053594]`
+- Recommended fast/balanced command:
+  - `python3 -u main.py cex1_mat entropyscore_forget 100 2 2 --q0 5 --qmax 200 --expansion-maxit 64 --expansion-direction residual --num-restarts 2 --maxit 120 --reduced-optimizer cex --work-dtype float32 --reuse-line-search-grad --expansion-warm-start --post-expansion-maxit 60`
+- `run_sweep.sh` update:
+  - uses `FORGET_CONFIG_LABEL="fast_f32_reswarm_r2_pe60"`
+  - appends the same fast/balanced flags to each `main.py` invocation
+  - includes the config label in log filenames to avoid collisions with older sweep logs
+- Caveat:
+  - `~2.85s` is reduced-solver time in the minimal harness, not full `main.py` wall time.
+  - Need separate `/usr/bin/time` or wall-clock timing for the full script.
+
+Validation
+- Syntax check after changes:
+  - `python3 -m py_compile utils.py main.py cex_restricted_space_probe.py`
+  - passed.

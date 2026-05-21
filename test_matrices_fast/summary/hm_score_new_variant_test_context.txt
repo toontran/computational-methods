@@ -1,0 +1,350 @@
+Testing a new HM-type slot-2 score: context + instructions
+==========================================================
+
+Date: 2026-04-27
+Audience: someone proposing a new variant in the `r_sk_g_score.py` family
+(or a structurally different rank-2 / Stiefel score) and running the same
+diagnostic + benchmark gauntlet used for S1–S5.
+
+
+0. TL;DR
+--------
+- Add the new variant to `r_sk_g_value_grad` (`r_sk_g_score.py:67`) as a
+  new `variant` branch returning (score, grad, r_sk, raw_g1, raw_g2, hm_g,
+  sat_term, s_align). Block-1 fall-through must be defined (no sketch yet).
+- Wire it into the per-block diagnostic by extending the for-loop on
+  variants and adding optimizer + v1_full / v2_deflate candidates if the
+  variant is different enough to warrant separate optimizer state.
+- Add the variant string to `--rsk-variant` choices in
+  `half_window_sliding_hmean_experiment.py:899`.
+- Run T1 (FD), T2 (per-block table on 4 blocks × 3 matrices), T3 (streaming
+  bench on 3 matrices, optionally 17). Acceptance criteria below.
+- Inspect the diagnostic-vs-streaming gap: a variant that lifts T2 might
+  still be a no-op in T3 if its preferred direction lies in span(V_default[:, 0]).
+
+
+1. Mandatory background reading
+-------------------------------
+  - summary/r_sk_g_score_implementation_context.txt        original spec (S1–S3 + r_sk + raw_g)
+  - summary/r_sk_g_block_transition_context.txt            S4 cheat / F1/F2 fix proposals
+  - summary/bench_matrix_sweep_r_sk_g_S5_sketchinit/synthesis.txt
+                                                           S5 + sketch-init algorithm + 3-matrix bench
+  - summary/hmean_evidence_score_synthesis.txt             HM-evidence score (per-block winner, streaming loser)
+  - summary/bench_matrix_sweep_evidence/synthesis.txt      17-matrix bench format & baseline numbers
+  - summary/half_window_sliding_hmean_experiment_synthesis.txt   the harness, its modes, its metrics
+  - summary/project_combined_obj_slot2_failure.md          phi de-rewards oracle, rank-r carry pins slot-2 to span(V_state)
+
+
+2. Score lineage and what each tried
+------------------------------------
+  Variant   Form                                              Result
+  --------  ----------------------------------------------    ------
+  S1        sat_term + α·HM(g1, g2) where sat=−max(r_sk,0)²   per-block winner on
+                                                              hm_triplet, streaming poor
+  S2        (1 − r_sk)^β · HM(g1, g2)                         multiplicative gate, similar
+  S3        S1 with state-alignment factor s_align^γ          carry-weighted, partial lift
+  S4        HM3(r_sk, g1, g2) · relH1, r_sk = 1 − c_sk·raw_sk plateau cheat: r_sk → 1
+                                                              (orthogonal to carry) on
+                                                              counterexamples → score peaks
+                                                              at row-of-A_fut directions
+  S5        HM3(r_sk_excess, g1, g2) · relH1,
+            r_sk_excess = c_sk·raw_sk − 1, score=0 if <0      gate kills cheat; score=0
+                                                              on whole sphere for blocks 2-27
+                                                              because s_1²(B_top) < T = 1/c_sk
+  S5+sketch-init                                               warm-start with state.V[:,0..1]
+                                                              lifts T2 dramatically (oracle-quality
+                                                              by b12 on counterexamples) but is a
+                                                              no-op in T3 streaming because slot-1
+                                                              deflation against V_default[:,0]
+                                                              kills sketch_v[:,0]'s reachable basin
+
+  Common structural limit: any scalar-per-v reduction of
+  (raw_sk, raw_g1, raw_g2) has a 62-dim level set in R^64 union span. The
+  "best" point on the score is a plateau, and the slot-2 oracle generally
+  is NOT at that plateau on counterexample matrices. See the §9 escape
+  prescription in r_sk_g_block_transition_context.txt: drop scalar-per-v
+  scoring, move to a Stiefel-rank-2 joint score.
+
+
+3. Code surface area (where to edit)
+------------------------------------
+
+A. Score implementation
+   r_sk_g_score.py:67   `r_sk_g_value_grad(A_sketch, A_cur, A_fut, c_sk, v, variant=...)`
+                        — add a new `elif variant == "Sx":` branch.
+                        Must return tuple of length 8:
+                          (score, grad, r_sk, raw_g1, raw_g2, hm_g, sat_term, s_align)
+                        Block-1 fall-through: when A_sk is None, define what the
+                        score does (S4/S5 fall through to HM2(g1,g2)·relH1).
+                        Gradient: zero where score is non-differentiable; analytic
+                        elsewhere (FD-checkable). For HM3-style, sign flip on the
+                        sketch term differs S4 (−2 c_sk) from S5 (+2 c_sk).
+
+   r_sk_g_score.py:43   adjust the docstring listing variants.
+
+   Helpers reused:
+     hmean_evidence_score.py:51   `entropy_relH1_value_grad(A_cur, v)` — relH1 + grad
+     hmean_evidence_score.py:188  `per_block_constants(A, block_id, half_win)` — c_sk, T, etc.
+
+B. FD check
+   r_sk_g_score.py:582  `gradient_check`. Add the variant to the for-loop tuple.
+                        Probe at a v with raw_sk > T (carry-aligned) for any
+                        variant that gates above T — random v on the sphere
+                        will be in the clipped region and FD = 0 = grad
+                        will pass trivially without validating the formula.
+                        Existing pattern: `v_S5 = state.V[:, 0]` for S5.
+
+C. Per-block diagnostic
+   r_sk_g_score.py:355  `analyze_block`. Locations to extend:
+     L444  `for variant in (...): rsk_best[variant] = optimize_r_sk_g_in_basis(...)`
+     L470+ "S4 v1_full / v2_deflate" + "S5 v1_full / v2_deflate" sequential
+           rank-2 over B_union — copy and adapt for the new variant if it
+           uses a different optimizer (or is structurally different, e.g.
+           Stiefel).
+     L495+ candidates dict — add the new variant's optimizer outputs.
+     L555+ row dict — add `score_Sx`, `hm3_x`, etc., to the per-row dict.
+     L605+ `write_text` — include the new score in the printed columns.
+
+D. Streaming wiring
+   half_window_sliding_hmean_experiment.py:566   `if policy == "future_hmean_r_sk_g":`
+                                                  block. Add the variant to
+                                                  `--rsk-variant choices` (L899).
+   half_window_sliding_hmean_experiment.py:590   `starts_rsk` build — sketch-init
+                                                  warm-starts (`state.V[:, j]`) are
+                                                  already added; KEY PITFALL: they
+                                                  get killed by `B_search ⊥
+                                                  V_default[:, 0]` deflation at L588.
+
+   For Stiefel-rank-2 scores: this branch is not enough — you'll need a
+   new code path that picks BOTH v1 and v2 together (rather than locking
+   v1 to V_default[:, 0]).
+
+
+4. Test gauntlet (run in this order)
+------------------------------------
+
+T1. FD CHECK
+    python r_sk_g_score.py --gradient-check \
+        --matrices mixed-tail-sharp \
+        --blocks 1 2 12 31 --dtype float64
+    Acceptance: rel < 1e-7 on each variant at each block.
+    For score variants with clipped regions, FD only tests the smooth
+    region — make sure your probe starts above the gate.
+
+T2. PER-BLOCK ORACLE ALIGNMENT
+    python r_sk_g_score.py \
+        --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+        --blocks 1 2 6 12 31 \
+        --no-oracle-warmstart \
+        --out-prefix summary/<descriptive_name>
+    Inspect:
+      - hm3_user / score column at each candidate
+      - sub_v_pr metrics (cos²(candidate, oracle_v_pr))
+      - components: raw_sk, r_sk_exc, 1/r_sk, 1/g1, 1/g2, relH1
+    Acceptance: sub_v2pr ≥ 0.4 on static-cex blocks 6+ AND b31; same on
+    mixed-tail-sharp. (S5 currently fails this — score=0 zone — but lifts
+    on sketchInit-v1/v2.)
+    Compare oracle_v_pr against hm_triplet_raw_best (the row-of-A_fut
+    cheat baseline) under the new score: oracle should outrank hm_triplet
+    on ≥1 block per matrix.
+
+T3. STREAMING BENCH (3 matrices first, 17 if quality justifies)
+    export OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2
+    mkdir -p summary/bench_matrix_sweep_r_sk_g_<variant>
+    for M in static-cex mixed-tail-sharp diffuse-diffuse; do
+      python half_window_sliding_hmean_experiment.py \
+        --matrix "$M" \
+        --policies combined hybrid isvd future_hmean_online \
+                   future_hmean_evidence future_hmean_r_sk_g \
+        --half-win 32 --rsk-variant <Sx> \
+        --json-out summary/bench_matrix_sweep_r_sk_g_<variant>/${M}_win64.json \
+        --csv-out  summary/bench_matrix_sweep_r_sk_g_<variant>/${M}_win64.csv \
+        --text-out summary/bench_matrix_sweep_r_sk_g_<variant>/${M}_win64.txt \
+        > summary/bench_matrix_sweep_r_sk_g_<variant>/${M}_win64.log 2>&1 &
+    done
+    wait
+    Acceptance for the variant on sliding mode:
+      final_exact_cos[1]² ≥ 0.6 on static-cex AND mixed-tail-sharp;
+      final_exact_cos[1]² ≥ 0.7 on diffuse-diffuse.
+      final_tail_mass ≤ 0.5 on at least 2 of 3 matrices.
+    Wall-clock budget: ≤ 20 s per matrix (3 matrices, parallel).
+
+T4. ORACLE-INIT LANDSCAPE PROBE (optional, for diagnosing local maxima)
+    python r_sk_g_oracle_init_probe.py \
+        --matrices static-cex mixed-tail-sharp diffuse-diffuse \
+        --blocks 1 2 6 12 31 \
+        --out-prefix summary/<dir>/oracle_init_probe
+    Two checks:
+      (a) score gain Δ from oracle_v_proj should be small (oracle near critical point)
+      (b) cos²(start, end) ≥ 0.7 (optimizer doesn't run away)
+
+
+5. Comparison table format
+--------------------------
+For T2 reporting, the table the user has been asking for has columns:
+
+    cand  raw_sk  r_sk_exc  1/r_sk  1/g1  1/g2  relH1  hm3_user  score_Sx  al_v1pr  al_v2pr
+
+Print at minimum these candidates per (matrix, block):
+    sketch_v1, sketch_v2     (state.V[:, :2] — the gate-feasible directions)
+    Mg_svd_v1, Mg_svd_v2     (top SVD of M_gain — what isvd would pick)
+    Sx_default_v1/v2         (new variant's optimizer over B_union with default starts)
+    Sx_sketch_init_v1/v2     (new variant's optimizer with starts=sketch_v[:, :2] only)
+    oracle_v1_proj, oracle_v2_proj    (V_exact[:, :2] projected onto union span)
+    S4_v1, S4_v2             (S4 baseline; row-of-A_fut cheat for counterexamples)
+
+Use the python snippet in summary/r_sk_g_S5_block2.json post-processing
+(see message log) for formatting.
+
+
+6. Pitfalls (each one cost a non-trivial debugging cycle)
+---------------------------------------------------------
+
+P1. Random v on the sphere is below the gate.
+    For any score that gates on raw_sk > T (or any function of
+    ‖B_top v‖²), a unit-sphere random v has expected raw_sk ≈
+    ‖B_top‖²_F / n, which is well below T = ‖A_seen‖²_F / N_seen for
+    small ranks. FD trivially passes (0 vs 0). Probe at the carry
+    direction state.V[:, 0] for FD validation.
+
+P2. Slot-1 deflation kills carry-aligned candidates in streaming.
+    The streaming wiring runs slot-2 over `B_search = B_union ⊥
+    V_default[:, 0]`. If your variant prefers a direction in
+    span(V_default[:, 0]) (e.g. sketch_v[:, 0] for S5), that direction
+    is unreachable in streaming. The per-block diagnostic uses
+    `B_union` (no deflation), which is why diagnostic gains may not
+    transfer. To exploit a carry-aligned variant: drop the deflation
+    and let the score pick BOTH slots, or use the variant's slot-1
+    pick as the new V_default[:, 0].
+
+P3. `future_hmean_online` includes an oracle-aware candidate.
+    `ONLINE_POOL` includes `q2_vs_q1oracle = V_exact[:, 1] projected
+    onto rowspan(M_gain), QR-orthogonalised vs V_exact[:, 0]_proj`.
+    Selected ~4 of 31 blocks on static-cex sliding. So online vs S*
+    is not a fair streaming comparison. The fair baseline for a
+    streaming-only variant is `combined`; online's edge over
+    combined is partly the oracle peek. To get a clean comparison,
+    either drop `q2_vs_q1oracle` from `ONLINE_POOL` (line 24) or
+    explicitly note the oracle dependence.
+
+P4. Scalar-per-v plateau. Any function of (raw_sk, g1, g2) has a
+    62-dim level set in R^64 union. On counterexample matrices, the
+    plateau value is ≈ 0.52 (HM3 max under raw_g1=raw_g2=0.42,
+    r_sk=1) and the oracle is NOT at that plateau (its raw_sk and
+    raw_g values are different). No reweighting of (raw_sk, g1, g2)
+    can fix this — the oracle is a single direction, the plateau is
+    a manifold. Stiefel rank-2 (V is n×2 frame, score uses
+    ‖A_fut V‖²_F not ‖A_fut v‖²) is the documented escape.
+
+P5. The streaming bench `final_*` numbers are at block 31. For
+    intermediate-block analysis, use the `rows` field in the JSON
+    (per-block trajectory) — block 1 is at the noise floor for every
+    policy, block ~28+ is where the carry stabilises.
+
+P6. Per-block constants (c_sk, c_g1, c_g2) must be recomputed in two
+    places that are easy to miss:
+      (a) `per_block_constants` in hmean_evidence_score.py
+      (b) inline in `half_window_sliding_hmean_experiment.py:578-583`
+    Keep them consistent — `c_sk = N_sk / ‖A_seen‖²_F` (typical-row
+    energy formula).
+
+
+7. Open design directions
+-------------------------
+
+D1. Stiefel rank-2 score (the §9 escape).
+    score(V) = HM3(r_sk_F(V), ‖A_cur V‖²_F, ‖A_fut V‖²_F) · relH1
+    where r_sk_F(V) is some Frobenius-level shortfall/excess on
+    ‖B_top V‖²_F. Optimization: project gradient onto the Stiefel
+    manifold (Cayley retraction or QR). Candidate frames:
+    V_default[:, :2], oracle V_exact[:, :2]_proj, sketch_v[:, :2].
+    Replace align_v[12]_proj with principal-angle² between candidate
+    frame and span(oracle_v[12]_proj).
+
+D2. Drop slot-1 deflation in streaming.
+    Let the new score pick BOTH v1 and v2 in B_union, then use rank-2
+    SVD reframe over span{v1, v2}. Slot-1 will no longer be locked to
+    combined's V_default[:, 0], so the new variant's preferred
+    carry-aligned basin is reachable.
+
+D3. Continuous gate.
+    Replace the hard clip `score = 0 if raw_sk < T` with a soft weight
+    w(raw_sk; T) — e.g. sigmoid((raw_sk - T) / scale) — to provide
+    gradient signal in the clipped region. Trade-off: re-introduces
+    some plateau but gives the optimizer something to climb.
+
+D4. Multi-block lookahead.
+    Replace A_fut (single half-window) with vstack of multiple future
+    half-windows. Reduces the row-of-A_fut cheat (one row dominating
+    A_fut) and matches the multi-block carry the streaming pipeline
+    actually faces. Cost: more memory, more compute per block.
+
+D5. LOO-style validation.
+    Score v on (A_cur, A_fut) where each block's score uses the
+    OTHER block as the "future". Removes the implicit dependence on
+    the half-window split. Per-block diagnostic only — streaming
+    cannot use future blocks it hasn't seen.
+
+
+8. Files in this codebase that the variant must coexist with
+------------------------------------------------------------
+DO NOT MODIFY (used as comparison baselines):
+  future_hmean_optimizer_diagnostic.py     sphere ascent core
+  hmean_evidence_score.py                  HM-evidence baseline
+  hmean_combinations_optimizer_diagnostic.py
+  cex_restricted_space_probe.py
+  Existing combined / hybrid / isvd / online policy code paths in
+    half_window_sliding_hmean_experiment.py (other than the
+    `future_hmean_r_sk_g` branch).
+
+SAFE TO EDIT (variant lives here):
+  r_sk_g_score.py                          score + diagnostic
+  half_window_sliding_hmean_experiment.py  L566-630 (rsk_g branch only)
+
+
+9. Output artefacts to produce
+------------------------------
+For a variant Sx:
+
+  summary/r_sk_g_<descr>.{csv,json,txt}                  T2 per-block
+  summary/r_sk_g_<descr>_<matrix>.txt                    T2 per-matrix breakdown
+  summary/bench_matrix_sweep_r_sk_g_<variant>/{matrix}_win64.{json,csv,txt,log}
+                                                          T3 streaming
+  summary/bench_matrix_sweep_r_sk_g_<variant>/synthesis.txt
+                                                          algorithm + results
+                                                          modeled on
+                                                          summary/bench_matrix_sweep_r_sk_g_S5_sketchinit/synthesis.txt
+
+If the variant requires structural changes to the streaming wiring
+(e.g. rank-2 selection, no slot-1 deflation), update
+half_window_sliding_hmean_experiment_synthesis.txt with a note about
+the new code path.
+
+
+10. Ground-truth numbers for sanity (3-matrix sliding)
+------------------------------------------------------
+                       cos[0]²   cos[1]²    tail_mass
+  static-cex  combined  0.9595    0.7797     0.130
+              isvd      0.0020    0.0019     0.998
+              online    0.9582    0.8808     0.081 (with oracle peek)
+              S5        0.9623    0.1680     0.435
+
+  mixed-tail- combined  0.7849    0.0016     0.607
+   sharp      isvd      0.0062    0.0002     0.997
+              online    0.9630    0.5594     0.239 (with oracle peek)
+              S5        0.7765    0.0728     0.575
+
+  diffuse-    combined  0.0847    0.0300     0.943
+   diffuse    isvd      0.8306    0.2393     0.465
+              online    0.9650    0.0289     0.503 (with oracle peek)
+              S5        0.6191    0.0080     0.687
+
+A new variant is interesting if it:
+  - Beats S5 on all three slot-2 metrics (cos[1]² and tail_mass), AND
+  - Matches or beats `combined` on the counterexample matrices, AND
+  - Matches or beats `iSVD` on `diffuse-diffuse`,
+  WITHOUT using V_exact in its candidate construction.
+
+If the variant only beats `online`, double-check that you've stripped
+`q2_vs_q1oracle` from `ONLINE_POOL` first (or report online with and
+without the oracle peek).

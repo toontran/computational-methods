@@ -1,0 +1,252 @@
+Current-block-plus-sketch oracle projection intervention report
+===============================================================
+
+Date: 2026-04-23
+
+Purpose
+-------
+Check whether the failed b1/b2 interventions are failing because the oracle
+direction is absent from the current [sketch; block] rowspace, or because the
+optimizer/compression path is not selecting it even when it is present.
+
+
+Code changes
+------------
+Updated:
+
+  second_slot_tail_bias_diagnostic.py
+
+The trajectory summary now prints, for every logged block:
+
+  block_sketch_oracle_cos
+    Principal cosines between the selected rank-2 frame and the QR frame of the
+    true rank-2 oracle span after projecting that oracle span into the current
+    M_gain = [carried sketch; current block] rowspace.
+
+  exact_oracle_cos
+    Principal cosines between the selected rank-2 frame and the original global
+    oracle frame V_exact[:, :2].
+
+  oracle_proj_norm
+    Norms of each original oracle column after projection into the current
+    [sketch; block] rowspace. These are per raw oracle column, not principal
+    cosines. If one projected oracle column is weak, the QR projected-oracle
+    frame can rotate, so interpret these alongside block_sketch_oracle_cos.
+
+
+Commands
+--------
+Intervention trajectories:
+
+  python second_slot_tail_bias_diagnostic.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --interventions normal force-b1 force-b1b2 force-second-b1 \
+    --n 1024 --win 32 --rank 2 --dtype float32
+
+Internal-rank / compression diagnostics:
+
+  python cex_structured_combined_hybrid_tail.py \
+    --matrices mixed-tail-sharp diffuse-diffuse static-cex \
+    --only-internal-ranks --internal-ranks 2 4 8 16 \
+    --n 1024 --win 32 --rank 2 --dtype float32 \
+    --output-dir summary/current_block_sketch_oracle_checks
+
+Syntax check:
+
+  python -m py_compile second_slot_tail_bias_diagnostic.py \
+    cex_structured_combined_hybrid_tail.py
+
+
+Generated files
+---------------
+Internal-rank outputs:
+
+  summary/current_block_sketch_oracle_checks/internal_rank_diagnostics_all.csv
+  summary/current_block_sketch_oracle_checks/internal_rank_diagnostics_interpretation.txt
+  summary/current_block_sketch_oracle_checks/internal_rank_diagnostics_interpretation.json
+  summary/current_block_sketch_oracle_checks/compression_variant_diagnostics_all.csv
+  summary/current_block_sketch_oracle_checks/compression_variant_diagnostics_interpretation.txt
+  summary/current_block_sketch_oracle_checks/compression_variant_diagnostics_interpretation.json
+
+
+Intervention final-block readout
+--------------------------------
+Fields:
+
+  align       = final mean_align reported by the diagnostic
+  bs_cos2     = second principal cosine to projected oracle frame in [sketch; block]
+  exact_cos2  = second principal cosine to original global oracle frame
+  proj2_norm  = raw oracle-2 norm after projection into [sketch; block]
+  tail_mass   = 1 - selected subspace mass in the original true rank-2 signal span
+
+Mixed-tail-sharp:
+
+  mode              align     bs_cos2   exact_cos2  proj2_norm  tail_mass
+  normal            0.045486  0.167467  0.033100    0.935771    0.561206
+  force-b1          0.026017  0.056239  0.010945    0.962493    0.536511
+  force-b1b2        0.967036  0.155109  0.030041    0.193682    0.531968
+  force-second-b1   0.026787  0.103950  0.019986    0.942773    0.555335
+
+Readout:
+
+  In normal, force-b1, and force-second-b1, raw oracle-2 is strongly present in
+  the current [sketch; block] rowspace at the final block, with proj2_norm about
+  0.94-0.96. The selected rank-2 frame still has very low second cosine to the
+  projected oracle frame. That means the late failure is not simply "oracle-2 is
+  absent from M_gain"; it is present but not selected.
+
+  force-b1b2 is different: align is high because the first oracle direction is
+  recovered, but raw oracle-2 projection is weak at the final block and the
+  second selected direction is still poor. For mixed-tail-sharp, forcing b1/b2
+  does not reliably preserve the second oracle channel.
+
+Diffuse-diffuse:
+
+  mode              align     bs_cos2   exact_cos2  proj2_norm  tail_mass
+  normal            0.900378  0.186017  0.036951    0.198655    0.593975
+  force-b1          0.991745  0.999468  0.807608    0.808099    0.182056
+  force-b1b2        0.996661  0.999782  0.902122    0.902321    0.096417
+  force-second-b1   0.707408  0.998759  0.707272    0.976238    0.273291
+
+Readout:
+
+  This is the clean early-capture case. Normal has low oracle-2 projection in
+  the current [sketch; block] rowspace and low selected second cosine. Forcing
+  b1 or b1b2 makes oracle-2 present and selected. force-second-b1 also selects
+  the projected oracle direction, but the exact/global alignment remains lower
+  because the projected frame is still partly rotated relative to the original
+  global oracle frame.
+
+Static-cex:
+
+  mode              align     bs_cos2   exact_cos2  proj2_norm  tail_mass
+  normal            0.988981  0.999976  0.959785    0.960064    0.050119
+  force-b1          0.989474  0.999915  0.937138    0.937421    0.071166
+  force-b1b2        0.980263  0.999995  0.975707    0.975855    0.043400
+  force-second-b1   0.980447  0.999995  0.980007    0.982018    0.037184
+
+Readout:
+
+  Static-cex is a control. The projected oracle directions are present and the
+  selected frame tracks them in every mode. Interventions do not matter much
+  because the normal path already works.
+
+
+Internal-rank final-block readout
+---------------------------------
+Fields:
+
+  int_o2     = raw oracle-2 projection into the internal selected subspace
+  int_cos2   = second principal cosine between internal subspace and projected oracle frame
+  comp_o2    = raw oracle-2 projection into final rank-2 compressed subspace
+  comp_cos2  = second principal cosine after final rank-2 compression
+  comp_col2  = final second column absolute cosine with projected oracle-2
+
+Mixed-tail-sharp:
+
+  internal_rank  int_o2    int_cos2   comp_o2   comp_cos2  comp_col2  verdict
+  2              0.988028  0.167467   0.988028  0.167470   0.032897   present but rank2 frame bad
+  4              0.994940  0.358711   0.993452  0.238526   0.966880   present but subspace cosine bad
+  8              0.997077  0.996925   0.138925  0.121553   0.123742   compression drops oracle-2
+  16             0.999515  0.998653   0.975667  0.469343   0.098281   compression/rotation still bad
+
+Diffuse-diffuse:
+
+  internal_rank  int_o2    int_cos2   comp_o2   comp_cos2  comp_col2  verdict
+  2              0.186017  0.186017   0.185985  0.185985   0.185985   oracle-2 absent internally
+  4              0.993150  0.992485   0.589240  0.480492   0.497774   compression drops too much
+  8              0.999851  0.998807   0.995729  0.938288   0.104580   subspace recovers, column rotated
+  16             0.997981  0.997465   0.632784  0.423453   0.405061   compression drops too much
+
+Static-cex:
+
+  internal_rank  int_o2    int_cos2   comp_o2   comp_cos2  comp_col2  verdict
+  2              0.999976  0.999976   0.999976  0.999976   0.999103   works
+  4              0.999976  0.999975   0.984118  0.983327   0.971991   works
+  8              0.999975  0.999927   0.628234  0.464630   0.501785   compression drops too much
+  16             0.999964  0.999963   0.301768  0.088558   0.093196   compression drops badly
+
+
+Compression variant notes
+-------------------------
+Final-block compression variants show that the oracle projected comparator is
+always able to recover rank-2 when the oracle frame is injected:
+
+  oracle_projected: variant_oracle2_projection = 1.0 and variant_subspace_cos2 = 1.0
+
+But that is a diagnostic upper bound, not a deployable compression rule.
+
+For mixed-tail-sharp:
+
+  - internal_rank=8 contains oracle-2 internally with int_o2=0.997077 and
+    int_cos2=0.996925, but left_projected/internal_projected_svd compress to
+    comp_cos2=0.121553.
+  - internal_rank=16 also contains oracle-2 internally, but comp_cos2 is only
+    0.469343.
+  - actualB score optimization inside the internal subspace selects essentially
+    the same bad final frame as left_projected in these final-block checks.
+
+For diffuse-diffuse:
+
+  - rank 2 misses oracle-2 internally.
+  - rank 4 and above put oracle-2 into the internal subspace.
+  - rank 8 is the best final compressed subspace among this run, with comp_cos2
+    0.938288, though the second column is rotated away from projected oracle-2.
+
+For static-cex:
+
+  - rank 2 and 4 work.
+  - rank 8 and 16 show that oversampling alone can hurt if the final compression
+    rule is not oracle-aware; oracle-2 is present internally but discarded by
+    the default left_projected compression.
+
+
+Interpretation
+--------------
+1. Mixed-tail-sharp is not just an early b1/b2 seeding problem.
+
+   In several intervention modes, raw oracle-2 is present in [sketch; block] at
+   the final block, but the selected second direction is not aligned with the
+   projected oracle frame. The failure is therefore in selection/compression
+   under the current objective and frame, not merely absence of oracle-2.
+
+2. Diffuse-diffuse is mostly an early capture problem at rank 2.
+
+   Normal rank-2 loses oracle-2 internally. Forcing b1/b1b2 or increasing
+   internal rank can make oracle-2 present. However, internal rank 4/16 still
+   show compression losses, so internal retention is necessary but not
+   sufficient.
+
+3. Internal oversampling answers a different question from b1/b2 replacement.
+
+   Oversampling often proves oracle-2 can be retained internally. It does not
+   automatically solve the final rank-2 handoff. The final compression rule can
+   discard or rotate away from oracle-2 even when int_o2 is near 1.
+
+4. The objective gap is real.
+
+   In final-block compression variants, oracle_projected often has slightly
+   lower actualB score than the bad selected frame, while the bad frame has
+   higher actualB score. That is direct evidence that the current objective can
+   prefer the wrong rank-2 frame even when the oracle frame is available.
+
+
+Bottom line
+-----------
+Replacing b1/b2 does not help mixed-tail-sharp final alignment because the
+system can still preserve or recreate a high-scoring non-oracle second slot
+later. Checking the oracle projection onto current [sketch; block] confirms
+that oracle-2 is often available at the final block but not selected.
+
+Internal rank helps diagnose the mechanism:
+
+  - rank-2 diffuse-diffuse misses oracle-2 internally;
+  - rank-8 diffuse-diffuse can recover the final subspace;
+  - mixed-tail-sharp can contain oracle-2 internally at rank 8/16 but still drop
+    it during final compression;
+  - static-cex shows oversampling can hurt if compression is not controlled.
+
+The next useful experiment is not simply "larger internal rank"; it is larger
+internal rank plus an oracle-free final compression criterion that preserves
+directions with repeated old/future/block support instead of default
+left-projected/SVD or actualB-score compression.

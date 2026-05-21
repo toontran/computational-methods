@@ -1,0 +1,93 @@
+Restricted+cex span-selection insight
+=====================================
+
+Context
+-------
+
+For the static CEX matrix, restricted+cex can still miss the true top right
+singular vector even though the projected true vectors score very well in the
+current sketch+window row space.
+
+The key issue is not simply whether the normalized projection of v1 has a high
+single-vector score. The rank-2 optimizer is greedy and orthogonality
+constrained:
+
+  1. choose opt1 by maximizing the single-vector objective;
+  2. choose opt2 by maximizing the same objective subject to opt2 orthogonal to
+     opt1.
+
+The invariant in streaming_projection_invariant.txt needs the selected rank-r
+subspace to contain the projected target direction(s). A greedy sequence of
+good single-vector choices can fail to retain the desired rank-r projected
+span.
+
+Observed n=128, win=32, rank=2, restricted+cex-replicate
+-------------------------------------------------------
+
+Direct score sums for normalized projections of the true top two right
+singular vectors onto the current optimizer row space:
+
+  block  score(Pv1)+score(Pv2)   score(opt1)+score(opt2)   winner
+  1      1.805422044328          1.802032135741             projected pair
+  2      1.852955711330          1.854252792009             optimizer pair
+  3      1.904944667470          1.903758385447             projected pair
+  4      1.955616908484          1.955674459365             optimizer pair
+
+So in blocks 1 and 3, the projected true pair has a larger raw sum of
+individual scores than the optimizer's first two selected directions.
+
+However, the projected vectors are not necessarily orthogonal after projection
+onto the current row space:
+
+  block  |<Pv1, Pv2>|
+  1      0.2400447871
+  2      0.0680677683
+  3      0.0665370020
+  4      0.0031591586
+
+After QR-orthonormalizing the projected pair and summing the scores of that
+orthonormal basis:
+
+  block  QRscore(projected span)   score(opt1)+score(opt2)   winner
+  1      1.781308786610            1.802032135741             optimizer pair
+  2      1.851895334204            1.854252792009             optimizer pair
+  3      1.903832202831            1.903758385447             projected span
+  4      1.955614921237            1.955674459365             optimizer pair
+
+Interpretation
+--------------
+
+The optimizer is not maximizing the unconstrained sum
+
+  score(Pv1) + score(Pv2).
+
+It is maximizing a greedy orthogonal sequence. That can prefer a first vector
+that is slightly better individually but tilts the selected two-dimensional
+span away from span(Pv1, Pv2). Once that span is compressed into the streaming
+state, the projection-preservation invariant no longer applies exactly.
+
+The first block is the most damaging case: the projected true pair has the
+larger raw score sum, but its two vectors have substantial overlap after
+projection. The greedy orthogonalized comparison favors the optimizer pair,
+which immediately loses some of the target projected span.
+
+Likely algorithmic implication
+------------------------------
+
+Improving the single-vector optimizer is not enough. The issue is rank-r span
+selection.
+
+Potential fixes to test:
+
+1. Add a joint rank-r/span-level candidate check before compression.
+2. Compare candidate subspaces by a subspace objective rather than by greedy
+   single-vector scores.
+3. Include the projected target-span diagnostic in experiments:
+
+     raw projected-pair score sum,
+     orthonormalized projected-span score sum,
+     optimizer greedy score sum,
+     principal angles between selected span and projected true span.
+
+4. For synthetic/debug runs where V is known, force span(Pv1, Pv2) as a control
+   to verify that post-selection compression preserves the invariant.

@@ -276,6 +276,32 @@ def build_candidates(V_selected, Q_oracle, raw_oracle, M_gain, A_half1, A_half2,
     }
 
 
+def s7_frame_score(A_sk, A_cur, A_fut, V):
+    """Frame-level S7 score: (||A_sk V||_F² + ||A_cur V||_F² + ||A_fut V||_F²)
+    times relH1 of the stacked row energies of [A_sk V; A_cur V; A_fut V].
+
+    Per-row energy = sum_k (row_i · V_k)². Grassmann-invariant.
+    """
+    eps = 1e-30
+    V = np.asarray(V, dtype=np.float64)
+    if V.ndim == 1:
+        V = V.reshape(-1, 1)
+    parts = []
+    if A_sk is not None and np.asarray(A_sk).size:
+        parts.append((np.asarray(A_sk, dtype=np.float64) @ V) ** 2)
+    parts.append((np.asarray(A_cur, dtype=np.float64) @ V) ** 2)
+    parts.append((np.asarray(A_fut, dtype=np.float64) @ V) ** 2)
+    e = np.concatenate([p.sum(axis=1) for p in parts])
+    raw_F = float(e.sum())
+    if raw_F <= eps:
+        return 0.0
+    p = e / raw_F
+    p_pos = np.maximum(p, 1e-300)
+    H = -float(np.sum(p * np.log(p_pos)))
+    relH = max(H / np.log(max(len(e), 2)), 0.0)
+    return raw_F * relH
+
+
 def rank2_svd_frame(v1, chosen_v2, M_gain, rank=2):
     """Replace Gram-Schmidt with rank-2 SVD step within span{v1, chosen_v2}.
 
@@ -378,7 +404,7 @@ def score_half_candidates(candidates, A_half1, A_half2, A_sketch_prior=None, hm_
 
 
 def choose_second_slot(policy, records, fallback):
-    if policy == "combined":
+    if policy in ("combined", "combined_s7"):
         return "opt2", fallback
     if policy in ("future_hmean_online", "future_hmean_online_joint"):
         key = "obj_future_online"
@@ -431,12 +457,19 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
     rows = []
     t0 = time.time()
 
-    step = half_win if sliding else 2 * half_win
+    h1_mult = float(getattr(args, "h1_mult", 1.0))
+    h2_mult = float(getattr(args, "h2_mult", 1.0))
+    h1 = max(1, int(round(half_win * h1_mult)))
+    h2 = max(0, int(round(half_win * h2_mult)))  # allow h2=0 (no peek)
+
+    step = h1 if sliding else max(1, h1 + h2)
     pair_count = 0
-    for start0 in range(0, n - half_win, step):
-        mid0 = start0 + half_win
-        end0 = min(mid0 + half_win, n)
-        if end0 - mid0 < half_win:
+    # Last valid start0: start0 + h1 + h2 <= n. With h2=0 this is start0 + h1 <= n.
+    max_start = n - h1 - h2
+    for start0 in range(0, max(0, max_start + 1), step):
+        mid0 = start0 + h1
+        end0 = mid0 + h2
+        if mid0 > n or end0 > n:
             break
         pair_count += 1
         if args.max_pairs is not None and pair_count > args.max_pairs:
@@ -463,8 +496,25 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
             V_default = np.ascontiguousarray(Vh[:rank, :].T)
         else:
             combined_rank = 1 if policy == "hybrid" else None
+            # combined_s7: spec-compliant peek extension. Stack A_half2 into
+            # the score's M_gain (for the energy term) and into A_block (for the
+            # entropy pool). Carry-side M_gain is unchanged so only A_half1
+            # rows get committed to B_next via make_state below.
+            # Future weight w scales A_half2 by sqrt(w) so ||A_half2 v||^2 → w·||A_half2 v||^2
+            # in both the gain and the entropy pool.
+            if policy == "combined_s7" and h2 > 0 and A_half2.shape[0] > 0:
+                fut_w = float(getattr(args, "combined_s7_future_weight", 1.0))
+                if fut_w != 1.0:
+                    A_half2_w = (np.sqrt(fut_w) * np.asarray(A_half2, dtype=work_dtype)).astype(work_dtype, copy=False)
+                else:
+                    A_half2_w = A_half2
+                M_gain_score = np.vstack([M_gain, A_half2_w]).astype(work_dtype, copy=False)
+                A_block_score = np.vstack([A_half1, A_half2_w]).astype(work_dtype, copy=False)
+            else:
+                M_gain_score = M_gain
+                A_block_score = A_half1
             V_score, _, _, _, diag_basis = probe.entropy_iter_basis_forget(
-                M_gain=M_gain,
+                M_gain=M_gain_score,
                 active_r=rank,
                 rows_ref=n,
                 V_init=np.asarray(V_init, dtype=work_dtype),
@@ -479,7 +529,7 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
                 rng=np.random.default_rng(args.seed),
                 verbose=False,
                 state_prev=state,
-                A_block=A_half1,
+                A_block=A_block_score,
                 rows_total=rows_seen,
                 reduced_optimizer="cex",
                 basis_selection="greedy",
@@ -628,10 +678,27 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
                     else:
                         sk_op2_low_rsk = 0.0
 
-                if A_sketch_for_rsk is not None:
-                    union_for_search = np.vstack([A_sketch_for_rsk, A_h1_f, A_h2_f])
+                # Per-direction sigma² weighting data (AB-03 / S6_E2).
+                e2_data_rsk = None
+                if rsk_variant == "S6_E2":
+                    from r_sk_g_score import build_e2_data
+                    e2_data_rsk = build_e2_data(
+                        A_h1_f, A_h2_f, A_sketch_for_rsk, state, rank
+                    )
+
+                # S7 / S8: search domain is rowspace([sketch; A_cur]) only.
+                # The score still uses A_fut as evidence (raw_g2 / stacked
+                # entropy) but v must be reachable from past+current rows.
+                if rsk_variant in ("S7", "S8"):
+                    if A_sketch_for_rsk is not None:
+                        union_for_search = np.vstack([A_sketch_for_rsk, A_h1_f])
+                    else:
+                        union_for_search = A_h1_f
                 else:
-                    union_for_search = np.vstack([A_h1_f, A_h2_f])
+                    if A_sketch_for_rsk is not None:
+                        union_for_search = np.vstack([A_sketch_for_rsk, A_h1_f, A_h2_f])
+                    else:
+                        union_for_search = np.vstack([A_h1_f, A_h2_f])
                 B_union_rsk = rowspace_basis(union_for_search)
                 if rsk_no_deflate:
                     B_search = B_union_rsk
@@ -688,10 +755,39 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
                     cur_op2=cur_op2_rsk,
                     fut_op2=fut_op2_rsk,
                     sk_op2_low=sk_op2_low_rsk,
+                    e2_data=e2_data_rsk,
                 )
                 if rsk_best is not None and rsk_best.get("vec") is not None:
                     chosen_v2 = np.asarray(rsk_best["vec"], dtype=np.float64).reshape(-1)
                     chosen_label = "rsk_g_best"
+
+        # AB-03 closure probe: replace chosen_v2 with the oracle projection
+        # of V_exact[:,1] into rowspace(A_sketch ∪ A_h1 ∪ A_h2). Bypasses the
+        # optimizer entirely; tests whether the cos1² regression under S6_E2
+        # is purely a reachability failure (oracle is the right pick) or has
+        # a streaming-state divergence component.
+        if (getattr(args, "force_oracle_v2", False)
+                and policy in ONLINE_HMEAN_POLICIES):
+            from future_hmean_optimizer_diagnostic import rowspace_basis as _rsb
+            A_sketch_for_force = (
+                np.asarray(M_sketch, dtype=np.float64)
+                if M_sketch is not None and np.asarray(M_sketch).size
+                else None
+            )
+            if A_sketch_for_force is not None:
+                _union_for_force = np.vstack([A_sketch_for_force,
+                                              np.asarray(A_half1, dtype=np.float64),
+                                              np.asarray(A_half2, dtype=np.float64)])
+            else:
+                _union_for_force = np.vstack([np.asarray(A_half1, dtype=np.float64),
+                                              np.asarray(A_half2, dtype=np.float64)])
+            _B_union_force = _rsb(_union_for_force)
+            _v_exact = np.asarray(V_exact, dtype=np.float64)[:, 1]
+            _v_proj = _B_union_force @ (_B_union_force.T @ _v_exact)
+            _nv = float(np.linalg.norm(_v_proj))
+            if _nv > 1e-30:
+                chosen_v2 = _v_proj / _nv
+                chosen_label = "oracle_v2_proj_forced"
 
         winner_oracle_mass = np.nan
         if chosen_v2 is not None and Q_oracle is not None and np.asarray(Q_oracle).size > 0:
@@ -703,9 +799,75 @@ def run_pair_stream(A, V_exact, sigma1, args, policy, half_win, sliding):
                 winner_oracle_mass = float(np.linalg.norm(Q @ (Q.T @ w)) ** 2)
 
         svd_frame_used = False
-        if policy in ONLINE_HMEAN_POLICIES and chosen_v2 is not None:
+        if (getattr(args, "force_oracle_frame", False)
+                and policy in ONLINE_HMEAN_POLICIES):
+            from future_hmean_optimizer_diagnostic import rowspace_basis as _rsb_oracle
+            A_sketch_for_force = (
+                np.asarray(M_sketch, dtype=np.float64)
+                if M_sketch is not None and np.asarray(M_sketch).size
+                else None
+            )
+            if A_sketch_for_force is not None:
+                _union_for_force = np.vstack([A_sketch_for_force,
+                                              np.asarray(A_half1, dtype=np.float64),
+                                              np.asarray(A_half2, dtype=np.float64)])
+            else:
+                _union_for_force = np.vstack([np.asarray(A_half1, dtype=np.float64),
+                                              np.asarray(A_half2, dtype=np.float64)])
+            _B_union_force = _rsb_oracle(_union_for_force)
+            _Vex = np.asarray(V_exact, dtype=np.float64)
+            _o1 = _B_union_force @ (_B_union_force.T @ _Vex[:, 0])
+            _o2 = _B_union_force @ (_B_union_force.T @ _Vex[:, 1])
+            _n1 = float(np.linalg.norm(_o1))
+            _n2 = float(np.linalg.norm(_o2))
+            if _n1 > 1e-30 and _n2 > 1e-30:
+                _o1 /= _n1
+                _o2 /= _n2
+                V_svd_oracle = rank2_svd_frame(_o1, _o2, M_gain, rank=rank)
+                if V_svd_oracle is not None and V_svd_oracle.shape[1] >= rank:
+                    V_selected = np.ascontiguousarray(V_svd_oracle[:, :rank])
+                    svd_frame_used = True
+                    chosen_label = "oracle_frame_forced"
+        if (not svd_frame_used and policy in ONLINE_HMEAN_POLICIES
+                and chosen_v2 is not None):
             V_svd = rank2_svd_frame(V_default[:, 0], chosen_v2, M_gain, rank=rank)
-            if V_svd is not None and V_svd.shape[1] >= rank:
+            # Pareto override: for S7 (rsk_variant in {S7, S8}), also evaluate
+            # V_default's joint rank-2 frame and keep whichever has higher S7
+            # frame score. Guarantees S7 ≥ combined under S7 frame metric on
+            # matrices where combined's joint slot-2 dominates greedy-deflated
+            # S7 slot-2 (e.g. diffuse-diffuse).
+            rsk_variant_local = getattr(args, "rsk_variant", None)
+            pareto_mode = getattr(args, "rsk_pareto_metric", "s7frame")
+            if (policy == "future_hmean_r_sk_g"
+                    and rsk_variant_local in ("S7", "S8")
+                    and pareto_mode != "off"
+                    and V_svd is not None and V_svd.shape[1] >= rank):
+                A_sk_for_pareto = (
+                    np.asarray(M_sketch, dtype=np.float64)
+                    if M_sketch is not None and np.asarray(M_sketch).size
+                    else None
+                )
+                A_h1_pareto = np.asarray(A_half1, dtype=np.float64)
+                A_h2_pareto = np.asarray(A_half2, dtype=np.float64)
+                V_a = np.asarray(V_default[:, :rank], dtype=np.float64)
+                if pareto_mode == "s7frame":
+                    s_a = s7_frame_score(A_sk_for_pareto, A_h1_pareto, A_h2_pareto, V_a)
+                    s_b = s7_frame_score(A_sk_for_pareto, A_h1_pareto, A_h2_pareto, V_svd)
+                elif pareto_mode == "mgain":
+                    Mg = np.asarray(M_gain, dtype=np.float64)
+                    s_a = float(np.linalg.norm(Mg @ V_a) ** 2)
+                    s_b = float(np.linalg.norm(Mg @ V_svd) ** 2)
+                elif pareto_mode == "always-default":
+                    s_a, s_b = 1.0, 0.0
+                else:
+                    raise ValueError(f"unknown rsk_pareto_metric={pareto_mode!r}")
+                if s_a >= s_b:
+                    V_selected = np.ascontiguousarray(V_a)
+                    svd_frame_used = True
+                else:
+                    V_selected = np.ascontiguousarray(V_svd[:, :rank])
+                    svd_frame_used = True
+            elif V_svd is not None and V_svd.shape[1] >= rank:
                 V_selected = np.ascontiguousarray(V_svd[:, :rank])
                 svd_frame_used = True
         if not svd_frame_used:
@@ -968,13 +1130,22 @@ def parse_args():
             "future_hmean_online_joint",
         ],
     )
-    parser.add_argument("--rsk-variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP"), default="S4",
+    parser.add_argument("--rsk-variant", choices=("S1", "S2", "S3", "S4", "S5", "S6", "S6_GM", "D0", "S6_OP", "S6_E2", "S7", "S8"), default="S4",
                         help="Variant for the future_hmean_r_sk_g policy.")
     parser.add_argument("--rsk-alpha", type=float, default=1.0)
     parser.add_argument("--rsk-beta", type=float, default=2.0)
     parser.add_argument("--rsk-gamma", type=float, default=1.0)
     parser.add_argument("--rsk-no-deflate", action="store_true",
                         help="Skip the V_default[:,0] deflation in S6 streaming wiring (P2').")
+    parser.add_argument("--force-oracle-v2", action="store_true",
+                        help="Override the chosen_v2 with V_exact[:,1] projected onto rowspace(A_sketch∪A_h1∪A_h2). "
+                             "Diagnostic for AB-03 phase 1 closure: tests whether the cos1² regression under S6_E2 "
+                             "is reachability (optimizer fails to find oracle) vs streaming-state divergence.")
+    parser.add_argument("--force-oracle-frame", action="store_true",
+                        help="Override V_selected with rank-2 SVD frame from "
+                             "(oracle_v1_proj, oracle_v2_proj). Bypasses both the streaming carry V_default[:,0] "
+                             "AND the chosen_v2 optimizer. Establishes the cos² ceiling at half_win=32 given the "
+                             "current rowspan-of-window constraint.")
     parser.add_argument("--n", type=int, default=1024)
     parser.add_argument("--rank", type=int, default=2)
     parser.add_argument("--preset", default="fast")
@@ -1012,6 +1183,21 @@ def parse_args():
     parser.add_argument("--tail-scale", type=float, default=0.99)
     parser.add_argument("--sigma1", type=float, default=0.991)
     parser.add_argument("--v-type", choices=("id", "U", "rand"), default="rand")
+    parser.add_argument("--rsk-pareto-metric", choices=("off", "s7frame", "mgain", "always-default"),
+                        default="off",
+                        help="For S7/S8: how to choose between V_default (combined's joint slot-2) and "
+                             "rank2_svd_frame(V_default[:,0], chosen_v2_S7) when forming V_selected. "
+                             "off = use only chosen_v2 (current behavior); "
+                             "s7frame = pick by S7 frame score; "
+                             "mgain = pick by ||M_gain V||_F² (combined's objective); "
+                             "always-default = always use V_default (S7 == combined for slot selection).")
+    parser.add_argument("--h1-mult", type=float, default=1.0,
+                        help="Multiplier on --half-win for the first half (search/commit). "
+                             "Default 1.0 (symmetric). E.g. 1.5 makes h1=1.5*half_win and "
+                             "h2 shrinks correspondingly so the sketch absorbs more rows per round.")
+    parser.add_argument("--h2-mult", type=float, default=1.0,
+                        help="Multiplier on --half-win for the second half (peek/future). "
+                             "Default 1.0 (symmetric). E.g. 0.5 makes h2=0.5*half_win.")
     parser.add_argument("--json-out", default="summary/half_window_sliding_hmean_experiment.json")
     parser.add_argument("--csv-out", default="summary/half_window_sliding_hmean_experiment.csv")
     parser.add_argument("--text-out", default="summary/half_window_sliding_hmean_experiment.txt")

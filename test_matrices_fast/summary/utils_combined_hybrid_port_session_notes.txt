@@ -1,0 +1,204 @@
+# utils.py combined/hybrid port — session notes
+
+Operational + conceptual notes from the session that ported the combined-score
+objective from `cex_restricted_space_probe.py` into `utils.py`, added matching
+diagnostics to both the combined-score path and `isvd`, and investigated why
+hybrid does/doesn't beat pure iSVD on real kernel data.
+
+
+## 1. What landed in utils.py
+
+### New method names (in `_ENTROPYSCORE_COMBINED_HYBRID_METHODS`)
+
+    entropyscore_combined  -> score_variant=combined, no aux SVD complement
+                              (all sketch vectors come from greedy optimizer)
+    entropyscore_hybrid    -> score_variant=combined, aux_method=deflated_svd
+                              combined_rank = r1 (greedy) + r2 (deflated-SVD complement)
+                              default split: r1 = k // 2
+
+Both methods go through the `entropy_iter_basis_forget` -> `entropyscore_forget_step`
+path, with `score_variant="combined"` toggling the combined-score code paths
+instead of the additive forget-score path.
+
+### Score-rank CLI control
+
+Dispatcher precedence for the combined/hybrid methods:
+
+    if score_rank is not None:
+        effective_score_rank = max(0, min(int(k), int(score_rank)))
+    else:
+        effective_score_rank = entropyscore_combined_hybrid_score_rank(method, k)
+
+So `--score-rank 0` -> pure deflated-SVD (aux only), `--score-rank k` -> pure
+combined-score greedy, in-between splits the budget r1+r2=k.
+
+### Warm-up stack (both warm-ups active by default for combined)
+
+1. Row-normalized SVD seed: `row_norm_seed(A_block, rank)` returns top right
+   singulars of the row-normalized block. Enabled on every block via
+   `rownorm_seed_first_block=True, rownorm_seed_all_blocks=True`.
+2. Krylov Lanczos seed: `build_entropy_fast_subspace(...)` provides the
+   `q0`-dim starting subspace for projected ascent.
+
+Both get concatenated into the seed subspace before the optimizer inner loop.
+
+### Combined-score plumbing added
+
+- `combined_score_grad_reduced`, `combined_streaming_score_grad_reduced`
+  (with `R_old_block` pool for pooled old-row entropy)
+- `basic_projected_ascent_single_reduced_combined_cex` and its streaming variant
+- `entropy_iter_basis_forget` extended with `score_variant` and
+  `old_row_memory` kwargs
+- `entropyscore_forget_step` extended with kwargs:
+    score_variant, old_memory_size,
+    rownorm_seed_first_block, rownorm_seed_all_blocks,
+    dump_score_components, dump_oracle_old_row_responses,
+    dump_oracle_old_row_response_block, oracle_candidate_check,
+    debug_mode, seed
+
+### Diagnostic helpers (ported faithfully from probe)
+
+All ported under the helpers block around `utils.py:5025+`:
+
+    project_onto_span, right_singular_row_basis, subspace_principal_cosines,
+    projected_true_span_oracle, response_entropy_stats,
+    combined_score_component_details, score_full_vector_combined,
+    print_combined_score_component_dump,
+    oracle_projection_diagnostics_combined,
+    oracle_projection_candidate_combined,
+    oracle_old_row_responses_dump   (renamed from dump_oracle_old_row_responses
+                                     to avoid kwarg collision)
+
+Diagnostic hooks mirror the howto doc (`diagnostic_dumps_howto.txt`):
+
+    --oracle-candidate-check            (replaces optimizer pick when oracle wins)
+    --dump-score-components             (per-direction total/gain2/phi/H fields)
+    --dump-oracle-old-row-responses     (raw old_row_memory @ v)
+    --debug-mode {combined, summary}    (bundle enable)
+    opt_proj_norms / opt_vs_qoracle_cosines  (printed regardless)
+
+### iSVD diagnostics
+
+`isvd_step_` now prints per-block `iSVD_diag`:
+    block_rows, rows_seen, active_rank, solve_time, S_head,
+    trace_S_recovered, trace_relerr
+
+`isvd()` prints an end-of-run `isvd_final_diag` with scale-recovered trace
+error and top_sval_relerr. The trace-error computation requires multiplying
+`S_out` by `S_exact[0]` before comparing — `utils.isvd` normalizes `S_out`
+by the leading singular value, so a naive compare gives a bogus negative
+relerr.
+
+
+## 2. Parity check against the probe
+
+Tested on static-cex, n=128, rank=2, win=16, k=2, num_restarts=8, seed=0,
+rownorm-seed-first-block + rownorm-seed-all-blocks on both sides:
+
+    utils   entropyscore_hybrid  align ~ 0.030
+    probe   greedy-medium/hybrid-half   align ~ 0.031
+
+Close enough for parity given float32 BLAS nondeterminism.
+
+
+## 3. Profiling the greedy optimizer
+
+On the kernel_stocks_1000_0.2236, N=1000, win=73, k=14 config:
+
+- reduced_opt (projected-ascent inner loop) ≈ 85% of reduced_solve_time.
+- Each greedy direction ≈ 120 ms = 17 restarts × 7 ms.
+- `num_restarts=8` is reliable; `num_restarts=2` produced high variance on
+  close-σ matrices (e.g. static-cex) because `make_basic_restart_seeds` uses
+  `np.random.standard_normal` from global state.
+- Per-block `np.random.seed(seed + j)` was added when `score_variant="combined"`
+  to stabilize, but cross-process determinism still breaks at num_restarts=2
+  due to float32/BLAS path divergence. Use num_restarts=8 for close-σ work.
+
+
+## 4. Why hybrid doesn't beat iSVD on kernel_stocks
+
+Key observation:
+
+    Combined-score beats iSVD only when the spectrum gap (σ₁ / σ₂) is near-tied.
+
+On kernel_stocks with lengthscale=0.2236 the RBF kernel has a clear σ₁/σ₂
+gap, so:
+- Pure gain² already uniquely identifies the top direction.
+- Entropy multiplier φ adds no information — both the oracle and the
+  optimizer pick the same direction.
+- iSVD is already optimal; hybrid cannot beat it.
+
+Confirmed on synthetic static-cex with progressively tighter gap:
+
+    static-cex σ₁/σ₂=1.001  →  iSVD align=0.045, hybrid align=0.989 (hybrid win)
+    static-cex σ₁/σ₂→1      →  hybrid/combined continue to beat iSVD until
+                               float32 precision floor hits at gap ~1.0000001
+
+### Diffuse-diffuse vs kernel_stocks
+
+Diffuse-diffuse (from `matrices.txt`) is designed for the "row-entropy carries
+no information" regime: globally uniform U, close-σ spectrum. Kernel_stocks
+with lengthscale=0.2236 has entropy-informative rows but the σ gap is too
+wide for entropy to matter.
+
+
+## 5. Parked task at end of session
+
+User direction: "you can close the gap in kernel matrix by adjusting its
+lengthscale, which is currently 0.22 something. You can lower it more to
+have a smaller gap."
+
+Planned experiment:
+1. Build `kernel_stocks_1000_<lengthscale>` for lengthscale in e.g.
+   [0.2236, 0.1, 0.05, 0.02, 0.01].
+2. Measure σ₁/σ₂ at each.
+3. Run iSVD vs entropyscore_hybrid vs entropyscore_combined at matched config
+   (k=14, win=73, num_restarts=8, rownorm-seed-all-blocks, seed=0).
+4. Expect: as lengthscale shrinks the RBF kernel becomes more localized /
+   diagonal-heavy, σ's cluster near 1, and hybrid/combined should start
+   outperforming iSVD on subspace alignment.
+
+Kernel loader lives at `main.py:873+`:
+
+    elif "kernel_" in matrix_name:
+        np.random.seed(10)
+        name, num_points, lengthscale = matrix_name.split("_")[-3:]
+        num_points, lengthscale = int(num_points), float(lengthscale)
+        ...
+        elif name == "stocks":
+            home_dir = os.path.expanduser("~")
+            filepath = os.path.join(home_dir, f'data/data_2m.mtx')
+            points = sp.io.mmread(filepath)
+            points = points[:num_points, :]
+        kernel = StreamingRBFKernel(points, lengthscale=lengthscale,
+            cache_dir=os.path.join("cache", matrix_name, "kernel_cache"),
+            verbose=True)
+
+No code changes required — just run the matrix name string
+`kernel_stocks_1000_<lengthscale>` through the existing sweep.
+
+
+## 6. Bugs hit and fixes
+
+- Kwarg/function name collision on `dump_oracle_old_row_responses` →
+  renamed module function to `oracle_old_row_responses_dump`.
+- Block-label placeholder `int(globals().get('__dummy__',0))+1` →
+  replaced with `int(j)+1`.
+- Inner loop `for j` shadowed outer block index → renamed to `jj`.
+- Early-exit diag (active_r=0) missing keys (subspace_build_time,
+  timing_totals, ...) → fill with defaults in early-exit branch.
+- `iSVD_diag` trace_relerr = -0.987 → S_out is pre-normalized by S_exact[0];
+  multiply before comparing.
+- ARPACK crash on exactly-tied σ when testing alpha_sig=0, alpha_tail=0 →
+  use 1e-6 (tiny but nonzero decay) to avoid ties.
+- `num_restarts=2` nondeterminism on close-σ matrices → use num_restarts=8.
+
+
+## 7. Related files
+
+    utils.py                                       (primary edits)
+    test_matrices_fast/cex_restricted_space_probe.py  (source of port)
+    test_matrices_fast/summary/diagnostic_dumps_howto.txt  (diagnostic spec)
+    test_matrices_fast/matrices.txt                (matrix menu incl. diffuse-diffuse)
+    main.py:873+                                   (kernel_ loader)
+    run_sweep.sh                                   (source config: kernel_stocks_1000_0.2236)

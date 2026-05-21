@@ -1,0 +1,645 @@
+EntropyScore Methods in utils.py
+================================
+
+This note summarizes the EntropyScore family implemented in utils.py, with emphasis on:
+1. the inputs of each method,
+2. the mathematical map from those inputs to the output,
+3. how the outputs are propagated into the next streaming window,
+4. the differences/refinements across variants, and
+5. why those refinements were introduced.
+
+Notation
+--------
+
+Let:
+
+- A_block in R^(b x n) be the newly arrived block/window, with b rows and n columns.
+- state_prev be the summary state from the previous window.
+- V in R^(n x r) denote right singular directions kept from the previous window.
+- s in R^r be their singular values, and s^2 the squared singular values.
+- q in R^r be the stored fourth-moment proxy.
+- rows_seen be the cumulative number of rows processed so far.
+- v in R^n be a candidate unit direction, or z in a reduced coordinate system.
+- y = A_block v.
+
+The code works with the compact carried operator
+
+M_gain = [diag(s_prev) V_prev^T
+          A_block]
+
+when previous state exists, and M_gain = A_block on the first window.
+
+Thus the previous history is not revisited row-by-row. Instead it is compressed into the rank-r factor diag(s_prev) V_prev^T and stacked over the new block.
+
+
+1. Exact EntropyScore on One Window
+----------------------------------
+
+Implemented by:
+
+- entropy_logscore_grad_rows(M, v, rows_total, ncols)
+
+Inputs
+~~~~~~
+
+- M: the matrix whose current objective is being optimized. In the initial/non-streaming use this is the full current operator for the window-level solve.
+- v: candidate right direction.
+- rows_total: total number of rows represented by M.
+- ncols: number of columns n.
+
+Computation
+~~~~~~~~~~~
+
+The method forms
+
+- y = M v,
+- ||y||_2^2 = sum_i |y_i|^2,
+- ||y||_4^4 = sum_i |y_i|^4.
+
+Then it defines
+
+- c = 2 log(rows_total / ncols) / log(rows_total),
+- log f(v) = (1 - c) (1/2) log ||y||_2^2 + c (1/4) log ||y||_4^4.
+
+Equivalently,
+
+f(v) = (||Mv||_2^2)^((1-c)/2) (||Mv||_4^4)^(c/4).
+
+So the score interpolates between an l2-type gain term and an l4-type concentration term. Large l4 relative to l2 favors directions whose energy is more concentrated in fewer rows.
+
+Gradient
+~~~~~~~~
+
+Using
+
+- M^T y,
+- M^T (y^{\circ 3}),
+
+the code returns
+
+grad = (1 - c) (M^T y / ||y||_2^2) + c (M^T(y^{\circ 3}) / ||y||_4^4).
+
+Additional returned quantities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- logf: the logarithmic objective value,
+- grad: the Euclidean gradient in R^n,
+- s = ||Mv||_2 (implemented as sqrt(||y||_2^2) in reduced variants and as y2_sq here),
+- H = -(log ||y||_4^4 - 2 log ||y||_2^2) = log( ||y||_2^4 / ||y||_4^4 ).
+
+H is a concentration proxy. Since exp(-H) = ||y||_4^4 / ||y||_2^4, it encodes the normalized fourth moment.
+
+
+2. Streaming EntropyScore with History Compression
+--------------------------------------------------
+
+Implemented by:
+
+- entropy_streaming_logscore_grad(M_gain, A_block, V_old, s2_old, q_old, v, rows_total, ncols)
+
+Inputs
+~~~~~~
+
+- M_gain: stacked operator [diag(s_prev) V_prev^T; A_block].
+- A_block: only the new rows.
+- V_old: previous right basis.
+- s2_old: previous squared singular values.
+- q_old: previous fourth-moment summary.
+- v: candidate direction.
+- rows_total: cumulative row count.
+- ncols: number of columns.
+
+Computation
+~~~~~~~~~~~
+
+The method separates a gain term from entropy-history terms.
+
+First:
+
+- gain_vec = M_gain v,
+- gain2 = ||M_gain v||_2^2.
+
+Second, it projects v onto the previous basis:
+
+- a = V_old^T v.
+
+This produces the old-state contributions
+
+- E_old = sum_i a_i^2 s2_old_i,
+- Q_old = sum_i a_i^4 q_old_i.
+
+Third, from the new block:
+
+- y = A_block v,
+- y2_sq = ||y||_2^2,
+- y4_4 = ||y||_4^4.
+
+Then the aggregated second- and fourth-moment surrogates are
+
+- E = E_old + y2_sq,
+- Q = Q_old + y4_4.
+
+The streaming log-objective is
+
+- gamma = log(rows_total / ncols) / (2 log(rows_total)),
+- log f(v) = (1/2) log(gain2) + gamma log(Q) - 2 gamma log(E).
+
+Since c = 2 gamma, this is the streaming analogue of the exact objective:
+
+log f(v) = (1/2) log(gain2) + (c/2) log(Q) - c log(E).
+
+Gradient
+~~~~~~~~
+
+The derivative is decomposed into:
+
+- gain gradient:
+  g_gain = M_gain^T(M_gain v) / gain2,
+
+- second-moment gradient:
+  gE = 2 V_old (s2_old .* a) + 2 A_block^T y,
+
+- fourth-moment gradient:
+  gQ = 4 V_old (q_old .* a^3) + 4 A_block^T(y^{\circ 3}).
+
+Then
+
+grad = g_gain + gamma (gQ / Q) - 2 gamma (gE / E).
+
+Returned outputs
+~~~~~~~~~~~~~~~~
+
+- logf,
+- grad,
+- s = sqrt(gain2) or the equivalent total l2 gain,
+- Happrox = -log(Q / E^2) = log(E^2 / Q).
+
+This Happrox plays the same role as the exact H, but now on the compressed history-plus-new-block moments.
+
+
+3. Reduced/Subspace Variants
+----------------------------
+
+Implemented by:
+
+- build_entropy_fast_subspace(...)
+- entropy_logscore_grad_reduced(B, z, win, ncols)
+- entropy_streaming_logscore_grad_reduced(B_gain, B_block, C_prev, s2_old, q_old, z, rows_total, ncols)
+
+Inputs
+~~~~~~
+
+These methods replace the full-space variable v by
+
+- v = Vred z,
+
+where Vred in R^(n x q) is a reduced right subspace, typically from SVD/Lanczos on M_gain.
+
+The precomputed reduced operators are:
+
+- B_gain = M_gain Vred,
+- B_block = A_block Vred,
+- C_prev = V_old^T Vred.
+
+Computation
+~~~~~~~~~~~
+
+The formulas are algebraically the same as in the full-space versions, with v replaced by Vred z and all matrix-vector products performed in the reduced q-dimensional coordinate system.
+
+Examples:
+
+- y = B z instead of y = M v,
+- a = C_prev z instead of a = V_old^T v.
+
+Outputs
+~~~~~~~
+
+The reduced routines return the same logical outputs:
+
+- logf,
+- gradient with respect to z,
+- s,
+- H.
+
+Those outputs are then used by reduced projected-ascent solvers, and finally lifted back to the full space by v = Vred z.
+
+
+4. EntropyScoreForget Objective
+-------------------------------
+
+Implemented by:
+
+- entropyscore_forget_logscore_grad_rows(A_block, v, rows_ref)
+- entropyscore_forget_streaming_logscore_grad(M_gain, A_block, V_old, s2_old, v, rows_ref)
+- corresponding reduced versions
+
+Forget-specific normalization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For the forget objective, the row normalization is not the number of columns. The relevant quantity is
+
+- rows_ref = (# rows in the current window) + (# rows not yet seen after the current window).
+
+In the current implementation this is computed in `entropyscore_forget_step` as
+
+- rows_ref = total_rows_in_matrix - start_idx,
+
+which is exactly the number of rows from the current window onward.
+
+Core change
+~~~~~~~~~~~
+
+This family changes the objective so that the new block is given a special additive contribution psi, instead of keeping the full streaming pair (E, Q) through q_old.
+
+Initial-window/block formula
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For y = A_block v, define
+
+- c = log(b / rows_ref) / log(b),
+- alpha = (b / rows_ref)^(1/4),
+- log psi(v) = log(alpha) + (1 - c/2) log ||y||_2^2 + (c/4) log ||y||_4^4.
+
+So
+
+- psi(v) = alpha (||y||_2^2)^(1-c/2) (||y||_4^4)^(c/4).
+
+The gradient is
+
+grad = (2 - c) A_block^T y / ||y||_2^2 + c A_block^T(y^{\circ 3}) / ||y||_4^4.
+
+Streaming forget formula
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The previous state is summarized only through
+
+- E_old = sum_i a_i^2 s2_old_i, where a = V_old^T v.
+
+Then the new block contributes psi(v), and the total score is
+
+- score(v) = E_old + psi(v),
+- log f(v) = log(score(v)).
+
+Gradient:
+
+- a_old = V_old (s2_old .* a),
+- gpsi = psi(v) [ (2 - c) A_block^T y / ||y||_2^2 + c A_block^T(y^{\circ 3}) / ||y||_4^4 ],
+- grad_score = 2 a_old + gpsi,
+- grad = grad_score / score.
+
+Important structural change
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unlike the standard streaming EntropyScore, the forget variant does not use q_old in the objective. It keeps only old l2 energy through s2_old and treats the new block through the refined concentration term psi(v). This is an intentional asymmetry: new data is scored with concentration awareness, old history is retained only as aggregate energy.
+
+
+5. Optimization Layer
+---------------------
+
+The score formulas above are not used directly once; they are wrapped in constrained optimizers that solve sequentially for multiple basis vectors.
+
+Main solvers:
+
+- basic_projected_ascent_single_exact
+- basic_projected_ascent_single_streaming
+- basic_projected_ascent_single_reduced
+- basic_projected_ascent_single_reduced_streaming
+- forget counterparts
+
+Constraint handling
+~~~~~~~~~~~~~~~~~~~
+
+Each new vector must be unit norm and orthogonal to previously selected vectors. The code therefore:
+
+- projects the gradient onto the feasible tangent space,
+- takes an ascent step,
+- retracts back to the feasible manifold (unit norm and orthogonality constraints),
+- uses backtracking line search,
+- accepts the step if the score increases sufficiently.
+
+Sequential output
+~~~~~~~~~~~~~~~~~
+
+For each basis index k_idx, the code stores:
+
+- V_out[:, k_idx] = selected direction,
+- s_out[k_idx] = associated l2 gain proxy,
+- H_out[k_idx] = entropy/concentration statistic,
+- score_out[k_idx] = exp(logf_best).
+
+
+6. How Outputs Propagate to the Next Window
+-------------------------------------------
+
+This is the key streaming mechanism.
+
+Window-to-window state
+~~~~~~~~~~~~~~~~~~~~~~
+
+At the end of a window, the step functions construct
+
+- state_out["V"] = current right basis,
+- state_out["s"] = current singular-value-like gains,
+- state_out["s2"] = s^2,
+- state_out["H"] = entropy statistic,
+- state_out["q"] = s^4 exp(-H),
+- state_out["score"] = per-vector EntropyScore values,
+- state_out["rows_seen"] = cumulative rows processed.
+
+The identity
+
+- q = s^4 exp(-H)
+
+matches the exact moment relation because
+
+- exp(-H) = ||y||_4^4 / ||y||_2^4,
+- s^4 exp(-H) = ||y||_2^4 * (||y||_4^4 / ||y||_2^4) = ||y||_4^4.
+
+Hence q is the carried fourth-moment surrogate for each retained direction.
+
+How the next window consumes state_out
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On the next call, the previous state is passed as reserved/state_prev. Then:
+
+1. The code forms
+
+   M_gain = [diag(s_prev) V_prev^T
+             A_block].
+
+   This turns the prior window’s retained factors into synthetic top rows, so the optimizer sees both history and new data in one compact operator.
+
+2. It loads
+
+   - V_old = state_prev["V"],
+   - s2_old = state_prev["s2"],
+   - q_old = state_prev["q"],
+   - rows_total = state_prev["rows_seen"] + current_block_rows.
+
+3. The streaming objectives use these carried quantities:
+
+   - V_old and s2_old determine E_old = sum_i a_i^2 s2_old_i,
+   - q_old determines Q_old = sum_i a_i^4 q_old_i,
+   - rows_total updates the row-dependent weight c or gamma.
+
+4. After the new solve, a fresh state_out overwrites the old state and becomes the next window’s input.
+
+Thus propagation is not by carrying raw rows. It is by carrying a compressed spectral/entropy state sufficient for the next approximation stage.
+
+Method-specific propagation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- entropyscore / entropy_iter_basis_streaming:
+  propagates both s2 and q, so both second- and fourth-moment history affect the next window.
+
+- entropyscore_fast / entropyscore_expansion:
+  same propagated state structure; they differ only in how the within-window optimization is approximated.
+
+- entropyscore_forget:
+  state_out still stores q, but the forget objective itself uses only V and s2 from history. The previous q is not needed by the objective. The retained state is therefore richer than strictly necessary for the forget score, but kept in the same interface shape.
+
+
+7. Differences and Refinements Across the Methods
+-------------------------------------------------
+
+7.1 entropyscore
+~~~~~~~~~~~~~~~~
+
+This is the most direct streaming implementation. It solves the exact/full-space or streaming objective with projected ascent in the ambient n-dimensional space.
+
+Characteristics:
+
+- uses full gradients in R^n,
+- uses multiple restart seeds,
+- builds a compact state with V, s, s2, H, q,
+- mathematically closest to the intended streaming entropy objective.
+
+
+7.2 entropyscore_fast
+~~~~~~~~~~~~~~~~~~~~~
+
+This introduces a fixed reduced subspace Vred from the current M_gain, then optimizes only over z in that subspace.
+
+Refinement:
+
+- replace expensive full-space optimization by reduced optimization in a q-dimensional subspace,
+- reuse projected ascent, but on z rather than v,
+- compute a diagnostic grad_perp_ratio measuring how much full gradient lies outside the reduced space.
+
+Effect:
+
+- much cheaper optimization,
+- possible approximation error if the true maximizer is not well represented by Vred.
+
+
+7.3 entropyscore_expansion
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This starts with a smaller reduced space, then expands it adaptively if the full gradient has a large component outside the current basis.
+
+Refinement:
+
+- initialize with rank q0 rather than a larger fixed q,
+- compute the full gradient residual r = g - Vbasis Vbasis^T g,
+- if ||r|| / ||g|| is too large, append r and additional Krylov vectors
+  (M^T M)^t r
+  up to krylov_depth,
+- repeat until the residual ratio is below residual_tol, rank cap qmax is hit, or expansion count is exhausted.
+
+Effect:
+
+- reduced solve remains cheap when the initial basis is already good,
+- extra dimensions are added only when needed,
+- better accuracy than a too-small fixed reduced basis,
+- cheaper than choosing a very large reduced basis for every vector from the start.
+
+
+7.4 entropyscore_forget
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This changes the objective itself, not just the optimizer.
+
+Refinements:
+
+- history is summarized only through old l2 energy E_old,
+- the new block is scored by psi(v), which mixes l2 and l4 terms with a block-size-dependent scaling alpha,
+- optimization may be performed only for a leading score_rank subset of directions,
+- the remaining directions can be filled by auxiliary directions from full SVD or deflated SVD via
+  entropyscore_forget_svd_aux
+  or
+  entropyscore_forget_deflated_svd_aux.
+
+After these directions are built, the code performs a left-projected operator factorization
+
+- left_projected_operator_svd_factors(Vt, M_gain),
+
+and replaces the carried Vt, S by the factorized/carry form before emitting state_out.
+
+Effect:
+
+- more selective emphasis on new-window concentration,
+- reduced cost if only score_rank directions are entropy-optimized,
+- auxiliary directions preserve rank coverage even when only a few directions are entropy-scored.
+
+
+8. Why These Refinements Were Made
+----------------------------------
+
+8.1 Why move from exact/full-space to reduced fast variants?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The exact/full-space projected-ascent methods require repeated products with M, M^T, A_block, and history terms in R^n. For large n and many restarts, that is expensive.
+
+The fast variant was introduced to:
+
+- cut optimization cost by solving in a much smaller subspace,
+- exploit the fact that dominant right singular directions of M_gain already capture much of the useful search space,
+- keep the same objective while changing only the numerical approximation strategy.
+
+
+8.2 Why add adaptive expansion beyond a fixed reduced space?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A fixed reduced space can be too small or poorly aligned with the entropy objective, especially because the entropy gradient is not identical to an SVD objective. The maximizer can have a meaningful component outside the initial spectral subspace.
+
+The expansion refinement was introduced to:
+
+- detect when the reduced basis is missing an important component,
+- add dimensions only when justified by the full-gradient residual,
+- reduce the risk that the optimizer is trapped by subspace bias,
+- trade a small number of additional matrix-vector products for better fidelity.
+
+
+8.3 Why introduce the forget objective?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The standard streaming objective carries both E_old and Q_old through history. That means historical concentration information continues to influence future windows. In some streaming settings this can make the method less responsive to newly arrived structure.
+
+The forget refinement was introduced to:
+
+- retain old energy so previously important directions are not discarded immediately,
+- but score the new block through a fresh concentration-aware term psi(v),
+- reduce dependence on stale fourth-moment information,
+- make the selection more responsive to the current window,
+- allow a hybrid strategy where only a few leading directions are entropy-scored and the rest are filled by auxiliary spectral directions.
+
+The design notes in `new_approx_simple.txt` make the intended modeling choice more explicit. The forget score is
+
+- score_w(v) = ||Bv||_2^2 + Psi_w(v),
+
+where B is the carried sketch from previous windows and
+
+- Psi_w(v) = (k/N_w)^(1/4) ||A_w v||_2^(2-c_k) ||A_w v||_4^(c_k),
+- c_k = log(k/N_w) / log(k),
+
+with:
+
+- k = current window row count,
+- N_w = current window rows + rows not yet seen after the current window.
+
+The specific reason for this form is:
+
+- the current-window entropy is used to estimate how much the window response ||A_w v||_2 may shrink relative to the full response ||A v||_2,
+- the entropy normalization heuristic scales by log(N_w) / log(k),
+- this predicts an entropy-dependent correction factor,
+- but in the maximally flat case the raw prediction is too weak by a factor of roughly (k/N_w)^(1/4),
+- so the extra prefactor (k/N_w)^(1/4) is inserted as a flat-case correction.
+
+That is why the forget objective is not just "drop q_old"; it is a deliberately rescaled current-window correction attached to the new rows only, while the old information remains the quadratic energy term ||Bv||_2^2.
+
+
+8.3a Why use the exact full gradient in forget mode?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The design note also states that the optimizer should use the exact gradient of the forget score, not a surrogate assembled from separate heuristic directions.
+
+This was done because:
+
+- the l2 old-sketch term and the entropy-weighted new-window term already combine analytically into one true gradient,
+- projected ascent on that exact gradient is the mathematically correct ascent direction for the stated objective,
+- if one expands the basis, the added direction should be the projected full gradient itself rather than separate "p" and "q" components.
+
+This matches the implementation:
+
+- entropyscore_forget_logscore_grad_rows computes the exact objective gradient,
+- entropyscore_forget_streaming_logscore_grad computes the streaming exact gradient,
+- entropy_iter_basis_forget uses either the projected full gradient residual or the current best vector to enlarge the search basis.
+
+
+8.4 Why keep H and q in the propagated state?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+H is a compact concentration statistic, and q = s^4 exp(-H) reconstructs the fourth-moment proxy needed by the standard streaming EntropyScore. Carrying q avoids storing past rows or recomputing old fourth moments.
+
+This was introduced to:
+
+- provide a sufficient low-rank summary of old fourth-order information,
+- preserve compatibility between windows,
+- support the non-forget streaming objective without revisiting history.
+
+
+8.5 Why add score_rank and auxiliary directions in forget mode?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Entropy optimization is more expensive and is most valuable for the leading directions. For higher-index directions, a pure entropy solve may be unnecessary or too costly.
+
+This refinement was introduced to:
+
+- spend optimization effort on the most important score-sensitive directions,
+- complete the basis with cheap, stable spectral directions,
+- allow deflated auxiliary directions so the filled-in vectors do not simply duplicate the entropy-optimized ones.
+
+The follow-up notes in `codex_context.txt` sharpen this motivation:
+
+- the dominant/high-score forget directions are often already close to the initial Krylov or spectral seed space after warm start,
+- the lower-ranked tail is much less reliably captured,
+- therefore it is efficient to entropy-optimize only a leading head (`score_rank`) and fill the remainder with SVD-based auxiliary directions.
+
+So `score_rank` is not only a runtime shortcut. It reflects an empirical observation: the forget objective provides the biggest value in the head of the retained subspace, while auxiliary spectral completion is often adequate for the tail.
+
+
+8.6 Why was the forget carry changed to a left-projected operator?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This refinement came from the `leftout` investigation summarized in `codex_context.txt`.
+
+An earlier idea was to keep the optimized right basis and evaluate a right-projected operator M P_V. That was abandoned because
+
+- ||(M P_V) v_i|| <= ||M v_i|| is not true in general,
+- equivalently, M^T M - P_V M^T M P_V is not generally positive semidefinite,
+- so componentwise "leftout" quantities based on right projection can become negative for theoretical reasons, not just numerical reasons.
+
+The corrected design is:
+
+- build Y = M_gain V_hat from the retained right basis V_hat,
+- form U_hat = orth(Y),
+- define the left projector P_U = U_hat U_hat^T,
+- compress M_gain to U_hat^T M_gain,
+- compute its SVD and carry forward the resulting S, Vt.
+
+This was introduced because:
+
+- for every exact right singular vector v_i, ||P_U M v_i|| <= ||M v_i|| holds since P_U is an orthogonal projector,
+- the resulting carried operator has a valid nonnegative "throw/leftout" interpretation,
+- diag(S) Vt is then a norm-preserving representation of the left-projected carried operator for right-action diagnostics.
+
+So in the final forget implementation, the propagated state is intentionally the singular factorization of a left-projected operator induced by the chosen right space, not merely the raw scored-plus-auxiliary right basis.
+
+
+9. Summary
+----------
+
+The EntropyScore family in utils.py evolves along two axes:
+
+1. Objective refinement:
+   from exact entropy concentration scoring, to streaming compressed-history scoring, to the forget variant that discounts old fourth-moment information.
+
+2. Numerical refinement:
+   from full-space projected ascent, to fixed reduced-space optimization, to adaptive reduced-space expansion.
+
+Across all variants, the essential streaming idea is the same:
+
+- solve for right directions that optimize an entropy-inspired score,
+- summarize the resulting directions by V, s, s2, H, q,
+- carry that compact state into the next window through M_gain and the moment summaries,
+- avoid revisiting all past rows while still retaining their approximate influence.

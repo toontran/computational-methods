@@ -1,0 +1,622 @@
+Objective-design oracle-free full benchmark synthesis
+====================================================
+
+Date: 2026-04-23
+
+Purpose
+-------
+Run the oracle-free objective benchmark across every generated matrix family,
+debug suspicious behavior, correct the benchmark, rerun, and summarize the
+objective definitions, derivations, and empirical performance.
+
+
+Files
+-----
+Benchmark script:
+
+  objective_design_oracle_free_objective_probe.py
+
+Corrected all-matrix outputs:
+
+  summary/objective_design_oracle_free_objective_probe_all_matrices_corrected.csv
+  summary/objective_design_oracle_free_objective_probe_all_matrices_corrected.json
+
+Earlier uncorrected all-matrix outputs were preserved:
+
+  summary/objective_design_oracle_free_objective_probe_all_matrices.csv
+  summary/objective_design_oracle_free_objective_probe_all_matrices.json
+
+
+Commands run
+------------
+Initial full run:
+
+  python objective_design_oracle_free_objective_probe.py \
+    --matrices static-cex diffuse-diffuse mixed-tail-soft mixed-tail-balanced \
+      mixed-tail-sharp residual-spiky-shocks alternative-data-signals \
+      crowded-strategy execution-cost-slippage etf-basket-basis \
+      futures-term-structure intraday-liquidity-shape macro-factor-panel \
+      rates-cross-currency stat-arb-spreads options-vol-surface \
+      risk-residual-panel realized-vol-corr \
+    --n 1024 --win 32 --rank 2 --dtype float32 \
+    --json-out summary/objective_design_oracle_free_objective_probe_all_matrices.json \
+    --csv-out summary/objective_design_oracle_free_objective_probe_all_matrices.csv
+
+Debug smoke run after patching:
+
+  python objective_design_oracle_free_objective_probe.py \
+    --matrices residual-spiky-shocks alternative-data-signals crowded-strategy \
+      rates-cross-currency risk-residual-panel \
+    --n 256 --win 32 --rank 2 --dtype float32 \
+    --json-out /tmp/oracle_free_debug_smoke.json \
+    --csv-out /tmp/oracle_free_debug_smoke.csv
+
+Corrected full run:
+
+  python objective_design_oracle_free_objective_probe.py \
+    --all-matrices --n 1024 --win 32 --rank 2 --dtype float32 \
+    --json-out summary/objective_design_oracle_free_objective_probe_all_matrices_corrected.json \
+    --csv-out summary/objective_design_oracle_free_objective_probe_all_matrices_corrected.csv
+
+Syntax check:
+
+  python -m py_compile objective_design_oracle_free_objective_probe.py
+
+
+Matrix families
+---------------
+All 18 generator families were benchmarked:
+
+  static-cex
+  diffuse-diffuse
+  mixed-tail-soft
+  mixed-tail-balanced
+  mixed-tail-sharp
+  residual-spiky-shocks
+  alternative-data-signals
+  crowded-strategy
+  execution-cost-slippage
+  etf-basket-basis
+  futures-term-structure
+  intraday-liquidity-shape
+  macro-factor-panel
+  rates-cross-currency
+  stat-arb-spreads
+  options-vol-surface
+  risk-residual-panel
+  realized-vol-corr
+
+
+Debug corrections
+-----------------
+1. Future-objective denominators
+
+The first all-matrix run reported future-objective wins over 32 blocks even
+though the final block has no future rows. The corrected benchmark now reports:
+
+  valid_decisions
+
+Future objectives have 31 valid decisions per 32-block matrix at horizon H=2,
+because partial lookahead is allowed for block 31 and no lookahead exists for
+block 32.
+
+2. q2 is not the only success label
+
+The original four stress matrices made q2_vs_q1oracle a good success proxy.
+That is not true for all finance-themed matrices. In several families,
+block_svd_complement or prev_opt2 can win while still having high oracle mass.
+
+The corrected benchmark therefore reports:
+
+  oracle90_win_count = winner has oracle_mass >= 0.90
+  oracle99_win_count = winner has oracle_mass >= 0.99
+  mean_winner_oracle_mass
+
+q2 wins remain useful, but oracle-mass metrics are the better all-matrix
+success criteria.
+
+3. Zero-denominator ratios
+
+Hard complement penalties intentionally assign zero score to the exact
+block_svd_complement candidate. The old q2/block_svd ratio then became huge and
+uninformative. The corrected benchmark keeps the ratio only when the denominator
+is non-negligible and adds:
+
+  mean_q2_margin_block_svd
+  mean_q2_margin_opt2
+
+4. Hard complement penalty can be too blunt
+
+The original hard penalty:
+
+  (1 - |v^T c_t|^2)
+
+is good when the current-block SVD complement is a local-only artifact. It is
+too blunt when the block-SVD direction is itself oracle-like. The corrected
+benchmark adds adaptive penalties that reduce the penalty when a block-SVD-
+aligned direction is also supported by full score, old rows, or future rows.
+
+
+Notation
+--------
+For block t and candidate unit vector v:
+
+  A_t       = current raw block
+  M_t       = [carried sketch rows; A_t]
+  C_t       = candidate set for the block
+  c_t       = block_svd_complement, the top current-block right singular
+              direction orthogonal to selected v1
+
+Combined-score components:
+
+  S_b(v) = block-only combined score
+         = combined_score_component_details(A_t, A_t, v, ...)
+
+  S_f(v) = full sketch-inclusive combined score
+         = combined_score_component_details(M_t, A_t, v, ...)
+
+Fresh/current gain:
+
+  g_b(v) = ||A_t v||^2
+
+Old-row reservoir support:
+
+  old(v) = ||old_row_memory v||^2
+
+Held-out future support, used only as an offline diagnostic:
+
+  future(v) = sum over next H row blocks ||A_future v||^2
+
+Response shape:
+
+  relH(v) = entropy of current response energy (A_t v)^2 / log(block_rows)
+  top4(v) = fraction of current response energy in the largest four rows
+
+Complement alignment:
+
+  a(v) = |v^T c_t|^2
+
+Candidate-set shares:
+
+  X_share(v) = X(v) / max_{u in C_t} X(u)
+
+Harmonic mean:
+
+  HM(x, y) = 2xy / (x + y + eps)
+
+
+Objective derivations
+---------------------
+1. Corrected block-only score baseline
+
+  J_block(v) = S_b_share(v)
+
+Why:
+
+  This is the corrected block-only score: fresh gain times pooled entropy. It
+  is the baseline for checking whether block-only scoring is enough.
+
+Expected failure:
+
+  It often chooses block_svd_complement, because current-block gain is exactly
+  what block_svd is optimized to maximize.
+
+2. Entropy / anti-spike block score
+
+  J_antispike(v) = S_b_share(v) * relH(v)
+
+Why:
+
+  Good repeated support should be spread across multiple rows, not dominated by
+  one shock row.
+
+Expected failure:
+
+  A non-oracle block-SVD direction can still have diffuse row response, so
+  entropy alone does not reject every complement.
+
+3. Concentration-guarded block score
+
+  J_conc(v) = S_b_share(v) * relH(v) * (1 - top4(v))
+
+Why:
+
+  relH can be insensitive to the largest few rows. The top-4 guard explicitly
+  penalizes concentrated row support.
+
+Expected failure:
+
+  Same as entropy: diffuse but non-oracle block-SVD complements survive.
+
+4. Full-vs-block combined score balance
+
+  J_full_block(v) = HM(S_b_share(v), S_f_share(v)) * relH(v)
+
+Why:
+
+  A useful direction should be supported by fresh rows and should not disappear
+  under the sketch-inclusive combined score.
+
+Expected failure:
+
+  S_f contains carried sketch state. It can preserve stale or misleading
+  support, and it does not always reject block-SVD complements.
+
+5. Old-row reservoir consistency
+
+  J_old(v) = HM(g_b_share(v), old_share(v)) * relH(v)
+
+Why:
+
+  This is an online-style proxy for "support repeats outside the current
+  block." It uses sampled raw old rows instead of the carried sketch rows.
+
+Expected failure:
+
+  The reservoir can be noisy or stale. It can prefer opt2 or mgain SVD
+  complements and is not a reliable standalone oracle proxy.
+
+6. Hard complement penalty
+
+  J_comp(v) = S_b_share(v) * relH(v) * (1 - a(v))
+
+Why:
+
+  The repeated-support diagnostic showed that raw block gain is frequently
+  dominated by the current block's SVD complement. This objective keeps fresh
+  support but explicitly rejects current-block local complements.
+
+Expected failure:
+
+  If c_t itself is oracle-like, hard rejection may remove a valid direction.
+  This matters in several finance-themed matrices where block_svd winners can
+  have high oracle mass.
+
+7. Old reservoir plus hard complement penalty
+
+  J_old_comp(v) = HM(g_b_share(v), old_share(v)) * relH(v) * (1 - a(v))
+
+Why:
+
+  Combines recurrence in old raw rows with explicit block-SVD rejection.
+
+Expected failure:
+
+  It inherits the old-row reservoir instability.
+
+8. Future consistency
+
+  J_future(v) = HM(g_b_share(v), future_share(v)) * relH(v)
+
+Why:
+
+  This is the cleanest offline oracle-free proxy for repeated support: a
+  direction should be good on the current block and on independent future rows.
+
+Expected failure:
+
+  It is not online deployable as written and can still choose block_svd when
+  the block-SVD direction generalizes.
+
+9. Future consistency plus hard complement penalty
+
+  J_future_comp(v) =
+      HM(g_b_share(v), future_share(v)) * relH(v) * (1 - a(v))
+
+Why:
+
+  Offline diagnostic for support that is fresh, future-consistent, diffuse,
+  and not just the current block's SVD complement.
+
+Expected failure:
+
+  Same hard-penalty caveat: valid block-SVD-aligned directions are suppressed.
+
+10. Adaptive full complement penalty
+
+  J_adapt_full(v) =
+      S_b_share(v) * relH(v) * (1 - a(v) * (1 - S_f_share(v)))
+
+Why:
+
+  Penalize block-SVD alignment only when the direction lacks full-score support.
+  If a block-SVD-like direction is also strong under S_f, do not zero it out.
+
+Expected failure:
+
+  S_f can be contaminated by carried sketch state. On residual-spiky-shocks,
+  this adaptive full penalty lets too many block_svd directions back in.
+
+11. Adaptive old complement penalty
+
+  J_adapt_old(v) =
+      S_b_share(v) * relH(v) * (1 - a(v) * (1 - old_share(v)))
+
+Why:
+
+  Penalize block-SVD alignment only when it lacks old-row reservoir support.
+
+Expected failure:
+
+  It can inherit stale/noisy reservoir behavior and may allow block_svd back in
+  finance-style matrices.
+
+12. Adaptive future complement penalty
+
+  J_adapt_future(v) =
+      HM(g_b_share(v), future_share(v)) * relH(v)
+      * (1 - a(v) * (1 - future_share(v)))
+
+Why:
+
+  Offline version of adaptive complement rejection: a block-SVD-aligned
+  direction is allowed if it generalizes to future rows.
+
+Expected failure:
+
+  It is not online deployable as written, and it can allow some block_svd wins
+  when those directions have future support.
+
+
+Aggregate performance
+---------------------
+The benchmark has two useful groups:
+
+  stress group  = first 6 synthetic diagnostic families
+  finance group = remaining 12 finance-themed families
+
+The stress group is closest to the original q2-vs-block_svd diagnostic. The
+finance group shows why q2 wins alone are not enough: some non-q2 winners are
+still strongly oracle-like.
+
+Stress group: 6 matrices, 192 online decisions, 186 future decisions
+
+  objective                         valid  q2   block_svd  opt2  oracle90  oracle99  mean oracle_mass
+  obj_block_score                   192    84   83         9     84        84        0.482705
+  obj_block_antispike               192    137  30         15    148       146       0.817797
+  obj_block_concentration_guard     192    148  22         22    155       155       0.844019
+  obj_full_block_hmean              192    142  25         17    152       150       0.835077
+  obj_old_block_hmean               192    80   0          65    91        89        0.591505
+  obj_complement_penalty            192    168  0          16    179       177       0.954031
+  obj_old_complement_penalty        192    81   0          68    92        90        0.592393
+  obj_future_hmean                  186    157  12         7     168       166       0.929544
+  obj_future_complement_penalty     186    169  0          7     180       178       0.980204
+  obj_adaptive_full_complement      192    142  26         15    153       151       0.837310
+  obj_adaptive_old_complement       192    167  0          16    179       177       0.954012
+  obj_adaptive_future_complement    186    168  1          7     179       177       0.976021
+
+Stress readout:
+
+  - block score fails: it picks block_svd 83/192 times;
+  - anti-spike and full/block balance help but do not solve residual-spiky;
+  - hard complement penalty is the best online-style objective;
+  - future + hard complement is the best offline diagnostic.
+
+Finance group: 12 matrices, 384 online decisions, 372 future decisions
+
+  objective                         valid  q2   block_svd  opt2  oracle90  oracle99  mean oracle_mass
+  obj_block_score                   384    29   317        11    239       49        0.827113
+  obj_block_antispike               384    64   273        19    268       86        0.873478
+  obj_block_concentration_guard     384    81   214        46    282       119       0.880211
+  obj_full_block_hmean              384    131  37         126   330       247       0.891545
+  obj_old_block_hmean               384    127  70         99    331       235       0.908987
+  obj_complement_penalty            384    147  0          22    354       300       0.935452
+  obj_old_complement_penalty        384    133  0          26    346       289       0.920942
+  obj_future_hmean                  372    131  100        64    318       226       0.929762
+  obj_future_complement_penalty     372    144  0          15    343       290       0.935184
+  obj_adaptive_full_complement      384    145  23         124   334       262       0.896226
+  obj_adaptive_old_complement       384    139  69         84    334       246       0.913774
+  obj_adaptive_future_complement    372    158  37         76    338       283       0.948757
+
+Finance readout:
+
+  - q2 wins are low for every objective because q2 is not the only oracle-like
+    candidate in these families;
+  - block score often picks block_svd, but many block_svd winners have high
+    oracle mass, so block_svd is not automatically bad here;
+  - hard complement penalty gives the best online oracle90/oracle99 profile;
+  - adaptive future complement gives the best mean oracle mass, at the cost of
+    allowing 37 block_svd wins.
+
+All matrices: 18 matrices, 576 online decisions, 558 future decisions
+
+  objective                         valid  q2   block_svd  opt2  oracle90  oracle99  mean oracle_mass
+  obj_block_score                   576    113  400        20    323       133       0.712310
+  obj_block_antispike               576    201  303        34    416       232       0.854918
+  obj_block_concentration_guard     576    229  236        68    437       274       0.868147
+  obj_full_block_hmean              576    273  62         143   482       397       0.872722
+  obj_old_block_hmean               576    207  70         164   422       324       0.803160
+  obj_complement_penalty            576    315  0          38    533       477       0.941645
+  obj_old_complement_penalty        576    214  0          94    438       379       0.811426
+  obj_future_hmean                  558    288  112        71    486       392       0.929689
+  obj_future_complement_penalty     558    313  0          22    523       468       0.950191
+  obj_adaptive_full_complement      576    287  49         139   487       413       0.876587
+  obj_adaptive_old_complement       576    306  69         100   513       423       0.927187
+  obj_adaptive_future_complement    558    326  38         83    517       460       0.957845
+
+
+Per-matrix best objectives
+--------------------------
+Best by mean winner oracle_mass:
+
+  matrix                    objective                         oracle_mass  oracle90/valid  q2  block_svd
+  static-cex                obj_future_hmean                  0.986705     29/31           18  0
+  diffuse-diffuse           obj_adaptive_future_complement    1.000000     31/31           31  0
+  mixed-tail-soft           obj_future_hmean                  1.000000     31/31           31  0
+  mixed-tail-balanced       obj_block_antispike               0.973962     31/32           31  0
+  mixed-tail-sharp          obj_future_hmean                  0.970097     30/31           30  0
+  residual-spiky-shocks     obj_future_complement_penalty     0.972334     30/31           30  0
+  alternative-data-signals  obj_complement_penalty            0.995640     32/32           11  0
+  crowded-strategy          obj_old_complement_penalty        0.982108     31/32           16  0
+  execution-cost-slippage   obj_complement_penalty            0.978434     30/32           12  0
+  etf-basket-basis          obj_adaptive_future_complement    0.741988     21/31           18  8
+  futures-term-structure    obj_adaptive_old_complement       0.999731     32/32           11  0
+  intraday-liquidity-shape  obj_adaptive_future_complement    0.991210     30/31           11  3
+  macro-factor-panel        obj_adaptive_future_complement    0.999444     31/31           13  0
+  rates-cross-currency      obj_adaptive_future_complement    0.998847     31/31           9   0
+  stat-arb-spreads          obj_complement_penalty            0.999268     32/32           15  0
+  options-vol-surface       obj_full_block_hmean              0.992749     32/32           18  1
+  risk-residual-panel       obj_future_hmean                  0.884758     26/31           26  0
+  realized-vol-corr         obj_complement_penalty            0.987243     31/32           11  0
+
+Hard matrices:
+
+  etf-basket-basis:
+    Best mean oracle mass is only 0.741988. This family remains a counterexample
+    for the current objective set.
+
+  risk-residual-panel:
+    Best mean oracle mass is 0.884758. Future consistency helps most, but opt2
+    still wins nontrivially.
+
+
+Interpretation
+--------------
+1. Raw block score is not defensible as the objective.
+
+Across all matrices:
+
+  obj_block_score: block_svd 400/576, mean oracle_mass 0.712310
+
+This reproduces the corrected block-only lesson at larger scale.
+
+2. Entropy and concentration guards are useful but incomplete.
+
+They greatly improve the stress group but still leave many block_svd wins:
+
+  obj_block_antispike:           block_svd 303/576
+  obj_block_concentration_guard: block_svd 236/576
+
+This confirms that a non-oracle complement can have diffuse row response.
+
+3. Full/block harmonic mean is useful but not enough.
+
+  obj_full_block_hmean:
+    q2 273/576
+    block_svd 62/576
+    opt2 143/576
+    mean oracle_mass 0.872722
+
+It reduces block_svd but replaces some failures with opt2/stale-score wins.
+
+4. Old-row reservoir alone is unstable.
+
+  obj_old_block_hmean:
+    mean oracle_mass 0.803160
+    opt2 164/576
+
+Old raw rows are a useful signal, but not a standalone proxy for oracle
+consistency.
+
+5. Hard complement penalty is the best online-style conservative objective.
+
+  obj_complement_penalty:
+    q2 315/576
+    block_svd 0/576
+    opt2 38/576
+    oracle90 533/576
+    oracle99 477/576
+    mean oracle_mass 0.941645
+
+This is the best objective if the design goal is to suppress local block-SVD
+chasing aggressively without using future rows.
+
+6. Future + hard complement is the best conservative offline diagnostic.
+
+  obj_future_complement_penalty:
+    q2 313/558
+    block_svd 0/558
+    opt2 22/558
+    oracle90 523/558
+    oracle99 468/558
+    mean oracle_mass 0.950191
+
+This remains the best offline target when block_svd must be rejected.
+
+7. Adaptive future complement has the best mean oracle mass, but is less
+   conservative.
+
+  obj_adaptive_future_complement:
+    q2 326/558
+    block_svd 38/558
+    opt2 83/558
+    oracle90 517/558
+    oracle99 460/558
+    mean oracle_mass 0.957845
+
+It allows block_svd-aligned candidates when future rows support them. That is
+exactly the intended correction for finance-style matrices where block_svd can
+be oracle-like. The cost is that it no longer enforces zero block_svd wins.
+
+
+Recommended objective stack
+---------------------------
+For an online objective experiment, use the hard complement objective first:
+
+  J_online(v) = S_b_share(v) * relH(v) * (1 - |v^T c_t|^2)
+
+Why:
+
+  - best online conservative all-matrix result;
+  - zero block_svd wins by construction;
+  - high oracle90/oracle99 rates;
+  - strong on the original stress matrices.
+
+For a less conservative online variant, test:
+
+  J_adapt_old(v) =
+      S_b_share(v) * relH(v)
+      * (1 - |v^T c_t|^2 * (1 - old_share(v)))
+
+Why:
+
+  - keeps the complement penalty;
+  - allows SVD-complement-aligned directions if old raw rows also support them;
+  - performs well on stress, but permits more block_svd wins in finance.
+
+For offline validation, use both:
+
+  J_future_comp(v) =
+      HM(g_b_share(v), future_share(v)) * relH(v) * (1 - |v^T c_t|^2)
+
+and:
+
+  J_adapt_future(v) =
+      HM(g_b_share(v), future_share(v)) * relH(v)
+      * (1 - |v^T c_t|^2 * (1 - future_share(v)))
+
+Why both:
+
+  - J_future_comp measures conservative non-complement future consistency;
+  - J_adapt_future measures whether block-SVD-aligned support actually
+    generalizes and should not be automatically rejected.
+
+
+Updated takeaway
+----------------
+The corrected all-matrix benchmark changes the earlier conclusion slightly.
+
+Earlier:
+
+  block_svd_complement is the bad fresh-row challenger.
+
+Corrected:
+
+  block_svd_complement is bad when it is local-only. In several finance-themed
+  matrices it can be oracle-like, so the benchmark must distinguish local-only
+  complement chasing from complement-aligned support that repeats across other
+  evidence channels.
+
+The most robust objective family is therefore:
+
+  fresh block score
+  x row-response entropy / anti-spike guard
+  x complement-locality control
+
+where complement-locality control can be:
+
+  hard:     reject |v^T c_t|^2 directly;
+  adaptive: reject |v^T c_t|^2 only when full/old/future support is weak.
+
+The hard version is the best conservative online candidate. The adaptive
+future version is the best offline oracle-free diagnostic by mean oracle mass.

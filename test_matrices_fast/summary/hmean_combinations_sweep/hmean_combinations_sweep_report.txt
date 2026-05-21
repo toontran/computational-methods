@@ -1,0 +1,199 @@
+HM combinations sweep report
+============================
+
+Scope
+-----
+All 17 benchmark matrices, half_win=32, rank=2, seed=0, float32, sliding-mode metrics.
+Compared policies:
+  - future_hmean_online
+  - future_hmean_triplet_online
+  - future_hmean_nested_online
+  - future_hmean_pairwise_online
+  - future_hmean_weighted_online
+
+Corrected parenthesized semantics
+---------------------------------
+  - future_hmean_nested_online uses HM(||[sketch; block1]v||^2, ||block2 v||^2) * relH1.
+  - future_hmean_pairwise_online uses HM(||[sketch; block1]v||^2, ||[sketch; block2]v||^2) * relH1.
+  - future_hmean_weighted_online uses weights (rows through N_{w-1}, |N_w|, |N_{w+1}|).
+
+Win counts across 17 matrices (sliding)
+---------------------------------------
+metric                 future_hmean_onlin  future_hmean_tripl  future_hmean_neste  future_hmean_pairw  future_hmean_weigh 
+mean_exact_cos1        6                   2                   4                   4                   1                  
+mean_exact_cos2        3                   4                   7                   0                   3                  
+mean_relerr_sval       6                   4                   3                   4                   0                  
+final_exact_cos1       4                   2                   6                   1                   4                  
+final_exact_cos2       4                   7                   3                   0                   3                  
+final_tail_mass        3                   6                   5                   0                   3                  
+elapsed                5                   2                   3                   2                   5                  
+sec_per_step           5                   2                   3                   2                   5                  
+
+Head-to-head vs future_hmean_online
+-----------------------------------
+vs future_hmean_triplet_online
+  mean_exact_cos1        W/T/L=8/0/9 mean_delta=0.0094
+  mean_exact_cos2        W/T/L=13/0/4 mean_delta=-0.0027
+  mean_relerr_sval       W/T/L=6/2/9 mean_delta=-0.0010
+  final_exact_cos1       W/T/L=7/7/3 mean_delta=0.0185
+  final_exact_cos2       W/T/L=11/2/4 mean_delta=0.0245
+  final_tail_mass        W/T/L=12/2/3 mean_delta=-0.0251
+  elapsed                W/T/L=7/0/10 mean_delta=0.055
+  sec_per_step           W/T/L=7/0/10 mean_delta=0.002
+
+vs future_hmean_nested_online
+  mean_exact_cos1        W/T/L=9/0/8 mean_delta=0.0062
+  mean_exact_cos2        W/T/L=10/0/7 mean_delta=-0.0040
+  mean_relerr_sval       W/T/L=7/3/7 mean_delta=-0.0006
+  final_exact_cos1       W/T/L=8/6/3 mean_delta=0.0078
+  final_exact_cos2       W/T/L=8/1/8 mean_delta=-0.0265
+  final_tail_mass        W/T/L=9/1/7 mean_delta=0.0097
+  elapsed                W/T/L=6/0/11 mean_delta=0.147
+  sec_per_step           W/T/L=6/0/11 mean_delta=0.005
+
+vs future_hmean_pairwise_online
+  mean_exact_cos1        W/T/L=5/3/9 mean_delta=-0.0413
+  mean_exact_cos2        W/T/L=8/0/9 mean_delta=-0.1006
+  mean_relerr_sval       W/T/L=3/2/12 mean_delta=0.0038
+  final_exact_cos1       W/T/L=5/5/7 mean_delta=-0.0639
+  final_exact_cos2       W/T/L=6/0/11 mean_delta=-0.1632
+  final_tail_mass        W/T/L=6/0/11 mean_delta=0.1185
+  elapsed                W/T/L=5/0/12 mean_delta=0.104
+  sec_per_step           W/T/L=5/0/12 mean_delta=0.003
+
+vs future_hmean_weighted_online
+  mean_exact_cos1        W/T/L=10/1/6 mean_delta=-0.0028
+  mean_exact_cos2        W/T/L=12/0/5 mean_delta=-0.0326
+  mean_relerr_sval       W/T/L=5/3/9 mean_delta=0.0009
+  final_exact_cos1       W/T/L=9/5/3 mean_delta=0.0054
+  final_exact_cos2       W/T/L=11/1/5 mean_delta=-0.0013
+  final_tail_mass        W/T/L=11/1/5 mean_delta=-0.0065
+  elapsed                W/T/L=7/0/10 mean_delta=-0.023
+  sec_per_step           W/T/L=7/0/10 mean_delta=-0.001
+
+Per-matrix winners
+------------------
+mean_exact_cos1 (higher is better)
+  crowded-strategy               winner=future_hmean_online             future_hmean_onlin=0.9985 future_hmean_tripl=0.9984 future_hmean_neste=0.9984 future_hmean_pairw=0.9984 future_hmean_weigh=0.9984
+  diffuse-diffuse                winner=future_hmean_online             future_hmean_onlin=0.6926 future_hmean_tripl=0.6919 future_hmean_neste=0.6919 future_hmean_pairw=0.3087 future_hmean_weigh=0.6918
+  etf-basket-basis               winner=future_hmean_triplet_online     future_hmean_onlin=0.9991 future_hmean_tripl=0.9992 future_hmean_neste=0.9992 future_hmean_pairw=0.9992 future_hmean_weigh=0.9992
+  execution-cost-slippage        winner=future_hmean_pairwise_online    future_hmean_onlin=0.9988 future_hmean_tripl=0.9989 future_hmean_neste=0.9988 future_hmean_pairw=0.9990 future_hmean_weigh=0.9989
+  futures-term-structure         winner=future_hmean_pairwise_online    future_hmean_onlin=0.9992 future_hmean_tripl=0.9992 future_hmean_neste=0.9992 future_hmean_pairw=0.9992 future_hmean_weigh=0.9992
+  intraday-liquidity-shape       winner=future_hmean_pairwise_online    future_hmean_onlin=0.9993 future_hmean_tripl=0.9993 future_hmean_neste=0.9993 future_hmean_pairw=0.9994 future_hmean_weigh=0.9993
+  macro-factor-panel             winner=future_hmean_online             future_hmean_onlin=0.9995 future_hmean_tripl=0.9995 future_hmean_neste=0.9995 future_hmean_pairw=0.9995 future_hmean_weigh=0.9995
+  mixed-tail-balanced            winner=future_hmean_nested_online      future_hmean_onlin=0.6739 future_hmean_tripl=0.6887 future_hmean_neste=0.6906 future_hmean_pairw=0.6519 future_hmean_weigh=0.6879
+  mixed-tail-sharp               winner=future_hmean_nested_online      future_hmean_onlin=0.6900 future_hmean_tripl=0.6901 future_hmean_neste=0.6910 future_hmean_pairw=0.6524 future_hmean_weigh=0.6901
+  mixed-tail-soft                winner=future_hmean_online             future_hmean_onlin=0.6916 future_hmean_tripl=0.6891 future_hmean_neste=0.6908 future_hmean_pairw=0.6711 future_hmean_weigh=0.6914
+  options-vol-surface            winner=future_hmean_weighted_online    future_hmean_onlin=0.9994 future_hmean_tripl=0.9993 future_hmean_neste=0.9994 future_hmean_pairw=0.9994 future_hmean_weigh=0.9994
+  rates-cross-currency           winner=future_hmean_online             future_hmean_onlin=0.9988 future_hmean_tripl=0.9988 future_hmean_neste=0.9988 future_hmean_pairw=0.9988 future_hmean_weigh=0.9988
+  realized-vol-corr              winner=future_hmean_pairwise_online    future_hmean_onlin=0.9992 future_hmean_tripl=0.9992 future_hmean_neste=0.9992 future_hmean_pairw=0.9992 future_hmean_weigh=0.9992
+  residual-spiky-shocks          winner=future_hmean_triplet_online     future_hmean_onlin=0.2796 future_hmean_tripl=0.4652 future_hmean_neste=0.4413 future_hmean_pairw=0.1933 future_hmean_weigh=0.3254
+  risk-residual-panel            winner=future_hmean_online             future_hmean_onlin=0.3477 future_hmean_tripl=0.3121 future_hmean_neste=0.2667 future_hmean_pairw=0.1967 future_hmean_weigh=0.2400
+  stat-arb-spreads               winner=future_hmean_nested_online      future_hmean_onlin=0.9995 future_hmean_tripl=0.9995 future_hmean_neste=0.9995 future_hmean_pairw=0.9995 future_hmean_weigh=0.9995
+  static-cex                     winner=future_hmean_nested_online      future_hmean_onlin=0.6916 future_hmean_tripl=0.6889 future_hmean_neste=0.7006 future_hmean_pairw=0.6899 future_hmean_weigh=0.6931
+
+mean_exact_cos2 (higher is better)
+  crowded-strategy               winner=future_hmean_nested_online      future_hmean_onlin=0.9486 future_hmean_tripl=0.9790 future_hmean_neste=0.9880 future_hmean_pairw=0.9800 future_hmean_weigh=0.9802
+  diffuse-diffuse                winner=future_hmean_triplet_online     future_hmean_onlin=0.2283 future_hmean_tripl=0.5175 future_hmean_neste=0.3326 future_hmean_pairw=0.1430 future_hmean_weigh=0.4573
+  etf-basket-basis               winner=future_hmean_online             future_hmean_onlin=0.8142 future_hmean_tripl=0.1460 future_hmean_neste=0.7395 future_hmean_pairw=0.1762 future_hmean_weigh=0.1154
+  execution-cost-slippage        winner=future_hmean_nested_online      future_hmean_onlin=0.9588 future_hmean_tripl=0.9926 future_hmean_neste=0.9943 future_hmean_pairw=0.9868 future_hmean_weigh=0.9935
+  futures-term-structure         winner=future_hmean_online             future_hmean_onlin=0.9906 future_hmean_tripl=0.9875 future_hmean_neste=0.9876 future_hmean_pairw=0.9859 future_hmean_weigh=0.9875
+  intraday-liquidity-shape       winner=future_hmean_nested_online      future_hmean_onlin=0.9854 future_hmean_tripl=0.9954 future_hmean_neste=0.9968 future_hmean_pairw=0.9961 future_hmean_weigh=0.9968
+  macro-factor-panel             winner=future_hmean_triplet_online     future_hmean_onlin=0.9940 future_hmean_tripl=0.9985 future_hmean_neste=0.9985 future_hmean_pairw=0.9984 future_hmean_weigh=0.9984
+  mixed-tail-balanced            winner=future_hmean_weighted_online    future_hmean_onlin=0.3335 future_hmean_tripl=0.4502 future_hmean_neste=0.2207 future_hmean_pairw=0.1679 future_hmean_weigh=0.4580
+  mixed-tail-sharp               winner=future_hmean_weighted_online    future_hmean_onlin=0.3900 future_hmean_tripl=0.3980 future_hmean_neste=0.3226 future_hmean_pairw=0.1468 future_hmean_weigh=0.4152
+  mixed-tail-soft                winner=future_hmean_triplet_online     future_hmean_onlin=0.4254 future_hmean_tripl=0.4998 future_hmean_neste=0.3210 future_hmean_pairw=0.2243 future_hmean_weigh=0.4323
+  options-vol-surface            winner=future_hmean_nested_online      future_hmean_onlin=0.9100 future_hmean_tripl=0.9961 future_hmean_neste=0.9968 future_hmean_pairw=0.9962 future_hmean_weigh=0.9943
+  rates-cross-currency           winner=future_hmean_nested_online      future_hmean_onlin=0.9919 future_hmean_tripl=0.9971 future_hmean_neste=0.9975 future_hmean_pairw=0.9975 future_hmean_weigh=0.9975
+  realized-vol-corr              winner=future_hmean_weighted_online    future_hmean_onlin=0.9804 future_hmean_tripl=0.9901 future_hmean_neste=0.9927 future_hmean_pairw=0.9927 future_hmean_weigh=0.9930
+  residual-spiky-shocks          winner=future_hmean_online             future_hmean_onlin=0.1272 future_hmean_tripl=0.0634 future_hmean_neste=0.0943 future_hmean_pairw=0.0839 future_hmean_weigh=0.0213
+  risk-residual-panel            winner=future_hmean_triplet_online     future_hmean_onlin=0.0611 future_hmean_tripl=0.1686 future_hmean_neste=0.0421 future_hmean_pairw=0.0361 future_hmean_weigh=0.0571
+  stat-arb-spreads               winner=future_hmean_nested_online      future_hmean_onlin=0.9800 future_hmean_tripl=0.9979 future_hmean_neste=0.9980 future_hmean_pairw=0.9877 future_hmean_weigh=0.9978
+  static-cex                     winner=future_hmean_nested_online      future_hmean_onlin=0.6528 future_hmean_tripl=0.5480 future_hmean_neste=0.6806 future_hmean_pairw=0.1633 future_hmean_weigh=0.3223
+
+mean_relerr_sval (lower is better)
+  crowded-strategy               winner=future_hmean_online             future_hmean_onlin=0.0158 future_hmean_tripl=0.0158 future_hmean_neste=0.0158 future_hmean_pairw=0.0158 future_hmean_weigh=0.0158
+  diffuse-diffuse                winner=future_hmean_online             future_hmean_onlin=0.0047 future_hmean_tripl=0.0048 future_hmean_neste=0.0048 future_hmean_pairw=0.0483 future_hmean_weigh=0.0048
+  etf-basket-basis               winner=future_hmean_nested_online      future_hmean_onlin=0.0145 future_hmean_tripl=0.0146 future_hmean_neste=0.0145 future_hmean_pairw=0.0146 future_hmean_weigh=0.0146
+  execution-cost-slippage        winner=future_hmean_triplet_online     future_hmean_onlin=0.0149 future_hmean_tripl=0.0149 future_hmean_neste=0.0149 future_hmean_pairw=0.0149 future_hmean_weigh=0.0149
+  futures-term-structure         winner=future_hmean_online             future_hmean_onlin=0.0148 future_hmean_tripl=0.0149 future_hmean_neste=0.0149 future_hmean_pairw=0.0150 future_hmean_weigh=0.0149
+  intraday-liquidity-shape       winner=future_hmean_online             future_hmean_onlin=0.0135 future_hmean_tripl=0.0135 future_hmean_neste=0.0135 future_hmean_pairw=0.0135 future_hmean_weigh=0.0135
+  macro-factor-panel             winner=future_hmean_pairwise_online    future_hmean_onlin=0.0165 future_hmean_tripl=0.0165 future_hmean_neste=0.0165 future_hmean_pairw=0.0165 future_hmean_weigh=0.0165
+  mixed-tail-balanced            winner=future_hmean_nested_online      future_hmean_onlin=0.0071 future_hmean_tripl=0.0055 future_hmean_neste=0.0050 future_hmean_pairw=0.0092 future_hmean_weigh=0.0055
+  mixed-tail-sharp               winner=future_hmean_triplet_online     future_hmean_onlin=0.0049 future_hmean_tripl=0.0049 future_hmean_neste=0.0049 future_hmean_pairw=0.0090 future_hmean_weigh=0.0049
+  mixed-tail-soft                winner=future_hmean_online             future_hmean_onlin=0.0048 future_hmean_tripl=0.0053 future_hmean_neste=0.0049 future_hmean_pairw=0.0070 future_hmean_weigh=0.0048
+  options-vol-surface            winner=future_hmean_online             future_hmean_onlin=0.0159 future_hmean_tripl=0.0159 future_hmean_neste=0.0159 future_hmean_pairw=0.0159 future_hmean_weigh=0.0159
+  rates-cross-currency           winner=future_hmean_pairwise_online    future_hmean_onlin=0.0144 future_hmean_tripl=0.0144 future_hmean_neste=0.0144 future_hmean_pairw=0.0144 future_hmean_weigh=0.0144
+  realized-vol-corr              winner=future_hmean_pairwise_online    future_hmean_onlin=0.0173 future_hmean_tripl=0.0173 future_hmean_neste=0.0173 future_hmean_pairw=0.0173 future_hmean_weigh=0.0173
+  residual-spiky-shocks          winner=future_hmean_triplet_online     future_hmean_onlin=0.1533 future_hmean_tripl=0.1346 future_hmean_neste=0.1374 future_hmean_pairw=0.1496 future_hmean_weigh=0.1497
+  risk-residual-panel            winner=future_hmean_triplet_online     future_hmean_onlin=0.1045 future_hmean_tripl=0.1044 future_hmean_neste=0.1114 future_hmean_pairw=0.1171 future_hmean_weigh=0.1239
+  stat-arb-spreads               winner=future_hmean_nested_online      future_hmean_onlin=0.0128 future_hmean_tripl=0.0127 future_hmean_neste=0.0127 future_hmean_pairw=0.0171 future_hmean_weigh=0.0127
+  static-cex                     winner=future_hmean_pairwise_online    future_hmean_onlin=0.0032 future_hmean_tripl=0.0050 future_hmean_neste=0.0030 future_hmean_pairw=0.0028 future_hmean_weigh=0.0047
+
+final_exact_cos1 (higher is better)
+  crowded-strategy               winner=future_hmean_nested_online      future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  diffuse-diffuse                winner=future_hmean_online             future_hmean_onlin=0.9858 future_hmean_tripl=0.9852 future_hmean_neste=0.9853 future_hmean_pairw=0.4939 future_hmean_weigh=0.9852
+  etf-basket-basis               winner=future_hmean_nested_online      future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  execution-cost-slippage        winner=future_hmean_nested_online      future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  futures-term-structure         winner=future_hmean_online             future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  intraday-liquidity-shape       winner=future_hmean_weighted_online    future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  macro-factor-panel             winner=future_hmean_triplet_online     future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  mixed-tail-balanced            winner=future_hmean_nested_online      future_hmean_onlin=0.9701 future_hmean_tripl=0.9800 future_hmean_neste=0.9838 future_hmean_pairw=0.9569 future_hmean_weigh=0.9797
+  mixed-tail-sharp               winner=future_hmean_nested_online      future_hmean_onlin=0.9808 future_hmean_tripl=0.9825 future_hmean_neste=0.9842 future_hmean_pairw=0.9573 future_hmean_weigh=0.9825
+  mixed-tail-soft                winner=future_hmean_online             future_hmean_onlin=0.9850 future_hmean_tripl=0.9817 future_hmean_neste=0.9844 future_hmean_pairw=0.9718 future_hmean_weigh=0.9849
+  options-vol-surface            winner=future_hmean_weighted_online    future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  rates-cross-currency           winner=future_hmean_online             future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  realized-vol-corr              winner=future_hmean_pairwise_online    future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  residual-spiky-shocks          winner=future_hmean_nested_online      future_hmean_onlin=0.4582 future_hmean_tripl=0.7588 future_hmean_neste=0.7635 future_hmean_pairw=0.2526 future_hmean_weigh=0.6358
+  risk-residual-panel            winner=future_hmean_triplet_online     future_hmean_onlin=0.5874 future_hmean_tripl=0.5927 future_hmean_neste=0.3945 future_hmean_pairw=0.2465 future_hmean_weigh=0.4862
+  stat-arb-spreads               winner=future_hmean_weighted_online    future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  static-cex                     winner=future_hmean_weighted_online    future_hmean_onlin=0.9805 future_hmean_tripl=0.9811 future_hmean_neste=0.9850 future_hmean_pairw=0.9829 future_hmean_weigh=0.9853
+
+final_exact_cos2 (higher is better)
+  crowded-strategy               winner=future_hmean_triplet_online     future_hmean_onlin=0.9673 future_hmean_tripl=0.9999 future_hmean_neste=0.9983 future_hmean_pairw=0.9944 future_hmean_weigh=0.9944
+  diffuse-diffuse                winner=future_hmean_triplet_online     future_hmean_onlin=0.5561 future_hmean_tripl=0.8791 future_hmean_neste=0.2302 future_hmean_pairw=0.1705 future_hmean_weigh=0.8314
+  etf-basket-basis               winner=future_hmean_online             future_hmean_onlin=0.9623 future_hmean_tripl=0.1399 future_hmean_neste=0.7896 future_hmean_pairw=0.1874 future_hmean_weigh=0.1117
+  execution-cost-slippage        winner=future_hmean_triplet_online     future_hmean_onlin=0.9995 future_hmean_tripl=0.9999 future_hmean_neste=0.9993 future_hmean_pairw=0.9944 future_hmean_weigh=0.9984
+  futures-term-structure         winner=future_hmean_online             future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  intraday-liquidity-shape       winner=future_hmean_weighted_online    future_hmean_onlin=0.9677 future_hmean_tripl=0.9677 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  macro-factor-panel             winner=future_hmean_nested_online      future_hmean_onlin=0.9845 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  mixed-tail-balanced            winner=future_hmean_weighted_online    future_hmean_onlin=0.7342 future_hmean_tripl=0.8249 future_hmean_neste=0.5808 future_hmean_pairw=0.1313 future_hmean_weigh=0.8568
+  mixed-tail-sharp               winner=future_hmean_weighted_online    future_hmean_onlin=0.8021 future_hmean_tripl=0.8134 future_hmean_neste=0.6061 future_hmean_pairw=0.2609 future_hmean_weigh=0.8310
+  mixed-tail-soft                winner=future_hmean_triplet_online     future_hmean_onlin=0.0192 future_hmean_tripl=0.8786 future_hmean_neste=0.5514 future_hmean_pairw=0.5206 future_hmean_weigh=0.8308
+  options-vol-surface            winner=future_hmean_triplet_online     future_hmean_onlin=0.9990 future_hmean_tripl=0.9998 future_hmean_neste=0.9998 future_hmean_pairw=0.9996 future_hmean_weigh=0.9991
+  rates-cross-currency           winner=future_hmean_triplet_online     future_hmean_onlin=0.9732 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  realized-vol-corr              winner=future_hmean_online             future_hmean_onlin=1.0000 future_hmean_tripl=1.0000 future_hmean_neste=1.0000 future_hmean_pairw=1.0000 future_hmean_weigh=1.0000
+  residual-spiky-shocks          winner=future_hmean_online             future_hmean_onlin=0.3501 future_hmean_tripl=0.0780 future_hmean_neste=0.1525 future_hmean_pairw=0.1290 future_hmean_weigh=0.0391
+  risk-residual-panel            winner=future_hmean_triplet_online     future_hmean_onlin=0.1033 future_hmean_tripl=0.3485 future_hmean_neste=0.0173 future_hmean_pairw=0.0324 future_hmean_weigh=0.1323
+  stat-arb-spreads               winner=future_hmean_nested_online      future_hmean_onlin=0.9998 future_hmean_tripl=0.9999 future_hmean_neste=0.9999 future_hmean_pairw=0.9996 future_hmean_weigh=0.9999
+  static-cex                     winner=future_hmean_nested_online      future_hmean_onlin=0.9395 future_hmean_tripl=0.8446 future_hmean_neste=0.9816 future_hmean_pairw=0.1627 future_hmean_weigh=0.7100
+
+final_tail_mass (lower is better)
+  crowded-strategy               winner=future_hmean_triplet_online     future_hmean_onlin=0.0322 future_hmean_tripl=0.0002 future_hmean_neste=0.0017 future_hmean_pairw=0.0056 future_hmean_weigh=0.0055
+  diffuse-diffuse                winner=future_hmean_triplet_online     future_hmean_onlin=0.3594 future_hmean_tripl=0.1283 future_hmean_neste=0.4881 future_hmean_pairw=0.8635 future_hmean_weigh=0.1691
+  etf-basket-basis               winner=future_hmean_online             future_hmean_onlin=0.0370 future_hmean_tripl=0.4902 future_hmean_neste=0.1883 future_hmean_pairw=0.4824 future_hmean_weigh=0.4938
+  execution-cost-slippage        winner=future_hmean_triplet_online     future_hmean_onlin=0.0006 future_hmean_tripl=0.0001 future_hmean_neste=0.0007 future_hmean_pairw=0.0055 future_hmean_weigh=0.0016
+  futures-term-structure         winner=future_hmean_online             future_hmean_onlin=0.0000 future_hmean_tripl=0.0000 future_hmean_neste=0.0000 future_hmean_pairw=0.0000 future_hmean_weigh=0.0000
+  intraday-liquidity-shape       winner=future_hmean_weighted_online    future_hmean_onlin=0.0318 future_hmean_tripl=0.0318 future_hmean_neste=0.0000 future_hmean_pairw=0.0000 future_hmean_weigh=0.0000
+  macro-factor-panel             winner=future_hmean_nested_online      future_hmean_onlin=0.0154 future_hmean_tripl=0.0000 future_hmean_neste=0.0000 future_hmean_pairw=0.0000 future_hmean_weigh=0.0000
+  mixed-tail-balanced            winner=future_hmean_weighted_online    future_hmean_onlin=0.2599 future_hmean_tripl=0.1796 future_hmean_neste=0.3474 future_hmean_pairw=0.5336 future_hmean_weigh=0.1530
+  mixed-tail-sharp               winner=future_hmean_weighted_online    future_hmean_onlin=0.1974 future_hmean_tripl=0.1865 future_hmean_neste=0.3320 future_hmean_pairw=0.5078 future_hmean_weigh=0.1721
+  mixed-tail-soft                winner=future_hmean_triplet_online     future_hmean_onlin=0.5147 future_hmean_tripl=0.1322 future_hmean_neste=0.3634 future_hmean_pairw=0.3923 future_hmean_weigh=0.1699
+  options-vol-surface            winner=future_hmean_nested_online      future_hmean_onlin=0.0011 future_hmean_tripl=0.0002 future_hmean_neste=0.0002 future_hmean_pairw=0.0004 future_hmean_weigh=0.0009
+  rates-cross-currency           winner=future_hmean_triplet_online     future_hmean_onlin=0.0264 future_hmean_tripl=0.0000 future_hmean_neste=0.0000 future_hmean_pairw=0.0000 future_hmean_weigh=0.0000
+  realized-vol-corr              winner=future_hmean_online             future_hmean_onlin=0.0000 future_hmean_tripl=0.0000 future_hmean_neste=0.0000 future_hmean_pairw=0.0000 future_hmean_weigh=0.0000
+  residual-spiky-shocks          winner=future_hmean_nested_online      future_hmean_onlin=0.8337 future_hmean_tripl=0.7090 future_hmean_neste=0.6969 future_hmean_pairw=0.9598 future_hmean_weigh=0.7971
+  risk-residual-panel            winner=future_hmean_triplet_online     future_hmean_onlin=0.8221 future_hmean_tripl=0.7636 future_hmean_neste=0.9221 future_hmean_pairw=0.9691 future_hmean_weigh=0.8730
+  stat-arb-spreads               winner=future_hmean_nested_online      future_hmean_onlin=0.0002 future_hmean_tripl=0.0001 future_hmean_neste=0.0001 future_hmean_pairw=0.0004 future_hmean_weigh=0.0001
+  static-cex                     winner=future_hmean_nested_online      future_hmean_onlin=0.0780 future_hmean_tripl=0.1621 future_hmean_neste=0.0331 future_hmean_pairw=0.5037 future_hmean_weigh=0.2626
+
+Elapsed summary
+---------------
+policy                           median_s   mean_s     total_s   
+future_hmean_online              6.481      7.355      125.033   
+future_hmean_triplet_online      6.616      7.410      125.962   
+future_hmean_nested_online       6.441      7.502      127.537   
+future_hmean_pairwise_online     7.013      7.459      126.801   
+future_hmean_weighted_online     6.635      7.331      124.634   
+
+Raw per-matrix metrics CSV: /home/ttran02/pj/computational-methods/test_matrices_fast/summary/hmean_combinations_sweep/matrix_metrics.csv

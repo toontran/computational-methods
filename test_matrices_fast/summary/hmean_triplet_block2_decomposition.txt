@@ -1,0 +1,300 @@
+HM-triplet block-2 decomposition
+===============================
+
+  matrix: residual-spiky-shocks
+  block_id: 2
+  half_win: 32
+  rank: 2
+  rows_seen: 64
+  sketch_dim: 2
+  gain1_dim: 32
+  gain2_dim: 32
+  union_dim: 66
+  sketch_gain1_dim: 34
+  sketch_excl_dim: 2
+  gain1_excl_dim: 32
+  gain2_excl_dim: 32
+  oracle_proj_norm: 0.30808475610570624
+  oracle_proj_norm_sq_in_union: 0.0949162169447125
+  oracle_v1_mass_S+G1: 0.07279052914864272
+  oracle_v1_mass_S+G1+G2: 0.09425372516701104
+  oracle_v2_mass_S+G1: 0.06602962414019395
+  oracle_v2_mass_S+G1+G2: 0.0949162169447125
+  denoms: {'sketch': 0.3276383158394201, 'gain1': 0.665055105509808, 'gain2': 0.0003323857254898895, 'sketch_gain1': 0.6654407160555432, 'sketch_gain2': 0.32784347926181545, 'sketch_raw_for_concat': 1.0}
+  weights: [32, 32, 32]
+
+Per-candidate decomposition. Shares are squared lengths after normalising the candidate vector. _excl rows are the orthogonalised (Gram-Schmidt) shares: sketch first, then gain1\sketch, then gain2\(sketch+gain1); they sum to the in-union share.
+
+-- combined_optimizer_v2 --
+  scores: hm_triplet=6.434242e-01  combined=2.612474e+00  relH1=0.9998
+  hm_factor_split: gain_factor=6.435619e-01  entropy_factor(relH1)=0.999786  product=6.434242e-01
+  hm_raw_split (NO pool norm): gain_factor=6.147182e-04  entropy=0.999786  product=6.145867e-04
+  raw_energies (||A_k v||^2): sketch=3.276383e-01  gain1=3.257753e-01  gain2=2.051634e-04
+  pool_shares (raw / pool_max): sketch=1.0000e+00  gain1=4.8985e-01  gain2=6.1724e-01
+  combined_factor_split: gain2(M_gain)=6.534136e-01  phi=3.998193e+00  product=2.612474e+00  c=-0.3333
+  combined_pooled: relH=0.9997  H=4.1575  y2_sq=6.5343e-01  y4_4=6.6805e-03
+  hm_shares: sketch=1.0000  gain1=0.4898  gain2=0.6172
+  axis_decomp: in_oracle_proj=0.0518  outside=0.9482  cos_v1=-0.0000
+  v_subspace_share: sketch=0.5052  gain1=0.5044  gain2=0.0003  union=0.9997
+  v_subspace_share_excl: sketch=0.5052  gain1\S=0.4946  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.4616  gain1=0.5296  gain2=0.0170  union=0.9997
+  outside_subspace_share_excl: sketch=0.4616  gain1\S=0.5216  gain2\(S+G1)=0.0166
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=36:0.0125, j=127:0.0100, j=9:0.0098, j=725:0.0095, j=424:0.0092
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=36:0.0145, j=127:0.0105, j=9:0.0099, j=4:0.0088, j=464:0.0087
+
+-- hm_triplet_best_in_union --
+  scores: hm_triplet=9.814299e-01  combined=2.518021e+00  relH1=0.9994
+  hm_factor_split: gain_factor=9.820086e-01  entropy_factor(relH1)=0.999411  product=9.814299e-01
+  hm_raw_split (NO pool norm): gain_factor=2.615284e-02  entropy=0.999411  product=2.613743e-02
+  raw_energies (||A_k v||^2): sketch=2.573159e-01  gain1=3.809660e-01  gain2=9.242219e-03
+  pool_shares (raw / pool_max): sketch=7.8537e-01  gain1=5.7283e-01  gain2=2.7806e+01
+  combined_factor_split: gain2(M_gain)=6.382819e-01  phi=3.944998e+00  product=2.518021e+00  c=-0.3333
+  combined_pooled: relH=0.9900  H=4.1173  y2_sq=6.3865e-01  y4_4=6.6434e-03
+  hm_shares: sketch=0.7854  gain1=0.5728  gain2=27.8057
+  axis_decomp: in_oracle_proj=0.0174  outside=0.9826  cos_v1=+0.0000
+  v_subspace_share: sketch=0.3922  gain1=0.5873  gain2=0.0144  union=0.9998
+  v_subspace_share_excl: sketch=0.3922  gain1\S=0.5980  gain2\(S+G1)=0.0096
+  outside_subspace_share: sketch=0.4443  gain1=0.5324  gain2=0.0175  union=0.9998
+  outside_subspace_share_excl: sketch=0.4443  gain1\S=0.5425  gain2\(S+G1)=0.0131
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=10:0.0133, j=129:0.0107, j=0:0.0104, j=572:0.0097, j=266:0.0084
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=10:0.0132, j=129:0.0108, j=0:0.0102, j=572:0.0094, j=266:0.0084
+
+-- hm_triplet_raw_best_in_union --
+  scores: hm_triplet=6.687238e-01  combined=1.737039e+00  relH1=0.9998
+  hm_factor_split: gain_factor=6.688641e-01  entropy_factor(relH1)=0.999790  product=6.687238e-01
+  hm_raw_split (NO pool norm): gain_factor=2.176179e-01  entropy=0.999790  product=2.175723e-01
+  raw_energies (||A_k v||^2): sketch=2.048263e-01  gain1=2.305931e-01  gain2=2.189717e-01
+  pool_shares (raw / pool_max): sketch=6.2516e-01  gain1=3.4673e-01  gain2=6.5879e+02
+  combined_factor_split: gain2(M_gain)=4.354194e-01  phi=3.989347e+00  product=1.737039e+00  c=-0.3333
+  combined_pooled: relH=0.9981  H=4.1509  y2_sq=4.3578e-01  y4_4=2.9911e-03
+  hm_shares: sketch=0.6252  gain1=0.3467  gain2=658.7878
+  axis_decomp: in_oracle_proj=0.0241  outside=0.9759  cos_v1=-0.0000
+  v_subspace_share: sketch=0.3122  gain1=0.3543  gain2=0.3381  union=0.9999
+  v_subspace_share_excl: sketch=0.3122  gain1\S=0.3631  gain2\(S+G1)=0.3245
+  outside_subspace_share: sketch=0.3680  gain1=0.3035  gain2=0.3331  union=0.9999
+  outside_subspace_share_excl: sketch=0.3680  gain1\S=0.3117  gain2\(S+G1)=0.3202
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0123, j=360:0.0112, j=572:0.0102, j=73:0.0102, j=715:0.0101
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0121, j=715:0.0105, j=572:0.0099, j=360:0.0097, j=73:0.0090
+
+-- oracle_v1_unprojected --
+  scores: hm_triplet=1.863516e-02  combined=7.539504e-02  relH1=0.4228
+  hm_factor_split: gain_factor=4.407089e-02  entropy_factor(relH1)=0.422845  product=1.863516e-02
+  hm_raw_split (NO pool norm): gain_factor=1.200115e-02  entropy=0.422845  product=5.074630e-03
+  raw_energies (||A_k v||^2): sketch=6.292470e-03  gain1=4.161392e-02  gain2=1.491970e-02
+  pool_shares (raw / pool_max): sketch=1.9206e-02  gain1=6.2572e-02  gain2=4.4887e+01
+  combined_factor_split: gain2(M_gain)=4.790639e-02  phi=1.573799e+00  product=7.539504e-02  c=-0.3333
+  combined_pooled: relH=0.3271  H=1.3605  y2_sq=9.5723e-02  y4_4=2.3507e-03
+  hm_shares: sketch=0.0192  gain1=0.0626  gain2=44.8867
+  axis_decomp: in_oracle_proj=0.0003  outside=0.9997  cos_v1=+0.0666
+  v_subspace_share: sketch=0.0096  gain1=0.0637  gain2=0.0233  union=0.0943
+  v_subspace_share_excl: sketch=0.0096  gain1\S=0.0632  gain2\(S+G1)=0.0215
+  outside_subspace_share: sketch=0.0099  gain1=0.0627  gain2=0.0238  union=0.0940
+  outside_subspace_share_excl: sketch=0.0099  gain1\S=0.0622  gain2\(S+G1)=0.0220
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:1.0000, j=3:0.0000, j=13:0.0000, j=9:0.0000, j=1:0.0000
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.9997, j=1:0.0000, j=153:0.0000, j=617:0.0000, j=261:0.0000
+
+-- oracle_v1_proj_S+G1 --
+  scores: hm_triplet=2.303691e-01  combined=9.122931e-01  relH1=0.4228
+  hm_factor_split: gain_factor=5.448071e-01  entropy_factor(relH1)=0.422845  product=2.303691e-01
+  hm_raw_split (NO pool norm): gain_factor=1.788378e-03  entropy=0.422845  product=7.562070e-04
+  raw_energies (||A_k v||^2): sketch=8.644627e-02  gain1=5.716942e-01  gain2=6.008963e-04
+  pool_shares (raw / pool_max): sketch=2.6385e-01  gain1=8.5962e-01  gain2=1.8078e+00
+  combined_factor_split: gain2(M_gain)=6.581404e-01  phi=1.386168e+00  product=9.122931e-01  c=-0.3333
+  combined_pooled: relH=0.2356  H=0.9796  y2_sq=6.5888e-01  y4_4=1.6299e-01
+  hm_shares: sketch=0.2638  gain1=0.8596  gain2=1.8078
+  axis_decomp: in_oracle_proj=0.0119  outside=0.9881  cos_v1=+0.2504
+  v_subspace_share: sketch=0.1322  gain1=0.8755  gain2=0.0009  union=1.0000
+  v_subspace_share_excl: sketch=0.1322  gain1\S=0.8678  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.1412  gain1=0.8639  gain2=0.0047  union=1.0000
+  outside_subspace_share_excl: sketch=0.1412  gain1\S=0.8552  gain2\(S+G1)=0.0037
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0728, j=455:0.0112, j=1010:0.0076, j=470:0.0072, j=127:0.0072
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0727, j=455:0.0101, j=470:0.0077, j=127:0.0073, j=1010:0.0072
+
+-- oracle_v1_proj_S+G1+G2 --
+  scores: hm_triplet=1.977127e-01  combined=7.049026e-01  relH1=0.4228
+  hm_factor_split: gain_factor=4.675771e-01  entropy_factor(relH1)=0.422845  product=1.977127e-01
+  hm_raw_split (NO pool norm): gain_factor=1.273281e-01  entropy=0.422845  product=5.384010e-02
+  raw_energies (||A_k v||^2): sketch=6.676096e-02  gain1=4.415095e-01  gain2=1.582930e-01
+  pool_shares (raw / pool_max): sketch=2.0376e-01  gain1=6.6387e-01  gain2=4.7623e+02
+  combined_factor_split: gain2(M_gain)=5.082705e-01  phi=1.386865e+00  product=7.049026e-01  c=-0.3333
+  combined_pooled: relH=0.2359  H=0.9811  y2_sq=5.0926e-01  y4_4=9.7224e-02
+  hm_shares: sketch=0.2038  gain1=0.6639  gain2=476.2328
+  axis_decomp: in_oracle_proj=0.0027  outside=0.9973  cos_v1=+0.2200
+  v_subspace_share: sketch=0.1021  gain1=0.6762  gain2=0.2469  union=1.0000
+  v_subspace_share_excl: sketch=0.1021  gain1\S=0.6702  gain2\(S+G1)=0.2277
+  outside_subspace_share: sketch=0.1052  gain1=0.6674  gain2=0.2530  union=1.0000
+  outside_subspace_share_excl: sketch=0.1052  gain1\S=0.6611  gain2\(S+G1)=0.2338
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0943, j=263:0.0100, j=1010:0.0090, j=82:0.0082, j=711:0.0078
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0940, j=263:0.0104, j=1010:0.0088, j=82:0.0082, j=711:0.0079
+
+-- oracle_v2_unprojected --
+  scores: hm_triplet=3.756868e-02  combined=1.177548e-01  relH1=0.7855
+  hm_factor_split: gain_factor=4.782488e-02  entropy_factor(relH1)=0.785547  product=3.756868e-02
+  hm_raw_split (NO pool norm): gain_factor=1.391498e-02  entropy=0.785547  product=1.093087e-02
+  raw_energies (||A_k v||^2): sketch=7.375043e-03  gain1=3.636937e-02  gain2=1.904513e-02
+  pool_shares (raw / pool_max): sketch=2.2510e-02  gain1=5.4686e-02  gain2=5.7298e+01
+  combined_factor_split: gain2(M_gain)=4.374442e-02  phi=2.691882e+00  product=1.177548e-01  c=-0.3333
+  combined_pooled: relH=0.7143  H=2.9707  y2_sq=6.8600e-02  y4_4=2.4125e-04
+  hm_shares: sketch=0.0225  gain1=0.0547  gain2=57.2983
+  axis_decomp: in_oracle_proj=0.0949  outside=0.9051  cos_v1=+0.1410
+  v_subspace_share: sketch=0.0113  gain1=0.0554  gain2=0.0301  union=0.0949
+  v_subspace_share_excl: sketch=0.0113  gain1\S=0.0547  gain2\(S+G1)=0.0289
+  outside_subspace_share: sketch=0.0000  gain1=0.0000  gain2=0.0000  union=0.0000
+  outside_subspace_share_excl: sketch=0.0000  gain1\S=0.0000  gain2\(S+G1)=0.0000
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=1:1.0000, j=12:0.0000, j=2:0.0000, j=8:0.0000, j=14:0.0000
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=1:0.9051, j=153:0.0010, j=617:0.0008, j=261:0.0008, j=274:0.0007
+
+-- oracle_v2_proj_S+G1 --
+  scores: hm_triplet=4.396584e-01  combined=1.652327e+00  relH1=0.7855
+  hm_factor_split: gain_factor=5.596845e-01  entropy_factor(relH1)=0.785547  product=4.396584e-01
+  hm_raw_split (NO pool norm): gain_factor=8.153829e-04  entropy=0.785547  product=6.405214e-04
+  raw_energies (||A_k v||^2): sketch=1.116929e-01  gain1=5.508039e-01  gain2=2.725921e-04
+  pool_shares (raw / pool_max): sketch=3.4090e-01  gain1=8.2821e-01  gain2=8.2011e-01
+  combined_factor_split: gain2(M_gain)=6.624968e-01  phi=2.494090e+00  product=1.652327e+00  c=-0.3333
+  combined_pooled: relH=0.6593  H=2.7418  y2_sq=6.6280e-01  y4_4=2.8316e-02
+  hm_shares: sketch=0.3409  gain1=0.8282  gain2=0.8201
+  axis_decomp: in_oracle_proj=0.6957  outside=0.3043  cos_v1=+0.5525
+  v_subspace_share: sketch=0.1712  gain1=0.8397  gain2=0.0004  union=1.0000
+  v_subspace_share_excl: sketch=0.1712  gain1\S=0.8288  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.0521  gain1=0.2555  gain2=0.6826  union=1.0000
+  outside_subspace_share_excl: sketch=0.0521  gain1\S=0.2522  gain2\(S+G1)=0.6957
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=1:0.0660, j=556:0.0110, j=617:0.0093, j=274:0.0084, j=153:0.0079
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=908:0.0104, j=556:0.0091, j=177:0.0083, j=99:0.0081, j=344:0.0075
+
+-- oracle_v2_proj_S+G1+G2 --
+  scores: hm_triplet=3.958088e-01  combined=1.149489e+00  relH1=0.7855
+  hm_factor_split: gain_factor=5.038641e-01  entropy_factor(relH1)=0.785547  product=3.958088e-01
+  hm_raw_split (NO pool norm): gain_factor=1.466028e-01  entropy=0.785547  product=1.151633e-01
+  raw_energies (||A_k v||^2): sketch=7.770056e-02  gain1=3.831734e-01  gain2=2.006520e-01
+  pool_shares (raw / pool_max): sketch=2.3715e-01  gain1=5.7615e-01  gain2=6.0367e+02
+  combined_factor_split: gain2(M_gain)=4.608740e-01  phi=2.494150e+00  product=1.149489e+00  c=-0.3333
+  combined_pooled: relH=0.6593  H=2.7418  y2_sq=4.6114e-01  y4_4=1.3705e-02
+  hm_shares: sketch=0.2372  gain1=0.5762  gain2=603.6720
+  axis_decomp: in_oracle_proj=1.0000  outside=0.0000  cos_v1=+0.4607
+  v_subspace_share: sketch=0.1191  gain1=0.5841  gain2=0.3168  union=1.0000
+  v_subspace_share_excl: sketch=0.1191  gain1\S=0.5765  gain2\(S+G1)=0.3043
+  outside_subspace_share: sketch=nan  gain1=nan  gain2=nan  union=nan
+  outside_subspace_share_excl: sketch=nan  gain1\S=nan  gain2\(S+G1)=nan
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=1:0.0949, j=153:0.0098, j=617:0.0077, j=261:0.0075, j=274:0.0069
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:nan, j=1:nan, j=2:nan, j=3:nan, j=4:nan
+
+-- opt2_pool_candidate --
+  scores: hm_triplet=6.434242e-01  combined=2.612474e+00  relH1=0.9998
+  hm_factor_split: gain_factor=6.435619e-01  entropy_factor(relH1)=0.999786  product=6.434242e-01
+  hm_raw_split (NO pool norm): gain_factor=6.147182e-04  entropy=0.999786  product=6.145867e-04
+  raw_energies (||A_k v||^2): sketch=3.276383e-01  gain1=3.257753e-01  gain2=2.051634e-04
+  pool_shares (raw / pool_max): sketch=1.0000e+00  gain1=4.8985e-01  gain2=6.1724e-01
+  combined_factor_split: gain2(M_gain)=6.534136e-01  phi=3.998193e+00  product=2.612474e+00  c=-0.3333
+  combined_pooled: relH=0.9997  H=4.1575  y2_sq=6.5343e-01  y4_4=6.6805e-03
+  hm_shares: sketch=1.0000  gain1=0.4898  gain2=0.6172
+  axis_decomp: in_oracle_proj=0.0518  outside=0.9482  cos_v1=-0.0000
+  v_subspace_share: sketch=0.5052  gain1=0.5044  gain2=0.0003  union=0.9997
+  v_subspace_share_excl: sketch=0.5052  gain1\S=0.4946  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.4616  gain1=0.5296  gain2=0.0170  union=0.9997
+  outside_subspace_share_excl: sketch=0.4616  gain1\S=0.5216  gain2\(S+G1)=0.0166
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=36:0.0125, j=127:0.0100, j=9:0.0098, j=725:0.0095, j=424:0.0092
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=36:0.0145, j=127:0.0105, j=9:0.0099, j=4:0.0088, j=464:0.0087
+
+-- q2_vs_q1oracle_pool --
+  scores: hm_triplet=4.603597e-01  combined=1.680988e+00  relH1=0.7992
+  hm_factor_split: gain_factor=5.760027e-01  entropy_factor(relH1)=0.799232  product=4.603597e-01
+  hm_raw_split (NO pool norm): gain_factor=7.811690e-04  entropy=0.799232  product=6.243351e-04
+  raw_energies (||A_k v||^2): sketch=1.208986e-01  gain1=5.428349e-01  gain2=2.610772e-04
+  pool_shares (raw / pool_max): sketch=3.6900e-01  gain1=8.1623e-01  gain2=7.8546e-01
+  combined_factor_split: gain2(M_gain)=6.637335e-01  phi=2.532624e+00  product=1.680988e+00  c=-0.3333
+  combined_pooled: relH=0.6703  H=2.7878  y2_sq=6.6400e-01  y4_4=2.7141e-02
+  hm_shares: sketch=0.3690  gain1=0.8162  gain2=0.7855
+  axis_decomp: in_oracle_proj=0.6837  outside=0.3163  cos_v1=+0.5904
+  v_subspace_share: sketch=0.1851  gain1=0.8273  gain2=0.0004  union=1.0000
+  v_subspace_share_excl: sketch=0.1851  gain1\S=0.8149  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.0710  gain1=0.2762  gain2=0.6450  union=1.0000
+  outside_subspace_share_excl: sketch=0.0710  gain1\S=0.2711  gain2\(S+G1)=0.6579
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=1:0.0649, j=617:0.0095, j=153:0.0092, j=556:0.0091, j=274:0.0079
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=177:0.0081, j=99:0.0080, j=908:0.0078, j=535:0.0074, j=766:0.0072
+
+-- mgain_deflated_svd_pool --
+  scores: hm_triplet=2.055835e-01  combined=1.391682e+00  relH1=0.6954
+  hm_factor_split: gain_factor=2.956252e-01  entropy_factor(relH1)=0.695420  product=2.055835e-01
+  hm_raw_split (NO pool norm): gain_factor=9.885260e-04  entropy=0.695420  product=6.874403e-04
+  raw_energies (||A_k v||^2): sketch=4.054401e-02  gain1=6.233345e-01  gain2=3.323857e-04
+  pool_shares (raw / pool_max): sketch=1.2375e-01  gain1=9.3727e-01  gain2=1.0000e+00
+  combined_factor_split: gain2(M_gain)=6.638785e-01  phi=2.096291e+00  product=1.391682e+00  c=-0.3333
+  combined_pooled: relH=0.5339  H=2.2205  y2_sq=6.6450e-01  y4_4=4.7933e-02
+  hm_shares: sketch=0.1237  gain1=0.9373  gain2=1.0000
+  axis_decomp: in_oracle_proj=0.0071  outside=0.9929  cos_v1=-0.0000
+  v_subspace_share: sketch=0.0624  gain1=0.9398  gain2=0.0005  union=1.0000
+  v_subspace_share_excl: sketch=0.0624  gain1\S=0.9376  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.0591  gain1=0.9409  gain2=0.0021  union=1.0000
+  outside_subspace_share_excl: sketch=0.0591  gain1\S=0.9387  gain2\(S+G1)=0.0022
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0287, j=3:0.0254, j=39:0.0125, j=8:0.0085, j=5:0.0078
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=0:0.0284, j=3:0.0250, j=39:0.0135, j=8:0.0081, j=5:0.0074
+
+-- block_complement_pool --
+  scores: hm_triplet=2.082742e-03  combined=1.027976e+00  relH1=0.5913
+  hm_factor_split: gain_factor=3.522213e-03  entropy_factor(relH1)=0.591316  product=2.082742e-03
+  hm_raw_split (NO pool norm): gain_factor=5.143596e-04  entropy=0.591316  product=3.041493e-04
+  raw_energies (||A_k v||^2): sketch=3.856105e-04  gain1=6.650551e-01  gain2=3.088610e-04
+  pool_shares (raw / pool_max): sketch=1.1769e-03  gain1=1.0000e+00  gain2=9.2922e-01
+  combined_factor_split: gain2(M_gain)=6.654407e-01  phi=1.544804e+00  product=1.027976e+00  c=-0.3333
+  combined_pooled: relH=0.3137  H=1.3047  y2_sq=6.6613e-01  y4_4=1.2036e-01
+  hm_shares: sketch=0.0012  gain1=1.0000  gain2=0.9292
+  axis_decomp: in_oracle_proj=0.0732  outside=0.9268  cos_v1=-0.0000
+  v_subspace_share: sketch=0.0006  gain1=0.9990  gain2=0.0005  union=1.0000
+  v_subspace_share_excl: sketch=0.0006  gain1\S=0.9994  gain2\(S+G1)=0.0000
+  outside_subspace_share: sketch=0.0131  gain1=0.9613  gain2=0.0249  union=1.0000
+  outside_subspace_share_excl: sketch=0.0131  gain1\S=0.9629  gain2\(S+G1)=0.0240
+  v_singular_align (top 5 cos2 vs V_exact[:, j]): j=6:0.0196, j=3:0.0182, j=86:0.0126, j=31:0.0116, j=17:0.0106
+  outside_singular_align (top 5 cos2 vs V_exact[:, j]): j=3:0.0212, j=6:0.0206, j=86:0.0127, j=0:0.0112, j=266:0.0111
+
+Sketch / gain1 / gain2 raw energies and shares
+----------------------------------------------
+  denoms (HM-triplet pool): sketch=3.2764e-01  gain1=6.6506e-01  gain2=3.3239e-04
+
+label                              raw_sk       raw_g1       raw_g2      sh_sk     sh_g1      sh_g2   min_share
+combined_optimizer_v2          3.2764e-01   3.2578e-01   2.0516e-04     1.0000    0.4898     0.6172  4.8985e-01
+hm_triplet_best_in_union       2.5732e-01   3.8097e-01   9.2422e-03     0.7854    0.5728    27.8057  5.7283e-01
+hm_triplet_raw_best_in_union   2.0483e-01   2.3059e-01   2.1897e-01     0.6252    0.3467   658.7878  3.4673e-01
+oracle_v1_unprojected          6.2925e-03   4.1614e-02   1.4920e-02     0.0192    0.0626    44.8867  1.9206e-02
+oracle_v1_proj_S+G1            8.6446e-02   5.7169e-01   6.0090e-04     0.2638    0.8596     1.8078  2.6385e-01
+oracle_v1_proj_S+G1+G2         6.6761e-02   4.4151e-01   1.5829e-01     0.2038    0.6639   476.2328  2.0376e-01
+oracle_v2_unprojected          7.3750e-03   3.6369e-02   1.9045e-02     0.0225    0.0547    57.2983  2.2510e-02
+oracle_v2_proj_S+G1            1.1169e-01   5.5080e-01   2.7259e-04     0.3409    0.8282     0.8201  3.4090e-01
+oracle_v2_proj_S+G1+G2         7.7701e-02   3.8317e-01   2.0065e-01     0.2372    0.5762   603.6720  2.3715e-01
+opt2_pool_candidate            3.2764e-01   3.2578e-01   2.0516e-04     1.0000    0.4898     0.6172  4.8985e-01
+q2_vs_q1oracle_pool            1.2090e-01   5.4283e-01   2.6108e-04     0.3690    0.8162     0.7855  3.6900e-01
+mgain_deflated_svd_pool        4.0544e-02   6.2333e-01   3.3239e-04     0.1237    0.9373     1.0000  1.2375e-01
+block_complement_pool          3.8561e-04   6.6506e-01   3.0886e-04     0.0012    1.0000     0.9292  1.1769e-03
+
+Entropy-vs-gain factor table (per candidate)
+--------------------------------------------
+label                            hm_score      hm_gain  hm_entropy    comb_score   comb_gain2    comb_phi  comb_relH
+combined_optimizer_v2          6.4342e-01   6.4356e-01      0.9998    2.6125e+00   6.5341e-01      3.9982     0.9997
+hm_triplet_best_in_union       9.8143e-01   9.8201e-01      0.9994    2.5180e+00   6.3828e-01      3.9450     0.9900
+hm_triplet_raw_best_in_union   6.6872e-01   6.6886e-01      0.9998    1.7370e+00   4.3542e-01      3.9893     0.9981
+oracle_v1_unprojected          1.8635e-02   4.4071e-02      0.4228    7.5395e-02   4.7906e-02      1.5738     0.3271
+oracle_v1_proj_S+G1            2.3037e-01   5.4481e-01      0.4228    9.1229e-01   6.5814e-01      1.3862     0.2356
+oracle_v1_proj_S+G1+G2         1.9771e-01   4.6758e-01      0.4228    7.0490e-01   5.0827e-01      1.3869     0.2359
+oracle_v2_unprojected          3.7569e-02   4.7825e-02      0.7855    1.1775e-01   4.3744e-02      2.6919     0.7143
+oracle_v2_proj_S+G1            4.3966e-01   5.5968e-01      0.7855    1.6523e+00   6.6250e-01      2.4941     0.6593
+oracle_v2_proj_S+G1+G2         3.9581e-01   5.0386e-01      0.7855    1.1495e+00   4.6087e-01      2.4942     0.6593
+opt2_pool_candidate            6.4342e-01   6.4356e-01      0.9998    2.6125e+00   6.5341e-01      3.9982     0.9997
+q2_vs_q1oracle_pool            4.6036e-01   5.7600e-01      0.7992    1.6810e+00   6.6373e-01      2.5326     0.6703
+mgain_deflated_svd_pool        2.0558e-01   2.9563e-01      0.6954    1.3917e+00   6.6388e-01      2.0963     0.5339
+block_complement_pool          2.0827e-03   3.5222e-03      0.5913    1.0280e+00   6.6544e-01      1.5448     0.3137
+
+Unnormalised HM (no pool norm) score table
+------------------------------------------
+label                          hm_raw_score    hm_raw_gain  hm_entropy       min_raw   argmin
+combined_optimizer_v2            6.1459e-04     6.1472e-04      0.9998    2.0516e-04       g2
+hm_triplet_best_in_union         2.6137e-02     2.6153e-02      0.9994    9.2422e-03       g2
+hm_triplet_raw_best_in_union     2.1757e-01     2.1762e-01      0.9998    2.0483e-01       sk
+oracle_v1_unprojected            5.0746e-03     1.2001e-02      0.4228    6.2925e-03       sk
+oracle_v1_proj_S+G1              7.5621e-04     1.7884e-03      0.4228    6.0090e-04       g2
+oracle_v1_proj_S+G1+G2           5.3840e-02     1.2733e-01      0.4228    6.6761e-02       sk
+oracle_v2_unprojected            1.0931e-02     1.3915e-02      0.7855    7.3750e-03       sk
+oracle_v2_proj_S+G1              6.4052e-04     8.1538e-04      0.7855    2.7259e-04       g2
+oracle_v2_proj_S+G1+G2           1.1516e-01     1.4660e-01      0.7855    7.7701e-02       sk
+opt2_pool_candidate              6.1459e-04     6.1472e-04      0.9998    2.0516e-04       g2
+q2_vs_q1oracle_pool              6.2434e-04     7.8117e-04      0.7992    2.6108e-04       g2
+mgain_deflated_svd_pool          6.8744e-04     9.8853e-04      0.6954    3.3239e-04       g2
+block_complement_pool            3.0415e-04     5.1436e-04      0.5913    3.0886e-04       g2
